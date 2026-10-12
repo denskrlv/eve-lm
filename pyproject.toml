@@ -1,0 +1,38 @@
+[project]
+name = "colibri"
+version = "0.1.0"
+description = "A tiny function-calling model with Jev-style question heads"
+readme = "README.md"
+authors = [
+    { name = "Denis Krylov", email = "122829199+denskrlv@users.noreply.github.com" }
+]
+requires-python = ">=3.12"
+dependencies = [
+    "numpy>=2.5.4",
+    "pyarrow>=26.0.0",
+    "regex>=2026.9.29",
+    "torch>=2.14.1",
+    "tqdm>=4.70.1",
+]
+
+[project.scripts]
+colibri = "colibri.cli:main"
+
+[build-system]
+requires = ["uv_build>=0.13.0,<0.14.0"]
+build-backend = "uv_build"
+
+[dependency-groups]
+dev = [
+    "pytest>=9.1.1",
+    "ruff>=0.17.0",
+]
+
+[tool.ruff]
+line-length = 100
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "UP", "B"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
