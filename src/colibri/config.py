@@ -1,12 +1,5 @@
-"""Model configuration and size presets.
-
-One ``ModelConfig`` describes the whole model: the encoder, the value decoder and the
-question block (the Jev-style heads). See the plan, milestone M0 / M3.
-"""
-
 from dataclasses import asdict, dataclass, replace
 
-# Answers to the intent question (Q1). The order is the class index used by the intent head.
 INTENTS = ("call", "ask", "unsupported", "none")
 
 
@@ -49,10 +42,6 @@ class ModelConfig:
         return asdict(self)
 
     def approx_params(self) -> int:
-        """Parameter count from the planned architecture (pre-LN blocks, tied LM head).
-
-        Book ch. 4 counts GPT-2's parameters the same way. M3 checks the real model against it.
-        """
         d, ffn = self.d_model, self.ffn_mult * self.d_model
         attention = 4 * d * d + 4 * d  # W_q, W_k, W_v, W_out with biases
         feed_forward = 2 * d * ffn + ffn + d

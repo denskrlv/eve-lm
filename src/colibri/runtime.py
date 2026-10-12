@@ -1,5 +1,3 @@
-"""Device selection and seeding, shared by training, evaluation and inference."""
-
 import os
 import random
 
@@ -23,4 +21,4 @@ def seed_everything(seed: int) -> None:
     """Seed Python, NumPy and PyTorch (CPU, CUDA and MPS) so runs are repeatable."""
     random.seed(seed)
     np.random.seed(seed)
-    torch.manual_seed(seed)  # also seeds CUDA and MPS
+    torch.manual_seed(seed)

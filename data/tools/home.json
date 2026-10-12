@@ -1,0 +1,30 @@
+{
+  "domain": "home",
+  "tools": [
+    {"name": "set_lights", "description": "Turn the lights in a room on or off",
+     "args": [
+       {"name": "room", "type": "enum", "options": ["kitchen", "bedroom", "living room", "bathroom", "office", "hallway"]},
+       {"name": "on", "type": "bool"},
+       {"name": "brightness", "type": "int", "min": 0, "max": 100, "required": false, "description": "percent"}
+     ]},
+    {"name": "set_thermostat", "description": "Set the target temperature of the heating or cooling",
+     "args": [
+       {"name": "temperature", "type": "float", "min": 10, "max": 30, "description": "degrees Celsius"},
+       {"name": "mode", "type": "enum", "options": ["heat", "cool", "auto"], "required": false}
+     ]},
+    {"name": "lock_door", "description": "Lock or unlock a door",
+     "args": [
+       {"name": "door", "type": "enum", "options": ["front", "back", "garage"]},
+       {"name": "locked", "type": "bool"}
+     ]},
+    {"name": "set_blinds", "description": "Open or close the blinds in a room",
+     "args": [
+       {"name": "room", "type": "enum", "options": ["kitchen", "bedroom", "living room", "office"]},
+       {"name": "position", "type": "int", "min": 0, "max": 100, "description": "percent open"}
+     ]},
+    {"name": "start_vacuum", "description": "Start the robot vacuum cleaner",
+     "args": [
+       {"name": "room", "type": "enum", "options": ["kitchen", "bedroom", "living room", "hallway"], "required": false}
+     ]}
+  ]
+}

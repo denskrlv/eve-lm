@@ -34,4 +34,17 @@ uv run colibri info
 uv run pytest
 ```
 
+## Data (M1)
+
+Tools live in `data/tools/*.json` (format in `src/colibri/data/schema.py`). The pretraining corpus is one FineWeb-Edu shard:
+
+```bash
+mkdir -p data/raw/fineweb-edu
+curl -L -o data/raw/fineweb-edu/000_00000.parquet \
+  https://huggingface.co/datasets/HuggingFaceFW/fineweb-edu/resolve/main/sample/10BT/000_00000.parquet
+uv run colibri tokenizer train   # 8k byte-level BPE -> artifacts/tokenizer/colibri-8k.json
+uv run colibri tokenizer stats   # tokens per word and sample splits
+uv run colibri corpus            # 250M train + 2M val tokens -> data/bin/*.bin
+```
+
 Training runs on Apple Silicon (MPS). Inference targets a Raspberry Pi 5 running PyTorch on CPU. Set `COLIBRI_DEVICE=cpu` to force a device.

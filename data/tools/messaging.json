@@ -1,0 +1,20 @@
+{
+  "domain": "messaging",
+  "tools": [
+    {"name": "send_message", "description": "Send a text message to a contact",
+     "args": [
+       {"name": "contact", "type": "str"},
+       {"name": "message", "type": "str"}
+     ]},
+    {"name": "call_contact", "description": "Start a phone or video call",
+     "args": [
+       {"name": "contact", "type": "str"},
+       {"name": "video", "type": "bool", "required": false}
+     ]},
+    {"name": "read_messages", "description": "Read out recent messages",
+     "args": [
+       {"name": "contact", "type": "str", "required": false},
+       {"name": "unread_only", "type": "bool", "required": false}
+     ]}
+  ]
+}
