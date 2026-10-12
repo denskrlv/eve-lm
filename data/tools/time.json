@@ -1,0 +1,24 @@
+{
+  "domain": "time",
+  "tools": [
+    {"name": "set_timer", "description": "Start a countdown timer",
+     "args": [
+       {"name": "minutes", "type": "int", "min": 1, "max": 1440},
+       {"name": "label", "type": "str", "required": false}
+     ]},
+    {"name": "set_alarm", "description": "Set an alarm",
+     "args": [
+       {"name": "time", "type": "str", "description": "24-hour time like 07:30"},
+       {"name": "repeat", "type": "enum", "options": ["once", "daily", "weekdays", "weekends"], "required": false}
+     ]},
+    {"name": "cancel_timer", "description": "Cancel a running timer",
+     "args": [
+       {"name": "label", "type": "str", "required": false, "description": "all timers if not given"}
+     ]},
+    {"name": "add_reminder", "description": "Remind the user about something later",
+     "args": [
+       {"name": "text", "type": "str"},
+       {"name": "when", "type": "str", "required": false, "description": "a day or time, as the user said it"}
+     ]}
+  ]
+}

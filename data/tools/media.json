@@ -1,0 +1,24 @@
+{
+  "domain": "media",
+  "tools": [
+    {"name": "play_music", "description": "Play a song, artist, album or playlist",
+     "args": [
+       {"name": "query", "type": "str", "description": "what to play"},
+       {"name": "shuffle", "type": "bool", "required": false}
+     ]},
+    {"name": "set_volume", "description": "Set the speaker volume",
+     "args": [
+       {"name": "level", "type": "int", "min": 0, "max": 100, "description": "percent"}
+     ]},
+    {"name": "pause_media", "description": "Pause whatever is playing", "args": []},
+    {"name": "skip_track", "description": "Skip to another track",
+     "args": [
+       {"name": "direction", "type": "enum", "options": ["next", "previous"]}
+     ]},
+    {"name": "play_podcast", "description": "Play an episode of a podcast",
+     "args": [
+       {"name": "show", "type": "str"},
+       {"name": "episode", "type": "int", "min": 1, "required": false, "description": "latest if not given"}
+     ]}
+  ]
+}

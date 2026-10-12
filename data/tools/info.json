@@ -1,0 +1,18 @@
+{
+  "domain": "info",
+  "tools": [
+    {"name": "get_weather", "description": "Get the weather forecast",
+     "args": [
+       {"name": "city", "type": "str", "required": false, "description": "the current location if not given"},
+       {"name": "day", "type": "enum", "options": ["today", "tomorrow", "weekend"], "required": false}
+     ]},
+    {"name": "get_time", "description": "Tell the current time in a city",
+     "args": [
+       {"name": "city", "type": "str", "required": false}
+     ]},
+    {"name": "search_web", "description": "Search the web and read out the top answer",
+     "args": [
+       {"name": "query", "type": "str"}
+     ]}
+  ]
+}

@@ -1,0 +1,46 @@
+# Sample commands, added to the tokenizer's training text (weighted) so command-style words
+# get their own tokens. One per line; lines starting with # are skipped.
+turn off the kitchen lights
+switch on the lights in the bedroom and dim them to 30 percent
+can you make the living room a bit brighter
+set the heating to 21 degrees
+it's freezing in here, bump the thermostat up to 23
+lock the front door
+did I leave the garage unlocked? lock it please
+close the blinds in the office halfway
+start the vacuum in the hallway
+vacuum the whole house while I'm out
+play some jazz
+put on Bohemian Rhapsody by Queen and shuffle it
+turn the volume down to 20
+louder please, set it to 80
+pause the music
+skip this song
+go back to the previous track
+play the latest episode of the Daily
+play episode 42 of Hardcore History
+set a timer for 10 minutes
+set a 25 minute pasta timer
+wake me up at 6:45 on weekdays
+set an alarm for 07:30 tomorrow
+cancel the pasta timer
+remind me to call mom tomorrow evening
+remind me to take the bins out
+text Anna that I'm running 10 minutes late
+send a message to Bob saying see you at the station
+call dad
+start a video call with Maria
+read my unread messages
+any new messages from Sam?
+what's the weather like tomorrow in Berlin
+will it rain this weekend
+what time is it in Tokyo
+search the web for how long to boil an egg
+turn on the lights and play some music
+lock the back door and turn off all the lights
+set a timer for 5 minutes, then remind me to check the oven
+how are you today
+tell me a joke
+order me a pizza
+book a table for two at 8
+thanks, that's all
