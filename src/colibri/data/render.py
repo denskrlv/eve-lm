@@ -66,19 +66,26 @@ class TaskExample:
                 raise SchemaError(f"call to {call.tool}: {'; '.join(errors)}")
 
     @classmethod
-    def from_json(cls, d: dict, library: dict[str, Tool]) -> "TaskExample":
-        """``{"utterance", "tools": [names], "intent", "calls": [{"tool", "args"}]}``."""
+    def from_json(cls, d: dict, library: dict[str, Tool] | None = None) -> "TaskExample":
+        """``{"utterance", "tools", "intent", "calls": [{"tool", "args"}]}``.
+
+        A tool is a name looked up in ``library``, or a whole schema (a dict, as in
+        ``Tool.to_dict``) for tools from outside the library, like external datasets.
+        """
         return cls(
             utterance=d["utterance"],
-            tools=tuple(library[name] for name in d["tools"]),
+            tools=tuple(
+                Tool.from_dict(t) if isinstance(t, dict) else library[t] for t in d["tools"]
+            ),
             intent=d["intent"],
             calls=tuple(Call(c["tool"], dict(c.get("args", {}))) for c in d.get("calls", ())),
         )
 
-    def to_json(self) -> dict:
+    def to_json(self, inline: bool = False) -> dict:
+        """With ``inline``, tools are written as whole schemas instead of names."""
         return {
             "utterance": self.utterance,
-            "tools": [t.name for t in self.tools],
+            "tools": [t.to_dict() if inline else t.name for t in self.tools],
             "intent": self.intent,
             "calls": [{"tool": c.tool, "args": c.args} for c in self.calls],
         }

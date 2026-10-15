@@ -1,0 +1,39 @@
+# Requests no tool in the library can do (intent "unsupported", with random tools in the
+# prompt). Keep math and travel out of here: those are the held-out domains, and the model must
+# not learn that "book a flight" is always unsupported.
+order me a pizza
+book a table for two at 8
+call a taxi
+pay my electricity bill
+transfer 50 dollars to Sam
+write me a poem about cats
+summarize this article
+draw a picture of a dog
+sing me a song
+order new running shoes
+renew my library books
+schedule a haircut
+feed the cat
+walk the dog
+fix my bike
+iron my shirt
+clean the windows
+take out the trash for me
+open the fridge
+make me a sandwich
+change my profile picture
+post this on Instagram
+reply to my last email
+delete my browser history
+update my phone
+back up my photos to the cloud
+find my lost keys
+charge my phone
+lower the car windows
+honk the horn
+turn on the windshield wipers
+start recording a voice memo
+take a screenshot
+tell me my bank balance
+cancel my gym membership
+unsubscribe me from this newsletter

@@ -1,0 +1,44 @@
+{
+  "domain": "travel",
+  "tools": [
+    {"name": "search_flights", "description": "Find flights between two cities",
+     "args": [
+       {"name": "origin", "type": "str"},
+       {"name": "destination", "type": "str"},
+       {"name": "date", "type": "str", "description": "as the user said it"}
+     ],
+     "templates": [
+       "find flights from {origin} to {destination} {date}",
+       "flights to {destination} {date}[ from {origin}]",
+       "I need a flight from {origin} to {destination} {date}"
+     ],
+     "values": {
+       "origin": ["Berlin", "Rome", "New York", "Lisbon", "Tokyo", "Chicago", "Amsterdam"],
+       "destination": ["Berlin", "Rome", "New York", "Lisbon", "Tokyo", "Chicago", "Amsterdam"],
+       "date": ["tomorrow", "on Friday", "next Monday", "on June 3rd", "this weekend"]
+     }},
+    {"name": "book_hotel", "description": "Book a hotel room",
+     "args": [
+       {"name": "city", "type": "str"},
+       {"name": "nights", "type": "int", "min": 1, "max": 30},
+       {"name": "guests", "type": "int", "min": 1, "max": 10, "required": false}
+     ],
+     "templates": [
+       "book a hotel in {city} for {nights} nights[ for {guests} people]",
+       "I need a room in {city} for {nights} nights",
+       "find me a hotel[ in {city}] for {nights} nights"
+     ],
+     "values": {"city": ["Berlin", "Rome", "New York", "Lisbon", "Tokyo", "Chicago", "Amsterdam"]}},
+    {"name": "get_flight_status", "description": "Check whether a flight is on time",
+     "args": [{"name": "flight", "type": "str", "description": "flight number"}],
+     "templates": ["is {flight} on time", "status of flight {flight}", "has {flight} landed"],
+     "values": {"flight": ["LH 400", "BA 117", "UA 901", "AF 1234", "KL 641"]}},
+    {"name": "convert_currency", "description": "Convert an amount of money to another currency",
+     "args": [
+       {"name": "amount", "type": "float", "min": 0},
+       {"name": "from_currency", "type": "enum", "options": ["USD", "EUR", "GBP", "JPY"]},
+       {"name": "to_currency", "type": "enum", "options": ["USD", "EUR", "GBP", "JPY"]}
+     ],
+     "templates": ["convert {amount} {from_currency} to {to_currency}", "how much is {amount} {from_currency} in {to_currency}"]}
+  ]
+}

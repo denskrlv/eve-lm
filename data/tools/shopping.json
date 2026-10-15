@@ -1,0 +1,51 @@
+{
+  "domain": "shopping",
+  "tools": [
+    {"name": "add_to_list", "description": "Add an item to a shopping list",
+     "args": [
+       {"name": "item", "type": "str"},
+       {"name": "quantity", "type": "int", "min": 1, "max": 99, "required": false},
+       {"name": "list", "type": "enum", "options": ["groceries", "hardware", "pharmacy"], "required": false}
+     ],
+     "templates": [
+       "add {item} to the[ {list}] list",
+       "put[ {quantity}] {item} on my shopping list",
+       "we need {item}",
+       "add[ {item}] to my[ {list}] list"
+     ],
+     "values": {"item": ["milk", "eggs", "coffee", "bread", "batteries", "toothpaste", "light bulbs", "bananas", "olive oil"]},
+     "overlaps": ["reorder_item"]},
+    {"name": "remove_from_list", "description": "Remove an item from the shopping list",
+     "args": [
+       {"name": "item", "type": "str"}
+     ],
+     "templates": [
+       "remove {item} from my list",
+       "take {item} off the shopping list",
+       "cross off {item}",
+       "we already have {item}, remove it"
+     ],
+     "values": {"item": ["milk", "eggs", "coffee", "bread", "batteries", "toothpaste", "light bulbs", "bananas", "olive oil"]}},
+    {"name": "read_list", "description": "Read out a shopping list",
+     "args": [
+       {"name": "list", "type": "enum", "options": ["groceries", "hardware", "pharmacy"], "required": false}
+     ],
+     "templates": [
+       "what's on my[ {list}] list",
+       "read me the[ {list}] list",
+       "what do I need to buy"
+     ]},
+    {"name": "reorder_item", "description": "Order an item again from a past order",
+     "args": [
+       {"name": "item", "type": "str"}
+     ],
+     "templates": [
+       "order more {item}",
+       "reorder {item}",
+       "we're out of {item}, order some",
+       "buy {item} again"
+     ],
+     "values": {"item": ["coffee pods", "dish soap", "paper towels", "cat food", "printer ink", "razor blades", "water filters"]},
+     "overlaps": ["add_to_list"]}
+  ]
+}

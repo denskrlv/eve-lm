@@ -1,5 +1,6 @@
 import argparse
 import glob
+import json
 import time
 from pathlib import Path
 
@@ -105,6 +106,65 @@ def corpus(args: argparse.Namespace) -> None:
     print(f"train {meta['train_tokens']:,} and val {meta['val_tokens']:,} tokens -> {args.out}")
 
 
+def data_build(args: argparse.Namespace) -> None:
+    from colibri.config import preset
+    from colibri.data.generate.build import build
+    from colibri.tokenizer.bpe import BPETokenizer
+
+    tokenizer = BPETokenizer.load(args.tokenizer) if Path(args.tokenizer).exists() else None
+    if tokenizer is None:
+        print(f"no tokenizer at {args.tokenizer}: not checking example lengths")
+    report = build(
+        args.out,
+        _count(args.templates),
+        _count(args.heldout),
+        args.seed,
+        tokenizer,
+        preset("small"),
+    )
+    for name, stats in report["splits"].items():
+        print(f"{name:<18} {stats['examples']:>7,}  {stats['intent']}")
+    print(f"rejected chat lines: {report['rejected_chat_lines']} (see `colibri data check`)")
+    print(f"report -> {args.out}/report.json")
+
+
+def data_external(args: argparse.Namespace) -> None:
+    from colibri.data.generate.external import convert_external
+
+    report = convert_external(args.raw, args.out, args.seed)
+    print(json.dumps(report, indent=2))
+    if not report:
+        print(f"nothing found in {args.raw}/xlam or {args.raw}/massive")
+
+
+def data_batch(args: argparse.Namespace) -> None:
+    from colibri.data.generate.build import Sources, make_batch, next_batch_name
+
+    batches = Path(args.dir) / "batches"
+    batches.mkdir(parents=True, exist_ok=True)
+    for _ in range(args.count):
+        name = next_batch_name(batches)
+        seed = int(name.split("-")[1])
+        batch = make_batch(Sources.load(generation_dir=args.dir), name, args.n, args.split, seed)
+        (batches / f"{name}.json").write_text(json.dumps(batch, indent=1, ensure_ascii=False))
+        print(f"{batches / name}.json: {args.n} {args.split} scenarios")
+
+
+def data_check(args: argparse.Namespace) -> None:
+    from colibri.data.generate.build import Sources, check_written, read_jsonl
+
+    batch = json.loads((Path(args.dir) / "batches" / f"{args.batch}.json").read_text())
+    written_path = Path(args.dir) / "written" / f"{args.batch}.jsonl"
+    written = read_jsonl(written_path) if written_path.exists() else []
+    examples, rejects = check_written(batch, written, Sources.load(generation_dir=args.dir).library)
+    missing = {s["id"] for s in batch["scenarios"]} - {line.get("id") for line in written}
+    for line, errors in rejects:
+        print(f"{line.get('id')}: {line.get('utterance')!r}\n    " + "\n    ".join(errors))
+    print(f"{len(examples)} ok, {len(rejects)} rejected, {len(missing)} scenarios not written")
+    if rejects or missing:
+        raise SystemExit(1)
+
+
 def main(argv: list[str] | None = None) -> None:
     parser = argparse.ArgumentParser(prog="colibri")
     commands = parser.add_subparsers(dest="command", required=True)
@@ -139,6 +199,31 @@ def main(argv: list[str] | None = None) -> None:
     p.add_argument("--train-tokens", default="250M")
     p.add_argument("--val-tokens", default="2M")
     p.add_argument("--workers", type=int, default=None)
+
+    data = commands.add_parser("data", help="build the task dataset (M6)")
+    data_commands = data.add_subparsers(dest="data_command", required=True)
+    p = data_commands.add_parser("build", help="templates + chat-written -> data/task/*.jsonl")
+    p.set_defaults(run=data_build)
+    p.add_argument("--out", default="data/task")
+    p.add_argument("--templates", default="50k", help="template examples for train")
+    p.add_argument("--heldout", default="2k", help="template examples with held-out tools")
+    p.add_argument("--seed", type=int, default=0)
+    p.add_argument("--tokenizer", default=DEFAULT_TOKENIZER)
+    p = data_commands.add_parser("external", help="convert xLAM and MASSIVE -> data/external")
+    p.set_defaults(run=data_external)
+    p.add_argument("--raw", default="data/raw")
+    p.add_argument("--out", default="data/external")
+    p.add_argument("--seed", type=int, default=0)
+    p = data_commands.add_parser("batch", help="new scenario batches for chat writers")
+    p.set_defaults(run=data_batch)
+    p.add_argument("--split", choices=["train", "val", "probe"], default="train")
+    p.add_argument("--n", type=int, default=50, help="scenarios per batch")
+    p.add_argument("--count", type=int, default=1, help="how many batches")
+    p.add_argument("--dir", default="data/generation")
+    p = data_commands.add_parser("check", help="validate a chat-written batch")
+    p.set_defaults(run=data_check)
+    p.add_argument("batch", help="e.g. batch-0001")
+    p.add_argument("--dir", default="data/generation")
 
     args = parser.parse_args(argv)
     args.run(args)

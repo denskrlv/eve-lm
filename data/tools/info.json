@@ -5,14 +5,36 @@
      "args": [
        {"name": "city", "type": "str", "required": false, "description": "the current location if not given"},
        {"name": "day", "type": "enum", "options": ["today", "tomorrow", "weekend"], "required": false}
-     ]},
+     ],
+     "templates": [
+       "what's the weather[ in {city}]",
+       "what's the weather like[ in {city}] tomorrow{day=tomorrow}",
+       "will it rain this weekend[ in {city}]{day=weekend}",
+       "what's the forecast for {day}[ in {city}]",
+       "do I need an umbrella today{day=today}"
+     ],
+     "values": {"city": ["Berlin", "Tokyo", "London", "New York", "Paris", "Madrid", "Toronto", "Sydney"]}},
     {"name": "get_time", "description": "Tell the current time in a city",
      "args": [
        {"name": "city", "type": "str", "required": false}
-     ]},
+     ],
+     "templates": [
+       "what time is it[ in {city}]",
+       "what's the time[ in {city}]",
+       "tell me the time[ in {city}]"
+     ],
+     "values": {"city": ["Berlin", "Tokyo", "London", "New York", "Paris", "Madrid", "Toronto", "Sydney"]}},
     {"name": "search_web", "description": "Search the web and read out the top answer",
      "args": [
        {"name": "query", "type": "str"}
-     ]}
+     ],
+     "templates": [
+       "search the web for {query}",
+       "look up {query}",
+       "google {query}",
+       "find out {query}"
+     ],
+     "values": {"query": ["how long to boil an egg", "who won the game last night", "how tall the Eiffel Tower is", "what a black hole is", "the population of Canada", "how to fix a leaky faucet"]},
+     "overlaps": ["*"]}
   ]
 }

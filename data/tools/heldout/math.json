@@ -1,0 +1,24 @@
+{
+  "domain": "math",
+  "tools": [
+    {"name": "add", "description": "Add two numbers",
+     "args": [{"name": "a", "type": "float"}, {"name": "b", "type": "float"}],
+     "templates": ["add {a} and {b}", "what's {a} plus {b}", "{a} + {b}", "what is the sum of {a} and {b}"]},
+    {"name": "subtract", "description": "Subtract one number from another",
+     "args": [{"name": "a", "type": "float"}, {"name": "b", "type": "float"}],
+     "templates": ["subtract {b} from {a}", "what's {a} minus {b}", "{a} take away {b}"]},
+    {"name": "multiply", "description": "Multiply two numbers",
+     "args": [{"name": "a", "type": "float"}, {"name": "b", "type": "float"}],
+     "templates": ["multiply {a} by {b}", "what's {a} times {b}", "{a} multiplied by {b}"]},
+    {"name": "divide", "description": "Divide one number by another",
+     "args": [{"name": "a", "type": "float"}, {"name": "b", "type": "float"}],
+     "templates": ["divide {a} by {b}", "what's {a} divided by {b}", "{a} over {b}"]},
+    {"name": "convert_units", "description": "Convert a value between units",
+     "args": [
+       {"name": "value", "type": "float"},
+       {"name": "from_unit", "type": "enum", "options": ["km", "miles", "kg", "pounds", "celsius", "fahrenheit"]},
+       {"name": "to_unit", "type": "enum", "options": ["km", "miles", "kg", "pounds", "celsius", "fahrenheit"]}
+     ],
+     "templates": ["convert {value} {from_unit} to {to_unit}", "how many {to_unit} is {value} {from_unit}", "{value} {from_unit} in {to_unit}"]}
+  ]
+}

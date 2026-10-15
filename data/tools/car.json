@@ -1,0 +1,36 @@
+{
+  "domain": "car",
+  "tools": [
+    {"name": "start_car_climate", "description": "Heat or cool the car before driving",
+     "args": [
+       {"name": "temperature", "type": "float", "min": 16, "max": 28, "required": false, "description": "degrees Celsius"}
+     ],
+     "templates": [
+       "warm up the car",
+       "start the car's climate[ at {temperature} degrees]",
+       "precondition the car[ to {temperature}]",
+       "cool down the car[ to {temperature} degrees]"
+     ]},
+    {"name": "lock_car", "description": "Lock or unlock the car",
+     "args": [
+       {"name": "locked", "type": "bool"}
+     ],
+     "templates": [
+       "{locked:lock|unlock} the car",
+       "{locked:lock|unlock} my car please",
+       "did I lock the car? lock it{locked=true}"
+     ]},
+    {"name": "find_car", "description": "Show where the car is parked", "args": [],
+     "templates": ["where did I park", "find my car", "where's the car", "show me where the car is"]},
+    {"name": "set_charge_limit", "description": "Set how full the car battery charges",
+     "args": [
+       {"name": "percent", "type": "int", "min": 50, "max": 100}
+     ],
+     "templates": [
+       "set the charge limit to {percent} percent",
+       "charge the car to {percent}%",
+       "only charge to {percent} percent",
+       "change the charge limit[ to {percent}]"
+     ]}
+  ]
+}
