@@ -1,0 +1,3027 @@
+{
+ "batch": "batch-0015",
+ "split": "probe",
+ "seed": 15,
+ "schemas": {
+  "add": "<tool> add : Add two numbers <arg> a : float <arg> b : float",
+  "add_plant": "<tool> add_plant : Create a new plant <arg> title : str <arg> water_every ? : int 1..14",
+  "add_playbook": "<tool> add_playbook : Add a playbook <arg> name : str",
+  "add_project": "<tool> add_project : Add a project <arg> name : str",
+  "adjust_electric_blanket_heat_level": "<tool> adjust_electric_blanket_heat_level : Set the electric blanket heat level <arg> heat_level : int 1..10",
+  "adjust_water_heater_temperature": "<tool> adjust_water_heater_temperature : Change the temperature of the water heater <arg> level : int 40..70 : degrees",
+  "book_hotel": "<tool> book_hotel : Book a hotel room <arg> city : str <arg> nights : int 1..30 <arg> guests ? : int 1..10",
+  "cancel_event": "<tool> cancel_event : Remove an event from the calendar <arg> title : str",
+  "cancel_timer": "<tool> cancel_timer : Cancel a running timer <arg> label ? : str : all timers if not given",
+  "change_coffee_machine_strength": "<tool> change_coffee_machine_strength : Change the strength of the coffee machine <arg> value : int 1..5",
+  "change_electric_blanket_heat_level": "<tool> change_electric_blanket_heat_level : Set the electric blanket heat level <arg> value : int 1..10",
+  "change_kettle_temperature": "<tool> change_kettle_temperature : Change the temperature of the kettle <arg> level : int 60..100 : degrees",
+  "change_lawn_mower_cutting_height": "<tool> change_lawn_mower_cutting_height : Change the cutting height of the lawn mower <arg> level : int 20..60 : millimeters",
+  "change_lawn_mower_mode": "<tool> change_lawn_mower_mode : Set the lawn mower mode <arg> program : enum eco | normal",
+  "change_massage_chair_mode": "<tool> change_massage_chair_mode : Choose a program for the massage chair <arg> setting : enum relax | deep tissue | stretch",
+  "change_rice_cooker_mode": "<tool> change_rice_cooker_mode : Choose a program for the rice cooker <arg> setting : enum white rice | brown rice | porridge",
+  "change_tv_channel": "<tool> change_tv_channel : Set the tv channel <arg> channel : int 1..999",
+  "check_showtimes": "<tool> check_showtimes : Get the showtimes <arg> movie : str",
+  "check_stock_price": "<tool> check_stock_price : Check the stock price <arg> symbol : str",
+  "convert_currency": "<tool> convert_currency : Convert an amount of money to another currency <arg> amount : float 0.. <arg> from_currency : enum USD | EUR | GBP | JPY <arg> to_currency : enum USD | EUR | GBP | JPY",
+  "convert_units": "<tool> convert_units : Convert a value between units <arg> value : float <arg> from_unit : enum km | miles | kg | pounds | celsius | fahrenheit <arg> to_unit : enum km | miles | kg | pounds | celsius | fahrenheit",
+  "create_document": "<tool> create_document : Create a new document <arg> title : str",
+  "create_event": "<tool> create_event : Add an event to the calendar <arg> title : str <arg> day : str : as the user said it <arg> time ? : str <arg> duration ? : int 5..480 : minutes",
+  "create_invoice": "<tool> create_invoice : Create a new invoice <arg> title : str <arg> amount ? : int 10..5000",
+  "create_note": "<tool> create_note : Save a note <arg> text : str <arg> folder ? : enum personal | work | ideas",
+  "create_playbook": "<tool> create_playbook : Create a new playbook <arg> name : str",
+  "dehumidifier_power": "<tool> dehumidifier_power : Turn the dehumidifier on or off <arg> on : bool <arg> location ? : enum bedroom | garage | basement",
+  "delete_bookmark": "<tool> delete_bookmark : Delete a bookmark <arg> title : str",
+  "delete_expense": "<tool> delete_expense : Delete a expense <arg> title : str",
+  "delete_goal": "<tool> delete_goal : Delete a goal <arg> title : str",
+  "delete_issue": "<tool> delete_issue : Delete a issue <arg> name : str",
+  "delete_note": "<tool> delete_note : Delete a note <arg> title : str",
+  "delete_plant": "<tool> delete_plant : Delete a plant <arg> title : str",
+  "delete_project": "<tool> delete_project : Delete a project <arg> title : str",
+  "dishwasher_power": "<tool> dishwasher_power : Turn the dishwasher on or off <arg> turn_on : bool",
+  "divide": "<tool> divide : Divide one number by another <arg> a : float <arg> b : float",
+  "dryer_mode": "<tool> dryer_mode : Set the dryer mode <arg> mode : enum low heat | medium heat | high heat",
+  "dryer_power": "<tool> dryer_power : Turn the dryer on or off <arg> power : bool",
+  "fan_power": "<tool> fan_power : Turn the fan on or off <arg> power : bool <arg> room ? : enum kitchen | basement | bedroom : all rooms if not given",
+  "fan_set_speed": "<tool> fan_set_speed : Set the fan speed <arg> speed : int 1..5 <arg> room ? : enum living room | office | bedroom | basement | bathroom : all rooms if not given",
+  "fetch_definition": "<tool> fetch_definition : Get the definition <arg> word : str",
+  "fetch_game_score": "<tool> fetch_game_score : Get the game score <arg> team : str",
+  "fetch_stock_price": "<tool> fetch_stock_price : Get the stock price <arg> symbol : str",
+  "fetch_sunrise_time": "<tool> fetch_sunrise_time : Get the sunrise time <arg> city : str",
+  "find_car": "<tool> find_car : Show where the car is parked",
+  "find_issue": "<tool> find_issue : Search issues <arg> text : str",
+  "find_project": "<tool> find_project : Search projects <arg> text : str",
+  "get_bus_times": "<tool> get_bus_times : Look up the bus times <arg> stop : str",
+  "get_directions": "<tool> get_directions : Give directions to a place <arg> destination : str <arg> mode ? : enum driving | walking | transit | cycling",
+  "get_flight_status": "<tool> get_flight_status : Check whether a flight is on time <arg> flight : str : flight number",
+  "get_showtimes": "<tool> get_showtimes : Check the showtimes <arg> movie : str",
+  "get_step_count": "<tool> get_step_count : Tell how many steps the user walked <arg> day ? : enum today | yesterday | this week",
+  "get_tide_times": "<tool> get_tide_times : Look up the tide times <arg> beach : str",
+  "log_water": "<tool> log_water : Log how much water the user drank <arg> glasses : int 1..10",
+  "lookup_air_quality": "<tool> lookup_air_quality : Look up the air quality <arg> city : str",
+  "lookup_photo_album": "<tool> lookup_photo_album : Search photo albums <arg> query : str",
+  "lookup_playbook": "<tool> lookup_playbook : Search playbooks <arg> query : str",
+  "lookup_ticket": "<tool> lookup_ticket : Search tickets <arg> text : str",
+  "mark_habit": "<tool> mark_habit : Change the status of a habit <arg> title : str <arg> status : enum done | skipped",
+  "mark_invoice": "<tool> mark_invoice : Change the status of a invoice <arg> name : str <arg> state : enum paid | unpaid | overdue",
+  "massage_chair_set_intensity": "<tool> massage_chair_set_intensity : Change the intensity of the massage chair <arg> level : int 1..5",
+  "multiply": "<tool> multiply : Multiply two numbers <arg> a : float <arg> b : float",
+  "new_expense": "<tool> new_expense : Create a new expense <arg> title : str <arg> amount ? : int 1..500",
+  "oven_power": "<tool> oven_power : Turn the oven on or off <arg> on : bool",
+  "printer_power": "<tool> printer_power : Switch the printer on or off <arg> on : bool",
+  "read_list": "<tool> read_list : Read out a shopping list <arg> list ? : enum groceries | hardware | pharmacy",
+  "read_messages": "<tool> read_messages : Read out recent messages <arg> contact ? : str <arg> unread_only ? : bool",
+  "remove_document": "<tool> remove_document : Remove a document <arg> name : str",
+  "search_flights": "<tool> search_flights : Find flights between two cities <arg> origin : str <arg> destination : str <arg> date : str : as the user said it",
+  "search_habits": "<tool> search_habits : Search habits <arg> keyword : str",
+  "search_invoices": "<tool> search_invoices : Find invoices matching a text <arg> text : str",
+  "search_playbooks": "<tool> search_playbooks : Search playbooks <arg> text : str",
+  "search_recipes": "<tool> search_recipes : Find recipes matching a text <arg> text : str",
+  "select_air_purifier_program": "<tool> select_air_purifier_program : Choose a program for the air purifier <arg> setting : enum auto | sleep | turbo <arg> location ? : enum living room | basement | kitchen | bathroom | office",
+  "select_humidifier_program": "<tool> select_humidifier_program : Choose a program for the humidifier <arg> setting : enum auto | sleep <arg> room : enum basement | nursery | bedroom",
+  "set_alarm": "<tool> set_alarm : Set an alarm <arg> time : str : as the user said it, like 7:30 am <arg> repeat ? : enum once | daily | weekdays | weekends",
+  "set_aroma_diffuser_power": "<tool> set_aroma_diffuser_power : Switch the aroma diffuser on or off <arg> turn_on : bool <arg> location ? : enum basement | bathroom | garage | office | nursery : all rooms if not given",
+  "set_baby_monitor_power": "<tool> set_baby_monitor_power : Switch the baby monitor on or off <arg> enabled : bool",
+  "set_charge_limit": "<tool> set_charge_limit : Set how full the car battery charges <arg> percent : int 50..100",
+  "set_dehumidifier_humidity": "<tool> set_dehumidifier_humidity : Set the dehumidifier humidity <arg> value : int 30..70 : percent <arg> room ? : enum office | kitchen | bedroom | garage",
+  "set_dishwasher_power": "<tool> set_dishwasher_power : Switch the dishwasher on or off <arg> enabled : bool",
+  "set_heated_floor_power": "<tool> set_heated_floor_power : Turn the heated floor on or off <arg> power : bool <arg> room ? : enum garage | nursery | bedroom | bathroom | office",
+  "set_humidifier_power": "<tool> set_humidifier_power : Switch the humidifier on or off <arg> power : bool <arg> location ? : enum garage | living room | basement",
+  "set_massage_chair_power": "<tool> set_massage_chair_power : Switch the massage chair on or off <arg> on : bool",
+  "set_project_status": "<tool> set_project_status : Change the status of a project <arg> name : str <arg> state : enum active | paused | done",
+  "set_projector_brightness": "<tool> set_projector_brightness : Change the brightness of the projector <arg> level : int 1..10",
+  "set_timer": "<tool> set_timer : Start a countdown timer <arg> minutes : int 1..1440 <arg> label ? : str",
+  "subtract": "<tool> subtract : Subtract one number from another <arg> a : float <arg> b : float",
+  "switch_electric_blanket": "<tool> switch_electric_blanket : Turn the electric blanket on or off <arg> on : bool",
+  "switch_lawn_mower": "<tool> switch_lawn_mower : Turn the lawn mower on or off <arg> power : bool",
+  "switch_tv": "<tool> switch_tv : Switch the tv on or off <arg> power : bool",
+  "toggle_kettle": "<tool> toggle_kettle : Turn the kettle on or off <arg> turn_on : bool",
+  "turn_air_purifier_on_or_off": "<tool> turn_air_purifier_on_or_off : Turn the air purifier on or off <arg> turn_on : bool <arg> room : enum kitchen | bathroom | nursery | basement | garage",
+  "turn_aquarium_heater_on_or_off": "<tool> turn_aquarium_heater_on_or_off : Turn the aquarium heater on or off <arg> on : bool",
+  "turn_coffee_machine_on_or_off": "<tool> turn_coffee_machine_on_or_off : Turn the coffee machine on or off <arg> turn_on : bool",
+  "turn_electric_blanket_on_or_off": "<tool> turn_electric_blanket_on_or_off : Turn the electric blanket on or off <arg> turn_on : bool",
+  "turn_slow_cooker_on_or_off": "<tool> turn_slow_cooker_on_or_off : Switch the slow cooker on or off <arg> turn_on : bool"
+ },
+ "scenarios": [
+  {
+   "id": "batch-0015-000",
+   "tools": [
+    {
+     "name": "set_projector_brightness",
+     "description": "Change the brightness of the projector",
+     "args": [
+      {
+       "name": "level",
+       "type": "int",
+       "min": 1,
+       "max": 10
+      }
+     ]
+    },
+    {
+     "name": "change_lawn_mower_cutting_height",
+     "description": "Change the cutting height of the lawn mower",
+     "args": [
+      {
+       "name": "level",
+       "type": "int",
+       "min": 20,
+       "max": 60,
+       "description": "millimeters"
+      }
+     ]
+    },
+    {
+     "name": "mark_invoice",
+     "description": "Change the status of a invoice",
+     "args": [
+      {
+       "name": "name",
+       "type": "str"
+      },
+      {
+       "name": "state",
+       "type": "enum",
+       "options": [
+        "paid",
+        "unpaid",
+        "overdue"
+       ]
+      }
+     ]
+    }
+   ],
+   "intent": "ask",
+   "calls": [
+    {
+     "tool": "change_lawn_mower_cutting_height",
+     "args": {
+      "level": "?"
+     }
+    }
+   ],
+   "meaning": "set the lawn mower cutting height",
+   "missing": [
+    "level"
+   ],
+   "implied": []
+  },
+  {
+   "id": "batch-0015-001",
+   "tools": [
+    {
+     "name": "book_hotel",
+     "description": "Book a hotel room",
+     "args": [
+      {
+       "name": "city",
+       "type": "str"
+      },
+      {
+       "name": "nights",
+       "type": "int",
+       "min": 1,
+       "max": 30
+      },
+      {
+       "name": "guests",
+       "type": "int",
+       "required": false,
+       "min": 1,
+       "max": 10
+      }
+     ]
+    }
+   ],
+   "intent": "ask",
+   "calls": [
+    {
+     "tool": "book_hotel",
+     "args": {
+      "city": "?",
+      "nights": 11
+     }
+    }
+   ],
+   "meaning": "find me a hotel for 11 nights",
+   "missing": [
+    "city"
+   ],
+   "implied": []
+  },
+  {
+   "id": "batch-0015-002",
+   "tools": [
+    {
+     "name": "multiply",
+     "description": "Multiply two numbers",
+     "args": [
+      {
+       "name": "a",
+       "type": "float"
+      },
+      {
+       "name": "b",
+       "type": "float"
+      }
+     ]
+    },
+    {
+     "name": "divide",
+     "description": "Divide one number by another",
+     "args": [
+      {
+       "name": "a",
+       "type": "float"
+      },
+      {
+       "name": "b",
+       "type": "float"
+      }
+     ]
+    }
+   ],
+   "intent": "call",
+   "calls": [
+    {
+     "tool": "multiply",
+     "args": {
+      "a": 34.0,
+      "b": 42.0
+     }
+    }
+   ],
+   "meaning": "multiply 34 by 42",
+   "missing": [],
+   "implied": []
+  },
+  {
+   "id": "batch-0015-003",
+   "tools": [
+    {
+     "name": "add",
+     "description": "Add two numbers",
+     "args": [
+      {
+       "name": "a",
+       "type": "float"
+      },
+      {
+       "name": "b",
+       "type": "float"
+      }
+     ]
+    },
+    {
+     "name": "create_document",
+     "description": "Create a new document",
+     "args": [
+      {
+       "name": "title",
+       "type": "str"
+      }
+     ]
+    }
+   ],
+   "intent": "call",
+   "calls": [
+    {
+     "tool": "create_document",
+     "args": {
+      "title": "lease agreement"
+     }
+    },
+    {
+     "tool": "create_document",
+     "args": {
+      "title": "budget plan"
+     }
+    },
+    {
+     "tool": "add",
+     "args": {
+      "a": 100.0,
+      "b": 20.0
+     }
+    }
+   ],
+   "meaning": "create a document called lease agreement. Also make a document for budget plan. Also add 100 and 20",
+   "missing": [],
+   "implied": []
+  },
+  {
+   "id": "batch-0015-004",
+   "tools": [
+    {
+     "name": "search_flights",
+     "description": "Find flights between two cities",
+     "args": [
+      {
+       "name": "origin",
+       "type": "str"
+      },
+      {
+       "name": "destination",
+       "type": "str"
+      },
+      {
+       "name": "date",
+       "type": "str",
+       "description": "as the user said it"
+      }
+     ]
+    }
+   ],
+   "intent": "ask",
+   "calls": [
+    {
+     "tool": "search_flights",
+     "args": {
+      "destination": "Amsterdam",
+      "date": "this weekend",
+      "origin": "?"
+     }
+    }
+   ],
+   "meaning": "flights to Amsterdam this weekend",
+   "missing": [
+    "origin"
+   ],
+   "implied": []
+  },
+  {
+   "id": "batch-0015-005",
+   "tools": [
+    {
+     "name": "convert_currency",
+     "description": "Convert an amount of money to another currency",
+     "args": [
+      {
+       "name": "amount",
+       "type": "float",
+       "min": 0
+      },
+      {
+       "name": "from_currency",
+       "type": "enum",
+       "options": [
+        "USD",
+        "EUR",
+        "GBP",
+        "JPY"
+       ]
+      },
+      {
+       "name": "to_currency",
+       "type": "enum",
+       "options": [
+        "USD",
+        "EUR",
+        "GBP",
+        "JPY"
+       ]
+      }
+     ]
+    },
+    {
+     "name": "printer_power",
+     "description": "Switch the printer on or off",
+     "args": [
+      {
+       "name": "on",
+       "type": "bool"
+      }
+     ]
+    },
+    {
+     "name": "dryer_power",
+     "description": "Turn the dryer on or off",
+     "args": [
+      {
+       "name": "power",
+       "type": "bool"
+      }
+     ]
+    },
+    {
+     "name": "oven_power",
+     "description": "Turn the oven on or off",
+     "args": [
+      {
+       "name": "on",
+       "type": "bool"
+      }
+     ]
+    },
+    {
+     "name": "dehumidifier_power",
+     "description": "Turn the dehumidifier on or off",
+     "args": [
+      {
+       "name": "on",
+       "type": "bool"
+      },
+      {
+       "name": "location",
+       "type": "enum",
+       "required": false,
+       "options": [
+        "bedroom",
+        "garage",
+        "basement"
+       ]
+      }
+     ]
+    }
+   ],
+   "intent": "call",
+   "calls": [
+    {
+     "tool": "convert_currency",
+     "args": {
+      "amount": 83.0,
+      "from_currency": "JPY",
+      "to_currency": "GBP"
+     }
+    },
+    {
+     "tool": "dryer_power",
+     "args": {
+      "power": true
+     }
+    }
+   ],
+   "meaning": "convert 83 JPY to GBP and then can you switch the dryer on",
+   "missing": [],
+   "implied": []
+  },
+  {
+   "id": "batch-0015-006",
+   "tools": [
+    {
+     "name": "book_hotel",
+     "description": "Book a hotel room",
+     "args": [
+      {
+       "name": "city",
+       "type": "str"
+      },
+      {
+       "name": "nights",
+       "type": "int",
+       "min": 1,
+       "max": 30
+      },
+      {
+       "name": "guests",
+       "type": "int",
+       "required": false,
+       "min": 1,
+       "max": 10
+      }
+     ]
+    }
+   ],
+   "intent": "call",
+   "calls": [
+    {
+     "tool": "book_hotel",
+     "args": {
+      "city": "Lisbon",
+      "nights": 23
+     }
+    },
+    {
+     "tool": "book_hotel",
+     "args": {
+      "city": "Berlin",
+      "nights": 19
+     }
+    }
+   ],
+   "meaning": "I need a room in Lisbon for 23 nights, then book a hotel in Berlin for 19 nights",
+   "missing": [],
+   "implied": []
+  },
+  {
+   "id": "batch-0015-007",
+   "tools": [
+    {
+     "name": "create_note",
+     "description": "Save a note",
+     "args": [
+      {
+       "name": "text",
+       "type": "str"
+      },
+      {
+       "name": "folder",
+       "type": "enum",
+       "required": false,
+       "options": [
+        "personal",
+        "work",
+        "ideas"
+       ]
+      }
+     ]
+    },
+    {
+     "name": "cancel_event",
+     "description": "Remove an event from the calendar",
+     "args": [
+      {
+       "name": "title",
+       "type": "str"
+      }
+     ]
+    },
+    {
+     "name": "convert_units",
+     "description": "Convert a value between units",
+     "args": [
+      {
+       "name": "value",
+       "type": "float"
+      },
+      {
+       "name": "from_unit",
+       "type": "enum",
+       "options": [
+        "km",
+        "miles",
+        "kg",
+        "pounds",
+        "celsius",
+        "fahrenheit"
+       ]
+      },
+      {
+       "name": "to_unit",
+       "type": "enum",
+       "options": [
+        "km",
+        "miles",
+        "kg",
+        "pounds",
+        "celsius",
+        "fahrenheit"
+       ]
+      }
+     ]
+    },
+    {
+     "name": "add_plant",
+     "description": "Create a new plant",
+     "args": [
+      {
+       "name": "title",
+       "type": "str"
+      },
+      {
+       "name": "water_every",
+       "type": "int",
+       "required": false,
+       "min": 1,
+       "max": 14
+      }
+     ]
+    },
+    {
+     "name": "create_invoice",
+     "description": "Create a new invoice",
+     "args": [
+      {
+       "name": "title",
+       "type": "str"
+      },
+      {
+       "name": "amount",
+       "type": "int",
+       "required": false,
+       "min": 10,
+       "max": 5000
+      }
+     ]
+    }
+   ],
+   "intent": "call",
+   "calls": [
+    {
+     "tool": "create_note",
+     "args": {
+      "text": "the wifi password is on the router"
+     }
+    },
+    {
+     "tool": "cancel_event",
+     "args": {
+      "title": "yoga class"
+     }
+    },
+    {
+     "tool": "convert_units",
+     "args": {
+      "to_unit": "kg",
+      "value": 38.0,
+      "from_unit": "miles"
+     }
+    }
+   ],
+   "meaning": "take a note: the wifi password is on the router, and also cancel yoga class and how many kg is 38 miles",
+   "missing": [],
+   "implied": []
+  },
+  {
+   "id": "batch-0015-008",
+   "tools": [
+    {
+     "name": "massage_chair_set_intensity",
+     "description": "Change the intensity of the massage chair",
+     "args": [
+      {
+       "name": "level",
+       "type": "int",
+       "min": 1,
+       "max": 5
+      }
+     ]
+    },
+    {
+     "name": "adjust_electric_blanket_heat_level",
+     "description": "Set the electric blanket heat level",
+     "args": [
+      {
+       "name": "heat_level",
+       "type": "int",
+       "min": 1,
+       "max": 10
+      }
+     ]
+    },
+    {
+     "name": "select_air_purifier_program",
+     "description": "Choose a program for the air purifier",
+     "args": [
+      {
+       "name": "setting",
+       "type": "enum",
+       "options": [
+        "auto",
+        "sleep",
+        "turbo"
+       ]
+      },
+      {
+       "name": "location",
+       "type": "enum",
+       "required": false,
+       "options": [
+        "living room",
+        "basement",
+        "kitchen",
+        "bathroom",
+        "office"
+       ]
+      }
+     ]
+    },
+    {
+     "name": "dryer_power",
+     "description": "Turn the dryer on or off",
+     "args": [
+      {
+       "name": "power",
+       "type": "bool"
+      }
+     ]
+    }
+   ],
+   "intent": "unsupported",
+   "calls": [],
+   "meaning": "coffee machine strength 3",
+   "missing": [],
+   "implied": []
+  },
+  {
+   "id": "batch-0015-009",
+   "tools": [
+    {
+     "name": "set_baby_monitor_power",
+     "description": "Switch the baby monitor on or off",
+     "args": [
+      {
+       "name": "enabled",
+       "type": "bool"
+      }
+     ]
+    },
+    {
+     "name": "toggle_kettle",
+     "description": "Turn the kettle on or off",
+     "args": [
+      {
+       "name": "turn_on",
+       "type": "bool"
+      }
+     ]
+    },
+    {
+     "name": "change_electric_blanket_heat_level",
+     "description": "Set the electric blanket heat level",
+     "args": [
+      {
+       "name": "value",
+       "type": "int",
+       "min": 1,
+       "max": 10
+      }
+     ]
+    },
+    {
+     "name": "switch_tv",
+     "description": "Switch the tv on or off",
+     "args": [
+      {
+       "name": "power",
+       "type": "bool"
+      }
+     ]
+    }
+   ],
+   "intent": "call",
+   "calls": [
+    {
+     "tool": "change_electric_blanket_heat_level",
+     "args": {
+      "value": 4
+     }
+    }
+   ],
+   "meaning": "set the electric blanket heat level to 4",
+   "missing": [],
+   "implied": []
+  },
+  {
+   "id": "batch-0015-010",
+   "tools": [
+    {
+     "name": "cancel_timer",
+     "description": "Cancel a running timer",
+     "args": [
+      {
+       "name": "label",
+       "type": "str",
+       "required": false,
+       "description": "all timers if not given"
+      }
+     ]
+    },
+    {
+     "name": "delete_issue",
+     "description": "Delete a issue",
+     "args": [
+      {
+       "name": "name",
+       "type": "str"
+      }
+     ]
+    },
+    {
+     "name": "set_timer",
+     "description": "Start a countdown timer",
+     "args": [
+      {
+       "name": "minutes",
+       "type": "int",
+       "min": 1,
+       "max": 1440
+      },
+      {
+       "name": "label",
+       "type": "str",
+       "required": false
+      }
+     ]
+    },
+    {
+     "name": "get_bus_times",
+     "description": "Look up the bus times",
+     "args": [
+      {
+       "name": "stop",
+       "type": "str"
+      }
+     ]
+    },
+    {
+     "name": "switch_lawn_mower",
+     "description": "Turn the lawn mower on or off",
+     "args": [
+      {
+       "name": "power",
+       "type": "bool"
+      }
+     ]
+    }
+   ],
+   "intent": "ask",
+   "calls": [
+    {
+     "tool": "set_timer",
+     "args": {
+      "label": "pizza",
+      "minutes": "?"
+     }
+    }
+   ],
+   "meaning": "set a pizza timer",
+   "missing": [
+    "minutes"
+   ],
+   "implied": []
+  },
+  {
+   "id": "batch-0015-011",
+   "tools": [
+    {
+     "name": "change_lawn_mower_mode",
+     "description": "Set the lawn mower mode",
+     "args": [
+      {
+       "name": "program",
+       "type": "enum",
+       "options": [
+        "eco",
+        "normal"
+       ]
+      }
+     ]
+    },
+    {
+     "name": "change_massage_chair_mode",
+     "description": "Choose a program for the massage chair",
+     "args": [
+      {
+       "name": "setting",
+       "type": "enum",
+       "options": [
+        "relax",
+        "deep tissue",
+        "stretch"
+       ]
+      }
+     ]
+    },
+    {
+     "name": "set_massage_chair_power",
+     "description": "Switch the massage chair on or off",
+     "args": [
+      {
+       "name": "on",
+       "type": "bool"
+      }
+     ]
+    },
+    {
+     "name": "set_aroma_diffuser_power",
+     "description": "Switch the aroma diffuser on or off",
+     "args": [
+      {
+       "name": "turn_on",
+       "type": "bool"
+      },
+      {
+       "name": "location",
+       "type": "enum",
+       "required": false,
+       "options": [
+        "basement",
+        "bathroom",
+        "garage",
+        "office",
+        "nursery"
+       ],
+       "description": "all rooms if not given"
+      }
+     ]
+    },
+    {
+     "name": "fan_power",
+     "description": "Turn the fan on or off",
+     "args": [
+      {
+       "name": "power",
+       "type": "bool"
+      },
+      {
+       "name": "room",
+       "type": "enum",
+       "required": false,
+       "options": [
+        "kitchen",
+        "basement",
+        "bedroom"
+       ],
+       "description": "all rooms if not given"
+      }
+     ]
+    }
+   ],
+   "intent": "unsupported",
+   "calls": [],
+   "meaning": "switch on the humidifier in the bedroom",
+   "missing": [],
+   "implied": []
+  },
+  {
+   "id": "batch-0015-012",
+   "tools": [
+    {
+     "name": "convert_units",
+     "description": "Convert a value between units",
+     "args": [
+      {
+       "name": "value",
+       "type": "float"
+      },
+      {
+       "name": "from_unit",
+       "type": "enum",
+       "options": [
+        "km",
+        "miles",
+        "kg",
+        "pounds",
+        "celsius",
+        "fahrenheit"
+       ]
+      },
+      {
+       "name": "to_unit",
+       "type": "enum",
+       "options": [
+        "km",
+        "miles",
+        "kg",
+        "pounds",
+        "celsius",
+        "fahrenheit"
+       ]
+      }
+     ]
+    }
+   ],
+   "intent": "call",
+   "calls": [
+    {
+     "tool": "convert_units",
+     "args": {
+      "to_unit": "celsius",
+      "value": 12.0,
+      "from_unit": "celsius"
+     }
+    }
+   ],
+   "meaning": "how many celsius is 12 celsius",
+   "missing": [],
+   "implied": []
+  },
+  {
+   "id": "batch-0015-013",
+   "tools": [
+    {
+     "name": "book_hotel",
+     "description": "Book a hotel room",
+     "args": [
+      {
+       "name": "city",
+       "type": "str"
+      },
+      {
+       "name": "nights",
+       "type": "int",
+       "min": 1,
+       "max": 30
+      },
+      {
+       "name": "guests",
+       "type": "int",
+       "required": false,
+       "min": 1,
+       "max": 10
+      }
+     ]
+    },
+    {
+     "name": "turn_slow_cooker_on_or_off",
+     "description": "Switch the slow cooker on or off",
+     "args": [
+      {
+       "name": "turn_on",
+       "type": "bool"
+      }
+     ]
+    },
+    {
+     "name": "convert_currency",
+     "description": "Convert an amount of money to another currency",
+     "args": [
+      {
+       "name": "amount",
+       "type": "float",
+       "min": 0
+      },
+      {
+       "name": "from_currency",
+       "type": "enum",
+       "options": [
+        "USD",
+        "EUR",
+        "GBP",
+        "JPY"
+       ]
+      },
+      {
+       "name": "to_currency",
+       "type": "enum",
+       "options": [
+        "USD",
+        "EUR",
+        "GBP",
+        "JPY"
+       ]
+      }
+     ]
+    },
+    {
+     "name": "search_flights",
+     "description": "Find flights between two cities",
+     "args": [
+      {
+       "name": "origin",
+       "type": "str"
+      },
+      {
+       "name": "destination",
+       "type": "str"
+      },
+      {
+       "name": "date",
+       "type": "str",
+       "description": "as the user said it"
+      }
+     ]
+    },
+    {
+     "name": "change_lawn_mower_mode",
+     "description": "Set the lawn mower mode",
+     "args": [
+      {
+       "name": "program",
+       "type": "enum",
+       "options": [
+        "eco",
+        "normal"
+       ]
+      }
+     ]
+    }
+   ],
+   "intent": "ask",
+   "calls": [
+    {
+     "tool": "book_hotel",
+     "args": {
+      "city": "?",
+      "nights": 10
+     }
+    }
+   ],
+   "meaning": "find me a hotel for 10 nights",
+   "missing": [
+    "city"
+   ],
+   "implied": []
+  },
+  {
+   "id": "batch-0015-014",
+   "tools": [
+    {
+     "name": "search_invoices",
+     "description": "Find invoices matching a text",
+     "args": [
+      {
+       "name": "text",
+       "type": "str"
+      }
+     ]
+    },
+    {
+     "name": "add",
+     "description": "Add two numbers",
+     "args": [
+      {
+       "name": "a",
+       "type": "float"
+      },
+      {
+       "name": "b",
+       "type": "float"
+      }
+     ]
+    },
+    {
+     "name": "multiply",
+     "description": "Multiply two numbers",
+     "args": [
+      {
+       "name": "a",
+       "type": "float"
+      },
+      {
+       "name": "b",
+       "type": "float"
+      }
+     ]
+    },
+    {
+     "name": "toggle_kettle",
+     "description": "Turn the kettle on or off",
+     "args": [
+      {
+       "name": "turn_on",
+       "type": "bool"
+      }
+     ]
+    }
+   ],
+   "intent": "call",
+   "calls": [
+    {
+     "tool": "multiply",
+     "args": {
+      "a": 74.0,
+      "b": 62.0
+     }
+    }
+   ],
+   "meaning": "what's 74 times 62",
+   "missing": [],
+   "implied": []
+  },
+  {
+   "id": "batch-0015-015",
+   "tools": [
+    {
+     "name": "new_expense",
+     "description": "Create a new expense",
+     "args": [
+      {
+       "name": "title",
+       "type": "str"
+      },
+      {
+       "name": "amount",
+       "type": "int",
+       "required": false,
+       "min": 1,
+       "max": 500
+      }
+     ]
+    },
+    {
+     "name": "set_dehumidifier_humidity",
+     "description": "Set the dehumidifier humidity",
+     "args": [
+      {
+       "name": "value",
+       "type": "int",
+       "min": 30,
+       "max": 70,
+       "description": "percent"
+      },
+      {
+       "name": "room",
+       "type": "enum",
+       "required": false,
+       "options": [
+        "office",
+        "kitchen",
+        "bedroom",
+        "garage"
+       ]
+      }
+     ]
+    },
+    {
+     "name": "set_alarm",
+     "description": "Set an alarm",
+     "args": [
+      {
+       "name": "time",
+       "type": "str",
+       "description": "as the user said it, like 7:30 am"
+      },
+      {
+       "name": "repeat",
+       "type": "enum",
+       "required": false,
+       "options": [
+        "once",
+        "daily",
+        "weekdays",
+        "weekends"
+       ]
+      }
+     ]
+    },
+    {
+     "name": "add_playbook",
+     "description": "Add a playbook",
+     "args": [
+      {
+       "name": "name",
+       "type": "str"
+      }
+     ]
+    },
+    {
+     "name": "lookup_ticket",
+     "description": "Search tickets",
+     "args": [
+      {
+       "name": "text",
+       "type": "str"
+      }
+     ]
+    }
+   ],
+   "intent": "call",
+   "calls": [
+    {
+     "tool": "set_alarm",
+     "args": {
+      "time": "8 pm",
+      "repeat": "weekends"
+     }
+    }
+   ],
+   "meaning": "set an alarm for 8 pm weekends",
+   "missing": [],
+   "implied": []
+  },
+  {
+   "id": "batch-0015-016",
+   "tools": [
+    {
+     "name": "set_heated_floor_power",
+     "description": "Turn the heated floor on or off",
+     "args": [
+      {
+       "name": "power",
+       "type": "bool"
+      },
+      {
+       "name": "room",
+       "type": "enum",
+       "required": false,
+       "options": [
+        "garage",
+        "nursery",
+        "bedroom",
+        "bathroom",
+        "office"
+       ]
+      }
+     ]
+    },
+    {
+     "name": "turn_air_purifier_on_or_off",
+     "description": "Turn the air purifier on or off",
+     "args": [
+      {
+       "name": "turn_on",
+       "type": "bool"
+      },
+      {
+       "name": "room",
+       "type": "enum",
+       "options": [
+        "kitchen",
+        "bathroom",
+        "nursery",
+        "basement",
+        "garage"
+       ]
+      }
+     ]
+    },
+    {
+     "name": "change_rice_cooker_mode",
+     "description": "Choose a program for the rice cooker",
+     "args": [
+      {
+       "name": "setting",
+       "type": "enum",
+       "options": [
+        "white rice",
+        "brown rice",
+        "porridge"
+       ]
+      }
+     ]
+    }
+   ],
+   "intent": "call",
+   "calls": [
+    {
+     "tool": "set_heated_floor_power",
+     "args": {
+      "power": false
+     }
+    },
+    {
+     "tool": "change_rice_cooker_mode",
+     "args": {
+      "setting": "brown rice"
+     }
+    }
+   ],
+   "meaning": "turn off the heated floor everywhere, and also put the rice cooker on brown rice",
+   "missing": [],
+   "implied": []
+  },
+  {
+   "id": "batch-0015-017",
+   "tools": [
+    {
+     "name": "book_hotel",
+     "description": "Book a hotel room",
+     "args": [
+      {
+       "name": "city",
+       "type": "str"
+      },
+      {
+       "name": "nights",
+       "type": "int",
+       "min": 1,
+       "max": 30
+      },
+      {
+       "name": "guests",
+       "type": "int",
+       "required": false,
+       "min": 1,
+       "max": 10
+      }
+     ]
+    }
+   ],
+   "intent": "ask",
+   "calls": [
+    {
+     "tool": "book_hotel",
+     "args": {
+      "city": "?",
+      "nights": 15
+     }
+    }
+   ],
+   "meaning": "find me a hotel for fifteen nights",
+   "missing": [
+    "city"
+   ],
+   "implied": []
+  },
+  {
+   "id": "batch-0015-018",
+   "tools": [
+    {
+     "name": "change_kettle_temperature",
+     "description": "Change the temperature of the kettle",
+     "args": [
+      {
+       "name": "level",
+       "type": "int",
+       "min": 60,
+       "max": 100,
+       "description": "degrees"
+      }
+     ]
+    },
+    {
+     "name": "change_coffee_machine_strength",
+     "description": "Change the strength of the coffee machine",
+     "args": [
+      {
+       "name": "value",
+       "type": "int",
+       "min": 1,
+       "max": 5
+      }
+     ]
+    },
+    {
+     "name": "change_tv_channel",
+     "description": "Set the tv channel",
+     "args": [
+      {
+       "name": "channel",
+       "type": "int",
+       "min": 1,
+       "max": 999
+      }
+     ]
+    }
+   ],
+   "intent": "ask",
+   "calls": [
+    {
+     "tool": "change_kettle_temperature",
+     "args": {
+      "level": "?"
+     }
+    }
+   ],
+   "meaning": "set the kettle temperature",
+   "missing": [
+    "level"
+   ],
+   "implied": []
+  },
+  {
+   "id": "batch-0015-019",
+   "tools": [
+    {
+     "name": "mark_habit",
+     "description": "Change the status of a habit",
+     "args": [
+      {
+       "name": "title",
+       "type": "str"
+      },
+      {
+       "name": "status",
+       "type": "enum",
+       "options": [
+        "done",
+        "skipped"
+       ]
+      }
+     ]
+    },
+    {
+     "name": "multiply",
+     "description": "Multiply two numbers",
+     "args": [
+      {
+       "name": "a",
+       "type": "float"
+      },
+      {
+       "name": "b",
+       "type": "float"
+      }
+     ]
+    },
+    {
+     "name": "get_directions",
+     "description": "Give directions to a place",
+     "args": [
+      {
+       "name": "destination",
+       "type": "str"
+      },
+      {
+       "name": "mode",
+       "type": "enum",
+       "required": false,
+       "options": [
+        "driving",
+        "walking",
+        "transit",
+        "cycling"
+       ]
+      }
+     ]
+    },
+    {
+     "name": "delete_note",
+     "description": "Delete a note",
+     "args": [
+      {
+       "name": "title",
+       "type": "str"
+      }
+     ]
+    }
+   ],
+   "intent": "none",
+   "calls": [],
+   "meaning": null,
+   "missing": [],
+   "implied": []
+  },
+  {
+   "id": "batch-0015-020",
+   "tools": [
+    {
+     "name": "add_playbook",
+     "description": "Add a playbook",
+     "args": [
+      {
+       "name": "name",
+       "type": "str"
+      }
+     ]
+    },
+    {
+     "name": "add",
+     "description": "Add two numbers",
+     "args": [
+      {
+       "name": "a",
+       "type": "float"
+      },
+      {
+       "name": "b",
+       "type": "float"
+      }
+     ]
+    },
+    {
+     "name": "lookup_air_quality",
+     "description": "Look up the air quality",
+     "args": [
+      {
+       "name": "city",
+       "type": "str"
+      }
+     ]
+    },
+    {
+     "name": "delete_goal",
+     "description": "Delete a goal",
+     "args": [
+      {
+       "name": "title",
+       "type": "str"
+      }
+     ]
+    }
+   ],
+   "intent": "call",
+   "calls": [
+    {
+     "tool": "add",
+     "args": {
+      "a": 22.0,
+      "b": 87.0
+     }
+    }
+   ],
+   "meaning": "add 22 and 87",
+   "missing": [],
+   "implied": []
+  },
+  {
+   "id": "batch-0015-021",
+   "tools": [
+    {
+     "name": "multiply",
+     "description": "Multiply two numbers",
+     "args": [
+      {
+       "name": "a",
+       "type": "float"
+      },
+      {
+       "name": "b",
+       "type": "float"
+      }
+     ]
+    },
+    {
+     "name": "set_dishwasher_power",
+     "description": "Switch the dishwasher on or off",
+     "args": [
+      {
+       "name": "enabled",
+       "type": "bool"
+      }
+     ]
+    },
+    {
+     "name": "fan_power",
+     "description": "Turn the fan on or off",
+     "args": [
+      {
+       "name": "power",
+       "type": "bool"
+      },
+      {
+       "name": "room",
+       "type": "enum",
+       "required": false,
+       "options": [
+        "kitchen",
+        "basement",
+        "bedroom"
+       ],
+       "description": "all rooms if not given"
+      }
+     ]
+    }
+   ],
+   "intent": "call",
+   "calls": [
+    {
+     "tool": "multiply",
+     "args": {
+      "a": 39.0,
+      "b": 47.0
+     }
+    }
+   ],
+   "meaning": "multiply 39 by 47",
+   "missing": [],
+   "implied": []
+  },
+  {
+   "id": "batch-0015-022",
+   "tools": [
+    {
+     "name": "subtract",
+     "description": "Subtract one number from another",
+     "args": [
+      {
+       "name": "a",
+       "type": "float"
+      },
+      {
+       "name": "b",
+       "type": "float"
+      }
+     ]
+    },
+    {
+     "name": "create_note",
+     "description": "Save a note",
+     "args": [
+      {
+       "name": "text",
+       "type": "str"
+      },
+      {
+       "name": "folder",
+       "type": "enum",
+       "required": false,
+       "options": [
+        "personal",
+        "work",
+        "ideas"
+       ]
+      }
+     ]
+    },
+    {
+     "name": "add",
+     "description": "Add two numbers",
+     "args": [
+      {
+       "name": "a",
+       "type": "float"
+      },
+      {
+       "name": "b",
+       "type": "float"
+      }
+     ]
+    },
+    {
+     "name": "divide",
+     "description": "Divide one number by another",
+     "args": [
+      {
+       "name": "a",
+       "type": "float"
+      },
+      {
+       "name": "b",
+       "type": "float"
+      }
+     ]
+    },
+    {
+     "name": "dryer_mode",
+     "description": "Set the dryer mode",
+     "args": [
+      {
+       "name": "mode",
+       "type": "enum",
+       "options": [
+        "low heat",
+        "medium heat",
+        "high heat"
+       ]
+      }
+     ]
+    }
+   ],
+   "intent": "call",
+   "calls": [
+    {
+     "tool": "divide",
+     "args": {
+      "a": 49.0,
+      "b": 61.0
+     }
+    }
+   ],
+   "meaning": "49 over 61",
+   "missing": [],
+   "implied": []
+  },
+  {
+   "id": "batch-0015-023",
+   "tools": [
+    {
+     "name": "dishwasher_power",
+     "description": "Turn the dishwasher on or off",
+     "args": [
+      {
+       "name": "turn_on",
+       "type": "bool"
+      }
+     ]
+    }
+   ],
+   "intent": "call",
+   "calls": [
+    {
+     "tool": "dishwasher_power",
+     "args": {
+      "turn_on": true
+     }
+    }
+   ],
+   "meaning": "can you switch the dishwasher on",
+   "missing": [],
+   "implied": []
+  },
+  {
+   "id": "batch-0015-024",
+   "tools": [
+    {
+     "name": "remove_document",
+     "description": "Remove a document",
+     "args": [
+      {
+       "name": "name",
+       "type": "str"
+      }
+     ]
+    },
+    {
+     "name": "printer_power",
+     "description": "Switch the printer on or off",
+     "args": [
+      {
+       "name": "on",
+       "type": "bool"
+      }
+     ]
+    },
+    {
+     "name": "add_playbook",
+     "description": "Add a playbook",
+     "args": [
+      {
+       "name": "name",
+       "type": "str"
+      }
+     ]
+    }
+   ],
+   "intent": "none",
+   "calls": [],
+   "meaning": null,
+   "missing": [],
+   "implied": []
+  },
+  {
+   "id": "batch-0015-025",
+   "tools": [
+    {
+     "name": "select_humidifier_program",
+     "description": "Choose a program for the humidifier",
+     "args": [
+      {
+       "name": "setting",
+       "type": "enum",
+       "options": [
+        "auto",
+        "sleep"
+       ]
+      },
+      {
+       "name": "room",
+       "type": "enum",
+       "options": [
+        "basement",
+        "nursery",
+        "bedroom"
+       ]
+      }
+     ]
+    },
+    {
+     "name": "get_tide_times",
+     "description": "Look up the tide times",
+     "args": [
+      {
+       "name": "beach",
+       "type": "str"
+      }
+     ]
+    },
+    {
+     "name": "get_bus_times",
+     "description": "Look up the bus times",
+     "args": [
+      {
+       "name": "stop",
+       "type": "str"
+      }
+     ]
+    },
+    {
+     "name": "check_stock_price",
+     "description": "Check the stock price",
+     "args": [
+      {
+       "name": "symbol",
+       "type": "str"
+      }
+     ]
+    }
+   ],
+   "intent": "ask",
+   "calls": [
+    {
+     "tool": "get_bus_times",
+     "args": {
+      "stop": "?"
+     }
+    }
+   ],
+   "meaning": "next bus",
+   "missing": [
+    "stop"
+   ],
+   "implied": []
+  },
+  {
+   "id": "batch-0015-026",
+   "tools": [
+    {
+     "name": "search_flights",
+     "description": "Find flights between two cities",
+     "args": [
+      {
+       "name": "origin",
+       "type": "str"
+      },
+      {
+       "name": "destination",
+       "type": "str"
+      },
+      {
+       "name": "date",
+       "type": "str",
+       "description": "as the user said it"
+      }
+     ]
+    },
+    {
+     "name": "delete_plant",
+     "description": "Delete a plant",
+     "args": [
+      {
+       "name": "title",
+       "type": "str"
+      }
+     ]
+    }
+   ],
+   "intent": "ask",
+   "calls": [
+    {
+     "tool": "search_flights",
+     "args": {
+      "destination": "Amsterdam",
+      "date": "next Monday",
+      "origin": "?"
+     }
+    }
+   ],
+   "meaning": "flights to Amsterdam next Monday",
+   "missing": [
+    "origin"
+   ],
+   "implied": []
+  },
+  {
+   "id": "batch-0015-027",
+   "tools": [
+    {
+     "name": "search_playbooks",
+     "description": "Search playbooks",
+     "args": [
+      {
+       "name": "text",
+       "type": "str"
+      }
+     ]
+    },
+    {
+     "name": "find_project",
+     "description": "Search projects",
+     "args": [
+      {
+       "name": "text",
+       "type": "str"
+      }
+     ]
+    },
+    {
+     "name": "create_playbook",
+     "description": "Create a new playbook",
+     "args": [
+      {
+       "name": "name",
+       "type": "str"
+      }
+     ]
+    },
+    {
+     "name": "find_issue",
+     "description": "Search issues",
+     "args": [
+      {
+       "name": "text",
+       "type": "str"
+      }
+     ]
+    }
+   ],
+   "intent": "call",
+   "calls": [
+    {
+     "tool": "search_playbooks",
+     "args": {
+      "text": "incident response"
+     }
+    }
+   ],
+   "meaning": "do I have any playbooks about incident response",
+   "missing": [],
+   "implied": []
+  },
+  {
+   "id": "batch-0015-028",
+   "tools": [
+    {
+     "name": "convert_currency",
+     "description": "Convert an amount of money to another currency",
+     "args": [
+      {
+       "name": "amount",
+       "type": "float",
+       "min": 0
+      },
+      {
+       "name": "from_currency",
+       "type": "enum",
+       "options": [
+        "USD",
+        "EUR",
+        "GBP",
+        "JPY"
+       ]
+      },
+      {
+       "name": "to_currency",
+       "type": "enum",
+       "options": [
+        "USD",
+        "EUR",
+        "GBP",
+        "JPY"
+       ]
+      }
+     ]
+    },
+    {
+     "name": "create_document",
+     "description": "Create a new document",
+     "args": [
+      {
+       "name": "title",
+       "type": "str"
+      }
+     ]
+    },
+    {
+     "name": "mark_habit",
+     "description": "Change the status of a habit",
+     "args": [
+      {
+       "name": "title",
+       "type": "str"
+      },
+      {
+       "name": "status",
+       "type": "enum",
+       "options": [
+        "done",
+        "skipped"
+       ]
+      }
+     ]
+    }
+   ],
+   "intent": "none",
+   "calls": [],
+   "meaning": null,
+   "missing": [],
+   "implied": []
+  },
+  {
+   "id": "batch-0015-029",
+   "tools": [
+    {
+     "name": "lookup_photo_album",
+     "description": "Search photo albums",
+     "args": [
+      {
+       "name": "query",
+       "type": "str"
+      }
+     ]
+    },
+    {
+     "name": "delete_project",
+     "description": "Delete a project",
+     "args": [
+      {
+       "name": "title",
+       "type": "str"
+      }
+     ]
+    },
+    {
+     "name": "delete_expense",
+     "description": "Delete a expense",
+     "args": [
+      {
+       "name": "title",
+       "type": "str"
+      }
+     ]
+    },
+    {
+     "name": "delete_goal",
+     "description": "Delete a goal",
+     "args": [
+      {
+       "name": "title",
+       "type": "str"
+      }
+     ]
+    }
+   ],
+   "intent": "ask",
+   "calls": [
+    {
+     "tool": "delete_project",
+     "args": {
+      "title": "?"
+     }
+    }
+   ],
+   "meaning": "delete the project",
+   "missing": [
+    "title"
+   ],
+   "implied": []
+  },
+  {
+   "id": "batch-0015-030",
+   "tools": [
+    {
+     "name": "search_habits",
+     "description": "Search habits",
+     "args": [
+      {
+       "name": "keyword",
+       "type": "str"
+      }
+     ]
+    },
+    {
+     "name": "set_project_status",
+     "description": "Change the status of a project",
+     "args": [
+      {
+       "name": "name",
+       "type": "str"
+      },
+      {
+       "name": "state",
+       "type": "enum",
+       "options": [
+        "active",
+        "paused",
+        "done"
+       ]
+      }
+     ]
+    },
+    {
+     "name": "set_charge_limit",
+     "description": "Set how full the car battery charges",
+     "args": [
+      {
+       "name": "percent",
+       "type": "int",
+       "min": 50,
+       "max": 100
+      }
+     ]
+    }
+   ],
+   "intent": "ask",
+   "calls": [
+    {
+     "tool": "set_charge_limit",
+     "args": {
+      "percent": "?"
+     }
+    }
+   ],
+   "meaning": "change the charge limit",
+   "missing": [
+    "percent"
+   ],
+   "implied": []
+  },
+  {
+   "id": "batch-0015-031",
+   "tools": [
+    {
+     "name": "multiply",
+     "description": "Multiply two numbers",
+     "args": [
+      {
+       "name": "a",
+       "type": "float"
+      },
+      {
+       "name": "b",
+       "type": "float"
+      }
+     ]
+    },
+    {
+     "name": "read_list",
+     "description": "Read out a shopping list",
+     "args": [
+      {
+       "name": "list",
+       "type": "enum",
+       "required": false,
+       "options": [
+        "groceries",
+        "hardware",
+        "pharmacy"
+       ]
+      }
+     ]
+    },
+    {
+     "name": "divide",
+     "description": "Divide one number by another",
+     "args": [
+      {
+       "name": "a",
+       "type": "float"
+      },
+      {
+       "name": "b",
+       "type": "float"
+      }
+     ]
+    }
+   ],
+   "intent": "call",
+   "calls": [
+    {
+     "tool": "multiply",
+     "args": {
+      "a": 98.0,
+      "b": 45.0
+     }
+    }
+   ],
+   "meaning": "multiply 98 by 45",
+   "missing": [],
+   "implied": []
+  },
+  {
+   "id": "batch-0015-032",
+   "tools": [
+    {
+     "name": "turn_aquarium_heater_on_or_off",
+     "description": "Turn the aquarium heater on or off",
+     "args": [
+      {
+       "name": "on",
+       "type": "bool"
+      }
+     ]
+    },
+    {
+     "name": "switch_electric_blanket",
+     "description": "Turn the electric blanket on or off",
+     "args": [
+      {
+       "name": "on",
+       "type": "bool"
+      }
+     ]
+    }
+   ],
+   "intent": "call",
+   "calls": [
+    {
+     "tool": "turn_aquarium_heater_on_or_off",
+     "args": {
+      "on": true
+     }
+    }
+   ],
+   "meaning": "can you switch the aquarium heater on",
+   "missing": [],
+   "implied": []
+  },
+  {
+   "id": "batch-0015-033",
+   "tools": [
+    {
+     "name": "change_coffee_machine_strength",
+     "description": "Change the strength of the coffee machine",
+     "args": [
+      {
+       "name": "value",
+       "type": "int",
+       "min": 1,
+       "max": 5
+      }
+     ]
+    }
+   ],
+   "intent": "unsupported",
+   "calls": [],
+   "meaning": "pay my electricity bill",
+   "missing": [],
+   "implied": []
+  },
+  {
+   "id": "batch-0015-034",
+   "tools": [
+    {
+     "name": "get_flight_status",
+     "description": "Check whether a flight is on time",
+     "args": [
+      {
+       "name": "flight",
+       "type": "str",
+       "description": "flight number"
+      }
+     ]
+    }
+   ],
+   "intent": "call",
+   "calls": [
+    {
+     "tool": "get_flight_status",
+     "args": {
+      "flight": "AF 1234"
+     }
+    }
+   ],
+   "meaning": "has AF 1234 landed",
+   "missing": [],
+   "implied": []
+  },
+  {
+   "id": "batch-0015-035",
+   "tools": [
+    {
+     "name": "change_lawn_mower_mode",
+     "description": "Set the lawn mower mode",
+     "args": [
+      {
+       "name": "program",
+       "type": "enum",
+       "options": [
+        "eco",
+        "normal"
+       ]
+      }
+     ]
+    }
+   ],
+   "intent": "unsupported",
+   "calls": [],
+   "meaning": "call a taxi",
+   "missing": [],
+   "implied": []
+  },
+  {
+   "id": "batch-0015-036",
+   "tools": [
+    {
+     "name": "book_hotel",
+     "description": "Book a hotel room",
+     "args": [
+      {
+       "name": "city",
+       "type": "str"
+      },
+      {
+       "name": "nights",
+       "type": "int",
+       "min": 1,
+       "max": 30
+      },
+      {
+       "name": "guests",
+       "type": "int",
+       "required": false,
+       "min": 1,
+       "max": 10
+      }
+     ]
+    },
+    {
+     "name": "get_flight_status",
+     "description": "Check whether a flight is on time",
+     "args": [
+      {
+       "name": "flight",
+       "type": "str",
+       "description": "flight number"
+      }
+     ]
+    }
+   ],
+   "intent": "none",
+   "calls": [],
+   "meaning": null,
+   "missing": [],
+   "implied": []
+  },
+  {
+   "id": "batch-0015-037",
+   "tools": [
+    {
+     "name": "get_showtimes",
+     "description": "Check the showtimes",
+     "args": [
+      {
+       "name": "movie",
+       "type": "str"
+      }
+     ]
+    },
+    {
+     "name": "turn_coffee_machine_on_or_off",
+     "description": "Turn the coffee machine on or off",
+     "args": [
+      {
+       "name": "turn_on",
+       "type": "bool"
+      }
+     ]
+    },
+    {
+     "name": "convert_currency",
+     "description": "Convert an amount of money to another currency",
+     "args": [
+      {
+       "name": "amount",
+       "type": "float",
+       "min": 0
+      },
+      {
+       "name": "from_currency",
+       "type": "enum",
+       "options": [
+        "USD",
+        "EUR",
+        "GBP",
+        "JPY"
+       ]
+      },
+      {
+       "name": "to_currency",
+       "type": "enum",
+       "options": [
+        "USD",
+        "EUR",
+        "GBP",
+        "JPY"
+       ]
+      }
+     ]
+    }
+   ],
+   "intent": "none",
+   "calls": [],
+   "meaning": null,
+   "missing": [],
+   "implied": []
+  },
+  {
+   "id": "batch-0015-038",
+   "tools": [
+    {
+     "name": "switch_tv",
+     "description": "Switch the tv on or off",
+     "args": [
+      {
+       "name": "power",
+       "type": "bool"
+      }
+     ]
+    },
+    {
+     "name": "turn_electric_blanket_on_or_off",
+     "description": "Turn the electric blanket on or off",
+     "args": [
+      {
+       "name": "turn_on",
+       "type": "bool"
+      }
+     ]
+    },
+    {
+     "name": "fan_set_speed",
+     "description": "Set the fan speed",
+     "args": [
+      {
+       "name": "speed",
+       "type": "int",
+       "min": 1,
+       "max": 5
+      },
+      {
+       "name": "room",
+       "type": "enum",
+       "required": false,
+       "options": [
+        "living room",
+        "office",
+        "bedroom",
+        "basement",
+        "bathroom"
+       ],
+       "description": "all rooms if not given"
+      }
+     ]
+    }
+   ],
+   "intent": "call",
+   "calls": [
+    {
+     "tool": "fan_set_speed",
+     "args": {
+      "speed": 4
+     }
+    }
+   ],
+   "meaning": "fan speed 4",
+   "missing": [],
+   "implied": []
+  },
+  {
+   "id": "batch-0015-039",
+   "tools": [
+    {
+     "name": "lookup_playbook",
+     "description": "Search playbooks",
+     "args": [
+      {
+       "name": "query",
+       "type": "str"
+      }
+     ]
+    },
+    {
+     "name": "search_recipes",
+     "description": "Find recipes matching a text",
+     "args": [
+      {
+       "name": "text",
+       "type": "str"
+      }
+     ]
+    }
+   ],
+   "intent": "call",
+   "calls": [
+    {
+     "tool": "search_recipes",
+     "args": {
+      "text": "pancakes"
+     }
+    }
+   ],
+   "meaning": "search my recipes for pancakes",
+   "missing": [],
+   "implied": []
+  },
+  {
+   "id": "batch-0015-040",
+   "tools": [
+    {
+     "name": "create_event",
+     "description": "Add an event to the calendar",
+     "args": [
+      {
+       "name": "title",
+       "type": "str"
+      },
+      {
+       "name": "day",
+       "type": "str",
+       "description": "as the user said it"
+      },
+      {
+       "name": "time",
+       "type": "str",
+       "required": false
+      },
+      {
+       "name": "duration",
+       "type": "int",
+       "required": false,
+       "min": 5,
+       "max": 480,
+       "description": "minutes"
+      }
+     ]
+    },
+    {
+     "name": "multiply",
+     "description": "Multiply two numbers",
+     "args": [
+      {
+       "name": "a",
+       "type": "float"
+      },
+      {
+       "name": "b",
+       "type": "float"
+      }
+     ]
+    }
+   ],
+   "intent": "call",
+   "calls": [
+    {
+     "tool": "multiply",
+     "args": {
+      "a": 46.0,
+      "b": 95.0
+     }
+    },
+    {
+     "tool": "multiply",
+     "args": {
+      "a": 6.0,
+      "b": 96.0
+     }
+    }
+   ],
+   "meaning": "what's 46 times 95 and what's 6 times 96",
+   "missing": [],
+   "implied": []
+  },
+  {
+   "id": "batch-0015-041",
+   "tools": [
+    {
+     "name": "delete_goal",
+     "description": "Delete a goal",
+     "args": [
+      {
+       "name": "title",
+       "type": "str"
+      }
+     ]
+    },
+    {
+     "name": "delete_project",
+     "description": "Delete a project",
+     "args": [
+      {
+       "name": "title",
+       "type": "str"
+      }
+     ]
+    }
+   ],
+   "intent": "ask",
+   "calls": [
+    {
+     "tool": "delete_project",
+     "args": {
+      "title": "?"
+     }
+    }
+   ],
+   "meaning": "delete the project",
+   "missing": [
+    "title"
+   ],
+   "implied": []
+  },
+  {
+   "id": "batch-0015-042",
+   "tools": [
+    {
+     "name": "delete_bookmark",
+     "description": "Delete a bookmark",
+     "args": [
+      {
+       "name": "title",
+       "type": "str"
+      }
+     ]
+    }
+   ],
+   "intent": "unsupported",
+   "calls": [],
+   "meaning": "delete the plant cactus",
+   "missing": [],
+   "implied": []
+  },
+  {
+   "id": "batch-0015-043",
+   "tools": [
+    {
+     "name": "search_flights",
+     "description": "Find flights between two cities",
+     "args": [
+      {
+       "name": "origin",
+       "type": "str"
+      },
+      {
+       "name": "destination",
+       "type": "str"
+      },
+      {
+       "name": "date",
+       "type": "str",
+       "description": "as the user said it"
+      }
+     ]
+    }
+   ],
+   "intent": "ask",
+   "calls": [
+    {
+     "tool": "search_flights",
+     "args": {
+      "destination": "Rome",
+      "date": "on Friday",
+      "origin": "?"
+     }
+    }
+   ],
+   "meaning": "flights to Rome on Friday",
+   "missing": [
+    "origin"
+   ],
+   "implied": []
+  },
+  {
+   "id": "batch-0015-044",
+   "tools": [
+    {
+     "name": "book_hotel",
+     "description": "Book a hotel room",
+     "args": [
+      {
+       "name": "city",
+       "type": "str"
+      },
+      {
+       "name": "nights",
+       "type": "int",
+       "min": 1,
+       "max": 30
+      },
+      {
+       "name": "guests",
+       "type": "int",
+       "required": false,
+       "min": 1,
+       "max": 10
+      }
+     ]
+    }
+   ],
+   "intent": "call",
+   "calls": [
+    {
+     "tool": "book_hotel",
+     "args": {
+      "city": "Lisbon",
+      "nights": 25
+     }
+    }
+   ],
+   "meaning": "I need a room in Lisbon for 25 nights",
+   "missing": [],
+   "implied": []
+  },
+  {
+   "id": "batch-0015-045",
+   "tools": [
+    {
+     "name": "fetch_definition",
+     "description": "Get the definition",
+     "args": [
+      {
+       "name": "word",
+       "type": "str"
+      }
+     ]
+    },
+    {
+     "name": "fetch_game_score",
+     "description": "Get the game score",
+     "args": [
+      {
+       "name": "team",
+       "type": "str"
+      }
+     ]
+    },
+    {
+     "name": "get_tide_times",
+     "description": "Look up the tide times",
+     "args": [
+      {
+       "name": "beach",
+       "type": "str"
+      }
+     ]
+    },
+    {
+     "name": "fetch_sunrise_time",
+     "description": "Get the sunrise time",
+     "args": [
+      {
+       "name": "city",
+       "type": "str"
+      }
+     ]
+    }
+   ],
+   "intent": "call",
+   "calls": [
+    {
+     "tool": "fetch_game_score",
+     "args": {
+      "team": "Real Madrid"
+     }
+    }
+   ],
+   "meaning": "what's the score of the Real Madrid game",
+   "missing": [],
+   "implied": []
+  },
+  {
+   "id": "batch-0015-046",
+   "tools": [
+    {
+     "name": "fetch_game_score",
+     "description": "Get the game score",
+     "args": [
+      {
+       "name": "team",
+       "type": "str"
+      }
+     ]
+    },
+    {
+     "name": "add_project",
+     "description": "Add a project",
+     "args": [
+      {
+       "name": "name",
+       "type": "str"
+      }
+     ]
+    },
+    {
+     "name": "fetch_stock_price",
+     "description": "Get the stock price",
+     "args": [
+      {
+       "name": "symbol",
+       "type": "str"
+      }
+     ]
+    },
+    {
+     "name": "read_messages",
+     "description": "Read out recent messages",
+     "args": [
+      {
+       "name": "contact",
+       "type": "str",
+       "required": false
+      },
+      {
+       "name": "unread_only",
+       "type": "bool",
+       "required": false
+      }
+     ]
+    },
+    {
+     "name": "set_humidifier_power",
+     "description": "Switch the humidifier on or off",
+     "args": [
+      {
+       "name": "power",
+       "type": "bool"
+      },
+      {
+       "name": "location",
+       "type": "enum",
+       "required": false,
+       "options": [
+        "garage",
+        "living room",
+        "basement"
+       ]
+      }
+     ]
+    }
+   ],
+   "intent": "unsupported",
+   "calls": [],
+   "meaning": "summarize this article",
+   "missing": [],
+   "implied": []
+  },
+  {
+   "id": "batch-0015-047",
+   "tools": [
+    {
+     "name": "get_flight_status",
+     "description": "Check whether a flight is on time",
+     "args": [
+      {
+       "name": "flight",
+       "type": "str",
+       "description": "flight number"
+      }
+     ]
+    },
+    {
+     "name": "check_showtimes",
+     "description": "Get the showtimes",
+     "args": [
+      {
+       "name": "movie",
+       "type": "str"
+      }
+     ]
+    },
+    {
+     "name": "find_car",
+     "description": "Show where the car is parked",
+     "args": []
+    }
+   ],
+   "intent": "call",
+   "calls": [
+    {
+     "tool": "get_flight_status",
+     "args": {
+      "flight": "LH 400"
+     }
+    },
+    {
+     "tool": "get_flight_status",
+     "args": {
+      "flight": "AF 1234"
+     }
+    }
+   ],
+   "meaning": "has LH 400 landed and then status of flight AF 1234",
+   "missing": [],
+   "implied": []
+  },
+  {
+   "id": "batch-0015-048",
+   "tools": [
+    {
+     "name": "get_step_count",
+     "description": "Tell how many steps the user walked",
+     "args": [
+      {
+       "name": "day",
+       "type": "enum",
+       "required": false,
+       "options": [
+        "today",
+        "yesterday",
+        "this week"
+       ]
+      }
+     ]
+    },
+    {
+     "name": "adjust_water_heater_temperature",
+     "description": "Change the temperature of the water heater",
+     "args": [
+      {
+       "name": "level",
+       "type": "int",
+       "min": 40,
+       "max": 70,
+       "description": "degrees"
+      }
+     ]
+    },
+    {
+     "name": "log_water",
+     "description": "Log how much water the user drank",
+     "args": [
+      {
+       "name": "glasses",
+       "type": "int",
+       "min": 1,
+       "max": 10
+      }
+     ]
+    }
+   ],
+   "intent": "call",
+   "calls": [
+    {
+     "tool": "log_water",
+     "args": {
+      "glasses": 3
+     }
+    }
+   ],
+   "meaning": "log three glasses of water",
+   "missing": [],
+   "implied": []
+  },
+  {
+   "id": "batch-0015-049",
+   "tools": [
+    {
+     "name": "massage_chair_set_intensity",
+     "description": "Change the intensity of the massage chair",
+     "args": [
+      {
+       "name": "level",
+       "type": "int",
+       "min": 1,
+       "max": 5
+      }
+     ]
+    }
+   ],
+   "intent": "unsupported",
+   "calls": [],
+   "meaning": "write me a poem about cats",
+   "missing": [],
+   "implied": []
+  }
+ ]
+}

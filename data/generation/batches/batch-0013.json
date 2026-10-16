@@ -1,0 +1,2947 @@
+{
+ "batch": "batch-0013",
+ "split": "probe",
+ "seed": 13,
+ "schemas": {
+  "add": "<tool> add : Add two numbers <arg> a : float <arg> b : float",
+  "add_document": "<tool> add_document : Add a document <arg> name : str",
+  "add_expense": "<tool> add_expense : Create a new expense <arg> name : str <arg> amount ? : int 1..500",
+  "add_photo_album": "<tool> add_photo_album : Add a photo album <arg> title : str",
+  "add_to_list": "<tool> add_to_list : Add an item to a shopping list <arg> item : str <arg> quantity ? : int 1..99 <arg> list ? : enum groceries | hardware | pharmacy",
+  "adjust_aroma_diffuser_intensity": "<tool> adjust_aroma_diffuser_intensity : Change the intensity of the aroma diffuser <arg> value : int 1..3 <arg> location ? : enum nursery | basement | bathroom | living room",
+  "adjust_baby_monitor_sensitivity": "<tool> adjust_baby_monitor_sensitivity : Set the baby monitor sensitivity <arg> value : int 1..5",
+  "adjust_fireplace_flame_height": "<tool> adjust_fireplace_flame_height : Change the flame height of the fireplace <arg> value : int 1..5",
+  "book_hotel": "<tool> book_hotel : Book a hotel room <arg> city : str <arg> nights : int 1..30 <arg> guests ? : int 1..10",
+  "cancel_timer": "<tool> cancel_timer : Cancel a running timer <arg> label ? : str : all timers if not given",
+  "change_bread_maker_mode": "<tool> change_bread_maker_mode : Set the bread maker mode <arg> mode : enum basic | whole wheat | quick",
+  "change_dehumidifier_humidity": "<tool> change_dehumidifier_humidity : Set the dehumidifier humidity <arg> humidity : int 30..70 : percent <arg> location ? : enum bedroom | bathroom | kitchen | garage : all rooms if not given",
+  "change_fan_speed": "<tool> change_fan_speed : Set the fan speed <arg> speed : int 1..5 <arg> location : enum living room | bathroom | kitchen",
+  "change_printer_mode": "<tool> change_printer_mode : Set the printer mode <arg> mode : enum color | black and white | draft",
+  "change_sprinkler_duration": "<tool> change_sprinkler_duration : Change the duration of the sprinkler <arg> duration : int 5..60 : minutes",
+  "check_parking_availability": "<tool> check_parking_availability : Check the parking availability <arg> garage : str",
+  "check_pollen_count": "<tool> check_pollen_count : Check the pollen count <arg> city : str",
+  "convert_currency": "<tool> convert_currency : Convert an amount of money to another currency <arg> amount : float 0.. <arg> from_currency : enum USD | EUR | GBP | JPY <arg> to_currency : enum USD | EUR | GBP | JPY",
+  "convert_units": "<tool> convert_units : Convert a value between units <arg> value : float <arg> from_unit : enum km | miles | kg | pounds | celsius | fahrenheit <arg> to_unit : enum km | miles | kg | pounds | celsius | fahrenheit",
+  "create_deck": "<tool> create_deck : Add a deck <arg> name : str",
+  "create_event": "<tool> create_event : Add an event to the calendar <arg> title : str <arg> day : str : as the user said it <arg> time ? : str <arg> duration ? : int 5..480 : minutes",
+  "create_issue": "<tool> create_issue : Add an issue <arg> name : str <arg> severity ? : enum minor | major | critical",
+  "delete_expense": "<tool> delete_expense : Delete a expense <arg> title : str",
+  "delete_photo_album": "<tool> delete_photo_album : Delete a photo album <arg> name : str",
+  "divide": "<tool> divide : Divide one number by another <arg> a : float <arg> b : float",
+  "fetch_sunrise_time": "<tool> fetch_sunrise_time : Get the sunrise time <arg> city : str",
+  "find_bookmark": "<tool> find_bookmark : Search bookmarks <arg> text : str",
+  "find_goal": "<tool> find_goal : Search goals <arg> text : str",
+  "find_nearby": "<tool> find_nearby : Find places of a kind near the user <arg> place : str <arg> open_now ? : bool",
+  "find_plant": "<tool> find_plant : Find plants matching a text <arg> query : str",
+  "find_project": "<tool> find_project : Search projects <arg> text : str",
+  "find_recipe": "<tool> find_recipe : Search recipes <arg> query : str",
+  "get_air_quality": "<tool> get_air_quality : Check the air quality <arg> city : str",
+  "get_directions": "<tool> get_directions : Give directions to a place <arg> destination : str <arg> mode ? : enum driving | walking | transit | cycling",
+  "get_flight_status": "<tool> get_flight_status : Check whether a flight is on time <arg> flight : str : flight number",
+  "get_game_score": "<tool> get_game_score : Check the game score <arg> team : str",
+  "get_step_count": "<tool> get_step_count : Tell how many steps the user walked <arg> day ? : enum today | yesterday | this week",
+  "get_time": "<tool> get_time : Tell the current time in a city <arg> city ? : str",
+  "heated_floor_power": "<tool> heated_floor_power : Turn the heated floor on or off <arg> enabled : bool <arg> location : enum bathroom | office | bedroom | living room | kitchen",
+  "humidifier_power": "<tool> humidifier_power : Switch the humidifier on or off <arg> on : bool <arg> location : enum basement | bedroom | bathroom | kitchen | living room",
+  "lawn_mower_power": "<tool> lawn_mower_power : Turn the lawn mower on or off <arg> turn_on : bool",
+  "log_water": "<tool> log_water : Log how much water the user drank <arg> glasses : int 1..10",
+  "log_weight": "<tool> log_weight : Record the user's body weight <arg> kg : float 30..200 : kilograms",
+  "lookup_air_quality": "<tool> lookup_air_quality : Look up the air quality <arg> city : str",
+  "lookup_package_status": "<tool> lookup_package_status : Get the package status <arg> tracking_number : str",
+  "lookup_photo_album": "<tool> lookup_photo_album : Search photo albums <arg> query : str",
+  "lookup_sunrise_time": "<tool> lookup_sunrise_time : Get the sunrise time <arg> city : str",
+  "mark_ticket": "<tool> mark_ticket : Change the status of a ticket <arg> title : str <arg> state : enum open | in progress | closed",
+  "multiply": "<tool> multiply : Multiply two numbers <arg> a : float <arg> b : float",
+  "new_expense": "<tool> new_expense : Create a new expense <arg> title : str <arg> amount ? : int 1..500",
+  "new_goal": "<tool> new_goal : Create a new goal <arg> name : str",
+  "new_habit": "<tool> new_habit : Create a new habit <arg> title : str <arg> times_per_week ? : int 1..7",
+  "new_issue": "<tool> new_issue : Add an issue <arg> title : str <arg> severity ? : enum minor | major | critical",
+  "new_recipe": "<tool> new_recipe : Create a new recipe <arg> name : str <arg> servings ? : int 1..12",
+  "pause_media": "<tool> pause_media : Pause whatever is playing",
+  "printer_mode": "<tool> printer_mode : Choose a program for the printer <arg> mode : enum color | black and white | draft",
+  "remove_issue": "<tool> remove_issue : Delete a issue <arg> name : str",
+  "remove_photo_album": "<tool> remove_photo_album : Delete a photo album <arg> title : str",
+  "remove_plant": "<tool> remove_plant : Delete a plant <arg> title : str",
+  "remove_recipe": "<tool> remove_recipe : Delete a recipe <arg> name : str",
+  "search_flights": "<tool> search_flights : Find flights between two cities <arg> origin : str <arg> destination : str <arg> date : str : as the user said it",
+  "search_goals": "<tool> search_goals : Find goals matching a text <arg> query : str",
+  "search_issues": "<tool> search_issues : Search issues <arg> query : str",
+  "search_plants": "<tool> search_plants : Search plants <arg> query : str",
+  "search_playbooks": "<tool> search_playbooks : Search playbooks <arg> text : str",
+  "search_projects": "<tool> search_projects : Find projects matching a text <arg> query : str",
+  "security_camera_power": "<tool> security_camera_power : Turn the security camera on or off <arg> turn_on : bool",
+  "select_oven_program": "<tool> select_oven_program : Set the oven mode <arg> program : enum bake | grill | fan",
+  "select_slow_cooker_program": "<tool> select_slow_cooker_program : Choose a program for the slow cooker <arg> program : enum low | high | keep warm",
+  "select_washing_machine_program": "<tool> select_washing_machine_program : Set the washing machine mode <arg> mode : enum cotton | delicates | quick wash",
+  "set_alarm": "<tool> set_alarm : Set an alarm <arg> time : str : as the user said it, like 7:30 am <arg> repeat ? : enum once | daily | weekdays | weekends",
+  "set_aquarium_heater_temperature": "<tool> set_aquarium_heater_temperature : Set the aquarium heater temperature <arg> temperature : int 22..30 : degrees",
+  "set_bread_maker_power": "<tool> set_bread_maker_power : Switch the bread maker on or off <arg> enabled : bool",
+  "set_dehumidifier_humidity": "<tool> set_dehumidifier_humidity : Set the dehumidifier humidity <arg> value : int 30..70 : percent <arg> room ? : enum office | kitchen | bedroom | garage",
+  "set_humidifier_power": "<tool> set_humidifier_power : Switch the humidifier on or off <arg> power : bool <arg> location ? : enum garage | living room | basement",
+  "set_kettle_power": "<tool> set_kettle_power : Turn the kettle on or off <arg> enabled : bool",
+  "set_kettle_temperature": "<tool> set_kettle_temperature : Change the temperature of the kettle <arg> value : int 60..100 : degrees",
+  "set_oven_mode": "<tool> set_oven_mode : Choose a program for the oven <arg> setting : enum bake | grill | fan",
+  "set_oven_temperature": "<tool> set_oven_temperature : Change the temperature of the oven <arg> value : int 50..250 : degrees",
+  "set_pool_pump_power": "<tool> set_pool_pump_power : Switch the pool pump on or off <arg> power : bool",
+  "set_thermostat": "<tool> set_thermostat : Set the target temperature of the heating or cooling <arg> temperature : float 10..30 : degrees Celsius <arg> mode ? : enum heat | cool | auto",
+  "set_timer": "<tool> set_timer : Start a countdown timer <arg> minutes : int 1..1440 <arg> label ? : str",
+  "share_eta": "<tool> share_eta : Send someone the user's expected arrival time <arg> contact : str",
+  "slow_cooker_mode": "<tool> slow_cooker_mode : Set the slow cooker mode <arg> program : enum low | high | keep warm",
+  "start_vacuum": "<tool> start_vacuum : Start the robot vacuum cleaner <arg> room ? : enum kitchen | bedroom | living room | hallway",
+  "subtract": "<tool> subtract : Subtract one number from another <arg> a : float <arg> b : float",
+  "switch_electric_blanket": "<tool> switch_electric_blanket : Turn the electric blanket on or off <arg> on : bool",
+  "toggle_air_purifier": "<tool> toggle_air_purifier : Switch the air purifier on or off <arg> enabled : bool <arg> location : enum nursery | kitchen | bedroom | bathroom",
+  "toggle_water_heater": "<tool> toggle_water_heater : Switch the water heater on or off <arg> turn_on : bool",
+  "update_document_status": "<tool> update_document_status : Change the status of a document <arg> title : str <arg> status : enum draft | final",
+  "update_goal_status": "<tool> update_goal_status : Change the status of a goal <arg> name : str <arg> status : enum active | achieved | abandoned",
+  "update_issue_status": "<tool> update_issue_status : Change the status of a issue <arg> title : str <arg> status : enum open | closed",
+  "update_project_status": "<tool> update_project_status : Change the status of a project <arg> title : str <arg> state : enum active | paused | done"
+ },
+ "scenarios": [
+  {
+   "id": "batch-0013-000",
+   "tools": [
+    {
+     "name": "new_habit",
+     "description": "Create a new habit",
+     "args": [
+      {
+       "name": "title",
+       "type": "str"
+      },
+      {
+       "name": "times_per_week",
+       "type": "int",
+       "required": false,
+       "min": 1,
+       "max": 7
+      }
+     ]
+    },
+    {
+     "name": "create_event",
+     "description": "Add an event to the calendar",
+     "args": [
+      {
+       "name": "title",
+       "type": "str"
+      },
+      {
+       "name": "day",
+       "type": "str",
+       "description": "as the user said it"
+      },
+      {
+       "name": "time",
+       "type": "str",
+       "required": false
+      },
+      {
+       "name": "duration",
+       "type": "int",
+       "required": false,
+       "min": 5,
+       "max": 480,
+       "description": "minutes"
+      }
+     ]
+    },
+    {
+     "name": "search_playbooks",
+     "description": "Search playbooks",
+     "args": [
+      {
+       "name": "text",
+       "type": "str"
+      }
+     ]
+    },
+    {
+     "name": "delete_photo_album",
+     "description": "Delete a photo album",
+     "args": [
+      {
+       "name": "name",
+       "type": "str"
+      }
+     ]
+    },
+    {
+     "name": "create_deck",
+     "description": "Add a deck",
+     "args": [
+      {
+       "name": "name",
+       "type": "str"
+      }
+     ]
+    }
+   ],
+   "intent": "ask",
+   "calls": [
+    {
+     "tool": "new_habit",
+     "args": {
+      "title": "?"
+     }
+    }
+   ],
+   "meaning": "add a new habit",
+   "missing": [
+    "title"
+   ],
+   "implied": []
+  },
+  {
+   "id": "batch-0013-001",
+   "tools": [
+    {
+     "name": "find_recipe",
+     "description": "Search recipes",
+     "args": [
+      {
+       "name": "query",
+       "type": "str"
+      }
+     ]
+    },
+    {
+     "name": "select_washing_machine_program",
+     "description": "Set the washing machine mode",
+     "args": [
+      {
+       "name": "mode",
+       "type": "enum",
+       "options": [
+        "cotton",
+        "delicates",
+        "quick wash"
+       ]
+      }
+     ]
+    }
+   ],
+   "intent": "call",
+   "calls": [
+    {
+     "tool": "select_washing_machine_program",
+     "args": {
+      "mode": "delicates"
+     }
+    },
+    {
+     "tool": "find_recipe",
+     "args": {
+      "query": "lasagna"
+     }
+    }
+   ],
+   "meaning": "change the washing machine mode to delicates. Also do I have any recipes about lasagna",
+   "missing": [],
+   "implied": []
+  },
+  {
+   "id": "batch-0013-002",
+   "tools": [
+    {
+     "name": "start_vacuum",
+     "description": "Start the robot vacuum cleaner",
+     "args": [
+      {
+       "name": "room",
+       "type": "enum",
+       "required": false,
+       "options": [
+        "kitchen",
+        "bedroom",
+        "living room",
+        "hallway"
+       ]
+      }
+     ]
+    },
+    {
+     "name": "add_document",
+     "description": "Add a document",
+     "args": [
+      {
+       "name": "name",
+       "type": "str"
+      }
+     ]
+    },
+    {
+     "name": "adjust_aroma_diffuser_intensity",
+     "description": "Change the intensity of the aroma diffuser",
+     "args": [
+      {
+       "name": "value",
+       "type": "int",
+       "min": 1,
+       "max": 3
+      },
+      {
+       "name": "location",
+       "type": "enum",
+       "required": false,
+       "options": [
+        "nursery",
+        "basement",
+        "bathroom",
+        "living room"
+       ]
+      }
+     ]
+    }
+   ],
+   "intent": "none",
+   "calls": [],
+   "meaning": null,
+   "missing": [],
+   "implied": []
+  },
+  {
+   "id": "batch-0013-003",
+   "tools": [
+    {
+     "name": "search_issues",
+     "description": "Search issues",
+     "args": [
+      {
+       "name": "query",
+       "type": "str"
+      }
+     ]
+    },
+    {
+     "name": "change_printer_mode",
+     "description": "Set the printer mode",
+     "args": [
+      {
+       "name": "mode",
+       "type": "enum",
+       "options": [
+        "color",
+        "black and white",
+        "draft"
+       ]
+      }
+     ]
+    },
+    {
+     "name": "set_alarm",
+     "description": "Set an alarm",
+     "args": [
+      {
+       "name": "time",
+       "type": "str",
+       "description": "as the user said it, like 7:30 am"
+      },
+      {
+       "name": "repeat",
+       "type": "enum",
+       "required": false,
+       "options": [
+        "once",
+        "daily",
+        "weekdays",
+        "weekends"
+       ]
+      }
+     ]
+    },
+    {
+     "name": "mark_ticket",
+     "description": "Change the status of a ticket",
+     "args": [
+      {
+       "name": "title",
+       "type": "str"
+      },
+      {
+       "name": "state",
+       "type": "enum",
+       "options": [
+        "open",
+        "in progress",
+        "closed"
+       ]
+      }
+     ]
+    }
+   ],
+   "intent": "none",
+   "calls": [],
+   "meaning": null,
+   "missing": [],
+   "implied": []
+  },
+  {
+   "id": "batch-0013-004",
+   "tools": [
+    {
+     "name": "subtract",
+     "description": "Subtract one number from another",
+     "args": [
+      {
+       "name": "a",
+       "type": "float"
+      },
+      {
+       "name": "b",
+       "type": "float"
+      }
+     ]
+    }
+   ],
+   "intent": "unsupported",
+   "calls": [],
+   "meaning": "divide 27 by 65",
+   "missing": [],
+   "implied": []
+  },
+  {
+   "id": "batch-0013-005",
+   "tools": [
+    {
+     "name": "check_parking_availability",
+     "description": "Check the parking availability",
+     "args": [
+      {
+       "name": "garage",
+       "type": "str"
+      }
+     ]
+    },
+    {
+     "name": "lookup_package_status",
+     "description": "Get the package status",
+     "args": [
+      {
+       "name": "tracking_number",
+       "type": "str"
+      }
+     ]
+    },
+    {
+     "name": "get_air_quality",
+     "description": "Check the air quality",
+     "args": [
+      {
+       "name": "city",
+       "type": "str"
+      }
+     ]
+    },
+    {
+     "name": "get_game_score",
+     "description": "Check the game score",
+     "args": [
+      {
+       "name": "team",
+       "type": "str"
+      }
+     ]
+    }
+   ],
+   "intent": "call",
+   "calls": [
+    {
+     "tool": "check_parking_availability",
+     "args": {
+      "garage": "Mall parking"
+     }
+    },
+    {
+     "tool": "check_parking_availability",
+     "args": {
+      "garage": "City Center garage"
+     }
+    }
+   ],
+   "meaning": "are there free spots at Mall parking, then check parking at City Center garage",
+   "missing": [],
+   "implied": []
+  },
+  {
+   "id": "batch-0013-006",
+   "tools": [
+    {
+     "name": "get_flight_status",
+     "description": "Check whether a flight is on time",
+     "args": [
+      {
+       "name": "flight",
+       "type": "str",
+       "description": "flight number"
+      }
+     ]
+    },
+    {
+     "name": "new_goal",
+     "description": "Create a new goal",
+     "args": [
+      {
+       "name": "name",
+       "type": "str"
+      }
+     ]
+    },
+    {
+     "name": "book_hotel",
+     "description": "Book a hotel room",
+     "args": [
+      {
+       "name": "city",
+       "type": "str"
+      },
+      {
+       "name": "nights",
+       "type": "int",
+       "min": 1,
+       "max": 30
+      },
+      {
+       "name": "guests",
+       "type": "int",
+       "required": false,
+       "min": 1,
+       "max": 10
+      }
+     ]
+    }
+   ],
+   "intent": "call",
+   "calls": [
+    {
+     "tool": "get_flight_status",
+     "args": {
+      "flight": "KL 641"
+     }
+    }
+   ],
+   "meaning": "has KL 641 landed",
+   "missing": [],
+   "implied": []
+  },
+  {
+   "id": "batch-0013-007",
+   "tools": [
+    {
+     "name": "get_flight_status",
+     "description": "Check whether a flight is on time",
+     "args": [
+      {
+       "name": "flight",
+       "type": "str",
+       "description": "flight number"
+      }
+     ]
+    }
+   ],
+   "intent": "none",
+   "calls": [],
+   "meaning": null,
+   "missing": [],
+   "implied": []
+  },
+  {
+   "id": "batch-0013-008",
+   "tools": [
+    {
+     "name": "set_aquarium_heater_temperature",
+     "description": "Set the aquarium heater temperature",
+     "args": [
+      {
+       "name": "temperature",
+       "type": "int",
+       "min": 22,
+       "max": 30,
+       "description": "degrees"
+      }
+     ]
+    },
+    {
+     "name": "change_sprinkler_duration",
+     "description": "Change the duration of the sprinkler",
+     "args": [
+      {
+       "name": "duration",
+       "type": "int",
+       "min": 5,
+       "max": 60,
+       "description": "minutes"
+      }
+     ]
+    },
+    {
+     "name": "set_kettle_temperature",
+     "description": "Change the temperature of the kettle",
+     "args": [
+      {
+       "name": "value",
+       "type": "int",
+       "min": 60,
+       "max": 100,
+       "description": "degrees"
+      }
+     ]
+    }
+   ],
+   "intent": "call",
+   "calls": [
+    {
+     "tool": "set_kettle_temperature",
+     "args": {
+      "value": 90
+     }
+    }
+   ],
+   "meaning": "set the kettle temperature to 90 degrees",
+   "missing": [],
+   "implied": []
+  },
+  {
+   "id": "batch-0013-009",
+   "tools": [
+    {
+     "name": "new_recipe",
+     "description": "Create a new recipe",
+     "args": [
+      {
+       "name": "name",
+       "type": "str"
+      },
+      {
+       "name": "servings",
+       "type": "int",
+       "required": false,
+       "min": 1,
+       "max": 12
+      }
+     ]
+    },
+    {
+     "name": "remove_issue",
+     "description": "Delete a issue",
+     "args": [
+      {
+       "name": "name",
+       "type": "str"
+      }
+     ]
+    },
+    {
+     "name": "add_expense",
+     "description": "Create a new expense",
+     "args": [
+      {
+       "name": "name",
+       "type": "str"
+      },
+      {
+       "name": "amount",
+       "type": "int",
+       "required": false,
+       "min": 1,
+       "max": 500
+      }
+     ]
+    },
+    {
+     "name": "find_bookmark",
+     "description": "Search bookmarks",
+     "args": [
+      {
+       "name": "text",
+       "type": "str"
+      }
+     ]
+    }
+   ],
+   "intent": "ask",
+   "calls": [
+    {
+     "tool": "add_expense",
+     "args": {
+      "name": "?"
+     }
+    }
+   ],
+   "meaning": "add a new expense",
+   "missing": [
+    "name"
+   ],
+   "implied": []
+  },
+  {
+   "id": "batch-0013-010",
+   "tools": [
+    {
+     "name": "share_eta",
+     "description": "Send someone the user's expected arrival time",
+     "args": [
+      {
+       "name": "contact",
+       "type": "str"
+      }
+     ]
+    },
+    {
+     "name": "get_directions",
+     "description": "Give directions to a place",
+     "args": [
+      {
+       "name": "destination",
+       "type": "str"
+      },
+      {
+       "name": "mode",
+       "type": "enum",
+       "required": false,
+       "options": [
+        "driving",
+        "walking",
+        "transit",
+        "cycling"
+       ]
+      }
+     ]
+    },
+    {
+     "name": "change_fan_speed",
+     "description": "Set the fan speed",
+     "args": [
+      {
+       "name": "speed",
+       "type": "int",
+       "min": 1,
+       "max": 5
+      },
+      {
+       "name": "location",
+       "type": "enum",
+       "options": [
+        "living room",
+        "bathroom",
+        "kitchen"
+       ]
+      }
+     ]
+    },
+    {
+     "name": "toggle_air_purifier",
+     "description": "Switch the air purifier on or off",
+     "args": [
+      {
+       "name": "enabled",
+       "type": "bool"
+      },
+      {
+       "name": "location",
+       "type": "enum",
+       "options": [
+        "nursery",
+        "kitchen",
+        "bedroom",
+        "bathroom"
+       ]
+      }
+     ]
+    }
+   ],
+   "intent": "call",
+   "calls": [
+    {
+     "tool": "toggle_air_purifier",
+     "args": {
+      "enabled": false,
+      "location": "bathroom"
+     }
+    },
+    {
+     "tool": "get_directions",
+     "args": {
+      "destination": "the nearest hospital"
+     }
+    },
+    {
+     "tool": "share_eta",
+     "args": {
+      "contact": "Anna"
+     }
+    }
+   ],
+   "meaning": "can you switch the air purifier off in the bathroom and then directions to the nearest hospital and then send Anna my arrival time",
+   "missing": [],
+   "implied": []
+  },
+  {
+   "id": "batch-0013-011",
+   "tools": [
+    {
+     "name": "book_hotel",
+     "description": "Book a hotel room",
+     "args": [
+      {
+       "name": "city",
+       "type": "str"
+      },
+      {
+       "name": "nights",
+       "type": "int",
+       "min": 1,
+       "max": 30
+      },
+      {
+       "name": "guests",
+       "type": "int",
+       "required": false,
+       "min": 1,
+       "max": 10
+      }
+     ]
+    },
+    {
+     "name": "update_project_status",
+     "description": "Change the status of a project",
+     "args": [
+      {
+       "name": "title",
+       "type": "str"
+      },
+      {
+       "name": "state",
+       "type": "enum",
+       "options": [
+        "active",
+        "paused",
+        "done"
+       ]
+      }
+     ]
+    }
+   ],
+   "intent": "ask",
+   "calls": [
+    {
+     "tool": "book_hotel",
+     "args": {
+      "city": "?",
+      "nights": 30
+     }
+    }
+   ],
+   "meaning": "find me a hotel for 30 nights",
+   "missing": [
+    "city"
+   ],
+   "implied": []
+  },
+  {
+   "id": "batch-0013-012",
+   "tools": [
+    {
+     "name": "lookup_photo_album",
+     "description": "Search photo albums",
+     "args": [
+      {
+       "name": "query",
+       "type": "str"
+      }
+     ]
+    },
+    {
+     "name": "new_expense",
+     "description": "Create a new expense",
+     "args": [
+      {
+       "name": "title",
+       "type": "str"
+      },
+      {
+       "name": "amount",
+       "type": "int",
+       "required": false,
+       "min": 1,
+       "max": 500
+      }
+     ]
+    },
+    {
+     "name": "set_pool_pump_power",
+     "description": "Switch the pool pump on or off",
+     "args": [
+      {
+       "name": "power",
+       "type": "bool"
+      }
+     ]
+    }
+   ],
+   "intent": "none",
+   "calls": [],
+   "meaning": null,
+   "missing": [],
+   "implied": []
+  },
+  {
+   "id": "batch-0013-013",
+   "tools": [
+    {
+     "name": "create_event",
+     "description": "Add an event to the calendar",
+     "args": [
+      {
+       "name": "title",
+       "type": "str"
+      },
+      {
+       "name": "day",
+       "type": "str",
+       "description": "as the user said it"
+      },
+      {
+       "name": "time",
+       "type": "str",
+       "required": false
+      },
+      {
+       "name": "duration",
+       "type": "int",
+       "required": false,
+       "min": 5,
+       "max": 480,
+       "description": "minutes"
+      }
+     ]
+    },
+    {
+     "name": "delete_expense",
+     "description": "Delete a expense",
+     "args": [
+      {
+       "name": "title",
+       "type": "str"
+      }
+     ]
+    },
+    {
+     "name": "add",
+     "description": "Add two numbers",
+     "args": [
+      {
+       "name": "a",
+       "type": "float"
+      },
+      {
+       "name": "b",
+       "type": "float"
+      }
+     ]
+    },
+    {
+     "name": "adjust_fireplace_flame_height",
+     "description": "Change the flame height of the fireplace",
+     "args": [
+      {
+       "name": "value",
+       "type": "int",
+       "min": 1,
+       "max": 5
+      }
+     ]
+    }
+   ],
+   "intent": "unsupported",
+   "calls": [],
+   "meaning": "48 take away 95",
+   "missing": [],
+   "implied": []
+  },
+  {
+   "id": "batch-0013-014",
+   "tools": [
+    {
+     "name": "add_to_list",
+     "description": "Add an item to a shopping list",
+     "args": [
+      {
+       "name": "item",
+       "type": "str"
+      },
+      {
+       "name": "quantity",
+       "type": "int",
+       "required": false,
+       "min": 1,
+       "max": 99
+      },
+      {
+       "name": "list",
+       "type": "enum",
+       "required": false,
+       "options": [
+        "groceries",
+        "hardware",
+        "pharmacy"
+       ]
+      }
+     ]
+    },
+    {
+     "name": "set_oven_mode",
+     "description": "Choose a program for the oven",
+     "args": [
+      {
+       "name": "setting",
+       "type": "enum",
+       "options": [
+        "bake",
+        "grill",
+        "fan"
+       ]
+      }
+     ]
+    },
+    {
+     "name": "remove_photo_album",
+     "description": "Delete a photo album",
+     "args": [
+      {
+       "name": "title",
+       "type": "str"
+      }
+     ]
+    },
+    {
+     "name": "update_issue_status",
+     "description": "Change the status of a issue",
+     "args": [
+      {
+       "name": "title",
+       "type": "str"
+      },
+      {
+       "name": "status",
+       "type": "enum",
+       "options": [
+        "open",
+        "closed"
+       ]
+      }
+     ]
+    }
+   ],
+   "intent": "ask",
+   "calls": [
+    {
+     "tool": "add_to_list",
+     "args": {
+      "item": "?"
+     }
+    }
+   ],
+   "meaning": "add to my list",
+   "missing": [
+    "item"
+   ],
+   "implied": []
+  },
+  {
+   "id": "batch-0013-015",
+   "tools": [
+    {
+     "name": "start_vacuum",
+     "description": "Start the robot vacuum cleaner",
+     "args": [
+      {
+       "name": "room",
+       "type": "enum",
+       "required": false,
+       "options": [
+        "kitchen",
+        "bedroom",
+        "living room",
+        "hallway"
+       ]
+      }
+     ]
+    },
+    {
+     "name": "set_kettle_temperature",
+     "description": "Change the temperature of the kettle",
+     "args": [
+      {
+       "name": "value",
+       "type": "int",
+       "min": 60,
+       "max": 100,
+       "description": "degrees"
+      }
+     ]
+    }
+   ],
+   "intent": "unsupported",
+   "calls": [],
+   "meaning": "change the temperature to 21 degrees",
+   "missing": [],
+   "implied": []
+  },
+  {
+   "id": "batch-0013-016",
+   "tools": [
+    {
+     "name": "convert_currency",
+     "description": "Convert an amount of money to another currency",
+     "args": [
+      {
+       "name": "amount",
+       "type": "float",
+       "min": 0
+      },
+      {
+       "name": "from_currency",
+       "type": "enum",
+       "options": [
+        "USD",
+        "EUR",
+        "GBP",
+        "JPY"
+       ]
+      },
+      {
+       "name": "to_currency",
+       "type": "enum",
+       "options": [
+        "USD",
+        "EUR",
+        "GBP",
+        "JPY"
+       ]
+      }
+     ]
+    },
+    {
+     "name": "find_plant",
+     "description": "Find plants matching a text",
+     "args": [
+      {
+       "name": "query",
+       "type": "str"
+      }
+     ]
+    }
+   ],
+   "intent": "unsupported",
+   "calls": [],
+   "meaning": "convert 18 miles to miles",
+   "missing": [],
+   "implied": []
+  },
+  {
+   "id": "batch-0013-017",
+   "tools": [
+    {
+     "name": "book_hotel",
+     "description": "Book a hotel room",
+     "args": [
+      {
+       "name": "city",
+       "type": "str"
+      },
+      {
+       "name": "nights",
+       "type": "int",
+       "min": 1,
+       "max": 30
+      },
+      {
+       "name": "guests",
+       "type": "int",
+       "required": false,
+       "min": 1,
+       "max": 10
+      }
+     ]
+    },
+    {
+     "name": "get_flight_status",
+     "description": "Check whether a flight is on time",
+     "args": [
+      {
+       "name": "flight",
+       "type": "str",
+       "description": "flight number"
+      }
+     ]
+    },
+    {
+     "name": "log_weight",
+     "description": "Record the user's body weight",
+     "args": [
+      {
+       "name": "kg",
+       "type": "float",
+       "min": 30,
+       "max": 200,
+       "description": "kilograms"
+      }
+     ]
+    },
+    {
+     "name": "update_document_status",
+     "description": "Change the status of a document",
+     "args": [
+      {
+       "name": "title",
+       "type": "str"
+      },
+      {
+       "name": "status",
+       "type": "enum",
+       "options": [
+        "draft",
+        "final"
+       ]
+      }
+     ]
+    }
+   ],
+   "intent": "call",
+   "calls": [
+    {
+     "tool": "book_hotel",
+     "args": {
+      "city": "Rome",
+      "nights": 30
+     }
+    }
+   ],
+   "meaning": "I need a room in Rome for 30 nights",
+   "missing": [],
+   "implied": []
+  },
+  {
+   "id": "batch-0013-018",
+   "tools": [
+    {
+     "name": "divide",
+     "description": "Divide one number by another",
+     "args": [
+      {
+       "name": "a",
+       "type": "float"
+      },
+      {
+       "name": "b",
+       "type": "float"
+      }
+     ]
+    },
+    {
+     "name": "fetch_sunrise_time",
+     "description": "Get the sunrise time",
+     "args": [
+      {
+       "name": "city",
+       "type": "str"
+      }
+     ]
+    },
+    {
+     "name": "multiply",
+     "description": "Multiply two numbers",
+     "args": [
+      {
+       "name": "a",
+       "type": "float"
+      },
+      {
+       "name": "b",
+       "type": "float"
+      }
+     ]
+    }
+   ],
+   "intent": "call",
+   "calls": [
+    {
+     "tool": "multiply",
+     "args": {
+      "a": 15.0,
+      "b": 67.0
+     }
+    }
+   ],
+   "meaning": "15 multiplied by 67",
+   "missing": [],
+   "implied": []
+  },
+  {
+   "id": "batch-0013-019",
+   "tools": [
+    {
+     "name": "set_timer",
+     "description": "Start a countdown timer",
+     "args": [
+      {
+       "name": "minutes",
+       "type": "int",
+       "min": 1,
+       "max": 1440
+      },
+      {
+       "name": "label",
+       "type": "str",
+       "required": false
+      }
+     ]
+    },
+    {
+     "name": "cancel_timer",
+     "description": "Cancel a running timer",
+     "args": [
+      {
+       "name": "label",
+       "type": "str",
+       "required": false,
+       "description": "all timers if not given"
+      }
+     ]
+    },
+    {
+     "name": "new_issue",
+     "description": "Add an issue",
+     "args": [
+      {
+       "name": "title",
+       "type": "str"
+      },
+      {
+       "name": "severity",
+       "type": "enum",
+       "required": false,
+       "options": [
+        "minor",
+        "major",
+        "critical"
+       ]
+      }
+     ]
+    }
+   ],
+   "intent": "call",
+   "calls": [
+    {
+     "tool": "cancel_timer",
+     "args": {
+      "label": "pasta"
+     }
+    }
+   ],
+   "meaning": "cancel the pasta timer",
+   "missing": [],
+   "implied": []
+  },
+  {
+   "id": "batch-0013-020",
+   "tools": [
+    {
+     "name": "divide",
+     "description": "Divide one number by another",
+     "args": [
+      {
+       "name": "a",
+       "type": "float"
+      },
+      {
+       "name": "b",
+       "type": "float"
+      }
+     ]
+    }
+   ],
+   "intent": "unsupported",
+   "calls": [],
+   "meaning": "56.5 take away 100",
+   "missing": [],
+   "implied": []
+  },
+  {
+   "id": "batch-0013-021",
+   "tools": [
+    {
+     "name": "search_flights",
+     "description": "Find flights between two cities",
+     "args": [
+      {
+       "name": "origin",
+       "type": "str"
+      },
+      {
+       "name": "destination",
+       "type": "str"
+      },
+      {
+       "name": "date",
+       "type": "str",
+       "description": "as the user said it"
+      }
+     ]
+    },
+    {
+     "name": "add",
+     "description": "Add two numbers",
+     "args": [
+      {
+       "name": "a",
+       "type": "float"
+      },
+      {
+       "name": "b",
+       "type": "float"
+      }
+     ]
+    }
+   ],
+   "intent": "call",
+   "calls": [
+    {
+     "tool": "search_flights",
+     "args": {
+      "destination": "Berlin",
+      "date": "on June 3rd",
+      "origin": "Rome"
+     }
+    },
+    {
+     "tool": "add",
+     "args": {
+      "a": 42.0,
+      "b": 10.0
+     }
+    }
+   ],
+   "meaning": "flights to Berlin on June 3rd from Rome and then 42 + 10",
+   "missing": [],
+   "implied": []
+  },
+  {
+   "id": "batch-0013-022",
+   "tools": [
+    {
+     "name": "lookup_air_quality",
+     "description": "Look up the air quality",
+     "args": [
+      {
+       "name": "city",
+       "type": "str"
+      }
+     ]
+    },
+    {
+     "name": "lookup_photo_album",
+     "description": "Search photo albums",
+     "args": [
+      {
+       "name": "query",
+       "type": "str"
+      }
+     ]
+    }
+   ],
+   "intent": "none",
+   "calls": [],
+   "meaning": null,
+   "missing": [],
+   "implied": []
+  },
+  {
+   "id": "batch-0013-023",
+   "tools": [
+    {
+     "name": "switch_electric_blanket",
+     "description": "Turn the electric blanket on or off",
+     "args": [
+      {
+       "name": "on",
+       "type": "bool"
+      }
+     ]
+    },
+    {
+     "name": "book_hotel",
+     "description": "Book a hotel room",
+     "args": [
+      {
+       "name": "city",
+       "type": "str"
+      },
+      {
+       "name": "nights",
+       "type": "int",
+       "min": 1,
+       "max": 30
+      },
+      {
+       "name": "guests",
+       "type": "int",
+       "required": false,
+       "min": 1,
+       "max": 10
+      }
+     ]
+    }
+   ],
+   "intent": "ask",
+   "calls": [
+    {
+     "tool": "book_hotel",
+     "args": {
+      "city": "?",
+      "nights": 20
+     }
+    }
+   ],
+   "meaning": "find me a hotel for 20 nights",
+   "missing": [
+    "city"
+   ],
+   "implied": []
+  },
+  {
+   "id": "batch-0013-024",
+   "tools": [
+    {
+     "name": "multiply",
+     "description": "Multiply two numbers",
+     "args": [
+      {
+       "name": "a",
+       "type": "float"
+      },
+      {
+       "name": "b",
+       "type": "float"
+      }
+     ]
+    },
+    {
+     "name": "convert_units",
+     "description": "Convert a value between units",
+     "args": [
+      {
+       "name": "value",
+       "type": "float"
+      },
+      {
+       "name": "from_unit",
+       "type": "enum",
+       "options": [
+        "km",
+        "miles",
+        "kg",
+        "pounds",
+        "celsius",
+        "fahrenheit"
+       ]
+      },
+      {
+       "name": "to_unit",
+       "type": "enum",
+       "options": [
+        "km",
+        "miles",
+        "kg",
+        "pounds",
+        "celsius",
+        "fahrenheit"
+       ]
+      }
+     ]
+    }
+   ],
+   "intent": "call",
+   "calls": [
+    {
+     "tool": "multiply",
+     "args": {
+      "a": 48.0,
+      "b": 24.0
+     }
+    },
+    {
+     "tool": "convert_units",
+     "args": {
+      "to_unit": "celsius",
+      "value": 63.5,
+      "from_unit": "kg"
+     }
+    }
+   ],
+   "meaning": "48 multiplied by 24 and how many celsius is 63.5 kg",
+   "missing": [],
+   "implied": []
+  },
+  {
+   "id": "batch-0013-025",
+   "tools": [
+    {
+     "name": "security_camera_power",
+     "description": "Turn the security camera on or off",
+     "args": [
+      {
+       "name": "turn_on",
+       "type": "bool"
+      }
+     ]
+    },
+    {
+     "name": "set_kettle_power",
+     "description": "Turn the kettle on or off",
+     "args": [
+      {
+       "name": "enabled",
+       "type": "bool"
+      }
+     ]
+    }
+   ],
+   "intent": "call",
+   "calls": [
+    {
+     "tool": "security_camera_power",
+     "args": {
+      "turn_on": true
+     }
+    }
+   ],
+   "meaning": "turn on the security camera",
+   "missing": [],
+   "implied": []
+  },
+  {
+   "id": "batch-0013-026",
+   "tools": [
+    {
+     "name": "log_water",
+     "description": "Log how much water the user drank",
+     "args": [
+      {
+       "name": "glasses",
+       "type": "int",
+       "min": 1,
+       "max": 10
+      }
+     ]
+    },
+    {
+     "name": "log_weight",
+     "description": "Record the user's body weight",
+     "args": [
+      {
+       "name": "kg",
+       "type": "float",
+       "min": 30,
+       "max": 200,
+       "description": "kilograms"
+      }
+     ]
+    }
+   ],
+   "intent": "ask",
+   "calls": [
+    {
+     "tool": "log_weight",
+     "args": {
+      "kg": "?"
+     }
+    }
+   ],
+   "meaning": "log my weight",
+   "missing": [
+    "kg"
+   ],
+   "implied": []
+  },
+  {
+   "id": "batch-0013-027",
+   "tools": [
+    {
+     "name": "search_flights",
+     "description": "Find flights between two cities",
+     "args": [
+      {
+       "name": "origin",
+       "type": "str"
+      },
+      {
+       "name": "destination",
+       "type": "str"
+      },
+      {
+       "name": "date",
+       "type": "str",
+       "description": "as the user said it"
+      }
+     ]
+    }
+   ],
+   "intent": "ask",
+   "calls": [
+    {
+     "tool": "search_flights",
+     "args": {
+      "destination": "New York",
+      "date": "tomorrow",
+      "origin": "?"
+     }
+    }
+   ],
+   "meaning": "flights to New York tomorrow",
+   "missing": [
+    "origin"
+   ],
+   "implied": []
+  },
+  {
+   "id": "batch-0013-028",
+   "tools": [
+    {
+     "name": "get_flight_status",
+     "description": "Check whether a flight is on time",
+     "args": [
+      {
+       "name": "flight",
+       "type": "str",
+       "description": "flight number"
+      }
+     ]
+    },
+    {
+     "name": "book_hotel",
+     "description": "Book a hotel room",
+     "args": [
+      {
+       "name": "city",
+       "type": "str"
+      },
+      {
+       "name": "nights",
+       "type": "int",
+       "min": 1,
+       "max": 30
+      },
+      {
+       "name": "guests",
+       "type": "int",
+       "required": false,
+       "min": 1,
+       "max": 10
+      }
+     ]
+    },
+    {
+     "name": "set_thermostat",
+     "description": "Set the target temperature of the heating or cooling",
+     "args": [
+      {
+       "name": "temperature",
+       "type": "float",
+       "min": 10,
+       "max": 30,
+       "description": "degrees Celsius"
+      },
+      {
+       "name": "mode",
+       "type": "enum",
+       "required": false,
+       "options": [
+        "heat",
+        "cool",
+        "auto"
+       ]
+      }
+     ]
+    },
+    {
+     "name": "change_dehumidifier_humidity",
+     "description": "Set the dehumidifier humidity",
+     "args": [
+      {
+       "name": "humidity",
+       "type": "int",
+       "min": 30,
+       "max": 70,
+       "description": "percent"
+      },
+      {
+       "name": "location",
+       "type": "enum",
+       "required": false,
+       "options": [
+        "bedroom",
+        "bathroom",
+        "kitchen",
+        "garage"
+       ],
+       "description": "all rooms if not given"
+      }
+     ]
+    }
+   ],
+   "intent": "ask",
+   "calls": [
+    {
+     "tool": "book_hotel",
+     "args": {
+      "city": "?",
+      "nights": 25
+     }
+    }
+   ],
+   "meaning": "find me a hotel for 25 nights",
+   "missing": [
+    "city"
+   ],
+   "implied": []
+  },
+  {
+   "id": "batch-0013-029",
+   "tools": [
+    {
+     "name": "book_hotel",
+     "description": "Book a hotel room",
+     "args": [
+      {
+       "name": "city",
+       "type": "str"
+      },
+      {
+       "name": "nights",
+       "type": "int",
+       "min": 1,
+       "max": 30
+      },
+      {
+       "name": "guests",
+       "type": "int",
+       "required": false,
+       "min": 1,
+       "max": 10
+      }
+     ]
+    }
+   ],
+   "intent": "ask",
+   "calls": [
+    {
+     "tool": "book_hotel",
+     "args": {
+      "city": "?",
+      "nights": 3
+     }
+    }
+   ],
+   "meaning": "find me a hotel for 3 nights",
+   "missing": [
+    "city"
+   ],
+   "implied": []
+  },
+  {
+   "id": "batch-0013-030",
+   "tools": [
+    {
+     "name": "toggle_water_heater",
+     "description": "Switch the water heater on or off",
+     "args": [
+      {
+       "name": "turn_on",
+       "type": "bool"
+      }
+     ]
+    },
+    {
+     "name": "change_bread_maker_mode",
+     "description": "Set the bread maker mode",
+     "args": [
+      {
+       "name": "mode",
+       "type": "enum",
+       "options": [
+        "basic",
+        "whole wheat",
+        "quick"
+       ]
+      }
+     ]
+    },
+    {
+     "name": "humidifier_power",
+     "description": "Switch the humidifier on or off",
+     "args": [
+      {
+       "name": "on",
+       "type": "bool"
+      },
+      {
+       "name": "location",
+       "type": "enum",
+       "options": [
+        "basement",
+        "bedroom",
+        "bathroom",
+        "kitchen",
+        "living room"
+       ]
+      }
+     ]
+    }
+   ],
+   "intent": "unsupported",
+   "calls": [],
+   "meaning": "use auto on the humidifier",
+   "missing": [],
+   "implied": []
+  },
+  {
+   "id": "batch-0013-031",
+   "tools": [
+    {
+     "name": "get_air_quality",
+     "description": "Check the air quality",
+     "args": [
+      {
+       "name": "city",
+       "type": "str"
+      }
+     ]
+    },
+    {
+     "name": "convert_units",
+     "description": "Convert a value between units",
+     "args": [
+      {
+       "name": "value",
+       "type": "float"
+      },
+      {
+       "name": "from_unit",
+       "type": "enum",
+       "options": [
+        "km",
+        "miles",
+        "kg",
+        "pounds",
+        "celsius",
+        "fahrenheit"
+       ]
+      },
+      {
+       "name": "to_unit",
+       "type": "enum",
+       "options": [
+        "km",
+        "miles",
+        "kg",
+        "pounds",
+        "celsius",
+        "fahrenheit"
+       ]
+      }
+     ]
+    }
+   ],
+   "intent": "call",
+   "calls": [
+    {
+     "tool": "convert_units",
+     "args": {
+      "value": 11.0,
+      "from_unit": "km",
+      "to_unit": "celsius"
+     }
+    }
+   ],
+   "meaning": "11 km in celsius",
+   "missing": [],
+   "implied": []
+  },
+  {
+   "id": "batch-0013-032",
+   "tools": [
+    {
+     "name": "find_goal",
+     "description": "Search goals",
+     "args": [
+      {
+       "name": "text",
+       "type": "str"
+      }
+     ]
+    },
+    {
+     "name": "remove_recipe",
+     "description": "Delete a recipe",
+     "args": [
+      {
+       "name": "name",
+       "type": "str"
+      }
+     ]
+    },
+    {
+     "name": "printer_mode",
+     "description": "Choose a program for the printer",
+     "args": [
+      {
+       "name": "mode",
+       "type": "enum",
+       "options": [
+        "color",
+        "black and white",
+        "draft"
+       ]
+      }
+     ]
+    },
+    {
+     "name": "find_project",
+     "description": "Search projects",
+     "args": [
+      {
+       "name": "text",
+       "type": "str"
+      }
+     ]
+    }
+   ],
+   "intent": "unsupported",
+   "calls": [],
+   "meaning": "add a new invoice named web design work",
+   "missing": [],
+   "implied": []
+  },
+  {
+   "id": "batch-0013-033",
+   "tools": [
+    {
+     "name": "multiply",
+     "description": "Multiply two numbers",
+     "args": [
+      {
+       "name": "a",
+       "type": "float"
+      },
+      {
+       "name": "b",
+       "type": "float"
+      }
+     ]
+    }
+   ],
+   "intent": "call",
+   "calls": [
+    {
+     "tool": "multiply",
+     "args": {
+      "a": 75.5,
+      "b": 35.5
+     }
+    }
+   ],
+   "meaning": "what's 75.5 times 35.5",
+   "missing": [],
+   "implied": []
+  },
+  {
+   "id": "batch-0013-034",
+   "tools": [
+    {
+     "name": "find_nearby",
+     "description": "Find places of a kind near the user",
+     "args": [
+      {
+       "name": "place",
+       "type": "str"
+      },
+      {
+       "name": "open_now",
+       "type": "bool",
+       "required": false
+      }
+     ]
+    }
+   ],
+   "intent": "call",
+   "calls": [
+    {
+     "tool": "find_nearby",
+     "args": {
+      "place": "parking garage"
+     }
+    }
+   ],
+   "meaning": "where's the closest parking garage",
+   "missing": [],
+   "implied": []
+  },
+  {
+   "id": "batch-0013-035",
+   "tools": [
+    {
+     "name": "add",
+     "description": "Add two numbers",
+     "args": [
+      {
+       "name": "a",
+       "type": "float"
+      },
+      {
+       "name": "b",
+       "type": "float"
+      }
+     ]
+    },
+    {
+     "name": "get_time",
+     "description": "Tell the current time in a city",
+     "args": [
+      {
+       "name": "city",
+       "type": "str",
+       "required": false
+      }
+     ]
+    },
+    {
+     "name": "update_goal_status",
+     "description": "Change the status of a goal",
+     "args": [
+      {
+       "name": "name",
+       "type": "str"
+      },
+      {
+       "name": "status",
+       "type": "enum",
+       "options": [
+        "active",
+        "achieved",
+        "abandoned"
+       ]
+      }
+     ]
+    }
+   ],
+   "intent": "none",
+   "calls": [],
+   "meaning": null,
+   "missing": [],
+   "implied": []
+  },
+  {
+   "id": "batch-0013-036",
+   "tools": [
+    {
+     "name": "search_goals",
+     "description": "Find goals matching a text",
+     "args": [
+      {
+       "name": "query",
+       "type": "str"
+      }
+     ]
+    },
+    {
+     "name": "search_plants",
+     "description": "Search plants",
+     "args": [
+      {
+       "name": "query",
+       "type": "str"
+      }
+     ]
+    }
+   ],
+   "intent": "call",
+   "calls": [
+    {
+     "tool": "search_goals",
+     "args": {
+      "query": "read twenty books"
+     }
+    }
+   ],
+   "meaning": "search my goals for read twenty books",
+   "missing": [],
+   "implied": []
+  },
+  {
+   "id": "batch-0013-037",
+   "tools": [
+    {
+     "name": "lookup_sunrise_time",
+     "description": "Get the sunrise time",
+     "args": [
+      {
+       "name": "city",
+       "type": "str"
+      }
+     ]
+    },
+    {
+     "name": "book_hotel",
+     "description": "Book a hotel room",
+     "args": [
+      {
+       "name": "city",
+       "type": "str"
+      },
+      {
+       "name": "nights",
+       "type": "int",
+       "min": 1,
+       "max": 30
+      },
+      {
+       "name": "guests",
+       "type": "int",
+       "required": false,
+       "min": 1,
+       "max": 10
+      }
+     ]
+    },
+    {
+     "name": "get_flight_status",
+     "description": "Check whether a flight is on time",
+     "args": [
+      {
+       "name": "flight",
+       "type": "str",
+       "description": "flight number"
+      }
+     ]
+    },
+    {
+     "name": "change_fan_speed",
+     "description": "Set the fan speed",
+     "args": [
+      {
+       "name": "speed",
+       "type": "int",
+       "min": 1,
+       "max": 5
+      },
+      {
+       "name": "location",
+       "type": "enum",
+       "options": [
+        "living room",
+        "bathroom",
+        "kitchen"
+       ]
+      }
+     ]
+    }
+   ],
+   "intent": "call",
+   "calls": [
+    {
+     "tool": "get_flight_status",
+     "args": {
+      "flight": "UA 901"
+     }
+    }
+   ],
+   "meaning": "status of flight UA 901",
+   "missing": [],
+   "implied": []
+  },
+  {
+   "id": "batch-0013-038",
+   "tools": [
+    {
+     "name": "pause_media",
+     "description": "Pause whatever is playing",
+     "args": []
+    },
+    {
+     "name": "adjust_baby_monitor_sensitivity",
+     "description": "Set the baby monitor sensitivity",
+     "args": [
+      {
+       "name": "value",
+       "type": "int",
+       "min": 1,
+       "max": 5
+      }
+     ]
+    }
+   ],
+   "intent": "call",
+   "calls": [
+    {
+     "tool": "adjust_baby_monitor_sensitivity",
+     "args": {
+      "value": 1
+     }
+    },
+    {
+     "tool": "pause_media",
+     "args": {}
+    }
+   ],
+   "meaning": "baby monitor sensitivity 1 and stop playing",
+   "missing": [],
+   "implied": []
+  },
+  {
+   "id": "batch-0013-039",
+   "tools": [
+    {
+     "name": "create_issue",
+     "description": "Add an issue",
+     "args": [
+      {
+       "name": "name",
+       "type": "str"
+      },
+      {
+       "name": "severity",
+       "type": "enum",
+       "required": false,
+       "options": [
+        "minor",
+        "major",
+        "critical"
+       ]
+      }
+     ]
+    },
+    {
+     "name": "get_step_count",
+     "description": "Tell how many steps the user walked",
+     "args": [
+      {
+       "name": "day",
+       "type": "enum",
+       "required": false,
+       "options": [
+        "today",
+        "yesterday",
+        "this week"
+       ]
+      }
+     ]
+    },
+    {
+     "name": "remove_plant",
+     "description": "Delete a plant",
+     "args": [
+      {
+       "name": "title",
+       "type": "str"
+      }
+     ]
+    },
+    {
+     "name": "book_hotel",
+     "description": "Book a hotel room",
+     "args": [
+      {
+       "name": "city",
+       "type": "str"
+      },
+      {
+       "name": "nights",
+       "type": "int",
+       "min": 1,
+       "max": 30
+      },
+      {
+       "name": "guests",
+       "type": "int",
+       "required": false,
+       "min": 1,
+       "max": 10
+      }
+     ]
+    }
+   ],
+   "intent": "none",
+   "calls": [],
+   "meaning": null,
+   "missing": [],
+   "implied": []
+  },
+  {
+   "id": "batch-0013-040",
+   "tools": [
+    {
+     "name": "search_flights",
+     "description": "Find flights between two cities",
+     "args": [
+      {
+       "name": "origin",
+       "type": "str"
+      },
+      {
+       "name": "destination",
+       "type": "str"
+      },
+      {
+       "name": "date",
+       "type": "str",
+       "description": "as the user said it"
+      }
+     ]
+    }
+   ],
+   "intent": "ask",
+   "calls": [
+    {
+     "tool": "search_flights",
+     "args": {
+      "destination": "Amsterdam",
+      "date": "on Friday",
+      "origin": "?"
+     }
+    }
+   ],
+   "meaning": "flights to Amsterdam on Friday",
+   "missing": [
+    "origin"
+   ],
+   "implied": []
+  },
+  {
+   "id": "batch-0013-041",
+   "tools": [
+    {
+     "name": "convert_units",
+     "description": "Convert a value between units",
+     "args": [
+      {
+       "name": "value",
+       "type": "float"
+      },
+      {
+       "name": "from_unit",
+       "type": "enum",
+       "options": [
+        "km",
+        "miles",
+        "kg",
+        "pounds",
+        "celsius",
+        "fahrenheit"
+       ]
+      },
+      {
+       "name": "to_unit",
+       "type": "enum",
+       "options": [
+        "km",
+        "miles",
+        "kg",
+        "pounds",
+        "celsius",
+        "fahrenheit"
+       ]
+      }
+     ]
+    }
+   ],
+   "intent": "none",
+   "calls": [],
+   "meaning": null,
+   "missing": [],
+   "implied": []
+  },
+  {
+   "id": "batch-0013-042",
+   "tools": [
+    {
+     "name": "add_photo_album",
+     "description": "Add a photo album",
+     "args": [
+      {
+       "name": "title",
+       "type": "str"
+      }
+     ]
+    }
+   ],
+   "intent": "none",
+   "calls": [],
+   "meaning": null,
+   "missing": [],
+   "implied": []
+  },
+  {
+   "id": "batch-0013-043",
+   "tools": [
+    {
+     "name": "update_issue_status",
+     "description": "Change the status of a issue",
+     "args": [
+      {
+       "name": "title",
+       "type": "str"
+      },
+      {
+       "name": "status",
+       "type": "enum",
+       "options": [
+        "open",
+        "closed"
+       ]
+      }
+     ]
+    },
+    {
+     "name": "search_flights",
+     "description": "Find flights between two cities",
+     "args": [
+      {
+       "name": "origin",
+       "type": "str"
+      },
+      {
+       "name": "destination",
+       "type": "str"
+      },
+      {
+       "name": "date",
+       "type": "str",
+       "description": "as the user said it"
+      }
+     ]
+    }
+   ],
+   "intent": "unsupported",
+   "calls": [],
+   "meaning": "status of flight UA 901",
+   "missing": [],
+   "implied": []
+  },
+  {
+   "id": "batch-0013-044",
+   "tools": [
+    {
+     "name": "slow_cooker_mode",
+     "description": "Set the slow cooker mode",
+     "args": [
+      {
+       "name": "program",
+       "type": "enum",
+       "options": [
+        "low",
+        "high",
+        "keep warm"
+       ]
+      }
+     ]
+    },
+    {
+     "name": "select_oven_program",
+     "description": "Set the oven mode",
+     "args": [
+      {
+       "name": "program",
+       "type": "enum",
+       "options": [
+        "bake",
+        "grill",
+        "fan"
+       ]
+      }
+     ]
+    }
+   ],
+   "intent": "ask",
+   "calls": [
+    {
+     "tool": "select_oven_program",
+     "args": {
+      "program": "?"
+     }
+    }
+   ],
+   "meaning": "change the oven mode",
+   "missing": [
+    "program"
+   ],
+   "implied": []
+  },
+  {
+   "id": "batch-0013-045",
+   "tools": [
+    {
+     "name": "set_humidifier_power",
+     "description": "Switch the humidifier on or off",
+     "args": [
+      {
+       "name": "power",
+       "type": "bool"
+      },
+      {
+       "name": "location",
+       "type": "enum",
+       "required": false,
+       "options": [
+        "garage",
+        "living room",
+        "basement"
+       ]
+      }
+     ]
+    },
+    {
+     "name": "get_flight_status",
+     "description": "Check whether a flight is on time",
+     "args": [
+      {
+       "name": "flight",
+       "type": "str",
+       "description": "flight number"
+      }
+     ]
+    },
+    {
+     "name": "lawn_mower_power",
+     "description": "Turn the lawn mower on or off",
+     "args": [
+      {
+       "name": "turn_on",
+       "type": "bool"
+      }
+     ]
+    }
+   ],
+   "intent": "none",
+   "calls": [],
+   "meaning": null,
+   "missing": [],
+   "implied": []
+  },
+  {
+   "id": "batch-0013-046",
+   "tools": [
+    {
+     "name": "change_bread_maker_mode",
+     "description": "Set the bread maker mode",
+     "args": [
+      {
+       "name": "mode",
+       "type": "enum",
+       "options": [
+        "basic",
+        "whole wheat",
+        "quick"
+       ]
+      }
+     ]
+    },
+    {
+     "name": "convert_units",
+     "description": "Convert a value between units",
+     "args": [
+      {
+       "name": "value",
+       "type": "float"
+      },
+      {
+       "name": "from_unit",
+       "type": "enum",
+       "options": [
+        "km",
+        "miles",
+        "kg",
+        "pounds",
+        "celsius",
+        "fahrenheit"
+       ]
+      },
+      {
+       "name": "to_unit",
+       "type": "enum",
+       "options": [
+        "km",
+        "miles",
+        "kg",
+        "pounds",
+        "celsius",
+        "fahrenheit"
+       ]
+      }
+     ]
+    },
+    {
+     "name": "set_oven_temperature",
+     "description": "Change the temperature of the oven",
+     "args": [
+      {
+       "name": "value",
+       "type": "int",
+       "min": 50,
+       "max": 250,
+       "description": "degrees"
+      }
+     ]
+    },
+    {
+     "name": "set_bread_maker_power",
+     "description": "Switch the bread maker on or off",
+     "args": [
+      {
+       "name": "enabled",
+       "type": "bool"
+      }
+     ]
+    },
+    {
+     "name": "select_slow_cooker_program",
+     "description": "Choose a program for the slow cooker",
+     "args": [
+      {
+       "name": "program",
+       "type": "enum",
+       "options": [
+        "low",
+        "high",
+        "keep warm"
+       ]
+      }
+     ]
+    }
+   ],
+   "intent": "none",
+   "calls": [],
+   "meaning": null,
+   "missing": [],
+   "implied": []
+  },
+  {
+   "id": "batch-0013-047",
+   "tools": [
+    {
+     "name": "convert_currency",
+     "description": "Convert an amount of money to another currency",
+     "args": [
+      {
+       "name": "amount",
+       "type": "float",
+       "min": 0
+      },
+      {
+       "name": "from_currency",
+       "type": "enum",
+       "options": [
+        "USD",
+        "EUR",
+        "GBP",
+        "JPY"
+       ]
+      },
+      {
+       "name": "to_currency",
+       "type": "enum",
+       "options": [
+        "USD",
+        "EUR",
+        "GBP",
+        "JPY"
+       ]
+      }
+     ]
+    },
+    {
+     "name": "set_dehumidifier_humidity",
+     "description": "Set the dehumidifier humidity",
+     "args": [
+      {
+       "name": "value",
+       "type": "int",
+       "min": 30,
+       "max": 70,
+       "description": "percent"
+      },
+      {
+       "name": "room",
+       "type": "enum",
+       "required": false,
+       "options": [
+        "office",
+        "kitchen",
+        "bedroom",
+        "garage"
+       ]
+      }
+     ]
+    }
+   ],
+   "intent": "call",
+   "calls": [
+    {
+     "tool": "convert_currency",
+     "args": {
+      "amount": 66.5,
+      "from_currency": "EUR",
+      "to_currency": "EUR"
+     }
+    }
+   ],
+   "meaning": "convert 66.5 EUR to EUR",
+   "missing": [],
+   "implied": []
+  },
+  {
+   "id": "batch-0013-048",
+   "tools": [
+    {
+     "name": "update_issue_status",
+     "description": "Change the status of a issue",
+     "args": [
+      {
+       "name": "title",
+       "type": "str"
+      },
+      {
+       "name": "status",
+       "type": "enum",
+       "options": [
+        "open",
+        "closed"
+       ]
+      }
+     ]
+    },
+    {
+     "name": "convert_units",
+     "description": "Convert a value between units",
+     "args": [
+      {
+       "name": "value",
+       "type": "float"
+      },
+      {
+       "name": "from_unit",
+       "type": "enum",
+       "options": [
+        "km",
+        "miles",
+        "kg",
+        "pounds",
+        "celsius",
+        "fahrenheit"
+       ]
+      },
+      {
+       "name": "to_unit",
+       "type": "enum",
+       "options": [
+        "km",
+        "miles",
+        "kg",
+        "pounds",
+        "celsius",
+        "fahrenheit"
+       ]
+      }
+     ]
+    },
+    {
+     "name": "check_pollen_count",
+     "description": "Check the pollen count",
+     "args": [
+      {
+       "name": "city",
+       "type": "str"
+      }
+     ]
+    },
+    {
+     "name": "security_camera_power",
+     "description": "Turn the security camera on or off",
+     "args": [
+      {
+       "name": "turn_on",
+       "type": "bool"
+      }
+     ]
+    }
+   ],
+   "intent": "none",
+   "calls": [],
+   "meaning": null,
+   "missing": [],
+   "implied": []
+  },
+  {
+   "id": "batch-0013-049",
+   "tools": [
+    {
+     "name": "find_bookmark",
+     "description": "Search bookmarks",
+     "args": [
+      {
+       "name": "text",
+       "type": "str"
+      }
+     ]
+    },
+    {
+     "name": "search_projects",
+     "description": "Find projects matching a text",
+     "args": [
+      {
+       "name": "query",
+       "type": "str"
+      }
+     ]
+    },
+    {
+     "name": "heated_floor_power",
+     "description": "Turn the heated floor on or off",
+     "args": [
+      {
+       "name": "enabled",
+       "type": "bool"
+      },
+      {
+       "name": "location",
+       "type": "enum",
+       "options": [
+        "bathroom",
+        "office",
+        "bedroom",
+        "living room",
+        "kitchen"
+       ]
+      }
+     ]
+    },
+    {
+     "name": "search_issues",
+     "description": "Search issues",
+     "args": [
+      {
+       "name": "query",
+       "type": "str"
+      }
+     ]
+    }
+   ],
+   "intent": "unsupported",
+   "calls": [],
+   "meaning": "I need a flight from Rome to Berlin on June 3rd",
+   "missing": [],
+   "implied": []
+  }
+ ]
+}
