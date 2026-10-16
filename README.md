@@ -83,6 +83,13 @@ uv run colibri pretrain                      # -> artifacts/runs/pretrain-small/
 uv run colibri pretrain --resume             # continue from last.pt after an interruption
 ```
 
-Each eval logs the val loss and fill-in-the-blank samples (`The capital of France is [Paris].`). Fine-tuning starts from `model.pt` with `load_pretrained` (M5).
+Each eval logs the val loss and fill-in-the-blank samples (`The capital of France is [Paris].`). `val_content` is the loss on the words inside the holes only (sentinels and `<eos>` left out), the number to watch. Fine-tuning starts from `model.pt` with `load_pretrained` (M5).
+
+```bash
+uv run colibri fill "Paris is the capital of <x0>."     # prompt the pretrained model
+uv run colibri compare artifacts/runs/ab-*              # val metrics of several runs side by side
+```
+
+A/B runs use the full run's schedule and stop early (`--stop-after`), so each arm is the start of a real run and the winner continues with `--resume`.
 
 Training runs on Apple Silicon (MPS). Inference targets a Raspberry Pi 5 running PyTorch on CPU. Set `COLIBRI_DEVICE=cpu` to force a device.

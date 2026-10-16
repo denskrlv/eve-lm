@@ -9,7 +9,7 @@ from colibri.data.pretrain import SpanCorruptionDataset, raw_length
 from colibri.data.render import IGNORE, collate_pretrain
 from colibri.model.colibri import Colibri
 from colibri.runtime import seed_everything
-from colibri.tokenizer.bpe import DEC, EOS, N_SENTINELS, SENTINEL0, BPETokenizer
+from colibri.tokenizer.bpe import BYTE0, DEC, EOS, N_SENTINELS, SENTINEL0, BPETokenizer
 from colibri.train.loop import TrainConfig, train
 
 SAMPLES = (
@@ -30,6 +30,47 @@ def span_loss(model: Colibri, batch: dict[str, torch.Tensor]) -> dict[str, torch
     return {"lm": F.cross_entropy(logits, batch["dec_labels"].flatten(), ignore_index=IGNORE)}
 
 
+def _is_sentinel(token: int) -> bool:
+    return SENTINEL0 <= token < SENTINEL0 + N_SENTINELS
+
+
+def prompt_ids(tokenizer: BPETokenizer, text: str) -> list[int]:
+    """``text`` with ``<x0>``… holes -> encoder ids shaped like a pretraining input.
+
+    In training a hole replaces whole tokens, and a word token carries its leading space
+    (`` Paris``), so a sentinel never follows a lone space. Typed text has one
+    (``"is <x0>."`` -> `` is``, `` ``, ``<x0>``), so that space token is dropped.
+    """
+    ids = tokenizer.encode(text, specials=True)
+    return [
+        t
+        for i, t in enumerate(ids)
+        if not (i + 1 < len(ids) and _is_sentinel(ids[i + 1]) and tokenizer.decode([t]).isspace())
+    ]
+
+
+def span_metrics(model: Colibri, batch: dict[str, torch.Tensor]) -> dict[str, torch.Tensor]:
+    """Box 6, the val metrics: the training loss ``lm`` plus the loss and top-1 accuracy on
+    *content* tokens only, the words inside the holes.
+
+    About a quarter of the labels are sentinels and ``<eos>``: they only mark where spans
+    start and end, and the model gets them right early (~90%). They pull ``lm`` down without
+    saying whether the model can fill a hole, so ``content`` is the number to watch.
+    """
+    out = model(batch["enc_ids"], batch["enc_mask"], batch["dec_ids"], batch["dec_mask"])
+    logits, labels = out.lm.float(), batch["dec_labels"]
+    nll = F.cross_entropy(
+        logits.flatten(0, 1), labels.flatten(), ignore_index=IGNORE, reduction="none"
+    ).view_as(labels)
+    real = labels != IGNORE
+    content = labels >= BYTE0  # every special token (sentinels, <eos>, IGNORE) is below BYTE0
+    return {
+        "lm": nll[real].mean(),
+        "content": nll[content].mean(),
+        "content_acc": (logits.argmax(-1)[content] == labels[content]).float().mean(),
+    }
+
+
 @torch.no_grad()
 def fill_in(
     model: Colibri,
@@ -48,7 +89,7 @@ def fill_in(
     was_training = model.training
     model.eval()
     device = next(model.parameters()).device
-    enc = torch.tensor([tokenizer.encode(text, specials=True)], device=device)
+    enc = torch.tensor([prompt_ids(tokenizer, text)], device=device)
     memory = model.encode(enc, torch.ones_like(enc, dtype=torch.bool))
     dec = [DEC]
     for _ in range(max_new):
@@ -63,16 +104,18 @@ def fill_in(
     spans: dict[int, list[int]] = {}
     current = None
     for token in dec[1:]:
-        if SENTINEL0 <= token < SENTINEL0 + N_SENTINELS:
+        if _is_sentinel(token):
             current = spans.setdefault(token, [])
         elif current is not None:
             current.append(token)
     out = []
     for token in enc[0].tolist():
         if token in spans:
-            out.append(marks[0] + tokenizer.decode(spans[token]) + marks[1])
-        elif SENTINEL0 <= token < SENTINEL0 + N_SENTINELS:
-            out.append(marks[0] + "?" + marks[1])  # a hole the model didn't fill
+            span = tokenizer.decode(spans[token])
+            space = " " if span.startswith(" ") else ""  # " Paris" -> " [Paris]"
+            out.append(space + marks[0] + span.removeprefix(space) + marks[1])
+        elif _is_sentinel(token):
+            out.append(" " + marks[0] + "?" + marks[1])  # a hole the model didn't fill
         else:
             out.append(tokenizer.decode([token]))
     return "".join(out)
@@ -120,6 +163,7 @@ def pretrain(
         tokenizer,
         device,
         on_eval=on_eval,
+        eval_fn=span_metrics,
         resume=resume,
         stop_after=stop_after,
     )

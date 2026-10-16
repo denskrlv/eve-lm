@@ -147,6 +147,7 @@ def train(
     tokenizer: BPETokenizer,
     device: str | torch.device,
     on_eval: Callable[[Colibri], dict] | None = None,
+    eval_fn: LossFn | None = None,
     resume: bool = False,
     stop_after: int | None = None,
 ) -> dict[str, float]:
@@ -161,6 +162,9 @@ def train(
       set ("samples", whatever ``on_eval`` returns);
     - ``last.pt``: model + optimizer + step + RNG states, written every ``save_every`` steps;
     - ``model.pt``: the final weights without the optimizer, for ``load_pretrained`` (box 7).
+
+    Evals run ``eval_fn`` (default: ``loss_fn``) on the val batches. It may return extra
+    metrics (e.g. an accuracy) that are logged with a ``val_`` prefix but never trained on.
 
     ``resume=True`` continues from ``last.pt`` exactly: the same batches, dropout masks and
     optimizer state, so the losses match an uninterrupted run. ``stop_after`` ends the run
@@ -211,12 +215,14 @@ def train(
     def run_eval() -> None:
         before = dict(last_val)
         last_val.clear()
-        last_val.update(evaluate(model, loss_fn, val_batches, device, autocast))
+        last_val.update(evaluate(model, eval_fn or loss_fn, val_batches, device, autocast))
         log({"kind": "val", "step": step, **last_val})
         parts = []
         for k, v in last_val.items():
-            change = f" ({v - before[k]:+.3f})" if k in before else ""
-            parts.append(f"{k} {progress.style(f'{v:.4f}', '1')}{change}")
+            change = ""
+            if k in before:
+                change = f" ({'+' if v >= before[k] else '-'}{_fmt(k, abs(v - before[k]))})"
+            parts.append(f"{k} {progress.style(_fmt(k, v), '1')}{change}")
         bar.write(f"{progress.style('eval', '1', '35')} step {step:,} · " + " · ".join(parts))
         if on_eval is not None:
             samples = on_eval(model)
@@ -319,6 +325,10 @@ def _resume(
     path.write_text("".join(ln + "\n" for ln in kept))
     print(f"resumed {out_dir} at step {step}")
     return step
+
+
+def _fmt(name: str, value: float) -> str:
+    return f"{value:.1%}" if name.endswith("acc") else f"{value:.4f}"
 
 
 def _hms(seconds: float) -> str:

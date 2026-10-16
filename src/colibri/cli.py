@@ -128,7 +128,7 @@ def pretrain(args: argparse.Namespace) -> None:
     from colibri.train.pretrain import pretrain as run
     from colibri.train.pretrain import steps_for
 
-    cfg = preset(args.preset)
+    cfg = preset(args.preset, **({} if args.dropout is None else {"dropout": args.dropout}))
     steps = args.steps or steps_for(_count(args.tokens), args.batch_size, cfg.max_encoder_len)
     train_cfg = TrainConfig(
         steps=steps,
@@ -144,8 +144,8 @@ def pretrain(args: argparse.Namespace) -> None:
     device = pick_device(args.device)
     print(
         f"{style('pretrain', '1')} {args.preset} · {cfg.approx_params() / 1e6:.1f}M params · "
-        f"{device} · {args.dtype} · {steps:,} steps × {args.batch_size} windows of "
-        f"{cfg.max_encoder_len} tokens"
+        f"{device} · {args.dtype} · lr {args.lr:g} · dropout {cfg.dropout:g} · "
+        f"{steps:,} steps × {args.batch_size} windows of {cfg.max_encoder_len} tokens"
     )
     run(
         cfg,
@@ -157,6 +157,38 @@ def pretrain(args: argparse.Namespace) -> None:
         resume=args.resume,
         stop_after=args.stop_after,
     )
+
+
+def compare(args: argparse.Namespace) -> None:
+    """Learn (M4): val metrics of several runs side by side, one row per eval step."""
+    runs = {}
+    for run in args.runs:
+        path = Path(run) / "metrics.jsonl"
+        if not path.exists():
+            raise SystemExit(f"no metrics in {run}")
+        records = [json.loads(line) for line in path.read_text().splitlines()]
+        start = next((r for r in records if r["kind"] == "start"), {})
+        vals = {r["step"]: r for r in records if r["kind"] == "val"}
+        runs[Path(run).name] = (start, vals)
+
+    width = max(12, *(len(name) for name in runs)) + 2
+    print(f"{'':<14}" + "".join(f"{name:>{width}}" for name in runs))
+    for label, get in [
+        ("lr", lambda s: s.get("train_config", {}).get("lr")),
+        ("dropout", lambda s: s.get("model_config", {}).get("dropout")),
+    ]:
+        print(f"{label:<14}" + "".join(f"{get(s)!s:>{width}}" for s, _ in runs.values()))
+    steps = sorted({step for _, vals in runs.values() for step in vals})
+    for metric in args.metric:
+        print(f"\n{metric}")
+        for step in steps:
+            cells = []
+            for _, vals in runs.values():
+                v = vals.get(step, {}).get(metric)
+                cells.append(
+                    "" if v is None else f"{v:.1%}" if metric.endswith("acc") else f"{v:.4f}"
+                )
+            print(f"  step {step:<8,}" + "".join(f"{c:>{width}}" for c in cells))
 
 
 def fill(args: argparse.Namespace) -> None:
@@ -305,12 +337,18 @@ def main(argv: list[str] | None = None) -> None:
     p.add_argument("--lr", type=float, default=1e-3)
     p.add_argument("--warmup", type=int, default=500)
     p.add_argument("--dtype", choices=["float32", "bfloat16"], default="float32")
+    p.add_argument("--dropout", type=float, default=None, help="default: the preset's (0.1)")
     p.add_argument("--seed", type=int, default=0)
     p.add_argument("--eval-every", type=int, default=500, help="also how often to save")
     p.add_argument("--log-every", type=int, default=20)
     p.add_argument("--device", default=None)
     p.add_argument("--resume", action="store_true", help="continue from <out>/last.pt")
     p.add_argument("--stop-after", type=int, default=None, help="stop early at this step")
+
+    p = commands.add_parser("compare", help="val metrics of training runs side by side (M4)")
+    p.set_defaults(run=compare)
+    p.add_argument("runs", nargs="+", help="run directories, e.g. artifacts/runs/ab-*")
+    p.add_argument("--metric", nargs="+", default=["val_content", "val_content_acc", "val_lm"])
 
     p = commands.add_parser("fill", help="fill <x0> holes with a pretrained model (M4)")
     p.set_defaults(run=fill)
