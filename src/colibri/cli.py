@@ -36,6 +36,20 @@ def info(_: argparse.Namespace) -> None:
         )
 
 
+def model(args: argparse.Namespace) -> None:
+    """Learn (M3): parameters per part and memory size, like the book's count in ch. 4.6."""
+    from colibri.config import preset
+    from colibri.model.colibri import Colibri
+
+    names = [args.preset] if args.preset else list(PRESETS)
+    counts = {name: Colibri(preset(name)).parameter_counts() for name in names}
+    print(f"{'':<12}" + "".join(f"{name:>12}" for name in names))
+    for part in counts[names[0]]:
+        print(f"{part:<12}" + "".join(f"{counts[n][part]:>12,}" for n in names))
+    # float32: 4 bytes per parameter. The LM head adds nothing: it reuses the token embeddings.
+    print(f"{'MB (fp32)':<12}" + "".join(f"{counts[n]['total'] * 4 / 2**20:>12.1f}" for n in names))
+
+
 def tokenizer_train(args: argparse.Namespace) -> None:
     from colibri.data.corpus import iter_documents, take_bytes, tokenizer_texts
     from colibri.tokenizer.bpe import BPETokenizer
@@ -170,6 +184,9 @@ def main(argv: list[str] | None = None) -> None:
     parser = argparse.ArgumentParser(prog="colibri")
     commands = parser.add_subparsers(dest="command", required=True)
     commands.add_parser("info", help="show the device and model presets").set_defaults(run=info)
+    p = commands.add_parser("model", help="parameters per part of a preset (M3)")
+    p.set_defaults(run=model)
+    p.add_argument("--preset", choices=sorted(PRESETS), default=None, help="default: all")
 
     tok = commands.add_parser("tokenizer", help="train or inspect the BPE tokenizer (M1)")
     tok_commands = tok.add_subparsers(dest="tokenizer_command", required=True)
