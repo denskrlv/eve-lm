@@ -2,7 +2,7 @@ import pytest
 import torch
 from torch import nn
 
-from colibri.model.attention import MultiHeadAttention
+from colibri.model.attention import MultiHeadAttention, apply_rope, rope_angles
 
 D, H = 32, 4
 
@@ -153,5 +153,64 @@ def test_dropout_only_while_training(use_sdpa):
 
 def test_gradients_reach_every_parameter():
     attn = make(causal=True)
+    attn(inputs(2, 7, D), key_mask=MASK).sum().backward()
+    assert all(p.grad is not None and p.grad.abs().sum() > 0 for p in attn.parameters())
+
+
+# ---- options: RoPE and QK-norm ---------------------------------------------------------------
+
+OPTIONS = {"rope": True, "qk_norm": True}
+
+
+def test_rope_scores_depend_only_on_the_offset():
+    cos, sin = rope_angles(10, 8, 10000.0, torch.device("cpu"))
+    q = apply_rope(inputs(1, 8).expand(10, 8), cos, sin)  # the same query at every position
+    k = apply_rope(inputs(1, 8, seed=2).expand(10, 8), cos, sin)
+    torch.testing.assert_close(q[3] @ k[1], q[7] @ k[5])  # offset 2 both times
+    assert not torch.allclose(q[3] @ k[1], q[3] @ k[2])  # offset 1: a different score
+    torch.testing.assert_close(q.norm(dim=-1), q[0].norm().expand(10))  # rotations keep lengths
+
+
+def test_rope_tells_identical_tokens_apart():
+    x = inputs(1, 2, D).repeat(1, 3, 1)  # A B A B A B: without positions, every A gets one output
+    assert torch.allclose(make()(x)[0, 0], make()(x)[0, 2])
+    out = make(rope=True)(x)
+    assert not torch.allclose(out[0, 0], out[0, 2])
+
+
+def test_rope_leaves_cross_attention_alone():
+    q, kv = inputs(2, 5, D), inputs(2, 7, D, seed=2)
+    torch.testing.assert_close(make(rope=True)(q, kv=kv), make()(q, kv=kv))
+
+
+def test_qk_norm_parameters():
+    attn = make(qk_norm=True)
+    assert attn.q_norm.scale.shape == attn.k_norm.scale.shape == (D // H,)
+    assert sum(p.numel() for p in attn.parameters()) == 4 * D * D + 4 * D + 2 * (D // H)
+
+
+@pytest.mark.parametrize("causal", [False, True])
+def test_options_manual_path_matches_sdpa(causal):
+    x = inputs(2, 7, D)
+    torch.testing.assert_close(*both_paths(make(causal, **OPTIONS), x, key_mask=MASK))
+    if not causal:
+        q = inputs(2, 5, D, seed=2)
+        torch.testing.assert_close(*both_paths(make(**OPTIONS), q, kv=x, key_mask=MASK))
+
+
+@pytest.mark.parametrize("use_sdpa", [False, True])
+def test_options_keep_causality_and_padding(use_sdpa):
+    attn = make(causal=True, **OPTIONS)
+    attn.use_sdpa = use_sdpa
+    x = inputs(1, 8, D)
+    changed = x.clone()
+    changed[:, 5:] = inputs(1, 3, D, seed=9)
+    torch.testing.assert_close(attn(x)[:, :5], attn(changed)[:, :5])
+    mask = torch.tensor([[True] * 5 + [False] * 3])
+    torch.testing.assert_close(attn(changed, key_mask=mask)[:, :5], attn(x[:, :5]))
+
+
+def test_options_get_gradients():
+    attn = make(causal=True, **OPTIONS)
     attn(inputs(2, 7, D), key_mask=MASK).sum().backward()
     assert all(p.grad is not None and p.grad.abs().sum() > 0 for p in attn.parameters())

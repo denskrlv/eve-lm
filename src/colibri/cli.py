@@ -128,7 +128,10 @@ def pretrain(args: argparse.Namespace) -> None:
     from colibri.train.pretrain import pretrain as run
     from colibri.train.pretrain import steps_for
 
-    cfg = preset(args.preset, **({} if args.dropout is None else {"dropout": args.dropout}))
+    overrides = {"rope": args.rope, "qk_norm": args.qk_norm}
+    if args.dropout is not None:
+        overrides["dropout"] = args.dropout
+    cfg = preset(args.preset, **overrides)
     steps = args.steps or steps_for(_count(args.tokens), args.batch_size, cfg.max_encoder_len)
     train_cfg = TrainConfig(
         steps=steps,
@@ -145,7 +148,8 @@ def pretrain(args: argparse.Namespace) -> None:
     print(
         f"{style('pretrain', '1')} {args.preset} · {cfg.approx_params() / 1e6:.1f}M params · "
         f"{device} · {args.dtype} · lr {args.lr:g} · dropout {cfg.dropout:g} · "
-        f"{steps:,} steps × {args.batch_size} windows of {cfg.max_encoder_len} tokens"
+        + "".join(f"{name} · " for name in ("rope", "qk_norm") if getattr(cfg, name))
+        + f"{steps:,} steps × {args.batch_size} windows of {cfg.max_encoder_len} tokens"
         + (f" · stopping at step {args.stop_after:,}" if args.stop_after else "")
     )
     run(
@@ -177,6 +181,8 @@ def compare(args: argparse.Namespace) -> None:
     for label, get in [
         ("lr", lambda s: s.get("train_config", {}).get("lr")),
         ("dropout", lambda s: s.get("model_config", {}).get("dropout")),
+        ("rope", lambda s: s.get("model_config", {}).get("rope", False)),
+        ("qk_norm", lambda s: s.get("model_config", {}).get("qk_norm", False)),
     ]:
         print(f"{label:<14}" + "".join(f"{get(s)!s:>{width}}" for s, _ in runs.values()))
     steps = sorted({step for _, vals in runs.values() for step in vals})
@@ -339,6 +345,8 @@ def main(argv: list[str] | None = None) -> None:
     p.add_argument("--warmup", type=int, default=500)
     p.add_argument("--dtype", choices=["float32", "bfloat16"], default="float32")
     p.add_argument("--dropout", type=float, default=None, help="default: the preset's (0.1)")
+    p.add_argument("--rope", action="store_true", help="rotary positions, no position tables")
+    p.add_argument("--qk-norm", action="store_true", help="RMS-normalize queries and keys")
     p.add_argument("--seed", type=int, default=0)
     p.add_argument("--eval-every", type=int, default=500, help="also how often to save")
     p.add_argument("--log-every", type=int, default=20)

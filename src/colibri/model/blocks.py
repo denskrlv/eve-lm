@@ -51,6 +51,20 @@ class FeedForward(nn.Module):
         return self.layers(x)
 
 
+def attention(cfg: ModelConfig, causal: bool = False, rope: bool = False) -> MultiHeadAttention:
+    """A ``MultiHeadAttention`` with the config's dropout and QK-norm; RoPE only if ``rope``
+    and the config turns it on."""
+    return MultiHeadAttention(
+        cfg.d_model,
+        cfg.n_heads,
+        causal=causal,
+        dropout=cfg.dropout,
+        rope=rope and cfg.rope,
+        rope_base=cfg.rope_base,
+        qk_norm=cfg.qk_norm,
+    )
+
+
 class EncoderBlock(nn.Module):
     """The book's `TransformerBlock` (ch. 4.5) with the causal mask off: every token sees every
     other token, before and after it.
@@ -63,7 +77,7 @@ class EncoderBlock(nn.Module):
     def __init__(self, cfg: ModelConfig):
         super().__init__()
         self.norm1 = LayerNorm(cfg.d_model)
-        self.attn = MultiHeadAttention(cfg.d_model, cfg.n_heads, causal=False, dropout=cfg.dropout)
+        self.attn = attention(cfg, rope=True)
         self.norm2 = LayerNorm(cfg.d_model)
         self.ff = FeedForward(cfg)
         self.drop = nn.Dropout(cfg.dropout)  # the book's drop_shortcut
@@ -82,16 +96,17 @@ class DecoderBlock(nn.Module):
     encoder, so it has no such sublayer; the original Transformer (Vaswani et al.) does.
 
     ``causal=True`` is the value decoder: token i sees tokens 0..i of its own sequence.
-    ``causal=False`` is the question block: the learned queries all see each other.
+    ``causal=False`` is the question block: the learned queries all see each other. Its
+    queries have no order, so it never uses RoPE; cross-attention never does either.
     """
 
     def __init__(self, cfg: ModelConfig, causal: bool = True):
         super().__init__()
-        d, h, p = cfg.d_model, cfg.n_heads, cfg.dropout
+        d, p = cfg.d_model, cfg.dropout
         self.norm1 = LayerNorm(d)
-        self.self_attn = MultiHeadAttention(d, h, causal=causal, dropout=p)
+        self.self_attn = attention(cfg, causal=causal, rope=causal)
         self.norm2 = LayerNorm(d)
-        self.cross_attn = MultiHeadAttention(d, h, causal=False, dropout=p)
+        self.cross_attn = attention(cfg)
         self.norm3 = LayerNorm(d)
         self.ff = FeedForward(cfg)
         self.drop = nn.Dropout(p)

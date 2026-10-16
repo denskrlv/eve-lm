@@ -98,9 +98,15 @@ def test_pretraining_needs_no_tools(batch):
     assert out.questions is None and out.lm.shape[-1] == CFG.vocab_size
 
 
-@pytest.mark.parametrize("name", ["tiny", "small", "base"])
-def test_parameter_count_matches_config(name):
-    cfg = preset(name)
+OPTIONS = {"rope": True, "qk_norm": True}
+
+
+@pytest.mark.parametrize(
+    "name, overrides",
+    [("tiny", {}), ("small", {}), ("base", {}), ("tiny", OPTIONS), ("small", OPTIONS)],
+)
+def test_parameter_count_matches_config(name, overrides):
+    cfg = preset(name, **overrides)
     counts = Colibri(cfg).parameter_counts()
     assert counts["total"] == cfg.approx_params()
     assert counts["total"] == sum(v for k, v in counts.items() if k != "total")
@@ -146,16 +152,18 @@ def test_encoder_padding_changes_nothing(library, tokenizer):
     torch.testing.assert_close(a.lm, b.lm)
 
 
-def test_decoder_is_causal(batch):
-    model = make()
+@pytest.mark.parametrize("overrides", [{}, OPTIONS])
+def test_decoder_is_causal(batch, overrides):
+    model = make(preset("tiny", **overrides))
     out = forward(model, batch).lm
     changed = batch | {"dec_ids": batch["dec_ids"].clone()}
     changed["dec_ids"][:, 6:] = 7
     torch.testing.assert_close(forward(model, changed).lm[:, :6], out[:, :6])
 
 
-def test_sdpa_gives_the_same_outputs(batch):
-    model = make()
+@pytest.mark.parametrize("overrides", [{}, OPTIONS])
+def test_sdpa_gives_the_same_outputs(batch, overrides):
+    model = make(preset("tiny", **overrides))
     manual = forward(model, batch)
     model.set_sdpa(True)
     fast = forward(model, batch)
@@ -170,8 +178,9 @@ def test_initial_logits_are_small(batch):
     assert out.questions.intent.abs().max() < 1.0
 
 
-def test_gradients_reach_every_parameter(batch):
-    model = make().train()
+@pytest.mark.parametrize("overrides", [{}, OPTIONS])
+def test_gradients_reach_every_parameter(batch, overrides):
+    model = make(preset("tiny", **overrides)).train()
     sum(task_losses(forward(model, batch), batch).values()).backward()
     missing = [n for n, p in model.named_parameters() if p.grad is None or not p.grad.any()]
     assert not missing
