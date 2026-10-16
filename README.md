@@ -31,6 +31,7 @@ The build follows the roadmap in Sebastian Raschka's *Build a Large Language Mod
 ```bash
 uv sync
 uv run colibri info
+uv run colibri model   # parameters per part of each preset (M3)
 uv run pytest
 ```
 
