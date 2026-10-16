@@ -47,7 +47,7 @@ def test_encoder_input_and_markers(library, tokenizer):
 def test_labels_for_a_call(library, tokenizer):
     r = render(example(library), tokenizer, CFG)
     assert INTENTS[r.intent] == "call"
-    assert r.slots == [0, STOP, STOP, STOP, STOP]
+    assert r.slots == [0] + [STOP] * (CFG.n_slots - 1)
     assert r.dec_ids[0] == DEC and len(r.dec_ids) == len(r.dec_labels)
     full = tokenizer.decode(r.dec_ids + [EOS])
     assert full == (
@@ -73,7 +73,7 @@ def test_shuffled_tools_keep_targets_consistent(library, tokenizer):
         for call, slot in zip(calls, r.slots, strict=False):
             assert r.tool_names[slot] == call.tool
             assert tokenizer.decode(r.enc_ids[r.tool_pos[slot] + 1 :]).startswith(f" {call.tool} ")
-        assert r.slots[3:] == [STOP, STOP]
+        assert r.slots[3:] == [STOP] * (CFG.n_slots - 3)
         # Calls stay in their own order: the decoder doesn't depend on the tool order.
         assert r.dec_ids == render(ex, tokenizer, CFG).dec_ids
     assert len(orders) > 3
@@ -81,11 +81,11 @@ def test_shuffled_tools_keep_targets_consistent(library, tokenizer):
 
 def test_other_intents(library, tokenizer):
     none = render(example(library, "none", []), tokenizer, CFG)
-    assert none.slots == [STOP] * 5 and all(t == IGNORE for t in none.dec_labels)
+    assert none.slots == [STOP] * CFG.n_slots and all(t == IGNORE for t in none.dec_labels)
     assert none.dec_ids == [DEC]
 
     unclear = render(example(library, "ask", []), tokenizer, CFG)
-    assert unclear.slots == [IGNORE] * 5
+    assert unclear.slots == [IGNORE] * CFG.n_slots
 
     ask = render(
         example(library, "ask", [Call("set_lights", {"room": "?", "on": True})]), tokenizer, CFG

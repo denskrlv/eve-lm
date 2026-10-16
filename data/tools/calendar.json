@@ -1,0 +1,44 @@
+{
+  "domain": "calendar",
+  "tools": [
+    {"name": "create_event", "description": "Add an event to the calendar",
+     "args": [
+       {"name": "title", "type": "str"},
+       {"name": "day", "type": "str", "description": "as the user said it"},
+       {"name": "time", "type": "str", "required": false},
+       {"name": "duration", "type": "int", "min": 5, "max": 480, "required": false, "description": "minutes"}
+     ],
+     "templates": [
+       "add {title} to my calendar {day}[ at {time}]",
+       "schedule {title} {day}[ at {time}][ for {duration} minutes]",
+       "put {title} in the calendar[ for {day}]",
+       "create an event[ called {title}] {day}"
+     ],
+     "values": {
+       "title": ["team lunch", "dentist appointment", "yoga class", "a call with Sarah", "the project review", "date night", "the parent teacher meeting"],
+       "day": ["tomorrow", "on Monday", "next Friday", "today", "on the 14th", "this weekend"],
+       "time": ["3 pm", "10:30", "noon", "9 am", "6:15 pm"]
+     }},
+    {"name": "list_events", "description": "Read out the events on the calendar",
+     "args": [
+       {"name": "day", "type": "enum", "options": ["today", "tomorrow", "this week"], "required": false}
+     ],
+     "templates": [
+       "what's on my calendar[ {day}]",
+       "do I have anything {day}",
+       "show my schedule[ for {day}]",
+       "what are my plans {day}"
+     ]},
+    {"name": "cancel_event", "description": "Remove an event from the calendar",
+     "args": [
+       {"name": "title", "type": "str"}
+     ],
+     "templates": [
+       "cancel {title}",
+       "remove {title} from my calendar",
+       "delete the event[ {title}]",
+       "I can't make {title}, cancel it"
+     ],
+     "values": {"title": ["team lunch", "the dentist appointment", "yoga class", "the call with Sarah", "the project review", "date night"]}}
+  ]
+}

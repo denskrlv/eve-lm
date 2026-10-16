@@ -6,25 +6,68 @@
        {"name": "room", "type": "enum", "options": ["kitchen", "bedroom", "living room", "bathroom", "office", "hallway"]},
        {"name": "on", "type": "bool"},
        {"name": "brightness", "type": "int", "min": 0, "max": 100, "required": false, "description": "percent"}
+     ],
+     "templates": [
+       "turn {on:on|off} the [{room} ]lights",
+       "switch the lights {on:on|off}[ in the {room}]",
+       "[{room} ]lights {on:on|off}",
+       "set the [{room} ]lights to {brightness} percent{on=true}",
+       "dim the [{room} ]lights to {brightness}%{on=true}",
+       "can you turn the lights {on:on|off}[ in the {room}]",
+       "turn {on:on|off} the lights everywhere{room=*}",
+       "turn {on:on|off} all the lights{room=*}",
+       "switch {on:on|off} every light in the house{room=*}"
      ]},
     {"name": "set_thermostat", "description": "Set the target temperature of the heating or cooling",
      "args": [
        {"name": "temperature", "type": "float", "min": 10, "max": 30, "description": "degrees Celsius"},
        {"name": "mode", "type": "enum", "options": ["heat", "cool", "auto"], "required": false}
+     ],
+     "templates": [
+       "set the thermostat to {temperature}[ on {mode}]",
+       "make it {temperature} degrees in here",
+       "change the temperature[ to {temperature} degrees]",
+       "put the thermostat on {mode} at {temperature} degrees",
+       "set the heating[ to {temperature}]"
      ]},
     {"name": "lock_door", "description": "Lock or unlock a door",
      "args": [
        {"name": "door", "type": "enum", "options": ["front", "back", "garage"]},
        {"name": "locked", "type": "bool"}
+     ],
+     "templates": [
+       "{locked:lock|unlock} the [{door} ]door",
+       "make sure the [{door} ]door is {locked:locked|unlocked}",
+       "please {locked:lock|unlock} the {door} door",
+       "{locked:lock|unlock} all the doors{door=*}",
+       "lock up the house{door=*}{locked=true}"
      ]},
     {"name": "set_blinds", "description": "Open or close the blinds in a room",
      "args": [
        {"name": "room", "type": "enum", "options": ["kitchen", "bedroom", "living room", "office"]},
        {"name": "position", "type": "int", "min": 0, "max": 100, "description": "percent open"}
+     ],
+     "templates": [
+       "open the [{room} ]blinds to {position} percent",
+       "set the blinds[ in the {room}] to {position}%",
+       "close the [{room} ]blinds{position=0}",
+       "open the [{room} ]blinds all the way{position=100}",
+       "open the [{room} ]blinds halfway{position=50}",
+       "close all the blinds{room=*}{position=0}",
+       "open every blind in the house{room=*}{position=100}",
+       "set all the blinds to {position} percent{room=*}"
      ]},
     {"name": "start_vacuum", "description": "Start the robot vacuum cleaner",
      "args": [
        {"name": "room", "type": "enum", "options": ["kitchen", "bedroom", "living room", "hallway"], "required": false}
+     ],
+     "templates": [
+       "start the vacuum[ in the {room}]",
+       "vacuum the {room}",
+       "run the robot vacuum[ in the {room}]",
+       "clean the floors[ in the {room}]",
+       "vacuum the whole house",
+       "vacuum everywhere"
      ]}
   ]
 }

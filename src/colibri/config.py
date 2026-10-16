@@ -20,7 +20,7 @@ class ModelConfig:
 
     # Question block (Jev part): 1 intent question + n_slots "what is call #i?" questions
     n_question_layers: int = 2
-    n_slots: int = 5
+    n_slots: int = 8  # up to 8 calls: "lights off everywhere" is one call per room
     max_tools: int = 5
     pointer_dim: int = 64  # size of the query/key vectors the slot head compares
 

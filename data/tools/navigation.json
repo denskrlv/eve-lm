@@ -1,0 +1,42 @@
+{
+  "domain": "navigation",
+  "tools": [
+    {"name": "get_directions", "description": "Give directions to a place",
+     "args": [
+       {"name": "destination", "type": "str"},
+       {"name": "mode", "type": "enum", "options": ["driving", "walking", "transit", "cycling"], "required": false}
+     ],
+     "templates": [
+       "directions to {destination}",
+       "navigate to {destination}",
+       "walking directions to {destination}{mode=walking}",
+       "how do I get to {destination} by public transport{mode=transit}",
+       "bike route to {destination}{mode=cycling}",
+       "take me[ to {destination}]"
+     ],
+     "values": {"destination": ["the airport", "Central Station", "the nearest hospital", "work", "Grandma's house", "the city library", "Main Street 12"]}},
+    {"name": "find_nearby", "description": "Find places of a kind near the user",
+     "args": [
+       {"name": "place", "type": "str"},
+       {"name": "open_now", "type": "bool", "required": false}
+     ],
+     "templates": [
+       "find a {place} nearby",
+       "is there a {place} near me[ that's open now{open_now=true}]",
+       "where's the closest {place}",
+       "any {place} open right now{open_now=true}"
+     ],
+     "values": {"place": ["pharmacy", "gas station", "coffee shop", "supermarket", "bakery", "parking garage", "bike shop"]}},
+    {"name": "share_eta", "description": "Send someone the user's expected arrival time",
+     "args": [
+       {"name": "contact", "type": "str"}
+     ],
+     "templates": [
+       "share my ETA with {contact}",
+       "let {contact} know when I'll arrive",
+       "send {contact} my arrival time",
+       "share my ETA[ with {contact}]"
+     ],
+     "values": {"contact": ["Anna", "Bob", "mom", "dad", "Maria", "Sam", "my boss", "Alex"]}}
+  ]
+}

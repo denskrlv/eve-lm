@@ -1,0 +1,37 @@
+{
+  "domain": "notes",
+  "tools": [
+    {"name": "create_note", "description": "Save a note",
+     "args": [
+       {"name": "text", "type": "str"},
+       {"name": "folder", "type": "enum", "options": ["personal", "work", "ideas"], "required": false}
+     ],
+     "templates": [
+       "write down {text}",
+       "note to self: {text}",
+       "save a note[ to {folder}] saying {text}",
+       "take a note[: {text}]"
+     ],
+     "values": {"text": ["the meeting moved to Thursday", "buy a gift for Sam", "the wifi password is on the router", "try the new ramen place", "an app for watering plants", "renew the passport in May"]}},
+    {"name": "search_notes", "description": "Find notes that mention something",
+     "args": [
+       {"name": "query", "type": "str"}
+     ],
+     "templates": [
+       "find my notes about {query}",
+       "search my notes for {query}",
+       "do I have a note about {query}"
+     ],
+     "values": {"query": ["the wifi password", "Thursday's meeting", "gift ideas", "ramen", "the passport", "the app idea"]}},
+    {"name": "delete_note", "description": "Delete a note",
+     "args": [
+       {"name": "title", "type": "str"}
+     ],
+     "templates": [
+       "delete the note about {title}",
+       "remove my note on {title}",
+       "get rid of the {title} note"
+     ],
+     "values": {"title": ["gift ideas", "the meeting", "ramen", "passwords", "the app idea", "groceries"]}}
+  ]
+}

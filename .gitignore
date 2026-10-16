@@ -223,3 +223,6 @@ __marimo__/
 artifacts/
 data/raw/
 data/bin/
+
+data/task/
+data/external/

@@ -1,0 +1,45 @@
+{
+  "domain": "fitness",
+  "tools": [
+    {"name": "start_workout", "description": "Start tracking a workout",
+     "args": [
+       {"name": "kind", "type": "enum", "options": ["run", "walk", "cycle", "yoga", "strength"]},
+       {"name": "minutes", "type": "int", "min": 5, "max": 180, "required": false}
+     ],
+     "templates": [
+       "start a {kind} workout[ for {minutes} minutes]",
+       "begin a {kind} session[ of {minutes} minutes]",
+       "start a[ {kind}] workout",
+       "track my {kind} workout"
+     ]},
+    {"name": "log_water", "description": "Log how much water the user drank",
+     "args": [
+       {"name": "glasses", "type": "int", "min": 1, "max": 10}
+     ],
+     "templates": [
+       "log {glasses} glasses of water",
+       "I drank {glasses} glasses of water",
+       "add {glasses} glasses of water to my log",
+       "log[ {glasses} glasses of] water"
+     ]},
+    {"name": "log_weight", "description": "Record the user's body weight",
+     "args": [
+       {"name": "kg", "type": "float", "min": 30, "max": 200, "description": "kilograms"}
+     ],
+     "templates": [
+       "log my weight as {kg} kilos",
+       "I weigh {kg} kg today",
+       "record {kg} kilograms",
+       "log my weight[ as {kg}]"
+     ]},
+    {"name": "get_step_count", "description": "Tell how many steps the user walked",
+     "args": [
+       {"name": "day", "type": "enum", "options": ["today", "yesterday", "this week"], "required": false}
+     ],
+     "templates": [
+       "how many steps did I take[ {day}]",
+       "what's my step count[ for {day}]",
+       "steps {day}"
+     ]}
+  ]
+}

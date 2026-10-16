@@ -5,20 +5,51 @@
      "args": [
        {"name": "minutes", "type": "int", "min": 1, "max": 1440},
        {"name": "label", "type": "str", "required": false}
-     ]},
+     ],
+     "templates": [
+       "set a timer for {minutes} minutes",
+       "set a[ {label}] timer[ for {minutes} minutes]",
+       "timer for {minutes} minutes[ called {label}]",
+       "start a countdown[ of {minutes} minutes]"
+     ],
+     "values": {"label": ["pasta", "eggs", "laundry", "tea", "pizza", "workout", "nap", "parking"]}},
     {"name": "set_alarm", "description": "Set an alarm",
      "args": [
-       {"name": "time", "type": "str", "description": "24-hour time like 07:30"},
+       {"name": "time", "type": "str", "description": "as the user said it, like 7:30 am"},
        {"name": "repeat", "type": "enum", "options": ["once", "daily", "weekdays", "weekends"], "required": false}
-     ]},
+     ],
+     "templates": [
+       "set an alarm for {time}[ {repeat}]",
+       "wake me up at {time}",
+       "set an alarm[ at {time}]",
+       "alarm at {time}[, {repeat}]"
+     ],
+     "values": {"time": ["7:30", "6:45 am", "noon", "8 pm", "5:15", "9:00", "6 am", "10:30 pm"]}},
     {"name": "cancel_timer", "description": "Cancel a running timer",
      "args": [
        {"name": "label", "type": "str", "required": false, "description": "all timers if not given"}
-     ]},
+     ],
+     "templates": [
+       "cancel the[ {label}] timer",
+       "stop the[ {label}] timer",
+       "never mind the[ {label}] timer",
+       "cancel all timers"
+     ],
+     "values": {"label": ["pasta", "eggs", "laundry", "tea", "pizza", "workout", "nap", "parking"]}},
     {"name": "add_reminder", "description": "Remind the user about something later",
      "args": [
        {"name": "text", "type": "str"},
        {"name": "when", "type": "str", "required": false, "description": "a day or time, as the user said it"}
-     ]}
+     ],
+     "templates": [
+       "remind me to {text}[ {when}]",
+       "add a reminder to {text}[ {when}]",
+       "don't let me forget to {text}[ {when}]",
+       "set a reminder[ to {text}]"
+     ],
+     "values": {
+       "text": ["call mom", "take the bins out", "water the plants", "pay the rent", "buy milk", "book a dentist appointment", "send the report", "pick up the kids"],
+       "when": ["tomorrow", "at 6 pm", "tonight", "on Friday", "in an hour", "next week", "this evening"]
+     }}
   ]
 }

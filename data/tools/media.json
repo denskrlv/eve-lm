@@ -5,20 +5,51 @@
      "args": [
        {"name": "query", "type": "str", "description": "what to play"},
        {"name": "shuffle", "type": "bool", "required": false}
-     ]},
+     ],
+     "templates": [
+       "play {query}",
+       "put on {query}[ on shuffle{shuffle=true}]",
+       "I want to hear {query}",
+       "shuffle {query}{shuffle=true}",
+       "can you play {query}"
+     ],
+     "values": {"query": ["jazz", "Bohemian Rhapsody", "Taylor Swift", "lo-fi beats", "my workout playlist", "Abbey Road", "classical music", "the new Billie Eilish album", "Daft Punk", "something relaxing"]},
+     "overlaps": ["play_podcast"]},
     {"name": "set_volume", "description": "Set the speaker volume",
      "args": [
        {"name": "level", "type": "int", "min": 0, "max": 100, "description": "percent"}
+     ],
+     "templates": [
+       "set the volume to {level}",
+       "volume {level}",
+       "turn it to {level} percent",
+       "change the volume[ to {level}]",
+       "mute it{level=0}"
      ]},
-    {"name": "pause_media", "description": "Pause whatever is playing", "args": []},
+    {"name": "pause_media", "description": "Pause whatever is playing", "args": [],
+     "templates": ["pause", "pause the music", "stop playing", "hold on, pause it"]},
     {"name": "skip_track", "description": "Skip to another track",
      "args": [
        {"name": "direction", "type": "enum", "options": ["next", "previous"]}
+     ],
+     "templates": [
+       "skip to the {direction} song",
+       "{direction} track",
+       "skip this song{direction=next}",
+       "go back a song{direction=previous}"
      ]},
     {"name": "play_podcast", "description": "Play an episode of a podcast",
      "args": [
        {"name": "show", "type": "str"},
        {"name": "episode", "type": "int", "min": 1, "required": false, "description": "latest if not given"}
-     ]}
+     ],
+     "templates": [
+       "play the latest episode of {show}",
+       "play {show}[, episode {episode}]",
+       "put on episode {episode} of {show}",
+       "play the podcast[ {show}]"
+     ],
+     "values": {"show": ["The Daily", "Hardcore History", "Radiolab", "Serial", "99% Invisible", "Freakonomics Radio", "Planet Money", "Huberman Lab"]},
+     "overlaps": ["play_music"]}
   ]
 }

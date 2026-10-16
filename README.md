@@ -47,4 +47,30 @@ uv run colibri tokenizer stats   # tokens per word and sample splits
 uv run colibri corpus            # 250M train + 2M val tokens -> data/bin/*.bin
 ```
 
+## Task data (M6)
+
+Tools for training live in `data/tools/*.json` with request templates; `data/tools/heldout/` holds two
+domains (math, travel) the model never trains on. Code adds ~260 generated tools so the model learns to
+read schemas it hasn't seen.
+
+External data, converted to our format with held-out topics (math, travel) removed:
+[xLAM function-calling 60k](https://huggingface.co/datasets/Salesforce/xlam-function-calling-60k)
+(gated: accept its terms on Hugging Face first; research use) and
+[MASSIVE](https://github.com/alexa/massive) en-US (CC BY 4.0).
+
+```bash
+uvx --from huggingface_hub hf download Salesforce/xlam-function-calling-60k --repo-type dataset --local-dir data/raw/xlam
+mkdir -p data/raw/massive && curl -L https://amazon-massive-nlu-dataset.s3.amazonaws.com/amazon-massive-dataset-1.1.tar.gz \
+  | tar -xz -C data/raw/massive --include '*/en-US.jsonl'
+uv run colibri data external                 # -> data/external/*.jsonl
+```
+
+```bash
+uv run colibri data build                    # templates + chat-written + external -> data/task/*.jsonl
+uv run colibri data batch --split val        # scenarios for a chat to write requests for
+uv run colibri data check batch-0001         # validate what the chat wrote
+```
+
+How chat-written requests are made: `data/generation/README.md`.
+
 Training runs on Apple Silicon (MPS). Inference targets a Raspberry Pi 5 running PyTorch on CPU. Set `COLIBRI_DEVICE=cpu` to force a device.

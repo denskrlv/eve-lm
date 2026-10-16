@@ -201,9 +201,16 @@ class Tool:
         return errors
 
 
+GENERATION_KEYS = ("templates", "values", "overlaps")  # task-data generation only (M6)
+
+
 def load_tools(path: str | Path) -> list[Tool]:
+    """The tools in one file, without the keys that only data generation uses."""
     data = json.loads(Path(path).read_text())
-    return [Tool.from_dict(t, domain=data["domain"]) for t in data["tools"]]
+    return [
+        Tool.from_dict({k: v for k, v in t.items() if k not in GENERATION_KEYS}, data["domain"])
+        for t in data["tools"]
+    ]
 
 
 def load_library(directory: str | Path = "data/tools") -> dict[str, Tool]:

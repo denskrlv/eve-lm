@@ -5,16 +5,43 @@
      "args": [
        {"name": "contact", "type": "str"},
        {"name": "message", "type": "str"}
-     ]},
+     ],
+     "templates": [
+       "text {contact}[ that {message}]",
+       "send a message to {contact} saying {message}",
+       "tell {contact} {message}",
+       "message {contact}: {message}",
+       "send a text[ to {contact}] saying {message}"
+     ],
+     "values": {
+       "contact": ["Anna", "Bob", "mom", "dad", "Maria", "Sam", "my boss", "Alex"],
+       "message": ["I'm running late", "see you at the station", "dinner is ready", "call me back", "happy birthday", "I'll be home at six", "can you pick up bread"]
+     }},
     {"name": "call_contact", "description": "Start a phone or video call",
      "args": [
        {"name": "contact", "type": "str"},
        {"name": "video", "type": "bool", "required": false}
-     ]},
+     ],
+     "templates": [
+       "call {contact}",
+       "start a video call with {contact}{video=true}",
+       "ring {contact}",
+       "facetime {contact}{video=true}",
+       "make a call[ to {contact}]"
+     ],
+     "values": {"contact": ["Anna", "Bob", "mom", "dad", "Maria", "Sam", "my boss", "Alex"]}},
     {"name": "read_messages", "description": "Read out recent messages",
      "args": [
        {"name": "contact", "type": "str", "required": false},
        {"name": "unread_only", "type": "bool", "required": false}
-     ]}
+     ],
+     "templates": [
+       "read my messages",
+       "read my unread messages{unread_only=true}",
+       "any new messages[ from {contact}]{unread_only=true}",
+       "what did {contact} send me",
+       "read messages from {contact}"
+     ],
+     "values": {"contact": ["Anna", "Bob", "mom", "dad", "Maria", "Sam", "my boss", "Alex"]}}
   ]
 }
