@@ -8,6 +8,7 @@ import numpy as np
 
 from colibri.data.generate.library import ToolSpec
 from colibri.data.generate.sampler import ToolBank
+from colibri.data.generate.templates import MAX_CALLS
 from colibri.data.generate.validate import check_example, mentions, value_forms
 from colibri.data.render import Call, TaskExample
 from colibri.data.schema import MAX_ARGS, Arg, SchemaError, Tool
@@ -99,8 +100,8 @@ def convert_xlam(row: dict, rng: np.random.Generator) -> tuple[TaskExample | Non
         for t in raw_tools
     ):
         return None, "held-out topic"
-    if not 1 <= len(answers) <= 5:
-        return None, "more than 5 calls"
+    if not 1 <= len(answers) <= MAX_CALLS:
+        return None, f"more than {MAX_CALLS} calls"
     gold_names = list(dict.fromkeys(a["name"] for a in answers))
     converted = {}
     for t in raw_tools:

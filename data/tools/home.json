@@ -13,7 +13,10 @@
        "[{room} ]lights {on:on|off}",
        "set the [{room} ]lights to {brightness} percent{on=true}",
        "dim the [{room} ]lights to {brightness}%{on=true}",
-       "can you turn the lights {on:on|off}[ in the {room}]"
+       "can you turn the lights {on:on|off}[ in the {room}]",
+       "turn {on:on|off} the lights everywhere{room=*}",
+       "turn {on:on|off} all the lights{room=*}",
+       "switch {on:on|off} every light in the house{room=*}"
      ]},
     {"name": "set_thermostat", "description": "Set the target temperature of the heating or cooling",
      "args": [
@@ -35,7 +38,9 @@
      "templates": [
        "{locked:lock|unlock} the [{door} ]door",
        "make sure the [{door} ]door is {locked:locked|unlocked}",
-       "please {locked:lock|unlock} the {door} door"
+       "please {locked:lock|unlock} the {door} door",
+       "{locked:lock|unlock} all the doors{door=*}",
+       "lock up the house{door=*}{locked=true}"
      ]},
     {"name": "set_blinds", "description": "Open or close the blinds in a room",
      "args": [
@@ -47,7 +52,10 @@
        "set the blinds[ in the {room}] to {position}%",
        "close the [{room} ]blinds{position=0}",
        "open the [{room} ]blinds all the way{position=100}",
-       "open the [{room} ]blinds halfway{position=50}"
+       "open the [{room} ]blinds halfway{position=50}",
+       "close all the blinds{room=*}{position=0}",
+       "open every blind in the house{room=*}{position=100}",
+       "set all the blinds to {position} percent{room=*}"
      ]},
     {"name": "start_vacuum", "description": "Start the robot vacuum cleaner",
      "args": [
@@ -57,7 +65,9 @@
        "start the vacuum[ in the {room}]",
        "vacuum the {room}",
        "run the robot vacuum[ in the {room}]",
-       "clean the floors[ in the {room}]"
+       "clean the floors[ in the {room}]",
+       "vacuum the whole house",
+       "vacuum everywhere"
      ]}
   ]
 }

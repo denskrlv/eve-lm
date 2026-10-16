@@ -1,7 +1,14 @@
 import numpy as np
 import pytest
 
-from colibri.data.generate.templates import check_template, fill, number_words, parse, tidy
+from colibri.data.generate.templates import (
+    MAX_CALLS,
+    check_template,
+    fill,
+    number_words,
+    parse,
+    tidy,
+)
 from colibri.data.schema import Arg, Tool
 
 LIGHTS = Tool(
@@ -93,3 +100,23 @@ def test_numbers_are_sometimes_words():
 
 def test_tidy():
     assert tidy("  set it  to 40 % , please ") == "set it to 40%, please"
+
+
+def test_fan_out_repeats_the_call_per_option():
+    f = fill(LIGHTS, "turn {on:on|off} the lights everywhere{room=*}", {}, np.random.default_rng(0))
+    assert f.fanout == "room" and "room" not in f.args
+    calls = f.expand(LIGHTS)
+    assert [c["room"] for c in calls] == ["kitchen", "living room"]  # schema order
+    assert all(c["on"] == f.args["on"] for c in calls)
+    plain = fill(LIGHTS, "turn {on:on|off} the {room} lights", {}, np.random.default_rng(0))
+    assert plain.fanout is None and plain.expand(LIGHTS) == [plain.args]
+
+
+def test_fan_out_needs_a_required_enum():
+    optional = Tool("vacuum", "Vacuum", (Arg("room", "enum", required=False, options=("a", "b")),))
+    assert any("required enum" in e for e in check_template(optional, "vacuum{room=*}", {}))
+    assert any(
+        "required enum" in e for e in check_template(MESSAGE, "text {contact=*}: {text}", POOLS)
+    )
+    many = Tool("t", "x", (Arg("room", "enum", options=tuple("abcdefghij")),))
+    assert any(f"at most {MAX_CALLS}" in e for e in check_template(many, "all{room=*}", {}))

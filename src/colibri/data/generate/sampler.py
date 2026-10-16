@@ -5,7 +5,7 @@ from dataclasses import dataclass, field
 import numpy as np
 
 from colibri.data.generate.library import ToolSpec
-from colibri.data.generate.templates import fill
+from colibri.data.generate.templates import MAX_CALLS, fill
 from colibri.data.render import Call, TaskExample
 
 INTENT_MIX = {"call": 0.55, "ask": 0.15, "unsupported": 0.15, "none": 0.15}
@@ -111,7 +111,7 @@ def _decorate(text: str, rng: np.random.Generator) -> str:
 def _fill_any(spec: ToolSpec, rng: np.random.Generator, ask: bool = False):
     for t in rng.permutation(len(spec.templates)):
         filled = fill(spec.tool, spec.templates[t], spec.values, rng, ask=ask)
-        if filled is not None:
+        if filled is not None and not (ask and filled.fanout):
             return filled
     return None
 
@@ -148,14 +148,17 @@ def sample_call(bank: ToolBank, rng: np.random.Generator, pool=None) -> Sample:
         spec = bank.specs[g]
         for _ in range(10):
             filled = _fill_any(spec, rng)
-            if all(not (call.tool == spec.name and call.args == filled.args) for call in calls):
+            new = filled.expand(spec.tool)
+            repeated = any(c.tool == spec.name and c.args in new for c in calls)
+            if not repeated and len(calls) + len(new) <= MAX_CALLS:
                 break
         else:
             break
         gold.append(g)
         parts.append(filled.text)
-        implied |= {(len(calls), name) for name in filled.implied}
-        calls.append(Call(spec.name, filled.args))
+        for args in new:  # a fan-out ("lights off everywhere") adds one call per option
+            implied |= {(len(calls), name) for name in filled.implied}
+            calls.append(Call(spec.name, args))
     text = parts[0]
     for part in parts[1:]:
         text += CONNECTORS[rng.integers(len(CONNECTORS))] + part

@@ -6,7 +6,11 @@ from typing import Any
 
 import numpy as np
 
+from colibri.config import ModelConfig
 from colibri.data.schema import ASK_VALUE, Arg, Tool
+
+FANOUT = "*"  # {room=*}: one call per option of a required enum ("lights off everywhere")
+MAX_CALLS = ModelConfig().n_slots
 
 _SLOT = re.compile(r"\{(\w+)(?::([^{}|]*)\|([^{}|]*)|=([^{}]*))?\}")
 _OPTIONAL = re.compile(r"\[([^\[\]]*)\]")
@@ -100,10 +104,17 @@ def check_template(tool: Tool, template: str, values: Mapping[str, Sequence[str]
     if len(set(names)) != len(names):
         errors.append("an argument appears twice")
     args = {a.name: a for a in tool.args}
+    if sum(s.has_fixed and s.fixed == FANOUT for s in slots) > 1:
+        errors.append("more than one fan-out {name=*}")
     for slot in slots:
         arg = args.get(slot.arg)
         if arg is None:
             errors.append(f"unknown argument {slot.arg!r}")
+        elif slot.has_fixed and slot.fixed == FANOUT:
+            if arg.type != "enum" or not arg.required:
+                errors.append(f"fan-out {{{arg.name}=*}} needs a required enum argument")
+            elif len(arg.options) > MAX_CALLS:
+                errors.append(f"fan-out over {len(arg.options)} options; at most {MAX_CALLS} calls")
         elif slot.has_fixed:
             if (error := arg.check(slot.fixed)) is not None:
                 errors.append(error)
@@ -163,6 +174,13 @@ class Filled:
     text: str
     args: dict[str, Any] = field(default_factory=dict)
     implied: set[str] = field(default_factory=set)  # fixed by the template, not said in the text
+    fanout: str | None = None  # an argument to repeat the call for, once per option
+
+    def expand(self, tool: Tool) -> list[dict[str, Any]]:
+        """The calls' arguments: one set, or one per option (in schema order) for a fan-out."""
+        if self.fanout is None:
+            return [dict(self.args)]
+        return [{**self.args, self.fanout: option} for option in tool.arg(self.fanout).options]
 
 
 def fill(
@@ -202,6 +220,8 @@ def fill(
         for part in segment.parts:
             if isinstance(part, str):
                 words.append(part)
+            elif part.has_fixed and part.fixed == FANOUT:
+                out.fanout = part.arg
             elif part.has_fixed:
                 out.args[part.arg] = part.fixed
                 out.implied.add(part.arg)

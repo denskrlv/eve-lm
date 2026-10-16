@@ -78,3 +78,19 @@ def test_samples_render(bank, tokenizer):
     for _ in range(50):
         r = render(sample(bank, rng).example, tokenizer, preset("tiny"), rng)
         assert any(label != IGNORE for label in r.slots) or r.intent == 1
+
+
+def test_fan_out_examples(bank):
+    from colibri.data.generate.templates import MAX_CALLS
+
+    rng = np.random.default_rng(0)
+    fanned = []
+    for _ in range(3000):
+        ex = sample(bank, rng, "call").example
+        assert len(ex.calls) <= MAX_CALLS
+        if ex.calls[0].tool == "set_lights" and "everywhere" in ex.utterance:
+            fanned.append(ex)
+    assert fanned
+    rooms = bank.specs[bank.index["set_lights"]].tool.arg("room").options
+    for ex in fanned:
+        assert [c.args["room"] for c in ex.calls[: len(rooms)]] == list(rooms)

@@ -62,9 +62,60 @@
   {
    "id": "batch-0001-000",
    "tools": [
-    "lock_door",
-    "set_washing_machine_temperature",
-    "set_alarm"
+    {
+     "name": "lock_door",
+     "description": "Lock or unlock a door",
+     "args": [
+      {
+       "name": "door",
+       "type": "enum",
+       "options": [
+        "front",
+        "back",
+        "garage"
+       ]
+      },
+      {
+       "name": "locked",
+       "type": "bool"
+      }
+     ]
+    },
+    {
+     "name": "set_washing_machine_temperature",
+     "description": "Change the temperature of the washing machine",
+     "args": [
+      {
+       "name": "temperature",
+       "type": "int",
+       "min": 20,
+       "max": 90,
+       "description": "degrees"
+      }
+     ]
+    },
+    {
+     "name": "set_alarm",
+     "description": "Set an alarm",
+     "args": [
+      {
+       "name": "time",
+       "type": "str",
+       "description": "as the user said it, like 7:30 am"
+      },
+      {
+       "name": "repeat",
+       "type": "enum",
+       "required": false,
+       "options": [
+        "once",
+        "daily",
+        "weekdays",
+        "weekends"
+       ]
+      }
+     ]
+    }
    ],
    "intent": "call",
    "calls": [
@@ -95,10 +146,55 @@
   {
    "id": "batch-0001-001",
    "tools": [
-    "get_definition",
-    "call_contact",
-    "fetch_game_score",
-    "send_message"
+    {
+     "name": "get_definition",
+     "description": "Get the definition",
+     "args": [
+      {
+       "name": "word",
+       "type": "str"
+      }
+     ]
+    },
+    {
+     "name": "call_contact",
+     "description": "Start a phone or video call",
+     "args": [
+      {
+       "name": "contact",
+       "type": "str"
+      },
+      {
+       "name": "video",
+       "type": "bool",
+       "required": false
+      }
+     ]
+    },
+    {
+     "name": "fetch_game_score",
+     "description": "Look up the game score",
+     "args": [
+      {
+       "name": "team",
+       "type": "str"
+      }
+     ]
+    },
+    {
+     "name": "send_message",
+     "description": "Send a text message to a contact",
+     "args": [
+      {
+       "name": "contact",
+       "type": "str"
+      },
+      {
+       "name": "message",
+       "type": "str"
+      }
+     ]
+    }
    ],
    "intent": "call",
    "calls": [
@@ -134,8 +230,29 @@
   {
    "id": "batch-0001-002",
    "tools": [
-    "new_bookmark",
-    "set_kettle_temperature"
+    {
+     "name": "new_bookmark",
+     "description": "Create a new bookmark",
+     "args": [
+      {
+       "name": "title",
+       "type": "str"
+      }
+     ]
+    },
+    {
+     "name": "set_kettle_temperature",
+     "description": "Change the temperature of the kettle",
+     "args": [
+      {
+       "name": "level",
+       "type": "int",
+       "min": 60,
+       "max": 100,
+       "description": "degrees"
+      }
+     ]
+    }
    ],
    "intent": "call",
    "calls": [
@@ -159,10 +276,71 @@
   {
    "id": "batch-0001-003",
    "tools": [
-    "add_playbook",
-    "cancel_event",
-    "add_habit",
-    "create_event"
+    {
+     "name": "add_playbook",
+     "description": "Create a new playbook",
+     "args": [
+      {
+       "name": "title",
+       "type": "str"
+      }
+     ]
+    },
+    {
+     "name": "cancel_event",
+     "description": "Remove an event from the calendar",
+     "args": [
+      {
+       "name": "title",
+       "type": "str"
+      }
+     ]
+    },
+    {
+     "name": "add_habit",
+     "description": "Create a new habit",
+     "args": [
+      {
+       "name": "name",
+       "type": "str"
+      },
+      {
+       "name": "times_per_week",
+       "type": "int",
+       "required": false,
+       "min": 1,
+       "max": 7
+      }
+     ]
+    },
+    {
+     "name": "create_event",
+     "description": "Add an event to the calendar",
+     "args": [
+      {
+       "name": "title",
+       "type": "str"
+      },
+      {
+       "name": "day",
+       "type": "str",
+       "description": "as the user said it"
+      },
+      {
+       "name": "time",
+       "type": "str",
+       "required": false
+      },
+      {
+       "name": "duration",
+       "type": "int",
+       "required": false,
+       "min": 5,
+       "max": 480,
+       "description": "minutes"
+      }
+     ]
+    }
    ],
    "intent": "call",
    "calls": [
@@ -182,11 +360,99 @@
   {
    "id": "batch-0001-004",
    "tools": [
-    "set_document_status",
-    "update_ticket_status",
-    "update_habit_status",
-    "mark_goal",
-    "set_invoice_status"
+    {
+     "name": "set_document_status",
+     "description": "Change the status of a document",
+     "args": [
+      {
+       "name": "name",
+       "type": "str"
+      },
+      {
+       "name": "state",
+       "type": "enum",
+       "options": [
+        "draft",
+        "final"
+       ]
+      }
+     ]
+    },
+    {
+     "name": "update_ticket_status",
+     "description": "Change the status of a ticket",
+     "args": [
+      {
+       "name": "name",
+       "type": "str"
+      },
+      {
+       "name": "state",
+       "type": "enum",
+       "options": [
+        "open",
+        "in progress",
+        "closed"
+       ]
+      }
+     ]
+    },
+    {
+     "name": "update_habit_status",
+     "description": "Change the status of a habit",
+     "args": [
+      {
+       "name": "title",
+       "type": "str"
+      },
+      {
+       "name": "state",
+       "type": "enum",
+       "options": [
+        "done",
+        "skipped"
+       ]
+      }
+     ]
+    },
+    {
+     "name": "mark_goal",
+     "description": "Change the status of a goal",
+     "args": [
+      {
+       "name": "title",
+       "type": "str"
+      },
+      {
+       "name": "state",
+       "type": "enum",
+       "options": [
+        "active",
+        "achieved",
+        "abandoned"
+       ]
+      }
+     ]
+    },
+    {
+     "name": "set_invoice_status",
+     "description": "Change the status of a invoice",
+     "args": [
+      {
+       "name": "name",
+       "type": "str"
+      },
+      {
+       "name": "state",
+       "type": "enum",
+       "options": [
+        "paid",
+        "unpaid",
+        "overdue"
+       ]
+      }
+     ]
+    }
    ],
    "intent": "ask",
    "calls": [
@@ -207,10 +473,55 @@
   {
    "id": "batch-0001-005",
    "tools": [
-    "delete_plant",
-    "select_dishwasher_program",
-    "send_message",
-    "find_invoice"
+    {
+     "name": "delete_plant",
+     "description": "Delete a plant",
+     "args": [
+      {
+       "name": "title",
+       "type": "str"
+      }
+     ]
+    },
+    {
+     "name": "select_dishwasher_program",
+     "description": "Choose a program for the dishwasher",
+     "args": [
+      {
+       "name": "program",
+       "type": "enum",
+       "options": [
+        "eco",
+        "quick",
+        "intensive"
+       ]
+      }
+     ]
+    },
+    {
+     "name": "send_message",
+     "description": "Send a text message to a contact",
+     "args": [
+      {
+       "name": "contact",
+       "type": "str"
+      },
+      {
+       "name": "message",
+       "type": "str"
+      }
+     ]
+    },
+    {
+     "name": "find_invoice",
+     "description": "Find invoices matching a text",
+     "args": [
+      {
+       "name": "text",
+       "type": "str"
+      }
+     ]
+    }
    ],
    "intent": "ask",
    "calls": [
@@ -231,7 +542,19 @@
   {
    "id": "batch-0001-006",
    "tools": [
-    "set_oven_temperature"
+    {
+     "name": "set_oven_temperature",
+     "description": "Change the temperature of the oven",
+     "args": [
+      {
+       "name": "value",
+       "type": "int",
+       "min": 50,
+       "max": 250,
+       "description": "degrees"
+      }
+     ]
+    }
    ],
    "intent": "none",
    "calls": [],
@@ -242,7 +565,16 @@
   {
    "id": "batch-0001-007",
    "tools": [
-    "remove_invoice"
+    {
+     "name": "remove_invoice",
+     "description": "Remove a invoice",
+     "args": [
+      {
+       "name": "name",
+       "type": "str"
+      }
+     ]
+    }
    ],
    "intent": "call",
    "calls": [
@@ -260,8 +592,33 @@
   {
    "id": "batch-0001-008",
    "tools": [
-    "add_recipe",
-    "find_issue"
+    {
+     "name": "add_recipe",
+     "description": "Create a new recipe",
+     "args": [
+      {
+       "name": "name",
+       "type": "str"
+      },
+      {
+       "name": "servings",
+       "type": "int",
+       "required": false,
+       "min": 1,
+       "max": 12
+      }
+     ]
+    },
+    {
+     "name": "find_issue",
+     "description": "Find issues matching a text",
+     "args": [
+      {
+       "name": "text",
+       "type": "str"
+      }
+     ]
+    }
    ],
    "intent": "call",
    "calls": [
@@ -279,10 +636,46 @@
   {
    "id": "batch-0001-009",
    "tools": [
-    "lookup_showtimes",
-    "get_pollen_count",
-    "fetch_package_status",
-    "fetch_parking_availability"
+    {
+     "name": "lookup_showtimes",
+     "description": "Check the showtimes",
+     "args": [
+      {
+       "name": "movie",
+       "type": "str"
+      }
+     ]
+    },
+    {
+     "name": "get_pollen_count",
+     "description": "Look up the pollen count",
+     "args": [
+      {
+       "name": "city",
+       "type": "str"
+      }
+     ]
+    },
+    {
+     "name": "fetch_package_status",
+     "description": "Look up the package status",
+     "args": [
+      {
+       "name": "tracking_number",
+       "type": "str"
+      }
+     ]
+    },
+    {
+     "name": "fetch_parking_availability",
+     "description": "Look up the parking availability",
+     "args": [
+      {
+       "name": "garage",
+       "type": "str"
+      }
+     ]
+    }
    ],
    "intent": "call",
    "calls": [
@@ -300,10 +693,46 @@
   {
    "id": "batch-0001-010",
    "tools": [
-    "find_issue",
-    "delete_playbook",
-    "find_invoice",
-    "search_expenses"
+    {
+     "name": "find_issue",
+     "description": "Find issues matching a text",
+     "args": [
+      {
+       "name": "text",
+       "type": "str"
+      }
+     ]
+    },
+    {
+     "name": "delete_playbook",
+     "description": "Delete a playbook",
+     "args": [
+      {
+       "name": "name",
+       "type": "str"
+      }
+     ]
+    },
+    {
+     "name": "find_invoice",
+     "description": "Find invoices matching a text",
+     "args": [
+      {
+       "name": "text",
+       "type": "str"
+      }
+     ]
+    },
+    {
+     "name": "search_expenses",
+     "description": "Find expenses matching a text",
+     "args": [
+      {
+       "name": "keyword",
+       "type": "str"
+      }
+     ]
+    }
    ],
    "intent": "call",
    "calls": [
@@ -321,8 +750,21 @@
   {
    "id": "batch-0001-011",
    "tools": [
-    "pause_media",
-    "check_package_status"
+    {
+     "name": "pause_media",
+     "description": "Pause whatever is playing",
+     "args": []
+    },
+    {
+     "name": "check_package_status",
+     "description": "Get the package status",
+     "args": [
+      {
+       "name": "tracking_number",
+       "type": "str"
+      }
+     ]
+    }
    ],
    "intent": "call",
    "calls": [
@@ -338,8 +780,30 @@
   {
    "id": "batch-0001-012",
    "tools": [
-    "search_web",
-    "select_water_heater_program"
+    {
+     "name": "search_web",
+     "description": "Search the web and read out the top answer",
+     "args": [
+      {
+       "name": "query",
+       "type": "str"
+      }
+     ]
+    },
+    {
+     "name": "select_water_heater_program",
+     "description": "Choose a program for the water heater",
+     "args": [
+      {
+       "name": "setting",
+       "type": "enum",
+       "options": [
+        "eco",
+        "boost"
+       ]
+      }
+     ]
+    }
    ],
    "intent": "call",
    "calls": [
@@ -363,11 +827,72 @@
   {
    "id": "batch-0001-013",
    "tools": [
-    "new_photo_album",
-    "bread_maker_mode",
-    "skip_track",
-    "set_massage_chair_power",
-    "add_plant"
+    {
+     "name": "new_photo_album",
+     "description": "Create a new photo album",
+     "args": [
+      {
+       "name": "name",
+       "type": "str"
+      }
+     ]
+    },
+    {
+     "name": "bread_maker_mode",
+     "description": "Set the bread maker mode",
+     "args": [
+      {
+       "name": "mode",
+       "type": "enum",
+       "options": [
+        "basic",
+        "whole wheat",
+        "quick"
+       ]
+      }
+     ]
+    },
+    {
+     "name": "skip_track",
+     "description": "Skip to another track",
+     "args": [
+      {
+       "name": "direction",
+       "type": "enum",
+       "options": [
+        "next",
+        "previous"
+       ]
+      }
+     ]
+    },
+    {
+     "name": "set_massage_chair_power",
+     "description": "Turn the massage chair on or off",
+     "args": [
+      {
+       "name": "turn_on",
+       "type": "bool"
+      }
+     ]
+    },
+    {
+     "name": "add_plant",
+     "description": "Create a new plant",
+     "args": [
+      {
+       "name": "name",
+       "type": "str"
+      },
+      {
+       "name": "water_every",
+       "type": "int",
+       "required": false,
+       "min": 1,
+       "max": 14
+      }
+     ]
+    }
    ],
    "intent": "unsupported",
    "calls": [],
@@ -378,11 +903,62 @@
   {
    "id": "batch-0001-014",
    "tools": [
-    "set_slow_cooker_power",
-    "set_oven_power",
-    "dishwasher_power",
-    "adjust_lawn_mower_cutting_height",
-    "adjust_sprinkler_duration"
+    {
+     "name": "set_slow_cooker_power",
+     "description": "Switch the slow cooker on or off",
+     "args": [
+      {
+       "name": "power",
+       "type": "bool"
+      }
+     ]
+    },
+    {
+     "name": "set_oven_power",
+     "description": "Switch the oven on or off",
+     "args": [
+      {
+       "name": "power",
+       "type": "bool"
+      }
+     ]
+    },
+    {
+     "name": "dishwasher_power",
+     "description": "Switch the dishwasher on or off",
+     "args": [
+      {
+       "name": "enabled",
+       "type": "bool"
+      }
+     ]
+    },
+    {
+     "name": "adjust_lawn_mower_cutting_height",
+     "description": "Set the lawn mower cutting height",
+     "args": [
+      {
+       "name": "value",
+       "type": "int",
+       "min": 20,
+       "max": 60,
+       "description": "millimeters"
+      }
+     ]
+    },
+    {
+     "name": "adjust_sprinkler_duration",
+     "description": "Set the sprinkler duration",
+     "args": [
+      {
+       "name": "value",
+       "type": "int",
+       "min": 5,
+       "max": 60,
+       "description": "minutes"
+      }
+     ]
+    }
    ],
    "intent": "call",
    "calls": [
@@ -400,7 +976,29 @@
   {
    "id": "batch-0001-015",
    "tools": [
-    "set_blinds"
+    {
+     "name": "set_blinds",
+     "description": "Open or close the blinds in a room",
+     "args": [
+      {
+       "name": "room",
+       "type": "enum",
+       "options": [
+        "kitchen",
+        "bedroom",
+        "living room",
+        "office"
+       ]
+      },
+      {
+       "name": "position",
+       "type": "int",
+       "min": 0,
+       "max": 100,
+       "description": "percent open"
+      }
+     ]
+    }
    ],
    "intent": "ask",
    "calls": [
@@ -426,11 +1024,77 @@
   {
    "id": "batch-0001-016",
    "tools": [
-    "remove_deck",
-    "turn_massage_chair_on_or_off",
-    "get_definition",
-    "update_project_status",
-    "get_weather"
+    {
+     "name": "remove_deck",
+     "description": "Remove a deck",
+     "args": [
+      {
+       "name": "title",
+       "type": "str"
+      }
+     ]
+    },
+    {
+     "name": "turn_massage_chair_on_or_off",
+     "description": "Turn the massage chair on or off",
+     "args": [
+      {
+       "name": "turn_on",
+       "type": "bool"
+      }
+     ]
+    },
+    {
+     "name": "get_definition",
+     "description": "Get the definition",
+     "args": [
+      {
+       "name": "word",
+       "type": "str"
+      }
+     ]
+    },
+    {
+     "name": "update_project_status",
+     "description": "Change the status of a project",
+     "args": [
+      {
+       "name": "title",
+       "type": "str"
+      },
+      {
+       "name": "state",
+       "type": "enum",
+       "options": [
+        "active",
+        "paused",
+        "done"
+       ]
+      }
+     ]
+    },
+    {
+     "name": "get_weather",
+     "description": "Get the weather forecast",
+     "args": [
+      {
+       "name": "city",
+       "type": "str",
+       "required": false,
+       "description": "the current location if not given"
+      },
+      {
+       "name": "day",
+       "type": "enum",
+       "required": false,
+       "options": [
+        "today",
+        "tomorrow",
+        "weekend"
+       ]
+      }
+     ]
+    }
    ],
    "intent": "call",
    "calls": [
@@ -453,7 +1117,20 @@
   {
    "id": "batch-0001-017",
    "tools": [
-    "send_message"
+    {
+     "name": "send_message",
+     "description": "Send a text message to a contact",
+     "args": [
+      {
+       "name": "contact",
+       "type": "str"
+      },
+      {
+       "name": "message",
+       "type": "str"
+      }
+     ]
+    }
    ],
    "intent": "ask",
    "calls": [
@@ -474,8 +1151,31 @@
   {
    "id": "batch-0001-018",
    "tools": [
-    "set_slow_cooker_cooking_time",
-    "projector_set_brightness"
+    {
+     "name": "set_slow_cooker_cooking_time",
+     "description": "Change the cooking time of the slow cooker",
+     "args": [
+      {
+       "name": "level",
+       "type": "int",
+       "min": 1,
+       "max": 12,
+       "description": "hours"
+      }
+     ]
+    },
+    {
+     "name": "projector_set_brightness",
+     "description": "Change the brightness of the projector",
+     "args": [
+      {
+       "name": "value",
+       "type": "int",
+       "min": 1,
+       "max": 10
+      }
+     ]
+    }
    ],
    "intent": "call",
    "calls": [
@@ -493,9 +1193,44 @@
   {
    "id": "batch-0001-019",
    "tools": [
-    "find_issue",
-    "add_reminder",
-    "adjust_pool_pump_speed"
+    {
+     "name": "find_issue",
+     "description": "Find issues matching a text",
+     "args": [
+      {
+       "name": "text",
+       "type": "str"
+      }
+     ]
+    },
+    {
+     "name": "add_reminder",
+     "description": "Remind the user about something later",
+     "args": [
+      {
+       "name": "text",
+       "type": "str"
+      },
+      {
+       "name": "when",
+       "type": "str",
+       "required": false,
+       "description": "a day or time, as the user said it"
+      }
+     ]
+    },
+    {
+     "name": "adjust_pool_pump_speed",
+     "description": "Set the pool pump speed",
+     "args": [
+      {
+       "name": "value",
+       "type": "int",
+       "min": 1,
+       "max": 3
+      }
+     ]
+    }
    ],
    "intent": "unsupported",
    "calls": [],

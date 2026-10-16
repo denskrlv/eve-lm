@@ -288,12 +288,29 @@ def _variants(rng, names, make, n=2) -> list[ToolSpec]:
     return [make(names[i]) for i in chosen]
 
 
-def _room_arg(device: Device, rng) -> tuple[list[Arg], str]:
+def _rooms(device: Device, rng, templates, everywhere) -> tuple[list[Arg], tuple[str, ...]]:
+    """A room argument for a device that lives in rooms, and the templates that use it.
+
+    ``<r>`` in a template marks where "in the {room}" goes; ``everywhere`` templates ask for
+    every room. A required room is named in every template, and "everywhere" fans out to one
+    call per room. An optional room is simply left out for "everywhere" (sometimes with the
+    description saying so), which teaches the model that the schema decides, not the words.
+    """
     if not device.rooms:
-        return [], ""
+        return [], tuple(t.replace("<r>", "") for t in templates)
     name = _pick(rng, ["room", "location"])
     rooms = tuple(rng.choice(ROOMS, size=int(rng.integers(3, 6)), replace=False).tolist())
-    return [Arg(name, "enum", required=False, options=rooms)], _sub("[ in the {<r>}]", r=name)
+    required = bool(rng.random() < 0.4)
+    if required:
+        templates = [t if "<r>" in t else t + "<r>" for t in templates]
+        templates += [e + "{" + name + "=*}" for e in everywhere]
+        description = ""
+    else:
+        templates = list(templates) + list(everywhere)
+        description = _pick(rng, ["", "all rooms if not given"])
+    segment = "[ in the {" + name + "}]"
+    arg = Arg(name, "enum", required=required, options=rooms, description=description)
+    return [arg], tuple(t.replace("<r>", segment) for t in templates)
 
 
 def _device_specs(device: Device, rng, weight: float) -> list[ToolSpec]:
@@ -304,7 +321,6 @@ def _device_specs(device: Device, rng, weight: float) -> list[ToolSpec]:
 
         def power(name):
             x = _pick(rng, ["on", "power", "enabled", "turn_on"])
-            rooms, r = _room_arg(device, rng)
             desc = _pick(rng, ["Turn the <noun> on or off", "Switch the <noun> on or off"])
             templates = [
                 "turn {<x>:on|off} the <noun><r>",
@@ -313,7 +329,13 @@ def _device_specs(device: Device, rng, weight: float) -> list[ToolSpec]:
                 "<noun> {<x>:on|off}",
                 "can you switch the <noun> {<x>:on|off}",
             ]
-            templates = tuple(_sub(t, x=x, noun=noun, r=r) for t in templates)
+            everywhere = [
+                "turn {<x>:on|off} the <noun> everywhere",
+                "switch {<x>:on|off} every <noun>",
+            ]
+            templates = [_sub(t, x=x, noun=noun) for t in templates]
+            everywhere = [_sub(t, x=x, noun=noun) for t in everywhere]
+            rooms, templates = _rooms(device, rng, templates, everywhere)
             tool = Tool(name, _sub(desc, noun=noun), (Arg(x, "bool"), *rooms), "generated-devices")
             return ToolSpec(tool, templates, capability=f"{k}.power", weight=weight)
 
@@ -332,7 +354,6 @@ def _device_specs(device: Device, rng, weight: float) -> list[ToolSpec]:
 
         def set_level(name, level=level, a=a, unit=unit):
             v = _pick(rng, [a, "level", "value"])
-            rooms, r = _room_arg(device, rng)
             desc = _pick(rng, ["Set the <noun> <attr>", "Change the <attr> of the <noun>"])
             templates = [
                 "set the <noun> <attr> to {<v>}<unit><r>",
@@ -341,8 +362,10 @@ def _device_specs(device: Device, rng, weight: float) -> list[ToolSpec]:
                 "<noun> <attr> {<v>}<unit>",
                 "set the <noun> <attr>[ to {<v>}<unit>]",
             ]
-            subs = {"noun": noun, "attr": level.attr, "v": v, "unit": unit, "r": r}
-            templates = tuple(_sub(t, **subs) for t in templates)
+            subs = {"noun": noun, "attr": level.attr, "v": v, "unit": unit}
+            everywhere = [_sub("set the <noun> <attr> to {<v>}<unit> in every room", **subs)]
+            templates = [_sub(t, **subs) for t in templates]
+            rooms, templates = _rooms(device, rng, templates, everywhere)
             arg = Arg(v, "int", min=level.lo, max=level.hi, description=level.unit)
             tool = Tool(name, _sub(desc, **subs), (arg, *rooms), "generated-devices")
             return ToolSpec(tool, templates, capability=f"{k}.{a}", weight=weight)
@@ -354,7 +377,6 @@ def _device_specs(device: Device, rng, weight: float) -> list[ToolSpec]:
 
         def set_mode(name):
             m = _pick(rng, ["mode", "setting", "program"])
-            rooms, r = _room_arg(device, rng)
             desc = _pick(rng, ["Set the <noun> mode", "Choose a program for the <noun>"])
             templates = [
                 "set the <noun> to {<m>}[ mode]<r>",
@@ -363,7 +385,9 @@ def _device_specs(device: Device, rng, weight: float) -> list[ToolSpec]:
                 "use {<m>} on the <noun>",
                 "change the <noun> mode[ to {<m>}]",
             ]
-            templates = tuple(_sub(t, noun=noun, m=m, r=r) for t in templates)
+            everywhere = [_sub("set every <noun> to {<m>}", noun=noun, m=m)]
+            templates = [_sub(t, noun=noun, m=m) for t in templates]
+            rooms, templates = _rooms(device, rng, templates, everywhere)
             arg = Arg(m, "enum", options=device.modes)
             tool = Tool(name, _sub(desc, noun=noun), (arg, *rooms), "generated-devices")
             return ToolSpec(tool, templates, capability=f"{k}.mode", weight=weight)

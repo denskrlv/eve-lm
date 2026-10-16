@@ -145,7 +145,8 @@ def data_batch(args: argparse.Namespace) -> None:
     for _ in range(args.count):
         name = next_batch_name(batches)
         seed = int(name.split("-")[1])
-        batch = make_batch(Sources.load(generation_dir=args.dir), name, args.n, args.split, seed)
+        sources = Sources.load(generation_dir=args.dir)
+        batch = make_batch(sources, name, args.n, args.split, seed, args.ask)
         (batches / f"{name}.json").write_text(json.dumps(batch, indent=1, ensure_ascii=False))
         print(f"{batches / name}.json: {args.n} {args.split} scenarios")
 
@@ -219,6 +220,7 @@ def main(argv: list[str] | None = None) -> None:
     p.add_argument("--split", choices=["train", "val", "probe"], default="train")
     p.add_argument("--n", type=int, default=50, help="scenarios per batch")
     p.add_argument("--count", type=int, default=1, help="how many batches")
+    p.add_argument("--ask", type=float, default=None, help="share of ASK scenarios, e.g. 0.3")
     p.add_argument("--dir", default="data/generation")
     p = data_commands.add_parser("check", help="validate a chat-written batch")
     p.set_defaults(run=data_check)

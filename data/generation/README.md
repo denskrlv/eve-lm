@@ -21,7 +21,7 @@ Work only on the batch you were given. Don't edit the batch file or any other fi
 
 ```json
 {"id": "batch-0003-007",
- "tools": ["set_blinds", "set_lights"],
+ "tools": [{"name": "set_blinds", ...}, {"name": "set_lights", ...}],
  "intent": "call",
  "calls": [{"tool": "set_lights", "args": {"room": "kitchen", "on": false}}],
  "meaning": "turn off the kitchen lights",
@@ -29,8 +29,8 @@ Work only on the batch you were given. Don't edit the batch file or any other fi
  "implied": []}
 ```
 
-- `tools`: what the assistant can do in this scenario. Each tool's schema is under `schemas` at the top
-  of the batch file, in the form the model reads (`?` marks an optional argument).
+- `tools`: what the assistant can do in this scenario (full schemas). The same tools are listed under
+  `schemas` at the top of the batch file, in the form the model reads (`?` marks an optional argument).
 - `calls`: the exact answer. Your request must lead to exactly these calls, in this order.
 - `meaning`: a plain version of the request. **Rephrase it**; never copy it.
 
@@ -47,6 +47,9 @@ Work only on the batch you were given. Don't edit the batch file or any other fi
 - Don't mention anything that isn't in the args: if `brightness` isn't there, don't ask for 40%.
 - Several calls: one request that asks for all of them in order ("kitchen lights off, then lock the
   front door").
+- The same tool once for **every** option of an argument (`set_lights` for each room, in the schema's
+  order): the user asks for all of them at once ("turn the lights off everywhere", "lock all the doors").
+  Don't list the options one by one.
 
 **ask**: the user asks for the tool's action but leaves out the values named in `missing`.
 - Do **not** mention the missing value or hint at a specific one: "turn off the lights" when `room`

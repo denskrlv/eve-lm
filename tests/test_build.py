@@ -24,7 +24,10 @@ def test_batch_and_check(sources):
     batch = make_batch(sources, "batch-0001", 20, "val", seed=1)
     assert batch == make_batch(sources, "batch-0001", 20, "val", seed=1)
     assert len(batch["scenarios"]) == 20
-    assert all(t in batch["schemas"] for s in batch["scenarios"] for t in s["tools"])
+    assert all(
+        isinstance(t, dict) for s in batch["scenarios"] for t in s["tools"]
+    )  # self-contained
+    assert all(t["name"] in batch["schemas"] for s in batch["scenarios"] for t in s["tools"])
 
     # Writing the template meaning back always passes; a changed value doesn't.
     written = [
@@ -83,3 +86,11 @@ def test_build(tmp_path, sources):
     assert not val & {r["utterance"] for r in read_jsonl(tmp_path / "task/train.jsonl")}
     heldout = read_jsonl(tmp_path / "task/heldout-templates.jsonl")
     assert len(heldout) == 50
+
+
+def test_batch_ask_share(sources):
+    batch = make_batch(sources, "batch-0003", 100, "val", seed=4, ask=0.5)
+    asks = sum(s["intent"] == "ask" for s in batch["scenarios"])
+    assert 35 <= asks <= 65 and all(
+        s["missing"] for s in batch["scenarios"] if s["intent"] == "ask"
+    )

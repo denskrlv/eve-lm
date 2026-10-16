@@ -2,7 +2,7 @@ import re
 from collections.abc import Collection
 from typing import Any
 
-from colibri.data.generate.templates import number_words
+from colibri.data.generate.templates import MAX_CALLS, number_words
 from colibri.data.render import TaskExample
 from colibri.data.schema import ASK_VALUE, Arg
 
@@ -41,8 +41,8 @@ def check_example(
         errors.append(f"utterance is empty or longer than {MAX_UTTERANCE_CHARS} characters")
     if not 1 <= len(example.tools) <= 5:
         errors.append(f"{len(example.tools)} tools in the prompt; 1 to 5 allowed")
-    if len(example.calls) > 5:
-        errors.append(f"{len(example.calls)} calls; at most 5")
+    if len(example.calls) > MAX_CALLS:
+        errors.append(f"{len(example.calls)} calls; at most {MAX_CALLS}")
     tools = {t.name: t for t in example.tools}
     for i, call in enumerate(example.calls):
         for name, value in call.args.items():

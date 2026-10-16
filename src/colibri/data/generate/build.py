@@ -8,7 +8,7 @@ import numpy as np
 
 from colibri.config import ModelConfig
 from colibri.data.generate.library import ToolSpec, load_specs
-from colibri.data.generate.sampler import ToolBank, sample
+from colibri.data.generate.sampler import INTENT_MIX, ToolBank, sample
 from colibri.data.generate.toolgen import generated_specs
 from colibri.data.generate.validate import check_example, normalize
 from colibri.data.render import TaskExample, render
@@ -59,6 +59,8 @@ class Sources:
     def source_of(self, name: str) -> str:
         if any(s.name == name for s in self.heldout):
             return "heldout"
+        if name not in self.library:
+            return "older generated"  # a tool from an earlier generator, kept in a chat batch
         return "generated" if self.library[name].domain.startswith("generated") else "hand"
 
 
@@ -87,10 +89,13 @@ def template_examples(
 # ---- chat-written examples ------------------------------------------------------------------
 
 
-def make_batch(sources: Sources, name: str, n: int, split: str, seed: int) -> dict:
+def make_batch(
+    sources: Sources, name: str, n: int, split: str, seed: int, ask: float | None = None
+) -> dict:
     """Scenarios for a chat to write requests for (see data/generation/README.md).
 
     ``probe`` batches take the correct tool from the held-out domains half of the time.
+    ``ask`` sets the share of ASK scenarios; the other intents keep their relative mix.
     """
     if split not in CHAT_SPLITS:
         raise ValueError(f"split must be one of {CHAT_SPLITS}")
@@ -98,11 +103,18 @@ def make_batch(sources: Sources, name: str, n: int, split: str, seed: int) -> di
     specs = sources.train + (sources.heldout if split == "probe" else [])
     bank = ToolBank(specs)
     heldout = [bank.index[s.name] for s in sources.heldout] if split == "probe" else None
+    mix = dict(INTENT_MIX)
+    if ask is not None:
+        rest = 1 - mix.pop("ask")
+        mix = {k: v / rest * (1 - ask) for k, v in mix.items()} | {"ask": ask}
     scenarios = []
     for i in range(n):
         pool = heldout if heldout and rng.random() < 0.5 else None
-        s = sample(bank, rng, pool=pool, chitchat=sources.chitchat, unsupported=sources.unsupported)
-        row = s.example.to_json()
+        intent = str(rng.choice(list(mix), p=list(mix.values())))
+        s = sample(
+            bank, rng, intent, pool, chitchat=sources.chitchat, unsupported=sources.unsupported
+        )
+        row = s.example.to_json(inline=True)  # whole schemas: the batch stays valid if tools change
         del row["utterance"]
         scenarios.append(
             {
@@ -113,8 +125,8 @@ def make_batch(sources: Sources, name: str, n: int, split: str, seed: int) -> di
                 "implied": sorted(s.implied),
             }
         )
-    used = sorted({t for s in scenarios for t in s["tools"]})
-    schemas = {t: bank.specs[bank.index[t]].tool.render() for t in used}
+    used = {t["name"]: Tool.from_dict(t) for s in scenarios for t in s["tools"]}
+    schemas = {name: used[name].render() for name in sorted(used)}
     return {"batch": name, "split": split, "seed": seed, "schemas": schemas, "scenarios": scenarios}
 
 
@@ -143,7 +155,7 @@ def check_written(batch: dict, written: list[dict], library: dict[str, Tool]) ->
         if errors := check_example(ex, implied):
             rejects.append((line, errors))
         else:
-            examples.append({**ex.to_json(), "source": "chat"})
+            examples.append({**ex.to_json(inline=True), "source": "chat"})
     return examples, rejects
 
 
