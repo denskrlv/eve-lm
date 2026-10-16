@@ -1,0 +1,3248 @@
+{
+ "batch": "batch-0005",
+ "split": "val",
+ "seed": 5,
+ "schemas": {
+  "add_project": "<tool> add_project : Add a project <arg> name : str",
+  "add_reminder": "<tool> add_reminder : Remind the user about something later <arg> text : str <arg> when ? : str : a day or time, as the user said it",
+  "add_to_list": "<tool> add_to_list : Add an item to a shopping list <arg> item : str <arg> quantity ? : int 1..99 <arg> list ? : enum groceries | hardware | pharmacy",
+  "adjust_space_heater_heat_level": "<tool> adjust_space_heater_heat_level : Change the heat level of the space heater <arg> heat_level : int 1..5 <arg> location ? : enum living room | garage | bathroom | kitchen | basement",
+  "baby_monitor_power": "<tool> baby_monitor_power : Turn the baby monitor on or off <arg> power : bool",
+  "call_contact": "<tool> call_contact : Start a phone or video call <arg> contact : str <arg> video ? : bool",
+  "cancel_timer": "<tool> cancel_timer : Cancel a running timer <arg> label ? : str : all timers if not given",
+  "change_coffee_machine_mode": "<tool> change_coffee_machine_mode : Choose a program for the coffee machine <arg> program : enum espresso | latte | americano",
+  "change_dehumidifier_humidity": "<tool> change_dehumidifier_humidity : Set the dehumidifier humidity <arg> humidity : int 30..70 : percent <arg> location ? : enum bedroom | bathroom | kitchen | garage : all rooms if not given",
+  "change_dryer_mode": "<tool> change_dryer_mode : Choose a program for the dryer <arg> program : enum low heat | medium heat | high heat",
+  "change_electric_blanket_heat_level": "<tool> change_electric_blanket_heat_level : Set the electric blanket heat level <arg> value : int 1..10",
+  "change_kettle_temperature": "<tool> change_kettle_temperature : Change the temperature of the kettle <arg> level : int 60..100 : degrees",
+  "change_oven_temperature": "<tool> change_oven_temperature : Change the temperature of the oven <arg> value : int 50..250 : degrees",
+  "change_rice_cooker_mode": "<tool> change_rice_cooker_mode : Choose a program for the rice cooker <arg> setting : enum white rice | brown rice | porridge",
+  "change_slow_cooker_cooking_time": "<tool> change_slow_cooker_cooking_time : Change the cooking time of the slow cooker <arg> level : int 1..12 : hours",
+  "change_sprinkler_duration": "<tool> change_sprinkler_duration : Change the duration of the sprinkler <arg> duration : int 5..60 : minutes",
+  "check_parking_availability": "<tool> check_parking_availability : Check the parking availability <arg> garage : str",
+  "check_pollen_count": "<tool> check_pollen_count : Check the pollen count <arg> city : str",
+  "check_showtimes": "<tool> check_showtimes : Get the showtimes <arg> movie : str",
+  "check_stock_price": "<tool> check_stock_price : Check the stock price <arg> symbol : str",
+  "coffee_machine_mode": "<tool> coffee_machine_mode : Choose a program for the coffee machine <arg> program : enum espresso | latte | americano",
+  "create_bookmark": "<tool> create_bookmark : Create a new bookmark <arg> name : str",
+  "create_deck": "<tool> create_deck : Add a deck <arg> name : str",
+  "create_event": "<tool> create_event : Add an event to the calendar <arg> title : str <arg> day : str : as the user said it <arg> time ? : str <arg> duration ? : int 5..480 : minutes",
+  "create_issue": "<tool> create_issue : Add an issue <arg> name : str <arg> severity ? : enum minor | major | critical",
+  "create_recipe": "<tool> create_recipe : Add a recipe <arg> name : str <arg> servings ? : int 1..12",
+  "delete_bookmark": "<tool> delete_bookmark : Delete a bookmark <arg> title : str",
+  "delete_document": "<tool> delete_document : Remove a document <arg> name : str",
+  "delete_photo_album": "<tool> delete_photo_album : Delete a photo album <arg> name : str",
+  "delete_playbook": "<tool> delete_playbook : Remove a playbook <arg> title : str",
+  "delete_project": "<tool> delete_project : Delete a project <arg> title : str",
+  "delete_recipe": "<tool> delete_recipe : Remove a recipe <arg> name : str",
+  "delete_ticket": "<tool> delete_ticket : Delete a ticket <arg> name : str",
+  "dryer_power": "<tool> dryer_power : Turn the dryer on or off <arg> power : bool",
+  "fan_set_speed": "<tool> fan_set_speed : Set the fan speed <arg> speed : int 1..5 <arg> room ? : enum living room | office | bedroom | basement | bathroom : all rooms if not given",
+  "fetch_definition": "<tool> fetch_definition : Get the definition <arg> word : str",
+  "fetch_horoscope": "<tool> fetch_horoscope : Get the horoscope <arg> sign : str",
+  "fetch_sunrise_time": "<tool> fetch_sunrise_time : Get the sunrise time <arg> city : str",
+  "find_car": "<tool> find_car : Show where the car is parked",
+  "find_deck": "<tool> find_deck : Find decks matching a text <arg> query : str",
+  "find_goal": "<tool> find_goal : Search goals <arg> text : str",
+  "find_habit": "<tool> find_habit : Find habits matching a text <arg> keyword : str",
+  "find_plant": "<tool> find_plant : Find plants matching a text <arg> query : str",
+  "find_project": "<tool> find_project : Search projects <arg> text : str",
+  "find_recipe": "<tool> find_recipe : Search recipes <arg> query : str",
+  "get_air_quality": "<tool> get_air_quality : Check the air quality <arg> city : str",
+  "get_bus_times": "<tool> get_bus_times : Look up the bus times <arg> stop : str",
+  "get_step_count": "<tool> get_step_count : Tell how many steps the user walked <arg> day ? : enum today | yesterday | this week",
+  "get_time": "<tool> get_time : Tell the current time in a city <arg> city ? : str",
+  "get_weather": "<tool> get_weather : Get the weather forecast <arg> city ? : str : the current location if not given <arg> day ? : enum today | tomorrow | weekend",
+  "heated_floor_power": "<tool> heated_floor_power : Turn the heated floor on or off <arg> enabled : bool <arg> location : enum bathroom | office | bedroom | living room | kitchen",
+  "humidifier_mode": "<tool> humidifier_mode : Set the humidifier mode <arg> program : enum auto | sleep <arg> location ? : enum garage | basement | bathroom | office",
+  "humidifier_set_humidity": "<tool> humidifier_set_humidity : Change the humidity of the humidifier <arg> value : int 30..70 : percent <arg> room ? : enum garage | basement | living room | kitchen : all rooms if not given",
+  "list_events": "<tool> list_events : Read out the events on the calendar <arg> day ? : enum today | tomorrow | this week",
+  "lock_car": "<tool> lock_car : Lock or unlock the car <arg> locked : bool",
+  "lookup_air_quality": "<tool> lookup_air_quality : Look up the air quality <arg> city : str",
+  "lookup_document": "<tool> lookup_document : Search documents <arg> text : str",
+  "lookup_package_status": "<tool> lookup_package_status : Get the package status <arg> tracking_number : str",
+  "lookup_ticket": "<tool> lookup_ticket : Search tickets <arg> text : str",
+  "mark_ticket": "<tool> mark_ticket : Change the status of a ticket <arg> title : str <arg> state : enum open | in progress | closed",
+  "new_expense": "<tool> new_expense : Create a new expense <arg> title : str <arg> amount ? : int 1..500",
+  "new_habit": "<tool> new_habit : Create a new habit <arg> title : str <arg> times_per_week ? : int 1..7",
+  "new_plant": "<tool> new_plant : Add a plant <arg> title : str <arg> water_every ? : int 1..14",
+  "new_project": "<tool> new_project : Add a project <arg> name : str",
+  "new_ticket": "<tool> new_ticket : Add a ticket <arg> title : str <arg> priority ? : enum low | medium | high",
+  "pause_media": "<tool> pause_media : Pause whatever is playing",
+  "play_music": "<tool> play_music : Play a song, artist, album or playlist <arg> query : str : what to play <arg> shuffle ? : bool",
+  "pool_pump_set_speed": "<tool> pool_pump_set_speed : Set the pool pump speed <arg> value : int 1..3",
+  "read_list": "<tool> read_list : Read out a shopping list <arg> list ? : enum groceries | hardware | pharmacy",
+  "remove_deck": "<tool> remove_deck : Delete a deck <arg> name : str",
+  "remove_document": "<tool> remove_document : Remove a document <arg> name : str",
+  "remove_from_list": "<tool> remove_from_list : Remove an item from the shopping list <arg> item : str",
+  "remove_recipe": "<tool> remove_recipe : Delete a recipe <arg> name : str",
+  "remove_ticket": "<tool> remove_ticket : Delete a ticket <arg> name : str",
+  "reorder_item": "<tool> reorder_item : Order an item again from a past order <arg> item : str",
+  "search_bookmarks": "<tool> search_bookmarks : Search bookmarks <arg> text : str",
+  "search_decks": "<tool> search_decks : Find decks matching a text <arg> query : str",
+  "search_projects": "<tool> search_projects : Find projects matching a text <arg> query : str",
+  "search_recipes": "<tool> search_recipes : Find recipes matching a text <arg> text : str",
+  "search_web": "<tool> search_web : Search the web and read out the top answer <arg> query : str",
+  "select_dishwasher_program": "<tool> select_dishwasher_program : Choose a program for the dishwasher <arg> setting : enum eco | quick | intensive",
+  "select_lawn_mower_program": "<tool> select_lawn_mower_program : Choose a program for the lawn mower <arg> mode : enum eco | normal",
+  "select_oven_program": "<tool> select_oven_program : Set the oven mode <arg> program : enum bake | grill | fan",
+  "select_water_heater_program": "<tool> select_water_heater_program : Choose a program for the water heater <arg> program : enum eco | boost",
+  "set_air_purifier_fan_speed": "<tool> set_air_purifier_fan_speed : Set the air purifier fan speed <arg> level : int 1..3 <arg> room : enum living room | bathroom | basement | garage",
+  "set_alarm": "<tool> set_alarm : Set an alarm <arg> time : str : as the user said it, like 7:30 am <arg> repeat ? : enum once | daily | weekdays | weekends",
+  "set_blinds": "<tool> set_blinds : Open or close the blinds in a room <arg> room : enum kitchen | bedroom | living room | office <arg> position : int 0..100 : percent open",
+  "set_charge_limit": "<tool> set_charge_limit : Set how full the car battery charges <arg> percent : int 50..100",
+  "set_heated_floor_power": "<tool> set_heated_floor_power : Turn the heated floor on or off <arg> power : bool <arg> room ? : enum garage | nursery | bedroom | bathroom | office",
+  "set_humidifier_power": "<tool> set_humidifier_power : Switch the humidifier on or off <arg> power : bool <arg> location ? : enum garage | living room | basement",
+  "set_projector_brightness": "<tool> set_projector_brightness : Change the brightness of the projector <arg> level : int 1..10",
+  "set_space_heater_mode": "<tool> set_space_heater_mode : Choose a program for the space heater <arg> program : enum eco | comfort <arg> room ? : enum bedroom | basement | bathroom | living room : all rooms if not given",
+  "set_space_heater_power": "<tool> set_space_heater_power : Turn the space heater on or off <arg> on : bool <arg> room : enum garage | bathroom | basement | bedroom | nursery",
+  "set_thermostat": "<tool> set_thermostat : Set the target temperature of the heating or cooling <arg> temperature : float 10..30 : degrees Celsius <arg> mode ? : enum heat | cool | auto",
+  "set_timer": "<tool> set_timer : Start a countdown timer <arg> minutes : int 1..1440 <arg> label ? : str",
+  "set_tv_mode": "<tool> set_tv_mode : Choose a program for the tv <arg> mode : enum hdmi one | hdmi two | antenna",
+  "set_volume": "<tool> set_volume : Set the speaker volume <arg> level : int 0..100 : percent",
+  "share_eta": "<tool> share_eta : Send someone the user's expected arrival time <arg> contact : str",
+  "skip_track": "<tool> skip_track : Skip to another track <arg> direction : enum next | previous",
+  "space_heater_mode": "<tool> space_heater_mode : Choose a program for the space heater <arg> program : enum eco | comfort <arg> room : enum kitchen | garage | nursery",
+  "start_car_climate": "<tool> start_car_climate : Heat or cool the car before driving <arg> temperature ? : float 16..28 : degrees Celsius",
+  "start_workout": "<tool> start_workout : Start tracking a workout <arg> kind : enum run | walk | cycle | yoga | strength <arg> minutes ? : int 5..180",
+  "switch_aquarium_heater": "<tool> switch_aquarium_heater : Switch the aquarium heater on or off <arg> enabled : bool",
+  "switch_lawn_mower": "<tool> switch_lawn_mower : Turn the lawn mower on or off <arg> power : bool",
+  "switch_printer": "<tool> switch_printer : Switch the printer on or off <arg> power : bool",
+  "switch_sprinkler": "<tool> switch_sprinkler : Switch the sprinkler on or off <arg> on : bool",
+  "toggle_air_purifier": "<tool> toggle_air_purifier : Switch the air purifier on or off <arg> enabled : bool <arg> location : enum nursery | kitchen | bedroom | bathroom",
+  "toggle_dryer": "<tool> toggle_dryer : Turn the dryer on or off <arg> enabled : bool",
+  "toggle_kettle": "<tool> toggle_kettle : Turn the kettle on or off <arg> turn_on : bool",
+  "toggle_slow_cooker": "<tool> toggle_slow_cooker : Turn the slow cooker on or off <arg> power : bool",
+  "toggle_water_heater": "<tool> toggle_water_heater : Switch the water heater on or off <arg> turn_on : bool",
+  "turn_coffee_machine_on_or_off": "<tool> turn_coffee_machine_on_or_off : Turn the coffee machine on or off <arg> turn_on : bool",
+  "turn_electric_blanket_on_or_off": "<tool> turn_electric_blanket_on_or_off : Turn the electric blanket on or off <arg> turn_on : bool",
+  "turn_projector_on_or_off": "<tool> turn_projector_on_or_off : Switch the projector on or off <arg> enabled : bool",
+  "turn_rice_cooker_on_or_off": "<tool> turn_rice_cooker_on_or_off : Switch the rice cooker on or off <arg> power : bool",
+  "turn_security_camera_on_or_off": "<tool> turn_security_camera_on_or_off : Turn the security camera on or off <arg> on : bool",
+  "turn_tv_on_or_off": "<tool> turn_tv_on_or_off : Switch the tv on or off <arg> power : bool",
+  "update_document_status": "<tool> update_document_status : Change the status of a document <arg> title : str <arg> status : enum draft | final",
+  "update_goal_status": "<tool> update_goal_status : Change the status of a goal <arg> name : str <arg> status : enum active | achieved | abandoned",
+  "update_issue_status": "<tool> update_issue_status : Change the status of a issue <arg> title : str <arg> status : enum open | closed",
+  "washing_machine_set_temperature": "<tool> washing_machine_set_temperature : Set the washing machine temperature <arg> temperature : int 20..90 : degrees",
+  "water_heater_power": "<tool> water_heater_power : Switch the water heater on or off <arg> turn_on : bool",
+  "water_heater_set_temperature": "<tool> water_heater_set_temperature : Change the temperature of the water heater <arg> temperature : int 40..70 : degrees"
+ },
+ "scenarios": [
+  {
+   "id": "batch-0005-000",
+   "tools": [
+    {
+     "name": "select_dishwasher_program",
+     "description": "Choose a program for the dishwasher",
+     "args": [
+      {
+       "name": "setting",
+       "type": "enum",
+       "options": [
+        "eco",
+        "quick",
+        "intensive"
+       ]
+      }
+     ]
+    },
+    {
+     "name": "lookup_air_quality",
+     "description": "Look up the air quality",
+     "args": [
+      {
+       "name": "city",
+       "type": "str"
+      }
+     ]
+    },
+    {
+     "name": "lookup_package_status",
+     "description": "Get the package status",
+     "args": [
+      {
+       "name": "tracking_number",
+       "type": "str"
+      }
+     ]
+    },
+    {
+     "name": "check_pollen_count",
+     "description": "Check the pollen count",
+     "args": [
+      {
+       "name": "city",
+       "type": "str"
+      }
+     ]
+    },
+    {
+     "name": "fetch_sunrise_time",
+     "description": "Get the sunrise time",
+     "args": [
+      {
+       "name": "city",
+       "type": "str"
+      }
+     ]
+    }
+   ],
+   "intent": "ask",
+   "calls": [
+    {
+     "tool": "lookup_package_status",
+     "args": {
+      "tracking_number": "?"
+     }
+    }
+   ],
+   "meaning": "status of package",
+   "missing": [
+    "tracking_number"
+   ],
+   "implied": []
+  },
+  {
+   "id": "batch-0005-001",
+   "tools": [
+    {
+     "name": "find_deck",
+     "description": "Find decks matching a text",
+     "args": [
+      {
+       "name": "query",
+       "type": "str"
+      }
+     ]
+    },
+    {
+     "name": "create_bookmark",
+     "description": "Create a new bookmark",
+     "args": [
+      {
+       "name": "name",
+       "type": "str"
+      }
+     ]
+    },
+    {
+     "name": "create_event",
+     "description": "Add an event to the calendar",
+     "args": [
+      {
+       "name": "title",
+       "type": "str"
+      },
+      {
+       "name": "day",
+       "type": "str",
+       "description": "as the user said it"
+      },
+      {
+       "name": "time",
+       "type": "str",
+       "required": false
+      },
+      {
+       "name": "duration",
+       "type": "int",
+       "required": false,
+       "min": 5,
+       "max": 480,
+       "description": "minutes"
+      }
+     ]
+    },
+    {
+     "name": "mark_ticket",
+     "description": "Change the status of a ticket",
+     "args": [
+      {
+       "name": "title",
+       "type": "str"
+      },
+      {
+       "name": "state",
+       "type": "enum",
+       "options": [
+        "open",
+        "in progress",
+        "closed"
+       ]
+      }
+     ]
+    },
+    {
+     "name": "find_plant",
+     "description": "Find plants matching a text",
+     "args": [
+      {
+       "name": "query",
+       "type": "str"
+      }
+     ]
+    }
+   ],
+   "intent": "call",
+   "calls": [
+    {
+     "tool": "find_deck",
+     "args": {
+      "query": "Spanish verbs"
+     }
+    },
+    {
+     "tool": "create_event",
+     "args": {
+      "title": "a call with Sarah",
+      "day": "this weekend",
+      "time": "10:30"
+     }
+    }
+   ],
+   "meaning": "find decks about Spanish verbs, then add a call with Sarah to my calendar this weekend at 10:30",
+   "missing": [],
+   "implied": []
+  },
+  {
+   "id": "batch-0005-002",
+   "tools": [
+    {
+     "name": "get_air_quality",
+     "description": "Check the air quality",
+     "args": [
+      {
+       "name": "city",
+       "type": "str"
+      }
+     ]
+    }
+   ],
+   "intent": "unsupported",
+   "calls": [],
+   "meaning": "schedule a haircut",
+   "missing": [],
+   "implied": []
+  },
+  {
+   "id": "batch-0005-003",
+   "tools": [
+    {
+     "name": "toggle_dryer",
+     "description": "Turn the dryer on or off",
+     "args": [
+      {
+       "name": "enabled",
+       "type": "bool"
+      }
+     ]
+    },
+    {
+     "name": "switch_sprinkler",
+     "description": "Switch the sprinkler on or off",
+     "args": [
+      {
+       "name": "on",
+       "type": "bool"
+      }
+     ]
+    },
+    {
+     "name": "water_heater_power",
+     "description": "Switch the water heater on or off",
+     "args": [
+      {
+       "name": "turn_on",
+       "type": "bool"
+      }
+     ]
+    },
+    {
+     "name": "space_heater_mode",
+     "description": "Choose a program for the space heater",
+     "args": [
+      {
+       "name": "program",
+       "type": "enum",
+       "options": [
+        "eco",
+        "comfort"
+       ]
+      },
+      {
+       "name": "room",
+       "type": "enum",
+       "options": [
+        "kitchen",
+        "garage",
+        "nursery"
+       ]
+      }
+     ]
+    }
+   ],
+   "intent": "call",
+   "calls": [
+    {
+     "tool": "switch_sprinkler",
+     "args": {
+      "on": false
+     }
+    },
+    {
+     "tool": "space_heater_mode",
+     "args": {
+      "program": "eco",
+      "room": "kitchen"
+     }
+    },
+    {
+     "tool": "space_heater_mode",
+     "args": {
+      "program": "eco",
+      "room": "garage"
+     }
+    },
+    {
+     "tool": "space_heater_mode",
+     "args": {
+      "program": "eco",
+      "room": "nursery"
+     }
+    }
+   ],
+   "meaning": "switch off the sprinkler and set every space heater to eco",
+   "missing": [],
+   "implied": []
+  },
+  {
+   "id": "batch-0005-004",
+   "tools": [
+    {
+     "name": "remove_deck",
+     "description": "Delete a deck",
+     "args": [
+      {
+       "name": "name",
+       "type": "str"
+      }
+     ]
+    },
+    {
+     "name": "add_project",
+     "description": "Add a project",
+     "args": [
+      {
+       "name": "name",
+       "type": "str"
+      }
+     ]
+    },
+    {
+     "name": "get_bus_times",
+     "description": "Look up the bus times",
+     "args": [
+      {
+       "name": "stop",
+       "type": "str"
+      }
+     ]
+    },
+    {
+     "name": "fetch_definition",
+     "description": "Get the definition",
+     "args": [
+      {
+       "name": "word",
+       "type": "str"
+      }
+     ]
+    }
+   ],
+   "intent": "none",
+   "calls": [],
+   "meaning": null,
+   "missing": [],
+   "implied": []
+  },
+  {
+   "id": "batch-0005-005",
+   "tools": [
+    {
+     "name": "cancel_timer",
+     "description": "Cancel a running timer",
+     "args": [
+      {
+       "name": "label",
+       "type": "str",
+       "required": false,
+       "description": "all timers if not given"
+      }
+     ]
+    },
+    {
+     "name": "create_event",
+     "description": "Add an event to the calendar",
+     "args": [
+      {
+       "name": "title",
+       "type": "str"
+      },
+      {
+       "name": "day",
+       "type": "str",
+       "description": "as the user said it"
+      },
+      {
+       "name": "time",
+       "type": "str",
+       "required": false
+      },
+      {
+       "name": "duration",
+       "type": "int",
+       "required": false,
+       "min": 5,
+       "max": 480,
+       "description": "minutes"
+      }
+     ]
+    },
+    {
+     "name": "add_reminder",
+     "description": "Remind the user about something later",
+     "args": [
+      {
+       "name": "text",
+       "type": "str"
+      },
+      {
+       "name": "when",
+       "type": "str",
+       "required": false,
+       "description": "a day or time, as the user said it"
+      }
+     ]
+    },
+    {
+     "name": "set_timer",
+     "description": "Start a countdown timer",
+     "args": [
+      {
+       "name": "minutes",
+       "type": "int",
+       "min": 1,
+       "max": 1440
+      },
+      {
+       "name": "label",
+       "type": "str",
+       "required": false
+      }
+     ]
+    }
+   ],
+   "intent": "ask",
+   "calls": [
+    {
+     "tool": "set_timer",
+     "args": {
+      "minutes": "?"
+     }
+    }
+   ],
+   "meaning": "start a countdown",
+   "missing": [
+    "minutes"
+   ],
+   "implied": []
+  },
+  {
+   "id": "batch-0005-006",
+   "tools": [
+    {
+     "name": "set_blinds",
+     "description": "Open or close the blinds in a room",
+     "args": [
+      {
+       "name": "room",
+       "type": "enum",
+       "options": [
+        "kitchen",
+        "bedroom",
+        "living room",
+        "office"
+       ]
+      },
+      {
+       "name": "position",
+       "type": "int",
+       "min": 0,
+       "max": 100,
+       "description": "percent open"
+      }
+     ]
+    },
+    {
+     "name": "set_thermostat",
+     "description": "Set the target temperature of the heating or cooling",
+     "args": [
+      {
+       "name": "temperature",
+       "type": "float",
+       "min": 10,
+       "max": 30,
+       "description": "degrees Celsius"
+      },
+      {
+       "name": "mode",
+       "type": "enum",
+       "required": false,
+       "options": [
+        "heat",
+        "cool",
+        "auto"
+       ]
+      }
+     ]
+    },
+    {
+     "name": "adjust_space_heater_heat_level",
+     "description": "Change the heat level of the space heater",
+     "args": [
+      {
+       "name": "heat_level",
+       "type": "int",
+       "min": 1,
+       "max": 5
+      },
+      {
+       "name": "location",
+       "type": "enum",
+       "required": false,
+       "options": [
+        "living room",
+        "garage",
+        "bathroom",
+        "kitchen",
+        "basement"
+       ]
+      }
+     ]
+    }
+   ],
+   "intent": "ask",
+   "calls": [
+    {
+     "tool": "set_blinds",
+     "args": {
+      "room": "?",
+      "position": 0
+     }
+    }
+   ],
+   "meaning": "close the blinds",
+   "missing": [
+    "room"
+   ],
+   "implied": [
+    [
+     0,
+     "position"
+    ]
+   ]
+  },
+  {
+   "id": "batch-0005-007",
+   "tools": [
+    {
+     "name": "search_decks",
+     "description": "Find decks matching a text",
+     "args": [
+      {
+       "name": "query",
+       "type": "str"
+      }
+     ]
+    },
+    {
+     "name": "find_car",
+     "description": "Show where the car is parked",
+     "args": []
+    },
+    {
+     "name": "space_heater_mode",
+     "description": "Choose a program for the space heater",
+     "args": [
+      {
+       "name": "program",
+       "type": "enum",
+       "options": [
+        "eco",
+        "comfort"
+       ]
+      },
+      {
+       "name": "room",
+       "type": "enum",
+       "options": [
+        "kitchen",
+        "garage",
+        "nursery"
+       ]
+      }
+     ]
+    },
+    {
+     "name": "find_goal",
+     "description": "Search goals",
+     "args": [
+      {
+       "name": "text",
+       "type": "str"
+      }
+     ]
+    }
+   ],
+   "intent": "call",
+   "calls": [
+    {
+     "tool": "find_car",
+     "args": {}
+    }
+   ],
+   "meaning": "find my car",
+   "missing": [],
+   "implied": []
+  },
+  {
+   "id": "batch-0005-008",
+   "tools": [
+    {
+     "name": "switch_printer",
+     "description": "Switch the printer on or off",
+     "args": [
+      {
+       "name": "power",
+       "type": "bool"
+      }
+     ]
+    },
+    {
+     "name": "set_heated_floor_power",
+     "description": "Turn the heated floor on or off",
+     "args": [
+      {
+       "name": "power",
+       "type": "bool"
+      },
+      {
+       "name": "room",
+       "type": "enum",
+       "required": false,
+       "options": [
+        "garage",
+        "nursery",
+        "bedroom",
+        "bathroom",
+        "office"
+       ]
+      }
+     ]
+    },
+    {
+     "name": "set_timer",
+     "description": "Start a countdown timer",
+     "args": [
+      {
+       "name": "minutes",
+       "type": "int",
+       "min": 1,
+       "max": 1440
+      },
+      {
+       "name": "label",
+       "type": "str",
+       "required": false
+      }
+     ]
+    },
+    {
+     "name": "add_reminder",
+     "description": "Remind the user about something later",
+     "args": [
+      {
+       "name": "text",
+       "type": "str"
+      },
+      {
+       "name": "when",
+       "type": "str",
+       "required": false,
+       "description": "a day or time, as the user said it"
+      }
+     ]
+    }
+   ],
+   "intent": "ask",
+   "calls": [
+    {
+     "tool": "set_timer",
+     "args": {
+      "minutes": "?"
+     }
+    }
+   ],
+   "meaning": "start a countdown",
+   "missing": [
+    "minutes"
+   ],
+   "implied": []
+  },
+  {
+   "id": "batch-0005-009",
+   "tools": [
+    {
+     "name": "new_plant",
+     "description": "Add a plant",
+     "args": [
+      {
+       "name": "title",
+       "type": "str"
+      },
+      {
+       "name": "water_every",
+       "type": "int",
+       "required": false,
+       "min": 1,
+       "max": 14
+      }
+     ]
+    },
+    {
+     "name": "find_plant",
+     "description": "Find plants matching a text",
+     "args": [
+      {
+       "name": "query",
+       "type": "str"
+      }
+     ]
+    },
+    {
+     "name": "find_habit",
+     "description": "Find habits matching a text",
+     "args": [
+      {
+       "name": "keyword",
+       "type": "str"
+      }
+     ]
+    }
+   ],
+   "intent": "call",
+   "calls": [
+    {
+     "tool": "find_plant",
+     "args": {
+      "query": "fern"
+     }
+    }
+   ],
+   "meaning": "find plants about fern",
+   "missing": [],
+   "implied": []
+  },
+  {
+   "id": "batch-0005-010",
+   "tools": [
+    {
+     "name": "select_lawn_mower_program",
+     "description": "Choose a program for the lawn mower",
+     "args": [
+      {
+       "name": "mode",
+       "type": "enum",
+       "options": [
+        "eco",
+        "normal"
+       ]
+      }
+     ]
+    },
+    {
+     "name": "toggle_kettle",
+     "description": "Turn the kettle on or off",
+     "args": [
+      {
+       "name": "turn_on",
+       "type": "bool"
+      }
+     ]
+    },
+    {
+     "name": "switch_printer",
+     "description": "Switch the printer on or off",
+     "args": [
+      {
+       "name": "power",
+       "type": "bool"
+      }
+     ]
+    },
+    {
+     "name": "turn_projector_on_or_off",
+     "description": "Switch the projector on or off",
+     "args": [
+      {
+       "name": "enabled",
+       "type": "bool"
+      }
+     ]
+    },
+    {
+     "name": "switch_aquarium_heater",
+     "description": "Switch the aquarium heater on or off",
+     "args": [
+      {
+       "name": "enabled",
+       "type": "bool"
+      }
+     ]
+    }
+   ],
+   "intent": "call",
+   "calls": [
+    {
+     "tool": "toggle_kettle",
+     "args": {
+      "turn_on": true
+     }
+    },
+    {
+     "tool": "toggle_kettle",
+     "args": {
+      "turn_on": false
+     }
+    }
+   ],
+   "meaning": "switch on the kettle and then can you switch the kettle off",
+   "missing": [],
+   "implied": []
+  },
+  {
+   "id": "batch-0005-011",
+   "tools": [
+    {
+     "name": "toggle_water_heater",
+     "description": "Switch the water heater on or off",
+     "args": [
+      {
+       "name": "turn_on",
+       "type": "bool"
+      }
+     ]
+    },
+    {
+     "name": "coffee_machine_mode",
+     "description": "Choose a program for the coffee machine",
+     "args": [
+      {
+       "name": "program",
+       "type": "enum",
+       "options": [
+        "espresso",
+        "latte",
+        "americano"
+       ]
+      }
+     ]
+    },
+    {
+     "name": "set_humidifier_power",
+     "description": "Switch the humidifier on or off",
+     "args": [
+      {
+       "name": "power",
+       "type": "bool"
+      },
+      {
+       "name": "location",
+       "type": "enum",
+       "required": false,
+       "options": [
+        "garage",
+        "living room",
+        "basement"
+       ]
+      }
+     ]
+    },
+    {
+     "name": "set_blinds",
+     "description": "Open or close the blinds in a room",
+     "args": [
+      {
+       "name": "room",
+       "type": "enum",
+       "options": [
+        "kitchen",
+        "bedroom",
+        "living room",
+        "office"
+       ]
+      },
+      {
+       "name": "position",
+       "type": "int",
+       "min": 0,
+       "max": 100,
+       "description": "percent open"
+      }
+     ]
+    }
+   ],
+   "intent": "unsupported",
+   "calls": [],
+   "meaning": "what's the time",
+   "missing": [],
+   "implied": []
+  },
+  {
+   "id": "batch-0005-012",
+   "tools": [
+    {
+     "name": "play_music",
+     "description": "Play a song, artist, album or playlist",
+     "args": [
+      {
+       "name": "query",
+       "type": "str",
+       "description": "what to play"
+      },
+      {
+       "name": "shuffle",
+       "type": "bool",
+       "required": false
+      }
+     ]
+    },
+    {
+     "name": "toggle_air_purifier",
+     "description": "Switch the air purifier on or off",
+     "args": [
+      {
+       "name": "enabled",
+       "type": "bool"
+      },
+      {
+       "name": "location",
+       "type": "enum",
+       "options": [
+        "nursery",
+        "kitchen",
+        "bedroom",
+        "bathroom"
+       ]
+      }
+     ]
+    }
+   ],
+   "intent": "none",
+   "calls": [],
+   "meaning": null,
+   "missing": [],
+   "implied": []
+  },
+  {
+   "id": "batch-0005-013",
+   "tools": [
+    {
+     "name": "dryer_power",
+     "description": "Turn the dryer on or off",
+     "args": [
+      {
+       "name": "power",
+       "type": "bool"
+      }
+     ]
+    },
+    {
+     "name": "space_heater_mode",
+     "description": "Choose a program for the space heater",
+     "args": [
+      {
+       "name": "program",
+       "type": "enum",
+       "options": [
+        "eco",
+        "comfort"
+       ]
+      },
+      {
+       "name": "room",
+       "type": "enum",
+       "options": [
+        "kitchen",
+        "garage",
+        "nursery"
+       ]
+      }
+     ]
+    },
+    {
+     "name": "toggle_kettle",
+     "description": "Turn the kettle on or off",
+     "args": [
+      {
+       "name": "turn_on",
+       "type": "bool"
+      }
+     ]
+    }
+   ],
+   "intent": "unsupported",
+   "calls": [],
+   "meaning": "switch off every space heater",
+   "missing": [],
+   "implied": []
+  },
+  {
+   "id": "batch-0005-014",
+   "tools": [
+    {
+     "name": "check_parking_availability",
+     "description": "Check the parking availability",
+     "args": [
+      {
+       "name": "garage",
+       "type": "str"
+      }
+     ]
+    },
+    {
+     "name": "change_rice_cooker_mode",
+     "description": "Choose a program for the rice cooker",
+     "args": [
+      {
+       "name": "setting",
+       "type": "enum",
+       "options": [
+        "white rice",
+        "brown rice",
+        "porridge"
+       ]
+      }
+     ]
+    },
+    {
+     "name": "check_showtimes",
+     "description": "Get the showtimes",
+     "args": [
+      {
+       "name": "movie",
+       "type": "str"
+      }
+     ]
+    },
+    {
+     "name": "get_air_quality",
+     "description": "Check the air quality",
+     "args": [
+      {
+       "name": "city",
+       "type": "str"
+      }
+     ]
+    },
+    {
+     "name": "check_pollen_count",
+     "description": "Check the pollen count",
+     "args": [
+      {
+       "name": "city",
+       "type": "str"
+      }
+     ]
+    }
+   ],
+   "intent": "call",
+   "calls": [
+    {
+     "tool": "check_pollen_count",
+     "args": {
+      "city": "Tokyo"
+     }
+    }
+   ],
+   "meaning": "how bad is the pollen in Tokyo",
+   "missing": [],
+   "implied": []
+  },
+  {
+   "id": "batch-0005-015",
+   "tools": [
+    {
+     "name": "search_projects",
+     "description": "Find projects matching a text",
+     "args": [
+      {
+       "name": "query",
+       "type": "str"
+      }
+     ]
+    },
+    {
+     "name": "search_recipes",
+     "description": "Find recipes matching a text",
+     "args": [
+      {
+       "name": "text",
+       "type": "str"
+      }
+     ]
+    },
+    {
+     "name": "lookup_ticket",
+     "description": "Search tickets",
+     "args": [
+      {
+       "name": "text",
+       "type": "str"
+      }
+     ]
+    },
+    {
+     "name": "delete_project",
+     "description": "Delete a project",
+     "args": [
+      {
+       "name": "title",
+       "type": "str"
+      }
+     ]
+    },
+    {
+     "name": "delete_recipe",
+     "description": "Remove a recipe",
+     "args": [
+      {
+       "name": "name",
+       "type": "str"
+      }
+     ]
+    }
+   ],
+   "intent": "call",
+   "calls": [
+    {
+     "tool": "search_projects",
+     "args": {
+      "query": "mobile app"
+     }
+    },
+    {
+     "tool": "search_projects",
+     "args": {
+      "query": "garden shed"
+     }
+    }
+   ],
+   "meaning": "search my projects for mobile app and find projects about garden shed",
+   "missing": [],
+   "implied": []
+  },
+  {
+   "id": "batch-0005-016",
+   "tools": [
+    {
+     "name": "set_thermostat",
+     "description": "Set the target temperature of the heating or cooling",
+     "args": [
+      {
+       "name": "temperature",
+       "type": "float",
+       "min": 10,
+       "max": 30,
+       "description": "degrees Celsius"
+      },
+      {
+       "name": "mode",
+       "type": "enum",
+       "required": false,
+       "options": [
+        "heat",
+        "cool",
+        "auto"
+       ]
+      }
+     ]
+    },
+    {
+     "name": "list_events",
+     "description": "Read out the events on the calendar",
+     "args": [
+      {
+       "name": "day",
+       "type": "enum",
+       "required": false,
+       "options": [
+        "today",
+        "tomorrow",
+        "this week"
+       ]
+      }
+     ]
+    }
+   ],
+   "intent": "call",
+   "calls": [
+    {
+     "tool": "set_thermostat",
+     "args": {
+      "temperature": 18.0
+     }
+    },
+    {
+     "tool": "list_events",
+     "args": {}
+    }
+   ],
+   "meaning": "make it 18 degrees in here, and also show my schedule",
+   "missing": [],
+   "implied": []
+  },
+  {
+   "id": "batch-0005-017",
+   "tools": [
+    {
+     "name": "remove_recipe",
+     "description": "Delete a recipe",
+     "args": [
+      {
+       "name": "name",
+       "type": "str"
+      }
+     ]
+    },
+    {
+     "name": "get_time",
+     "description": "Tell the current time in a city",
+     "args": [
+      {
+       "name": "city",
+       "type": "str",
+       "required": false
+      }
+     ]
+    },
+    {
+     "name": "search_web",
+     "description": "Search the web and read out the top answer",
+     "args": [
+      {
+       "name": "query",
+       "type": "str"
+      }
+     ]
+    }
+   ],
+   "intent": "call",
+   "calls": [
+    {
+     "tool": "get_time",
+     "args": {}
+    }
+   ],
+   "meaning": "what's the time",
+   "missing": [],
+   "implied": []
+  },
+  {
+   "id": "batch-0005-018",
+   "tools": [
+    {
+     "name": "change_slow_cooker_cooking_time",
+     "description": "Change the cooking time of the slow cooker",
+     "args": [
+      {
+       "name": "level",
+       "type": "int",
+       "min": 1,
+       "max": 12,
+       "description": "hours"
+      }
+     ]
+    },
+    {
+     "name": "change_coffee_machine_mode",
+     "description": "Choose a program for the coffee machine",
+     "args": [
+      {
+       "name": "program",
+       "type": "enum",
+       "options": [
+        "espresso",
+        "latte",
+        "americano"
+       ]
+      }
+     ]
+    }
+   ],
+   "intent": "ask",
+   "calls": [
+    {
+     "tool": "change_coffee_machine_mode",
+     "args": {
+      "program": "?"
+     }
+    }
+   ],
+   "meaning": "change the coffee machine mode",
+   "missing": [
+    "program"
+   ],
+   "implied": []
+  },
+  {
+   "id": "batch-0005-019",
+   "tools": [
+    {
+     "name": "change_oven_temperature",
+     "description": "Change the temperature of the oven",
+     "args": [
+      {
+       "name": "value",
+       "type": "int",
+       "min": 50,
+       "max": 250,
+       "description": "degrees"
+      }
+     ]
+    }
+   ],
+   "intent": "unsupported",
+   "calls": [],
+   "meaning": "set the heating to 28",
+   "missing": [],
+   "implied": []
+  },
+  {
+   "id": "batch-0005-020",
+   "tools": [
+    {
+     "name": "get_air_quality",
+     "description": "Check the air quality",
+     "args": [
+      {
+       "name": "city",
+       "type": "str"
+      }
+     ]
+    }
+   ],
+   "intent": "ask",
+   "calls": [
+    {
+     "tool": "get_air_quality",
+     "args": {
+      "city": "?"
+     }
+    }
+   ],
+   "meaning": "air quality",
+   "missing": [
+    "city"
+   ],
+   "implied": []
+  },
+  {
+   "id": "batch-0005-021",
+   "tools": [
+    {
+     "name": "get_time",
+     "description": "Tell the current time in a city",
+     "args": [
+      {
+       "name": "city",
+       "type": "str",
+       "required": false
+      }
+     ]
+    },
+    {
+     "name": "update_document_status",
+     "description": "Change the status of a document",
+     "args": [
+      {
+       "name": "title",
+       "type": "str"
+      },
+      {
+       "name": "status",
+       "type": "enum",
+       "options": [
+        "draft",
+        "final"
+       ]
+      }
+     ]
+    },
+    {
+     "name": "get_weather",
+     "description": "Get the weather forecast",
+     "args": [
+      {
+       "name": "city",
+       "type": "str",
+       "required": false,
+       "description": "the current location if not given"
+      },
+      {
+       "name": "day",
+       "type": "enum",
+       "required": false,
+       "options": [
+        "today",
+        "tomorrow",
+        "weekend"
+       ]
+      }
+     ]
+    },
+    {
+     "name": "check_stock_price",
+     "description": "Check the stock price",
+     "args": [
+      {
+       "name": "symbol",
+       "type": "str"
+      }
+     ]
+    }
+   ],
+   "intent": "call",
+   "calls": [
+    {
+     "tool": "get_weather",
+     "args": {
+      "city": "Toronto"
+     }
+    }
+   ],
+   "meaning": "what's the weather in Toronto",
+   "missing": [],
+   "implied": []
+  },
+  {
+   "id": "batch-0005-022",
+   "tools": [
+    {
+     "name": "read_list",
+     "description": "Read out a shopping list",
+     "args": [
+      {
+       "name": "list",
+       "type": "enum",
+       "required": false,
+       "options": [
+        "groceries",
+        "hardware",
+        "pharmacy"
+       ]
+      }
+     ]
+    },
+    {
+     "name": "start_workout",
+     "description": "Start tracking a workout",
+     "args": [
+      {
+       "name": "kind",
+       "type": "enum",
+       "options": [
+        "run",
+        "walk",
+        "cycle",
+        "yoga",
+        "strength"
+       ]
+      },
+      {
+       "name": "minutes",
+       "type": "int",
+       "required": false,
+       "min": 5,
+       "max": 180
+      }
+     ]
+    },
+    {
+     "name": "remove_from_list",
+     "description": "Remove an item from the shopping list",
+     "args": [
+      {
+       "name": "item",
+       "type": "str"
+      }
+     ]
+    }
+   ],
+   "intent": "call",
+   "calls": [
+    {
+     "tool": "remove_from_list",
+     "args": {
+      "item": "olive oil"
+     }
+    },
+    {
+     "tool": "remove_from_list",
+     "args": {
+      "item": "bananas"
+     }
+    },
+    {
+     "tool": "start_workout",
+     "args": {
+      "kind": "cycle",
+      "minutes": 122
+     }
+    }
+   ],
+   "meaning": "cross off olive oil. Also cross off bananas, then begin a cycle session of 122 minutes",
+   "missing": [],
+   "implied": []
+  },
+  {
+   "id": "batch-0005-023",
+   "tools": [
+    {
+     "name": "new_ticket",
+     "description": "Add a ticket",
+     "args": [
+      {
+       "name": "title",
+       "type": "str"
+      },
+      {
+       "name": "priority",
+       "type": "enum",
+       "required": false,
+       "options": [
+        "low",
+        "medium",
+        "high"
+       ]
+      }
+     ]
+    },
+    {
+     "name": "create_recipe",
+     "description": "Add a recipe",
+     "args": [
+      {
+       "name": "name",
+       "type": "str"
+      },
+      {
+       "name": "servings",
+       "type": "int",
+       "required": false,
+       "min": 1,
+       "max": 12
+      }
+     ]
+    },
+    {
+     "name": "lookup_document",
+     "description": "Search documents",
+     "args": [
+      {
+       "name": "text",
+       "type": "str"
+      }
+     ]
+    }
+   ],
+   "intent": "ask",
+   "calls": [
+    {
+     "tool": "create_recipe",
+     "args": {
+      "name": "?"
+     }
+    }
+   ],
+   "meaning": "add a new recipe",
+   "missing": [
+    "name"
+   ],
+   "implied": []
+  },
+  {
+   "id": "batch-0005-024",
+   "tools": [
+    {
+     "name": "water_heater_power",
+     "description": "Switch the water heater on or off",
+     "args": [
+      {
+       "name": "turn_on",
+       "type": "bool"
+      }
+     ]
+    },
+    {
+     "name": "fetch_horoscope",
+     "description": "Get the horoscope",
+     "args": [
+      {
+       "name": "sign",
+       "type": "str"
+      }
+     ]
+    }
+   ],
+   "intent": "call",
+   "calls": [
+    {
+     "tool": "fetch_horoscope",
+     "args": {
+      "sign": "Pisces"
+     }
+    }
+   ],
+   "meaning": "today's horoscope for Pisces",
+   "missing": [],
+   "implied": []
+  },
+  {
+   "id": "batch-0005-025",
+   "tools": [
+    {
+     "name": "new_project",
+     "description": "Add a project",
+     "args": [
+      {
+       "name": "name",
+       "type": "str"
+      }
+     ]
+    },
+    {
+     "name": "delete_bookmark",
+     "description": "Delete a bookmark",
+     "args": [
+      {
+       "name": "title",
+       "type": "str"
+      }
+     ]
+    },
+    {
+     "name": "delete_ticket",
+     "description": "Delete a ticket",
+     "args": [
+      {
+       "name": "name",
+       "type": "str"
+      }
+     ]
+    }
+   ],
+   "intent": "call",
+   "calls": [
+    {
+     "tool": "delete_bookmark",
+     "args": {
+      "title": "the gym schedule"
+     }
+    }
+   ],
+   "meaning": "get rid of the the gym schedule bookmark",
+   "missing": [],
+   "implied": []
+  },
+  {
+   "id": "batch-0005-026",
+   "tools": [
+    {
+     "name": "change_kettle_temperature",
+     "description": "Change the temperature of the kettle",
+     "args": [
+      {
+       "name": "level",
+       "type": "int",
+       "min": 60,
+       "max": 100,
+       "description": "degrees"
+      }
+     ]
+    },
+    {
+     "name": "humidifier_mode",
+     "description": "Set the humidifier mode",
+     "args": [
+      {
+       "name": "program",
+       "type": "enum",
+       "options": [
+        "auto",
+        "sleep"
+       ]
+      },
+      {
+       "name": "location",
+       "type": "enum",
+       "required": false,
+       "options": [
+        "garage",
+        "basement",
+        "bathroom",
+        "office"
+       ]
+      }
+     ]
+    },
+    {
+     "name": "humidifier_set_humidity",
+     "description": "Change the humidity of the humidifier",
+     "args": [
+      {
+       "name": "value",
+       "type": "int",
+       "min": 30,
+       "max": 70,
+       "description": "percent"
+      },
+      {
+       "name": "room",
+       "type": "enum",
+       "required": false,
+       "options": [
+        "garage",
+        "basement",
+        "living room",
+        "kitchen"
+       ],
+       "description": "all rooms if not given"
+      }
+     ]
+    }
+   ],
+   "intent": "ask",
+   "calls": [
+    {
+     "tool": "humidifier_set_humidity",
+     "args": {
+      "value": "?"
+     }
+    }
+   ],
+   "meaning": "set the humidifier humidity",
+   "missing": [
+    "value"
+   ],
+   "implied": []
+  },
+  {
+   "id": "batch-0005-027",
+   "tools": [
+    {
+     "name": "change_dehumidifier_humidity",
+     "description": "Set the dehumidifier humidity",
+     "args": [
+      {
+       "name": "humidity",
+       "type": "int",
+       "min": 30,
+       "max": 70,
+       "description": "percent"
+      },
+      {
+       "name": "location",
+       "type": "enum",
+       "required": false,
+       "options": [
+        "bedroom",
+        "bathroom",
+        "kitchen",
+        "garage"
+       ],
+       "description": "all rooms if not given"
+      }
+     ]
+    },
+    {
+     "name": "change_dryer_mode",
+     "description": "Choose a program for the dryer",
+     "args": [
+      {
+       "name": "program",
+       "type": "enum",
+       "options": [
+        "low heat",
+        "medium heat",
+        "high heat"
+       ]
+      }
+     ]
+    },
+    {
+     "name": "coffee_machine_mode",
+     "description": "Choose a program for the coffee machine",
+     "args": [
+      {
+       "name": "program",
+       "type": "enum",
+       "options": [
+        "espresso",
+        "latte",
+        "americano"
+       ]
+      }
+     ]
+    }
+   ],
+   "intent": "call",
+   "calls": [
+    {
+     "tool": "change_dryer_mode",
+     "args": {
+      "program": "high heat"
+     }
+    }
+   ],
+   "meaning": "switch the dryer to high heat",
+   "missing": [],
+   "implied": []
+  },
+  {
+   "id": "batch-0005-028",
+   "tools": [
+    {
+     "name": "set_air_purifier_fan_speed",
+     "description": "Set the air purifier fan speed",
+     "args": [
+      {
+       "name": "level",
+       "type": "int",
+       "min": 1,
+       "max": 3
+      },
+      {
+       "name": "room",
+       "type": "enum",
+       "options": [
+        "living room",
+        "bathroom",
+        "basement",
+        "garage"
+       ]
+      }
+     ]
+    },
+    {
+     "name": "get_time",
+     "description": "Tell the current time in a city",
+     "args": [
+      {
+       "name": "city",
+       "type": "str",
+       "required": false
+      }
+     ]
+    },
+    {
+     "name": "turn_tv_on_or_off",
+     "description": "Switch the tv on or off",
+     "args": [
+      {
+       "name": "power",
+       "type": "bool"
+      }
+     ]
+    },
+    {
+     "name": "get_weather",
+     "description": "Get the weather forecast",
+     "args": [
+      {
+       "name": "city",
+       "type": "str",
+       "required": false,
+       "description": "the current location if not given"
+      },
+      {
+       "name": "day",
+       "type": "enum",
+       "required": false,
+       "options": [
+        "today",
+        "tomorrow",
+        "weekend"
+       ]
+      }
+     ]
+    },
+    {
+     "name": "switch_lawn_mower",
+     "description": "Turn the lawn mower on or off",
+     "args": [
+      {
+       "name": "power",
+       "type": "bool"
+      }
+     ]
+    }
+   ],
+   "intent": "call",
+   "calls": [
+    {
+     "tool": "get_weather",
+     "args": {
+      "city": "Toronto"
+     }
+    }
+   ],
+   "meaning": "what's the weather in Toronto",
+   "missing": [],
+   "implied": []
+  },
+  {
+   "id": "batch-0005-029",
+   "tools": [
+    {
+     "name": "reorder_item",
+     "description": "Order an item again from a past order",
+     "args": [
+      {
+       "name": "item",
+       "type": "str"
+      }
+     ]
+    },
+    {
+     "name": "remove_document",
+     "description": "Remove a document",
+     "args": [
+      {
+       "name": "name",
+       "type": "str"
+      }
+     ]
+    },
+    {
+     "name": "find_deck",
+     "description": "Find decks matching a text",
+     "args": [
+      {
+       "name": "query",
+       "type": "str"
+      }
+     ]
+    },
+    {
+     "name": "new_expense",
+     "description": "Create a new expense",
+     "args": [
+      {
+       "name": "title",
+       "type": "str"
+      },
+      {
+       "name": "amount",
+       "type": "int",
+       "required": false,
+       "min": 1,
+       "max": 500
+      }
+     ]
+    }
+   ],
+   "intent": "call",
+   "calls": [
+    {
+     "tool": "remove_document",
+     "args": {
+      "name": "budget plan"
+     }
+    },
+    {
+     "tool": "reorder_item",
+     "args": {
+      "item": "razor blades"
+     }
+    }
+   ],
+   "meaning": "remove the document called budget plan and reorder razor blades",
+   "missing": [],
+   "implied": []
+  },
+  {
+   "id": "batch-0005-030",
+   "tools": [
+    {
+     "name": "change_sprinkler_duration",
+     "description": "Change the duration of the sprinkler",
+     "args": [
+      {
+       "name": "duration",
+       "type": "int",
+       "min": 5,
+       "max": 60,
+       "description": "minutes"
+      }
+     ]
+    },
+    {
+     "name": "set_volume",
+     "description": "Set the speaker volume",
+     "args": [
+      {
+       "name": "level",
+       "type": "int",
+       "min": 0,
+       "max": 100,
+       "description": "percent"
+      }
+     ]
+    },
+    {
+     "name": "skip_track",
+     "description": "Skip to another track",
+     "args": [
+      {
+       "name": "direction",
+       "type": "enum",
+       "options": [
+        "next",
+        "previous"
+       ]
+      }
+     ]
+    },
+    {
+     "name": "check_parking_availability",
+     "description": "Check the parking availability",
+     "args": [
+      {
+       "name": "garage",
+       "type": "str"
+      }
+     ]
+    },
+    {
+     "name": "pause_media",
+     "description": "Pause whatever is playing",
+     "args": []
+    }
+   ],
+   "intent": "call",
+   "calls": [
+    {
+     "tool": "set_volume",
+     "args": {
+      "level": 28
+     }
+    }
+   ],
+   "meaning": "turn it to 28 percent",
+   "missing": [],
+   "implied": []
+  },
+  {
+   "id": "batch-0005-031",
+   "tools": [
+    {
+     "name": "fetch_horoscope",
+     "description": "Get the horoscope",
+     "args": [
+      {
+       "name": "sign",
+       "type": "str"
+      }
+     ]
+    }
+   ],
+   "intent": "call",
+   "calls": [
+    {
+     "tool": "fetch_horoscope",
+     "args": {
+      "sign": "Pisces"
+     }
+    }
+   ],
+   "meaning": "read me the Pisces horoscope",
+   "missing": [],
+   "implied": []
+  },
+  {
+   "id": "batch-0005-032",
+   "tools": [
+    {
+     "name": "delete_playbook",
+     "description": "Remove a playbook",
+     "args": [
+      {
+       "name": "title",
+       "type": "str"
+      }
+     ]
+    },
+    {
+     "name": "set_heated_floor_power",
+     "description": "Turn the heated floor on or off",
+     "args": [
+      {
+       "name": "power",
+       "type": "bool"
+      },
+      {
+       "name": "room",
+       "type": "enum",
+       "required": false,
+       "options": [
+        "garage",
+        "nursery",
+        "bedroom",
+        "bathroom",
+        "office"
+       ]
+      }
+     ]
+    },
+    {
+     "name": "dryer_power",
+     "description": "Turn the dryer on or off",
+     "args": [
+      {
+       "name": "power",
+       "type": "bool"
+      }
+     ]
+    }
+   ],
+   "intent": "call",
+   "calls": [
+    {
+     "tool": "set_heated_floor_power",
+     "args": {
+      "power": false,
+      "room": "bedroom"
+     }
+    },
+    {
+     "tool": "delete_playbook",
+     "args": {
+      "title": "customer onboarding"
+     }
+    },
+    {
+     "tool": "delete_playbook",
+     "args": {
+      "title": "release checklist"
+     }
+    }
+   ],
+   "meaning": "turn the heated floor off in the bedroom, then delete the playbook customer onboarding and remove the playbook called release checklist",
+   "missing": [],
+   "implied": []
+  },
+  {
+   "id": "batch-0005-033",
+   "tools": [
+    {
+     "name": "create_deck",
+     "description": "Add a deck",
+     "args": [
+      {
+       "name": "name",
+       "type": "str"
+      }
+     ]
+    },
+    {
+     "name": "add_to_list",
+     "description": "Add an item to a shopping list",
+     "args": [
+      {
+       "name": "item",
+       "type": "str"
+      },
+      {
+       "name": "quantity",
+       "type": "int",
+       "required": false,
+       "min": 1,
+       "max": 99
+      },
+      {
+       "name": "list",
+       "type": "enum",
+       "required": false,
+       "options": [
+        "groceries",
+        "hardware",
+        "pharmacy"
+       ]
+      }
+     ]
+    },
+    {
+     "name": "read_list",
+     "description": "Read out a shopping list",
+     "args": [
+      {
+       "name": "list",
+       "type": "enum",
+       "required": false,
+       "options": [
+        "groceries",
+        "hardware",
+        "pharmacy"
+       ]
+      }
+     ]
+    }
+   ],
+   "intent": "ask",
+   "calls": [
+    {
+     "tool": "add_to_list",
+     "args": {
+      "item": "?"
+     }
+    }
+   ],
+   "meaning": "add to my list",
+   "missing": [
+    "item"
+   ],
+   "implied": []
+  },
+  {
+   "id": "batch-0005-034",
+   "tools": [
+    {
+     "name": "toggle_slow_cooker",
+     "description": "Turn the slow cooker on or off",
+     "args": [
+      {
+       "name": "power",
+       "type": "bool"
+      }
+     ]
+    },
+    {
+     "name": "heated_floor_power",
+     "description": "Turn the heated floor on or off",
+     "args": [
+      {
+       "name": "enabled",
+       "type": "bool"
+      },
+      {
+       "name": "location",
+       "type": "enum",
+       "options": [
+        "bathroom",
+        "office",
+        "bedroom",
+        "living room",
+        "kitchen"
+       ]
+      }
+     ]
+    }
+   ],
+   "intent": "call",
+   "calls": [
+    {
+     "tool": "toggle_slow_cooker",
+     "args": {
+      "power": false
+     }
+    }
+   ],
+   "meaning": "switch off the slow cooker",
+   "missing": [],
+   "implied": []
+  },
+  {
+   "id": "batch-0005-035",
+   "tools": [
+    {
+     "name": "delete_document",
+     "description": "Remove a document",
+     "args": [
+      {
+       "name": "name",
+       "type": "str"
+      }
+     ]
+    },
+    {
+     "name": "delete_photo_album",
+     "description": "Delete a photo album",
+     "args": [
+      {
+       "name": "name",
+       "type": "str"
+      }
+     ]
+    }
+   ],
+   "intent": "call",
+   "calls": [
+    {
+     "tool": "delete_photo_album",
+     "args": {
+      "name": "graduation"
+     }
+    }
+   ],
+   "meaning": "remove the photo album called graduation",
+   "missing": [],
+   "implied": []
+  },
+  {
+   "id": "batch-0005-036",
+   "tools": [
+    {
+     "name": "set_space_heater_mode",
+     "description": "Choose a program for the space heater",
+     "args": [
+      {
+       "name": "program",
+       "type": "enum",
+       "options": [
+        "eco",
+        "comfort"
+       ]
+      },
+      {
+       "name": "room",
+       "type": "enum",
+       "required": false,
+       "options": [
+        "bedroom",
+        "basement",
+        "bathroom",
+        "living room"
+       ],
+       "description": "all rooms if not given"
+      }
+     ]
+    },
+    {
+     "name": "change_slow_cooker_cooking_time",
+     "description": "Change the cooking time of the slow cooker",
+     "args": [
+      {
+       "name": "level",
+       "type": "int",
+       "min": 1,
+       "max": 12,
+       "description": "hours"
+      }
+     ]
+    }
+   ],
+   "intent": "ask",
+   "calls": [
+    {
+     "tool": "set_space_heater_mode",
+     "args": {
+      "program": "?"
+     }
+    }
+   ],
+   "meaning": "change the space heater mode",
+   "missing": [
+    "program"
+   ],
+   "implied": []
+  },
+  {
+   "id": "batch-0005-037",
+   "tools": [
+    {
+     "name": "new_habit",
+     "description": "Create a new habit",
+     "args": [
+      {
+       "name": "title",
+       "type": "str"
+      },
+      {
+       "name": "times_per_week",
+       "type": "int",
+       "required": false,
+       "min": 1,
+       "max": 7
+      }
+     ]
+    },
+    {
+     "name": "create_issue",
+     "description": "Add an issue",
+     "args": [
+      {
+       "name": "name",
+       "type": "str"
+      },
+      {
+       "name": "severity",
+       "type": "enum",
+       "required": false,
+       "options": [
+        "minor",
+        "major",
+        "critical"
+       ]
+      }
+     ]
+    }
+   ],
+   "intent": "call",
+   "calls": [
+    {
+     "tool": "new_habit",
+     "args": {
+      "title": "meditation",
+      "times_per_week": 3
+     }
+    }
+   ],
+   "meaning": "create a habit called meditation three times a week",
+   "missing": [],
+   "implied": []
+  },
+  {
+   "id": "batch-0005-038",
+   "tools": [
+    {
+     "name": "get_step_count",
+     "description": "Tell how many steps the user walked",
+     "args": [
+      {
+       "name": "day",
+       "type": "enum",
+       "required": false,
+       "options": [
+        "today",
+        "yesterday",
+        "this week"
+       ]
+      }
+     ]
+    },
+    {
+     "name": "find_recipe",
+     "description": "Search recipes",
+     "args": [
+      {
+       "name": "query",
+       "type": "str"
+      }
+     ]
+    }
+   ],
+   "intent": "call",
+   "calls": [
+    {
+     "tool": "get_step_count",
+     "args": {}
+    }
+   ],
+   "meaning": "what's my step count",
+   "missing": [],
+   "implied": []
+  },
+  {
+   "id": "batch-0005-039",
+   "tools": [
+    {
+     "name": "lock_car",
+     "description": "Lock or unlock the car",
+     "args": [
+      {
+       "name": "locked",
+       "type": "bool"
+      }
+     ]
+    },
+    {
+     "name": "set_charge_limit",
+     "description": "Set how full the car battery charges",
+     "args": [
+      {
+       "name": "percent",
+       "type": "int",
+       "min": 50,
+       "max": 100
+      }
+     ]
+    },
+    {
+     "name": "washing_machine_set_temperature",
+     "description": "Set the washing machine temperature",
+     "args": [
+      {
+       "name": "temperature",
+       "type": "int",
+       "min": 20,
+       "max": 90,
+       "description": "degrees"
+      }
+     ]
+    }
+   ],
+   "intent": "ask",
+   "calls": [
+    {
+     "tool": "set_charge_limit",
+     "args": {
+      "percent": "?"
+     }
+    }
+   ],
+   "meaning": "change the charge limit",
+   "missing": [
+    "percent"
+   ],
+   "implied": []
+  },
+  {
+   "id": "batch-0005-040",
+   "tools": [
+    {
+     "name": "find_project",
+     "description": "Search projects",
+     "args": [
+      {
+       "name": "text",
+       "type": "str"
+      }
+     ]
+    },
+    {
+     "name": "select_water_heater_program",
+     "description": "Choose a program for the water heater",
+     "args": [
+      {
+       "name": "program",
+       "type": "enum",
+       "options": [
+        "eco",
+        "boost"
+       ]
+      }
+     ]
+    }
+   ],
+   "intent": "call",
+   "calls": [
+    {
+     "tool": "select_water_heater_program",
+     "args": {
+      "program": "eco"
+     }
+    },
+    {
+     "tool": "find_project",
+     "args": {
+      "text": "website redesign"
+     }
+    }
+   ],
+   "meaning": "switch the water heater to eco and do I have any projects about website redesign",
+   "missing": [],
+   "implied": []
+  },
+  {
+   "id": "batch-0005-041",
+   "tools": [
+    {
+     "name": "start_car_climate",
+     "description": "Heat or cool the car before driving",
+     "args": [
+      {
+       "name": "temperature",
+       "type": "float",
+       "required": false,
+       "min": 16,
+       "max": 28,
+       "description": "degrees Celsius"
+      }
+     ]
+    },
+    {
+     "name": "search_bookmarks",
+     "description": "Search bookmarks",
+     "args": [
+      {
+       "name": "text",
+       "type": "str"
+      }
+     ]
+    }
+   ],
+   "intent": "call",
+   "calls": [
+    {
+     "tool": "start_car_climate",
+     "args": {
+      "temperature": 23.0
+     }
+    }
+   ],
+   "meaning": "precondition the car to 23",
+   "missing": [],
+   "implied": []
+  },
+  {
+   "id": "batch-0005-042",
+   "tools": [
+    {
+     "name": "water_heater_set_temperature",
+     "description": "Change the temperature of the water heater",
+     "args": [
+      {
+       "name": "temperature",
+       "type": "int",
+       "min": 40,
+       "max": 70,
+       "description": "degrees"
+      }
+     ]
+    },
+    {
+     "name": "adjust_space_heater_heat_level",
+     "description": "Change the heat level of the space heater",
+     "args": [
+      {
+       "name": "heat_level",
+       "type": "int",
+       "min": 1,
+       "max": 5
+      },
+      {
+       "name": "location",
+       "type": "enum",
+       "required": false,
+       "options": [
+        "living room",
+        "garage",
+        "bathroom",
+        "kitchen",
+        "basement"
+       ]
+      }
+     ]
+    },
+    {
+     "name": "set_projector_brightness",
+     "description": "Change the brightness of the projector",
+     "args": [
+      {
+       "name": "level",
+       "type": "int",
+       "min": 1,
+       "max": 10
+      }
+     ]
+    },
+    {
+     "name": "set_alarm",
+     "description": "Set an alarm",
+     "args": [
+      {
+       "name": "time",
+       "type": "str",
+       "description": "as the user said it, like 7:30 am"
+      },
+      {
+       "name": "repeat",
+       "type": "enum",
+       "required": false,
+       "options": [
+        "once",
+        "daily",
+        "weekdays",
+        "weekends"
+       ]
+      }
+     ]
+    }
+   ],
+   "intent": "call",
+   "calls": [
+    {
+     "tool": "set_alarm",
+     "args": {
+      "time": "6 am",
+      "repeat": "daily"
+     }
+    },
+    {
+     "tool": "adjust_space_heater_heat_level",
+     "args": {
+      "heat_level": 1
+     }
+    }
+   ],
+   "meaning": "set an alarm for 6 am daily and then put the space heater heat level at 1",
+   "missing": [],
+   "implied": []
+  },
+  {
+   "id": "batch-0005-043",
+   "tools": [
+    {
+     "name": "turn_rice_cooker_on_or_off",
+     "description": "Switch the rice cooker on or off",
+     "args": [
+      {
+       "name": "power",
+       "type": "bool"
+      }
+     ]
+    },
+    {
+     "name": "change_slow_cooker_cooking_time",
+     "description": "Change the cooking time of the slow cooker",
+     "args": [
+      {
+       "name": "level",
+       "type": "int",
+       "min": 1,
+       "max": 12,
+       "description": "hours"
+      }
+     ]
+    },
+    {
+     "name": "change_electric_blanket_heat_level",
+     "description": "Set the electric blanket heat level",
+     "args": [
+      {
+       "name": "value",
+       "type": "int",
+       "min": 1,
+       "max": 10
+      }
+     ]
+    },
+    {
+     "name": "toggle_kettle",
+     "description": "Turn the kettle on or off",
+     "args": [
+      {
+       "name": "turn_on",
+       "type": "bool"
+      }
+     ]
+    },
+    {
+     "name": "turn_security_camera_on_or_off",
+     "description": "Turn the security camera on or off",
+     "args": [
+      {
+       "name": "on",
+       "type": "bool"
+      }
+     ]
+    }
+   ],
+   "intent": "call",
+   "calls": [
+    {
+     "tool": "toggle_kettle",
+     "args": {
+      "turn_on": true
+     }
+    }
+   ],
+   "meaning": "turn the kettle on",
+   "missing": [],
+   "implied": []
+  },
+  {
+   "id": "batch-0005-044",
+   "tools": [
+    {
+     "name": "toggle_water_heater",
+     "description": "Switch the water heater on or off",
+     "args": [
+      {
+       "name": "turn_on",
+       "type": "bool"
+      }
+     ]
+    },
+    {
+     "name": "update_goal_status",
+     "description": "Change the status of a goal",
+     "args": [
+      {
+       "name": "name",
+       "type": "str"
+      },
+      {
+       "name": "status",
+       "type": "enum",
+       "options": [
+        "active",
+        "achieved",
+        "abandoned"
+       ]
+      }
+     ]
+    },
+    {
+     "name": "share_eta",
+     "description": "Send someone the user's expected arrival time",
+     "args": [
+      {
+       "name": "contact",
+       "type": "str"
+      }
+     ]
+    },
+    {
+     "name": "select_oven_program",
+     "description": "Set the oven mode",
+     "args": [
+      {
+       "name": "program",
+       "type": "enum",
+       "options": [
+        "bake",
+        "grill",
+        "fan"
+       ]
+      }
+     ]
+    }
+   ],
+   "intent": "call",
+   "calls": [
+    {
+     "tool": "share_eta",
+     "args": {
+      "contact": "Bob"
+     }
+    }
+   ],
+   "meaning": "let Bob know when I'll arrive",
+   "missing": [],
+   "implied": []
+  },
+  {
+   "id": "batch-0005-045",
+   "tools": [
+    {
+     "name": "set_timer",
+     "description": "Start a countdown timer",
+     "args": [
+      {
+       "name": "minutes",
+       "type": "int",
+       "min": 1,
+       "max": 1440
+      },
+      {
+       "name": "label",
+       "type": "str",
+       "required": false
+      }
+     ]
+    }
+   ],
+   "intent": "call",
+   "calls": [
+    {
+     "tool": "set_timer",
+     "args": {
+      "minutes": 1040
+     }
+    }
+   ],
+   "meaning": "start a countdown of 1040 minutes",
+   "missing": [],
+   "implied": []
+  },
+  {
+   "id": "batch-0005-046",
+   "tools": [
+    {
+     "name": "pool_pump_set_speed",
+     "description": "Set the pool pump speed",
+     "args": [
+      {
+       "name": "value",
+       "type": "int",
+       "min": 1,
+       "max": 3
+      }
+     ]
+    },
+    {
+     "name": "update_issue_status",
+     "description": "Change the status of a issue",
+     "args": [
+      {
+       "name": "title",
+       "type": "str"
+      },
+      {
+       "name": "status",
+       "type": "enum",
+       "options": [
+        "open",
+        "closed"
+       ]
+      }
+     ]
+    },
+    {
+     "name": "remove_ticket",
+     "description": "Delete a ticket",
+     "args": [
+      {
+       "name": "name",
+       "type": "str"
+      }
+     ]
+    },
+    {
+     "name": "set_tv_mode",
+     "description": "Choose a program for the tv",
+     "args": [
+      {
+       "name": "mode",
+       "type": "enum",
+       "options": [
+        "hdmi one",
+        "hdmi two",
+        "antenna"
+       ]
+      }
+     ]
+    }
+   ],
+   "intent": "unsupported",
+   "calls": [],
+   "meaning": "change my profile picture",
+   "missing": [],
+   "implied": []
+  },
+  {
+   "id": "batch-0005-047",
+   "tools": [
+    {
+     "name": "washing_machine_set_temperature",
+     "description": "Set the washing machine temperature",
+     "args": [
+      {
+       "name": "temperature",
+       "type": "int",
+       "min": 20,
+       "max": 90,
+       "description": "degrees"
+      }
+     ]
+    },
+    {
+     "name": "baby_monitor_power",
+     "description": "Turn the baby monitor on or off",
+     "args": [
+      {
+       "name": "power",
+       "type": "bool"
+      }
+     ]
+    },
+    {
+     "name": "fan_set_speed",
+     "description": "Set the fan speed",
+     "args": [
+      {
+       "name": "speed",
+       "type": "int",
+       "min": 1,
+       "max": 5
+      },
+      {
+       "name": "room",
+       "type": "enum",
+       "required": false,
+       "options": [
+        "living room",
+        "office",
+        "bedroom",
+        "basement",
+        "bathroom"
+       ],
+       "description": "all rooms if not given"
+      }
+     ]
+    },
+    {
+     "name": "turn_rice_cooker_on_or_off",
+     "description": "Switch the rice cooker on or off",
+     "args": [
+      {
+       "name": "power",
+       "type": "bool"
+      }
+     ]
+    }
+   ],
+   "intent": "call",
+   "calls": [
+    {
+     "tool": "baby_monitor_power",
+     "args": {
+      "power": false
+     }
+    },
+    {
+     "tool": "washing_machine_set_temperature",
+     "args": {
+      "temperature": 65
+     }
+    }
+   ],
+   "meaning": "switch off the baby monitor. Also put the washing machine temperature at 65 degrees",
+   "missing": [],
+   "implied": []
+  },
+  {
+   "id": "batch-0005-048",
+   "tools": [
+    {
+     "name": "turn_coffee_machine_on_or_off",
+     "description": "Turn the coffee machine on or off",
+     "args": [
+      {
+       "name": "turn_on",
+       "type": "bool"
+      }
+     ]
+    },
+    {
+     "name": "pool_pump_set_speed",
+     "description": "Set the pool pump speed",
+     "args": [
+      {
+       "name": "value",
+       "type": "int",
+       "min": 1,
+       "max": 3
+      }
+     ]
+    },
+    {
+     "name": "turn_electric_blanket_on_or_off",
+     "description": "Turn the electric blanket on or off",
+     "args": [
+      {
+       "name": "turn_on",
+       "type": "bool"
+      }
+     ]
+    },
+    {
+     "name": "call_contact",
+     "description": "Start a phone or video call",
+     "args": [
+      {
+       "name": "contact",
+       "type": "str"
+      },
+      {
+       "name": "video",
+       "type": "bool",
+       "required": false
+      }
+     ]
+    }
+   ],
+   "intent": "call",
+   "calls": [
+    {
+     "tool": "call_contact",
+     "args": {
+      "contact": "Sam"
+     }
+    },
+    {
+     "tool": "pool_pump_set_speed",
+     "args": {
+      "value": 1
+     }
+    }
+   ],
+   "meaning": "ring Sam, then set the pool pump speed to 1",
+   "missing": [],
+   "implied": []
+  },
+  {
+   "id": "batch-0005-049",
+   "tools": [
+    {
+     "name": "set_space_heater_power",
+     "description": "Turn the space heater on or off",
+     "args": [
+      {
+       "name": "on",
+       "type": "bool"
+      },
+      {
+       "name": "room",
+       "type": "enum",
+       "options": [
+        "garage",
+        "bathroom",
+        "basement",
+        "bedroom",
+        "nursery"
+       ]
+      }
+     ]
+    },
+    {
+     "name": "turn_projector_on_or_off",
+     "description": "Switch the projector on or off",
+     "args": [
+      {
+       "name": "enabled",
+       "type": "bool"
+      }
+     ]
+    }
+   ],
+   "intent": "ask",
+   "calls": [
+    {
+     "tool": "set_space_heater_power",
+     "args": {
+      "on": true,
+      "room": "?"
+     }
+    }
+   ],
+   "meaning": "space heater on",
+   "missing": [
+    "room"
+   ],
+   "implied": []
+  }
+ ]
+}
