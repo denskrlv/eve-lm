@@ -120,6 +120,39 @@ def corpus(args: argparse.Namespace) -> None:
     print(f"train {meta['train_tokens']:,} and val {meta['val_tokens']:,} tokens -> {args.out}")
 
 
+def pretrain(args: argparse.Namespace) -> None:
+    from colibri.config import preset
+    from colibri.train.loop import TrainConfig
+    from colibri.train.pretrain import pretrain as run
+    from colibri.train.pretrain import steps_for
+
+    cfg = preset(args.preset)
+    steps = args.steps or steps_for(_count(args.tokens), args.batch_size, cfg.max_encoder_len)
+    train_cfg = TrainConfig(
+        steps=steps,
+        batch_size=args.batch_size,
+        lr=args.lr,
+        warmup_steps=min(args.warmup, steps),
+        dtype=args.dtype,
+        seed=args.seed,
+        eval_every=args.eval_every,
+        save_every=args.eval_every,
+        log_every=args.log_every,
+    )
+    device = pick_device(args.device)
+    print(f"{args.preset} ({cfg.approx_params() / 1e6:.1f}M) on {device}: {steps:,} steps")
+    run(
+        cfg,
+        train_cfg,
+        args.data,
+        args.tokenizer,
+        args.out,
+        device,
+        resume=args.resume,
+        stop_after=args.stop_after,
+    )
+
+
 def data_build(args: argparse.Namespace) -> None:
     from colibri.config import preset
     from colibri.data.generate.build import build
@@ -217,6 +250,25 @@ def main(argv: list[str] | None = None) -> None:
     p.add_argument("--train-tokens", default="250M")
     p.add_argument("--val-tokens", default="2M")
     p.add_argument("--workers", type=int, default=None)
+
+    p = commands.add_parser("pretrain", help="span-corruption pretraining (M4)")
+    p.set_defaults(run=pretrain)
+    p.add_argument("--preset", choices=sorted(PRESETS), default="small")
+    p.add_argument("--data", default="data/bin")
+    p.add_argument("--tokenizer", default=DEFAULT_TOKENIZER)
+    p.add_argument("--out", default="artifacts/runs/pretrain-small")
+    p.add_argument("--tokens", default="250M", help="corpus tokens to read (sets --steps)")
+    p.add_argument("--steps", type=int, default=None, help="default: from --tokens")
+    p.add_argument("--batch-size", type=int, default=32)
+    p.add_argument("--lr", type=float, default=1e-3)
+    p.add_argument("--warmup", type=int, default=500)
+    p.add_argument("--dtype", choices=["float32", "bfloat16"], default="float32")
+    p.add_argument("--seed", type=int, default=0)
+    p.add_argument("--eval-every", type=int, default=500, help="also how often to save")
+    p.add_argument("--log-every", type=int, default=20)
+    p.add_argument("--device", default=None)
+    p.add_argument("--resume", action="store_true", help="continue from <out>/last.pt")
+    p.add_argument("--stop-after", type=int, default=None, help="stop early at this step")
 
     data = commands.add_parser("data", help="build the task dataset (M6)")
     data_commands = data.add_subparsers(dest="data_command", required=True)

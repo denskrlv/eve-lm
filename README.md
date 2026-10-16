@@ -74,4 +74,15 @@ uv run colibri data check batch-0001         # validate what the chat wrote
 
 How chat-written requests are made: `data/generation/README.md`.
 
+## Pretraining (M4)
+
+T5 span corruption over `data/bin/train.bin`: one pass over 250M tokens is ~13.7k steps, about 2.6 h on an M3 Pro.
+
+```bash
+uv run colibri pretrain                      # -> artifacts/runs/pretrain-small/{metrics.jsonl,last.pt,model.pt}
+uv run colibri pretrain --resume             # continue from last.pt after an interruption
+```
+
+Each eval logs the val loss and fill-in-the-blank samples (`The capital of France is [Paris].`). Fine-tuning starts from `model.pt` with `load_pretrained` (M5).
+
 Training runs on Apple Silicon (MPS). Inference targets a Raspberry Pi 5 running PyTorch on CPU. Set `COLIBRI_DEVICE=cpu` to force a device.

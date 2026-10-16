@@ -20,10 +20,15 @@ class Checkpoint:
     model: Colibri
     tokenizer: BPETokenizer
     meta: dict
+    train_state: dict | None = None  # optimizer, step and RNG states, for resuming (M4)
 
 
 def save_checkpoint(
-    path: str | Path, model: Colibri, tokenizer: BPETokenizer, meta: dict | None = None
+    path: str | Path,
+    model: Colibri,
+    tokenizer: BPETokenizer,
+    meta: dict | None = None,
+    train_state: dict | None = None,
 ) -> None:
     """Save everything needed to rebuild the model: ``{format, config, state_dict, tokenizer,
     meta}``. The book (ch. 5.4) saves only ``model.state_dict()`` and rebuilds the model from
@@ -32,7 +37,8 @@ def save_checkpoint(
 
     ``meta`` is for things like the step, tokens seen and val loss. Keep it to plain Python
     values (numbers, strings, lists, dicts): files are loaded with ``weights_only=True``,
-    which refuses arbitrary pickled objects.
+    which refuses arbitrary pickled objects. ``train_state`` (the training loop's optimizer,
+    step and RNG states) is only needed to resume a run; the final model is saved without it.
 
     The file is written to a temporary name and then renamed, so a crash during a save never
     leaves a half-written checkpoint behind.
@@ -48,6 +54,8 @@ def save_checkpoint(
         "tokenizer": tokenizer.to_dict(),
         "meta": meta or {},
     }
+    if train_state is not None:
+        data["train_state"] = train_state
     path = Path(path)
     path.parent.mkdir(parents=True, exist_ok=True)
     tmp = path.with_name(path.name + ".tmp")
@@ -68,7 +76,8 @@ def load_checkpoint(path: str | Path, device: str | torch.device = "cpu") -> Che
     data = _read(path)
     model = Colibri(ModelConfig(**data["config"]))
     model.load_state_dict(data["state_dict"])
-    return Checkpoint(model.to(device), BPETokenizer.from_dict(data["tokenizer"]), data["meta"])
+    tokenizer = BPETokenizer.from_dict(data["tokenizer"])
+    return Checkpoint(model.to(device), tokenizer, data["meta"], data.get("train_state"))
 
 
 def load_pretrained(
