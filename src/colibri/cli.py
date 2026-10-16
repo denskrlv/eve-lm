@@ -146,6 +146,7 @@ def pretrain(args: argparse.Namespace) -> None:
         f"{style('pretrain', '1')} {args.preset} · {cfg.approx_params() / 1e6:.1f}M params · "
         f"{device} · {args.dtype} · lr {args.lr:g} · dropout {cfg.dropout:g} · "
         f"{steps:,} steps × {args.batch_size} windows of {cfg.max_encoder_len} tokens"
+        + (f" · stopping at step {args.stop_after:,}" if args.stop_after else "")
     )
     run(
         cfg,

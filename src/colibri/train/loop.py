@@ -210,7 +210,7 @@ def train(
         raise ValueError(f"val data has {len(val_data)} items, less than one batch")
 
     end = cfg.steps if stop_after is None else min(stop_after, cfg.steps)
-    bar = progress.bar(cfg.steps, out_dir.name, "steps", initial=step)
+    bar = progress.bar(end, out_dir.name, "steps", initial=step)  # to where this run stops
 
     def run_eval() -> None:
         before = dict(last_val)
@@ -277,8 +277,8 @@ def train(
             stats = [f"{k} {v:.4f}" for k, v in means.items()]
             stats += [f"lr {lr:.1e}", f"{tok_s / 1e3:.1f}k tok/s"]
             if bar.disable:  # not a terminal: plain lines for the log file
-                eta = (cfg.steps - step) * elapsed / window["steps"]
-                print(f"step {step:>6}/{cfg.steps} | " + " | ".join(stats) + f" | eta {_hms(eta)}")
+                eta = (end - step) * elapsed / window["steps"]
+                print(f"step {step:>6}/{end} | " + " | ".join(stats) + f" | eta {_hms(eta)}")
             bar.set_stats(*stats)
             window = {"loss": {}, "tokens": 0, "start": time.time(), "steps": 0}
         paused = time.time()
