@@ -1,6 +1,7 @@
 import argparse
 import glob
 import json
+import sys
 import time
 from pathlib import Path
 
@@ -122,6 +123,7 @@ def corpus(args: argparse.Namespace) -> None:
 
 def pretrain(args: argparse.Namespace) -> None:
     from colibri.config import preset
+    from colibri.progress import style
     from colibri.train.loop import TrainConfig
     from colibri.train.pretrain import pretrain as run
     from colibri.train.pretrain import steps_for
@@ -140,7 +142,11 @@ def pretrain(args: argparse.Namespace) -> None:
         log_every=args.log_every,
     )
     device = pick_device(args.device)
-    print(f"{args.preset} ({cfg.approx_params() / 1e6:.1f}M) on {device}: {steps:,} steps")
+    print(
+        f"{style('pretrain', '1')} {args.preset} · {cfg.approx_params() / 1e6:.1f}M params · "
+        f"{device} · {args.dtype} · {steps:,} steps × {args.batch_size} windows of "
+        f"{cfg.max_encoder_len} tokens"
+    )
     run(
         cfg,
         train_cfg,
@@ -151,6 +157,42 @@ def pretrain(args: argparse.Namespace) -> None:
         resume=args.resume,
         stop_after=args.stop_after,
     )
+
+
+def fill(args: argparse.Namespace) -> None:
+    """Learn (M4): ask a pretrained model to fill the <x0>, <x1>… holes in a sentence."""
+    from colibri import progress
+    from colibri.model.checkpoint import load_checkpoint
+    from colibri.train.pretrain import SAMPLES, fill_in
+
+    texts = args.text or list(SAMPLES)
+    if bad := [t for t in texts if "<x0>" not in t]:
+        raise SystemExit(f"put a hole like <x0> in the text: {bad[0]!r}")
+    device = pick_device(args.device)
+    with progress.bar(len(texts), "fill", "prompts", leave=False) as bar:
+        bar.set_stats(f"loading {Path(args.model).name}")
+        ckpt = load_checkpoint(args.model, device)
+        filled = []
+        for text in texts:
+            bar.set_stats("decoding")
+            filled.append(fill_in(ckpt.model, ckpt.tokenizer, text, args.max_new, progress.marks()))
+            bar.update()
+
+    def row(label: str, value: str) -> None:
+        print(f"  {progress.style(f'{label:<11}', '2', stream=sys.stdout)}{value}")
+
+    meta = ckpt.meta
+    trained = f"{meta['step']:,} steps" if "step" in meta else "?"
+    if "val_lm" in meta:
+        trained += f" · val loss {meta['val_lm']:.3f}"
+    print()
+    row("checkpoint", str(args.model))
+    row("trained", trained)
+    row("device", str(device))
+    print()
+    for i, line in enumerate(filled, 1):
+        print(f"  {progress.style(f'{i:>2}', '2', stream=sys.stdout)}  {line}")
+    print()
 
 
 def data_build(args: argparse.Namespace) -> None:
@@ -269,6 +311,13 @@ def main(argv: list[str] | None = None) -> None:
     p.add_argument("--device", default=None)
     p.add_argument("--resume", action="store_true", help="continue from <out>/last.pt")
     p.add_argument("--stop-after", type=int, default=None, help="stop early at this step")
+
+    p = commands.add_parser("fill", help="fill <x0> holes with a pretrained model (M4)")
+    p.set_defaults(run=fill)
+    p.add_argument("text", nargs="*", help='e.g. "Paris is the capital of <x0>."')
+    p.add_argument("--model", default="artifacts/runs/pretrain-small/model.pt")
+    p.add_argument("--max-new", type=int, default=24, help="most tokens to write")
+    p.add_argument("--device", default=None)
 
     data = commands.add_parser("data", help="build the task dataset (M6)")
     data_commands = data.add_subparsers(dest="data_command", required=True)

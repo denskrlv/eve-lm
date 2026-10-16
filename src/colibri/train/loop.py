@@ -12,6 +12,7 @@ import torch
 from torch import nn
 from torch.utils.data import Dataset
 
+from colibri import progress
 from colibri.model.checkpoint import load_checkpoint, save_checkpoint
 from colibri.model.colibri import Colibri
 from colibri.tokenizer.bpe import BPETokenizer
@@ -204,23 +205,30 @@ def train(
     if not val_batches:
         raise ValueError(f"val data has {len(val_data)} items, less than one batch")
 
+    end = cfg.steps if stop_after is None else min(stop_after, cfg.steps)
+    bar = progress.bar(cfg.steps, out_dir.name, "steps", initial=step)
+
     def run_eval() -> None:
+        before = dict(last_val)
         last_val.clear()
         last_val.update(evaluate(model, loss_fn, val_batches, device, autocast))
         log({"kind": "val", "step": step, **last_val})
-        print(f"step {step:>6} | " + " | ".join(f"{k} {v:.4f}" for k, v in last_val.items()))
+        parts = []
+        for k, v in last_val.items():
+            change = f" ({v - before[k]:+.3f})" if k in before else ""
+            parts.append(f"{k} {progress.style(f'{v:.4f}', '1')}{change}")
+        bar.write(f"{progress.style('eval', '1', '35')} step {step:,} · " + " · ".join(parts))
         if on_eval is not None:
             samples = on_eval(model)
             log({"kind": "samples", "step": step, **samples})
             for line in samples.get("samples", []):
-                print(f"    {line}")
+                bar.write(progress.style(f"    {line}", "2"))
 
     last_val: dict[str, float] = {}
     if step == 0:
         log({"kind": "start", "train_config": cfg.to_dict(), "model_config": model.cfg.to_dict()})
         run_eval()  # at step 0 the loss should be about ln(vocab_size): nothing learned yet
 
-    end = cfg.steps if stop_after is None else min(stop_after, cfg.steps)
     window = {"loss": {}, "tokens": 0, "start": time.time(), "steps": 0}
     while step < end:
         idx = batch_indices(step, len(train_data), cfg)
@@ -243,6 +251,7 @@ def train(
         for name, value in losses.items():
             window["loss"][name] = window["loss"].get(name, 0.0) + value.detach().float()
         window["steps"] += 1
+        bar.update()
 
         if step % cfg.log_every == 0 or step == end:
             elapsed = time.time() - window["start"]
@@ -259,12 +268,12 @@ def train(
                     **means,
                 }
             )
-            eta = (cfg.steps - step) * elapsed / window["steps"]
-            print(
-                f"step {step:>6}/{cfg.steps} | "
-                + " | ".join(f"{k} {v:.4f}" for k, v in means.items())
-                + f" | lr {lr:.2e} | {tok_s / 1e3:.1f}k tok/s | eta {_hms(eta)}"
-            )
+            stats = [f"{k} {v:.4f}" for k, v in means.items()]
+            stats += [f"lr {lr:.1e}", f"{tok_s / 1e3:.1f}k tok/s"]
+            if bar.disable:  # not a terminal: plain lines for the log file
+                eta = (cfg.steps - step) * elapsed / window["steps"]
+                print(f"step {step:>6}/{cfg.steps} | " + " | ".join(stats) + f" | eta {_hms(eta)}")
+            bar.set_stats(*stats)
             window = {"loss": {}, "tokens": 0, "start": time.time(), "steps": 0}
         paused = time.time()
         if step % cfg.eval_every == 0 or step == cfg.steps:
@@ -273,8 +282,12 @@ def train(
             save()
         window["start"] += time.time() - paused  # eval and saving don't count towards tok/s
 
+    bar.close()
     if step == cfg.steps:
         save_checkpoint(out_dir / "model.pt", model, tokenizer, {"step": step, **last_val})
+        print(f"{progress.style('done', '1', '32')} {out_dir / 'model.pt'}")
+    else:
+        print(f"{progress.style('stopped', '1', '33')} at step {step:,}; continue with --resume")
     return last_val
 
 

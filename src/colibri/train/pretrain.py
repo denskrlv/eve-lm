@@ -31,12 +31,19 @@ def span_loss(model: Colibri, batch: dict[str, torch.Tensor]) -> dict[str, torch
 
 
 @torch.no_grad()
-def fill_in(model: Colibri, tokenizer: BPETokenizer, text: str, max_new: int = 24) -> str:
+def fill_in(
+    model: Colibri,
+    tokenizer: BPETokenizer,
+    text: str,
+    max_new: int = 24,
+    marks: tuple[str, str] = ("[", "]"),
+) -> str:
     """Fill the ``<x0>``, ``<x1>``… holes of ``text`` by greedy decoding (book ch. 5.1.1's
     ``generate_text_simple``, but the decoder also reads the encoder).
 
     The decoder writes ``<x0> span <x1> span … <eos>``, the same format as the pretraining
-    targets. Returns ``text`` with each hole replaced by ``[its span]``.
+    targets. Returns ``text`` with each hole replaced by ``[its span]`` (``marks`` sets the
+    brackets; a terminal can pass color codes instead).
     """
     was_training = model.training
     model.eval()
@@ -63,9 +70,9 @@ def fill_in(model: Colibri, tokenizer: BPETokenizer, text: str, max_new: int = 2
     out = []
     for token in enc[0].tolist():
         if token in spans:
-            out.append("[" + tokenizer.decode(spans[token]) + "]")
+            out.append(marks[0] + tokenizer.decode(spans[token]) + marks[1])
         elif SENTINEL0 <= token < SENTINEL0 + N_SENTINELS:
-            out.append("[?]")  # a hole the model didn't fill
+            out.append(marks[0] + "?" + marks[1])  # a hole the model didn't fill
         else:
             out.append(tokenizer.decode([token]))
     return "".join(out)
