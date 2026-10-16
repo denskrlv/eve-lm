@@ -19,6 +19,6 @@
        {"name": "from_unit", "type": "enum", "options": ["km", "miles", "kg", "pounds", "celsius", "fahrenheit"]},
        {"name": "to_unit", "type": "enum", "options": ["km", "miles", "kg", "pounds", "celsius", "fahrenheit"]}
      ],
-     "templates": ["convert {value} {from_unit} to {to_unit}", "how many {to_unit} is {value} {from_unit}", "{value} {from_unit} in {to_unit}"]}
+     "templates": ["convert[ {value}] {from_unit}[ to {to_unit}]", "how many {to_unit} is {value} {from_unit}", "{value} {from_unit} in {to_unit}"]}
   ]
 }

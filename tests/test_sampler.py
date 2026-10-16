@@ -88,6 +88,14 @@ def test_conversions_are_sensible(sources):
     assert seen["convert_units"] == units  # every same-kind pair, nothing else
     assert len(seen["convert_currency"]) == 4 * 3  # every pair of different currencies
     assert all(a != b for a, b in seen["convert_currency"])
+    missing = {name: set() for name in sides}
+    for _ in range(300):
+        s = sample(bank, rng, "ask", pool=pool)
+        missing[s.example.calls[0].tool] |= set(s.missing)
+    assert missing == {
+        "convert_units": {"value", "to_unit"},  # "convert km to miles", "convert 5 km"
+        "convert_currency": {"amount", "to_currency"},
+    }
 
 
 def test_samples_render(bank, tokenizer):
