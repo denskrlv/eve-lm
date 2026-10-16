@@ -11,6 +11,15 @@ from colibri.data.schema import ASK_VALUE, Arg, Tool
 
 FANOUT = "*"  # {room=*}: one call per option of a required enum ("lights off everywhere")
 MAX_CALLS = ModelConfig().n_slots
+# Units convert only to units of the same kind: never celsius to km.
+UNIT_KINDS = {
+    "km": "length",
+    "miles": "length",
+    "kg": "mass",
+    "pounds": "mass",
+    "celsius": "temperature",
+    "fahrenheit": "temperature",
+}
 
 _SLOT = re.compile(r"\{(\w+)(?::([^{}|]*)\|([^{}|]*)|=([^{}]*))?\}")
 _OPTIONAL = re.compile(r"\[([^\[\]]*)\]")
@@ -183,6 +192,20 @@ class Filled:
         return [{**self.args, self.fanout: option} for option in tool.arg(self.fanout).options]
 
 
+def sensible(args: Mapping[str, Any]) -> bool:
+    """False for a conversion no one asks for: the same value in from_x and to_x (EUR to EUR),
+    or units of different kinds (``UNIT_KINDS``)."""
+    for name, a in args.items():
+        if not name.startswith("from_"):
+            continue
+        b = args.get("to_" + name.removeprefix("from_"))
+        if b is None or ASK_VALUE in (a, b):
+            continue
+        if a == b or (a in UNIT_KINDS and UNIT_KINDS[a] != UNIT_KINDS.get(b)):
+            return False
+    return True
+
+
 def fill(
     tool: Tool,
     template: str,
@@ -195,7 +218,22 @@ def fill(
     Optional segments are kept or dropped at random, except those holding a required argument,
     which are always kept. With ``ask``, exactly one of those is dropped and its required
     argument becomes "?" (the user must be asked). Returns None if ``ask`` is impossible.
+    Values that make no ``sensible`` conversion are sampled again.
     """
+    for _ in range(100):
+        filled = _fill(tool, template, values, rng, ask)
+        if filled is None or sensible(filled.args):
+            return filled
+    raise RuntimeError(f"no sensible values for {tool.name}, {template!r}")
+
+
+def _fill(
+    tool: Tool,
+    template: str,
+    values: Mapping[str, Sequence[str]],
+    rng: np.random.Generator,
+    ask: bool,
+) -> Filled | None:
     segments = parse(template)
     required = {a.name for a in tool.args if a.required}
     droppable = [i for i, s in enumerate(segments) if s.optional and s.args & required]

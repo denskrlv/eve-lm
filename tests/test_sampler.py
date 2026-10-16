@@ -71,6 +71,25 @@ def test_held_out_pool(sources):
         assert all(c.tool in {s.name for s in sources.heldout} for c in ex.calls)
 
 
+def test_conversions_are_sensible(sources):
+    bank = ToolBank(sources.heldout)
+    sides = {
+        "convert_units": ("from_unit", "to_unit"),
+        "convert_currency": ("from_currency", "to_currency"),
+    }
+    units = {("km", "miles"), ("kg", "pounds"), ("celsius", "fahrenheit")}
+    units |= {(b, a) for a, b in units}
+    pool = [bank.index[name] for name in sides]
+    rng = np.random.default_rng(0)
+    seen = {name: set() for name in sides}
+    for _ in range(1000):
+        for c in sample(bank, rng, "call", pool=pool).example.calls:
+            seen[c.tool].add(tuple(c.args[side] for side in sides[c.tool]))
+    assert seen["convert_units"] == units  # every same-kind pair, nothing else
+    assert len(seen["convert_currency"]) == 4 * 3  # every pair of different currencies
+    assert all(a != b for a, b in seen["convert_currency"])
+
+
 def test_samples_render(bank, tokenizer):
     from colibri.config import preset
 
