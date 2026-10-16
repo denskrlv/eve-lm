@@ -84,6 +84,8 @@ PRESETS: dict[str, ModelConfig] = {
     "small": ModelConfig(),
     # If the data supports it, ~32M parameters.
     "base": ModelConfig(d_model=384, n_heads=6, n_encoder_layers=8, n_decoder_layers=4),
+    # ~55M parameters: base's layout, wider. ~5x small's training cost per token.
+    "medium": ModelConfig(d_model=512, n_heads=8, n_encoder_layers=8, n_decoder_layers=4),
 }
 
 
