@@ -39,6 +39,6 @@
        {"name": "from_currency", "type": "enum", "options": ["USD", "EUR", "GBP", "JPY"]},
        {"name": "to_currency", "type": "enum", "options": ["USD", "EUR", "GBP", "JPY"]}
      ],
-     "templates": ["convert {amount} {from_currency} to {to_currency}", "how much is {amount} {from_currency} in {to_currency}"]}
+     "templates": ["convert[ {amount}] {from_currency}[ to {to_currency}]", "how much is {amount} {from_currency}[ in {to_currency}]"]}
   ]
 }
