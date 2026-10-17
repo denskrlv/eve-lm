@@ -93,3 +93,15 @@ uv run colibri compare artifacts/runs/ab-*              # val metrics of several
 A/B runs use the full run's schedule and stop early (`--stop-after`), so each arm is the start of a real run and the winner continues with `--resume`.
 
 Training runs on Apple Silicon (MPS). Inference targets a Raspberry Pi 5 running PyTorch on CPU. Set `COLIBRI_DEVICE=cpu` to force a device.
+
+## Question heads (M7)
+
+Fine-tune the Jev heads (intent, and the ordered "what is call #i?" slots) from the pretrained checkpoint, as book ch. 6 does: first only the question block with the body frozen, then everything.
+
+```bash
+uv run colibri finetune --init artifacts/runs/ab-dropout0-rope-qk/model.pt --freeze --out artifacts/runs/questions-frozen
+uv run colibri finetune --init artifacts/runs/questions-frozen/model.pt --out artifacts/runs/questions-full
+uv run colibri finetune --scratch small --out artifacts/runs/questions-scratch   # E1: what pretraining buys
+```
+
+Each eval logs val loss and accuracy per question (`tools_acc` = right tools in the right order, `exact_acc` = that and the right intent), prints what the heads answer for one val example per intent, and the accuracy on tools from the held-out domains. Val is mostly MASSIVE, where 84% of examples are CALL, so `intent_acc` starts near 84% by always answering CALL.

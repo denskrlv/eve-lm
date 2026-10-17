@@ -164,6 +164,52 @@ def pretrain(args: argparse.Namespace) -> None:
     )
 
 
+def finetune(args: argparse.Namespace) -> None:
+    from colibri.config import preset
+    from colibri.data.generate.build import Sources, read_jsonl
+    from colibri.progress import style
+    from colibri.train.finetune import finetune as run
+    from colibri.train.loop import TrainConfig
+
+    n_train = len(read_jsonl(Path(args.task) / "train.jsonl"))
+    steps = args.steps or round(args.epochs * n_train / args.batch_size)
+    lr = args.lr or (1e-3 if args.freeze else 3e-4)
+    train_cfg = TrainConfig(
+        steps=steps,
+        batch_size=args.batch_size,
+        lr=lr,
+        warmup_steps=min(args.warmup, steps),
+        dtype=args.dtype,
+        seed=args.seed,
+        eval_every=args.eval_every,
+        eval_batches=10_000,  # all of val: it is small
+        save_every=args.eval_every,
+        log_every=args.log_every,
+    )
+    device = pick_device(args.device)
+    start = args.init or f"{args.scratch} from scratch"
+    print(
+        f"{style('finetune', '1')} questions · from {start} · {device} · lr {lr:g} · "
+        + ("body frozen · " if args.freeze else "")
+        + f"{steps:,} steps × {args.batch_size} ({steps * args.batch_size / n_train:.1f} epochs)"
+        + (f" · stopping at step {args.stop_after:,}" if args.stop_after else "")
+    )
+    run(
+        train_cfg,
+        args.task,
+        args.out,
+        device,
+        Sources.load().library,
+        init=args.init,
+        scratch=preset(args.scratch) if args.scratch else None,
+        tokenizer_path=args.tokenizer,
+        freeze=args.freeze,
+        overrides={} if args.dropout is None else {"dropout": args.dropout},
+        resume=args.resume,
+        stop_after=args.stop_after,
+    )
+
+
 def compare(args: argparse.Namespace) -> None:
     """Learn (M4): val metrics of several runs side by side, one row per eval step."""
     runs = {}
@@ -354,6 +400,28 @@ def main(argv: list[str] | None = None) -> None:
     p.add_argument("--resume", action="store_true", help="continue from <out>/last.pt")
     p.add_argument("--stop-after", type=int, default=None, help="stop early at this step")
 
+    p = commands.add_parser("finetune", help="fine-tune the question heads (M7)")
+    p.set_defaults(run=finetune)
+    start = p.add_mutually_exclusive_group(required=True)
+    start.add_argument("--init", help="a pretraining checkpoint or an earlier finetune's model.pt")
+    start.add_argument("--scratch", choices=sorted(PRESETS), help="random init (experiment E1)")
+    p.add_argument("--freeze", action="store_true", help="train only the question block (E2)")
+    p.add_argument("--task", default="data/task")
+    p.add_argument("--tokenizer", default=DEFAULT_TOKENIZER, help="for --scratch")
+    p.add_argument("--out", default="artifacts/runs/questions")
+    p.add_argument("--epochs", type=float, default=2.0, help="sets --steps")
+    p.add_argument("--steps", type=int, default=None, help="default: from --epochs")
+    p.add_argument("--batch-size", type=int, default=32)
+    p.add_argument("--lr", type=float, default=None, help="default: 1e-3 frozen, else 3e-4")
+    p.add_argument("--warmup", type=int, default=200)
+    p.add_argument("--dtype", choices=["float32", "bfloat16"], default="float32")
+    p.add_argument("--dropout", type=float, default=None, help="default: the checkpoint's")
+    p.add_argument("--seed", type=int, default=0)
+    p.add_argument("--eval-every", type=int, default=500, help="also how often to save")
+    p.add_argument("--log-every", type=int, default=20)
+    p.add_argument("--device", default=None)
+    p.add_argument("--resume", action="store_true", help="continue from <out>/last.pt")
+    p.add_argument("--stop-after", type=int, default=None, help="stop early at this step")
     p = commands.add_parser("compare", help="val metrics of training runs side by side (M4)")
     p.set_defaults(run=compare)
     p.add_argument("runs", nargs="+", help="run directories, e.g. artifacts/runs/ab-*")

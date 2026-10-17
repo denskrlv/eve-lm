@@ -150,6 +150,7 @@ def train(
     eval_fn: LossFn | None = None,
     resume: bool = False,
     stop_after: int | None = None,
+    meta: dict | None = None,
 ) -> dict[str, float]:
     """The training loop for pretraining and fine-tuning (book ch. 5.2 ``train_model_simple``
     plus App. D's warmup, cosine decay and gradient clipping).
@@ -165,6 +166,10 @@ def train(
 
     Evals run ``eval_fn`` (default: ``loss_fn``) on the val batches. It may return extra
     metrics (e.g. an accuracy) that are logged with a ``val_`` prefix but never trained on.
+
+    ``meta`` (plain values) is added to both checkpoints' meta, e.g. what kind of run made them.
+    A dataset with a ``set_epoch`` method (``TaskDataset``) is told the epoch of each batch, so
+    it can shuffle differently per epoch.
 
     ``resume=True`` continues from ``last.pt`` exactly: the same batches, dropout masks and
     optimizer state, so the losses match an uninterrupted run. ``stop_after`` ends the run
@@ -199,8 +204,8 @@ def train(
 
     def save() -> None:
         state = {"step": step, "optimizer": optimizer.state_dict(), "rng": _rng_state()}
-        meta = {"step": step, "train_config": cfg.to_dict(), **last_val}
-        save_checkpoint(out_dir / "last.pt", model, tokenizer, meta, state)
+        info = {**(meta or {}), "step": step, "train_config": cfg.to_dict(), **last_val}
+        save_checkpoint(out_dir / "last.pt", model, tokenizer, info, state)
 
     val_batches = [
         collate([val_data[j] for j in range(i * cfg.batch_size, (i + 1) * cfg.batch_size)])
@@ -238,6 +243,8 @@ def train(
     window = {"loss": {}, "tokens": 0, "start": time.time(), "steps": 0}
     while step < end:
         idx = batch_indices(step, len(train_data), cfg)
+        if hasattr(train_data, "set_epoch"):
+            train_data.set_epoch(step // (len(train_data) // cfg.batch_size))
         batch = collate([train_data[int(j)] for j in idx])
         window["tokens"] += int(batch["enc_mask"].sum() + batch["dec_mask"].sum())
 
@@ -290,7 +297,8 @@ def train(
 
     bar.close()
     if step == cfg.steps:
-        save_checkpoint(out_dir / "model.pt", model, tokenizer, {"step": step, **last_val})
+        info = {**(meta or {}), "step": step, **last_val}
+        save_checkpoint(out_dir / "model.pt", model, tokenizer, info)
         print(f"{progress.style('done', '1', '32')} {out_dir / 'model.pt'}")
     else:
         print(f"{progress.style('stopped', '1', '33')} at step {step:,}; continue with --resume")
@@ -328,7 +336,7 @@ def _resume(
 
 
 def _fmt(name: str, value: float) -> str:
-    return f"{value:.1%}" if name.endswith("acc") else f"{value:.4f}"
+    return f"{value:.1%}" if name.endswith(("acc", "rate")) else f"{value:.4f}"
 
 
 def _hms(seconds: float) -> str:

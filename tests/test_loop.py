@@ -127,3 +127,15 @@ def test_last_checkpoint_holds_the_train_state(tokenizer, tmp_path):
     assert ckpt.train_state["step"] == 3 and ckpt.meta["step"] == 3
     assert ckpt.meta["train_config"] == small_run().to_dict()
     assert "val_lm" in ckpt.meta  # step 3 was an eval step
+
+
+def test_datasets_are_told_the_epoch(tokenizer, tmp_path):
+    class Epochs(SpanCorruptionDataset):
+        def set_epoch(self, epoch: int) -> None:
+            self.seen.append(epoch)
+
+    data = corpus()
+    data.__class__, data.seen = Epochs, []
+    per_epoch = len(data) // 4
+    run(tmp_path, tokenizer, small_run(steps=per_epoch + 2), train_data=data)
+    assert data.seen == [0] * per_epoch + [1, 1]
