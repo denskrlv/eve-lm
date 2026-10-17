@@ -280,6 +280,76 @@ def fill(args: argparse.Namespace) -> None:
     print()
 
 
+def _tools(args: argparse.Namespace) -> list:
+    """The tools for ``colibri ask``: names from the library and/or schemas from JSON files."""
+    from colibri.data.generate.build import Sources
+    from colibri.data.schema import GENERATION_KEYS, Tool
+
+    tools = []
+    if args.tools:
+        library = Sources.load().library
+        names = [name.strip() for name in args.tools.split(",") if name.strip()]
+        if unknown := [name for name in names if name not in library]:
+            raise SystemExit(f"unknown tools {unknown}; see data/tools/*.json or use --schema")
+        tools += [library[name] for name in names]
+    for path in args.schema or []:
+        data = json.loads(Path(path).read_text())
+        rows = data["tools"] if isinstance(data, dict) else data  # a data/tools file, or a list
+        tools += [
+            Tool.from_dict({k: v for k, v in t.items() if k not in GENERATION_KEYS}) for t in rows
+        ]
+    if not tools:
+        raise SystemExit("give the tools with --tools a,b,c and/or --schema FILE")
+    return tools
+
+
+def ask(args: argparse.Namespace) -> None:
+    """Learn (M7): what the question heads answer for a typed request, with probabilities."""
+    from colibri.infer.predict import STOP, answer_questions
+    from colibri.model.checkpoint import load_checkpoint
+    from colibri.progress import style
+
+    tools = _tools(args)
+    ckpt = load_checkpoint(args.model, pick_device(args.device))
+
+    def show(text: str) -> None:
+        a = answer_questions(ckpt.model, ckpt.tokenizer, text, tools)
+        if args.json:
+            print(json.dumps({"utterance": text, **a.to_json()}))
+            return
+
+        def ranked(probs: dict[str, float], n: int) -> str:
+            top = sorted(probs.items(), key=lambda kv: -kv[1])[:n]
+            return " · ".join(
+                (style(f"{k} {p:.0%}", "1", stream=sys.stdout) if i == 0 else f"{k} {p:.0%}")
+                for i, (k, p) in enumerate(top)
+            )
+
+        print(f"  {style(f'{"intent":<8}', '2', stream=sys.stdout)} {ranked(a.intent, 4)}")
+        for i, slot in enumerate(a.slots, 1):
+            print(f"  {style(f'{f"call {i}":<8}', '2', stream=sys.stdout)} {ranked(slot, 3)}")
+            if max(slot, key=slot.get) == STOP:
+                break
+
+    if args.text:
+        for text in args.text:
+            if not args.json:
+                print(text)
+            show(text)
+        return
+    names = ", ".join(t.name for t in tools)
+    print(f"{args.model} · tools: {names}\ntype a request (empty line or Ctrl-D to quit)")
+    while True:
+        try:
+            text = input("> ").strip()
+        except (EOFError, KeyboardInterrupt):
+            print()
+            break
+        if not text:
+            break
+        show(text)
+
+
 def data_build(args: argparse.Namespace) -> None:
     from colibri.config import preset
     from colibri.data.generate.build import build
@@ -422,6 +492,15 @@ def main(argv: list[str] | None = None) -> None:
     p.add_argument("--device", default=None)
     p.add_argument("--resume", action="store_true", help="continue from <out>/last.pt")
     p.add_argument("--stop-after", type=int, default=None, help="stop early at this step")
+    p = commands.add_parser("ask", help="ask the question heads about a request (M7)")
+    p.set_defaults(run=ask)
+    p.add_argument("text", nargs="*", help="requests; none: type them one by one")
+    p.add_argument("--tools", help="tool names from data/tools: set_lights,set_thermostat")
+    p.add_argument("--schema", action="append", help="a JSON file of tool schemas (repeatable)")
+    p.add_argument("--model", default="artifacts/runs/questions-full/model.pt")
+    p.add_argument("--json", action="store_true", help="one JSON line per request")
+    p.add_argument("--device", default=None)
+
     p = commands.add_parser("compare", help="val metrics of training runs side by side (M4)")
     p.set_defaults(run=compare)
     p.add_argument("runs", nargs="+", help="run directories, e.g. artifacts/runs/ab-*")

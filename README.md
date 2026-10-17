@@ -105,3 +105,10 @@ uv run colibri finetune --scratch small --out artifacts/runs/questions-scratch  
 ```
 
 Each eval logs val loss and accuracy per question (`tools_acc` = right tools in the right order, `exact_acc` = that and the right intent), prints what the heads answer for one val example per intent, and the accuracy on tools from the held-out domains. Val is mostly MASSIVE, where 84% of examples are CALL, so `intent_acc` starts near 84% by always answering CALL.
+
+Ask a fine-tuned model about your own requests (tool names from `data/tools/*.json`, or `--schema file.json` for your own schemas):
+
+```bash
+uv run colibri ask --tools set_lights,play_music "turn off the kitchen lights"
+uv run colibri ask --tools set_lights,play_music        # no request: type them one by one
+```
