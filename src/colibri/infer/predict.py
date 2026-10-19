@@ -7,6 +7,7 @@ from colibri.config import INTENTS, STOP
 from colibri.data.render import TaskCollator, TaskExample, render
 from colibri.data.schema import Tool
 from colibri.model.colibri import Colibri, ask
+from colibri.runtime import eval_mode, to_device
 from colibri.tokenizer.bpe import BPETokenizer
 
 
@@ -41,13 +42,9 @@ def answer_questions(
     The tools stay in the given order. The example's intent is a placeholder: render needs one
     to build the labels, which aren't used here.
     """
-    was_training = model.training
-    model.eval()
-    device = next(model.parameters()).device
     rendered = render(TaskExample(utterance, tuple(tools), "none"), tokenizer, model.cfg)
-    batch = {k: v.to(device) for k, v in TaskCollator(model.cfg)([rendered]).items()}
-    q = ask(model, batch)
-    model.train(was_training)
+    with eval_mode(model) as device:
+        q = ask(model, to_device(TaskCollator(model.cfg)([rendered]), device))
 
     names = [t.name for t in tools]
     intent = q.intent[0].softmax(-1).tolist()

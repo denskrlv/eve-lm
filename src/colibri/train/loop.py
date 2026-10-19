@@ -15,6 +15,7 @@ from torch.utils.data import Dataset
 from colibri import progress
 from colibri.model.checkpoint import load_checkpoint, save_checkpoint
 from colibri.model.colibri import Colibri
+from colibri.runtime import to_device
 from colibri.tokenizer.bpe import BPETokenizer
 
 LossFn = Callable[[Colibri, dict[str, torch.Tensor]], dict[str, torch.Tensor]]
@@ -124,10 +125,6 @@ def _set_rng_state(state: dict) -> None:
         torch.cuda.set_rng_state_all(state["cuda"])
 
 
-def _to(batch: dict[str, torch.Tensor], device: torch.device) -> dict[str, torch.Tensor]:
-    return {k: v.to(device, non_blocking=True) for k, v in batch.items()}
-
-
 @torch.no_grad()
 def evaluate(
     model: Colibri,
@@ -141,7 +138,7 @@ def evaluate(
     totals: dict[str, torch.Tensor] = {}
     for batch in batches:
         with autocast():
-            losses = loss_fn(model, _to(batch, device))
+            losses = loss_fn(model, to_device(batch, device))
         for name, loss in losses.items():
             totals[name] = totals.get(name, 0.0) + loss.float()
     model.train()
@@ -284,7 +281,7 @@ def _train_step(
     for group in optimizer.param_groups:
         group["lr"] = lr
     with autocast():
-        losses = loss_fn(runner, _to(batch, device))
+        losses = loss_fn(runner, to_device(batch, device))
     loss = sum(losses.values())
     optimizer.zero_grad(set_to_none=True)
     loss.backward()

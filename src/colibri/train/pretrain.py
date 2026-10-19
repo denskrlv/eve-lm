@@ -8,7 +8,7 @@ from colibri.data.corpus import load_tokens
 from colibri.data.pretrain import SpanCorruptionDataset, raw_length
 from colibri.data.render import IGNORE, collate_pretrain
 from colibri.model.colibri import Colibri
-from colibri.runtime import seed_everything
+from colibri.runtime import eval_mode, seed_everything
 from colibri.tokenizer.bpe import BYTE0, DEC, EOS, N_SENTINELS, SENTINEL0, BPETokenizer
 from colibri.train.loop import TrainConfig, train
 
@@ -86,20 +86,17 @@ def fill_in(
     targets. Returns ``text`` with each hole replaced by ``[its span]`` (``marks`` sets the
     brackets; a terminal can pass color codes instead).
     """
-    was_training = model.training
-    model.eval()
-    device = next(model.parameters()).device
-    enc = torch.tensor([prompt_ids(tokenizer, text)], device=device)
-    memory = model.encode(enc, torch.ones_like(enc, dtype=torch.bool))
-    dec = [DEC]
-    for _ in range(max_new):
-        ids = torch.tensor([dec], device=device)
-        logits = model.decode(ids, memory, torch.ones_like(enc, dtype=torch.bool))
-        nxt = int(logits[0, -1].argmax())
-        if nxt == EOS:
-            break
-        dec.append(nxt)
-    model.train(was_training)
+    with eval_mode(model) as device:
+        enc = torch.tensor([prompt_ids(tokenizer, text)], device=device)
+        memory = model.encode(enc, torch.ones_like(enc, dtype=torch.bool))
+        dec = [DEC]
+        for _ in range(max_new):
+            ids = torch.tensor([dec], device=device)
+            logits = model.decode(ids, memory, torch.ones_like(enc, dtype=torch.bool))
+            nxt = int(logits[0, -1].argmax())
+            if nxt == EOS:
+                break
+            dec.append(nxt)
 
     spans: dict[int, list[int]] = {}
     current = None

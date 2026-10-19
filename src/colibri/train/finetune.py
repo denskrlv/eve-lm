@@ -1,6 +1,6 @@
 from collections import Counter
 from collections.abc import Sequence
-from dataclasses import replace
+from dataclasses import dataclass, replace
 from pathlib import Path
 
 import torch
@@ -12,7 +12,7 @@ from colibri.data.render import IGNORE, TaskCollator, TaskDataset, TaskExample
 from colibri.data.schema import Tool
 from colibri.model.checkpoint import FRESH, QUESTION_FIELDS, load_checkpoint, load_pretrained
 from colibri.model.colibri import Colibri, Questions, ask
-from colibri.runtime import seed_everything
+from colibri.runtime import eval_mode, seed_everything, to_device
 from colibri.tokenizer.bpe import BPETokenizer
 from colibri.train.loop import TrainConfig, train
 
@@ -47,6 +47,31 @@ def _mean(x: torch.Tensor) -> torch.Tensor:
     return x.float().mean() if x.numel() else x.new_zeros((), dtype=torch.float)
 
 
+@dataclass(frozen=True)
+class _Graded:
+    """The heads' answers for a batch, checked against its labels."""
+
+    intent: torch.Tensor  # (B,) the most likely intent
+    slots: torch.Tensor  # (B, n_slots) the most likely answer per slot
+    intent_right: torch.Tensor  # (B,)
+    labelled: torch.Tensor  # (B, n_slots) slots with a label
+    has_slots: torch.Tensor  # (B,) the renderer labels all of an example's slots or none
+    tools_right: torch.Tensor  # (B,) every slot right: the right tools in order, then STOP
+
+
+def _grade(q: Questions, batch: dict[str, torch.Tensor]) -> _Graded:
+    intent, slots = q.intent.argmax(-1), q.slots.argmax(-1)
+    labelled = batch["slots"] != IGNORE
+    return _Graded(
+        intent=intent,
+        slots=slots,
+        intent_right=intent == batch["intent"],
+        labelled=labelled,
+        has_slots=labelled.all(-1),
+        tools_right=(slots == batch["slots"]).all(-1),
+    )
+
+
 def question_metrics(model: Colibri, batch: dict[str, torch.Tensor]) -> dict[str, torch.Tensor]:
     """The val metrics (box 6): both losses plus what they mean for answers.
 
@@ -58,20 +83,15 @@ def question_metrics(model: Colibri, batch: dict[str, torch.Tensor]) -> dict[str
     - ``call_stop_rate``: the heads disagree: intent CALL, but slot 1 says STOP (no call).
     """
     q = ask(model, batch)
-    intent, slots = q.intent.argmax(-1), q.slots.argmax(-1)
-    labels = batch["slots"]
-    labelled = labels != IGNORE
-    rows = labelled.all(-1)  # the renderer labels all of an example's slots or none
-    tools_right = (slots == labels).all(-1)
-    intent_right = intent == batch["intent"]
+    graded = _grade(q, batch)
     return {
         **_losses(q, batch),
-        "intent_acc": _mean(intent_right),
-        "slot_acc": _mean((slots == labels)[labelled]),
-        "tools_acc": _mean(tools_right[rows]),
-        "exact_acc": _mean(intent_right & (tools_right | ~rows)),
+        "intent_acc": _mean(graded.intent_right),
+        "slot_acc": _mean((graded.slots == batch["slots"])[graded.labelled]),
+        "tools_acc": _mean(graded.tools_right[graded.has_slots]),
+        "exact_acc": _mean(graded.intent_right & (graded.tools_right | ~graded.has_slots)),
         "call_stop_rate": _mean(
-            (intent == INTENTS.index("call")) & (slots[:, 0] == model.cfg.max_tools)
+            (graded.intent == INTENTS.index("call")) & (graded.slots[:, 0] == model.cfg.max_tools)
         ),
     }
 
@@ -83,25 +103,20 @@ def score(model: Colibri, batches: Sequence[dict[str, torch.Tensor]]) -> dict[st
     val is 84% CALL, so answering CALL every time already gets 84% intent accuracy, but a
     recall of 0 for ASK, UNSUPPORTED and NONE. ``macro_recall`` is the mean of the recalls.
     """
-    was_training = model.training
-    model.eval()
-    device = next(model.parameters()).device
     n, right = Counter(), Counter()
-    for batch in batches:
-        batch = {k: v.to(device) for k, v in batch.items()}
-        q = ask(model, batch)
-        intent, slots = q.intent.argmax(-1).cpu(), q.slots.argmax(-1).cpu()
-        gold, labels = batch["intent"].cpu(), batch["slots"].cpu()
-        rows = (labels != IGNORE).all(-1)
-        tools_right = (slots == labels).all(-1)
-        columns = (gold.tolist(), intent.tolist(), rows.tolist(), tools_right.tolist())
-        for g, p, r, t in zip(*columns, strict=True):
-            n[INTENTS[g]] += 1
-            right[INTENTS[g]] += p == g
-            n["tools"] += r
-            right["tools"] += r and t
-            right["exact"] += p == g and (t or not r)
-    model.train(was_training)
+    with eval_mode(model) as device:
+        for batch in batches:
+            batch = to_device(batch, device)
+            graded = _grade(ask(model, batch), batch)
+            columns = (graded.intent_right, graded.has_slots, graded.tools_right)
+            for gold, intent_ok, has_slots, tools_ok in zip(
+                batch["intent"].tolist(), *(c.tolist() for c in columns), strict=True
+            ):
+                n[INTENTS[gold]] += 1
+                right[INTENTS[gold]] += intent_ok
+                n["tools"] += has_slots
+                right["tools"] += has_slots and tools_ok
+                right["exact"] += intent_ok and (tools_ok or not has_slots)
     recalls = {f"recall_{i}": right[i] / n[i] for i in INTENTS if n[i]}
     total = sum(n[i] for i in INTENTS)
     return {
@@ -169,13 +184,9 @@ def describe(
 
     ``turn off the lights → call 97% · set_lights 95%, STOP 99% | gold call · set_lights``
     """
-    was_training = model.training
-    model.eval()
-    device = next(model.parameters()).device
     rendered = [data[i] for i in indices]
-    batch = TaskCollator(model.cfg)(rendered)
-    q = ask(model, {k: v.to(device) for k, v in batch.items()})
-    model.train(was_training)
+    with eval_mode(model) as device:
+        q = ask(model, to_device(TaskCollator(model.cfg)(rendered), device))
 
     intent_p, slot_p = q.intent.softmax(-1).cpu(), q.slots.softmax(-1).cpu()
     stop = model.cfg.max_tools
