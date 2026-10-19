@@ -42,6 +42,11 @@ def sentinel(i: int) -> int:
     return SENTINEL0 + i
 
 
+def is_sentinel(token: int) -> bool:
+    """Whether ``token`` is one of the span-corruption sentinels ``<x0>``…"""
+    return SENTINEL0 <= token < SENTINEL0 + N_SENTINELS
+
+
 SPLIT_PATTERN = (
     r"""'(?i:[sdmt]|ll|ve|re)"""  # contractions: 's 't 'd 'm 'll 've 're
     r"""|[^\r\n\p{L}\p{N}_]?\p{L}+"""  # a word, with at most one leading space or symbol

@@ -345,12 +345,11 @@ def _start_step(
     optimizer: torch.optim.Optimizer,
     out_dir: Path,
     cfg: TrainConfig,
-    device: torch.device,
     resume: bool,
 ) -> int:
     """The step to start at: 0, or where ``last.pt`` left off when resuming."""
     if resume and (out_dir / "last.pt").exists():
-        return _resume(model, optimizer, out_dir, cfg, device)
+        return _resume(model, optimizer, out_dir, cfg)
     if resume:
         logger.info(f"nothing to resume in {out_dir}: starting a new run")
     return 0
@@ -409,7 +408,7 @@ def train(
     optimizer = _optimizer(model, cfg, device)
     autocast = _autocast(device, cfg.dtype)
 
-    step = _start_step(model, optimizer, out_dir, cfg, device, resume)
+    step = _start_step(model, optimizer, out_dir, cfg, resume)
     if step == 0:
         log.clear()
     val_batches = _val_batches(val_data, collate, cfg)
@@ -491,8 +490,8 @@ def _resume(
     optimizer: torch.optim.Optimizer,
     out_dir: Path,
     cfg: TrainConfig,
-    device: torch.device,
 ) -> int:
+    """Restore the model, optimizer and RNG states from ``last.pt`` and return its step."""
     ckpt = load_checkpoint(out_dir / "last.pt")
     if ckpt.model.cfg != model.cfg:
         raise ValueError(f"{out_dir}/last.pt has a different model config")

@@ -2,7 +2,7 @@ import numpy as np
 from torch.utils.data import Dataset
 
 from colibri.config import ModelConfig
-from colibri.tokenizer.bpe import DEC, EOS, N_SENTINELS, SENTINEL0, sentinel
+from colibri.tokenizer.bpe import DEC, EOS, N_SENTINELS, is_sentinel, sentinel
 
 INPUT_LEN = ModelConfig().max_encoder_len  # pretraining fills the whole encoder
 NOISE_DENSITY = 0.15  # share of a window's tokens that are corrupted
@@ -70,15 +70,22 @@ def corrupt(tokens: np.ndarray, mask: np.ndarray) -> tuple[list[int], list[int]]
     return inputs, targets
 
 
-def uncorrupt(inputs: list[int], targets: list[int]) -> list[int]:
-    """Put the spans from ``targets`` back into ``inputs``. The inverse of ``corrupt``."""
+def spans_by_sentinel(targets: list[int]) -> dict[int, list[int]]:
+    """``<x0> span <x1> span … <eos>`` -> each sentinel's span. Tokens before the first
+    sentinel, and ``<eos>``, belong to no span."""
     spans: dict[int, list[int]] = {}
     current: list[int] = []
     for token in targets:
-        if SENTINEL0 <= token < SENTINEL0 + N_SENTINELS:
+        if is_sentinel(token):
             current = spans.setdefault(token, [])
         elif token != EOS:
             current.append(token)
+    return spans
+
+
+def uncorrupt(inputs: list[int], targets: list[int]) -> list[int]:
+    """Put the spans from ``targets`` back into ``inputs``. The inverse of ``corrupt``."""
+    spans = spans_by_sentinel(targets)
     out: list[int] = []
     for token in inputs:
         out.extend(spans.get(token, [token]))

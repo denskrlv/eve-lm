@@ -7,11 +7,11 @@ import torch.nn.functional as F
 from colibri import defaults
 from colibri.config import ModelConfig
 from colibri.data.corpus import load_tokens
-from colibri.data.pretrain import INPUT_LEN, SpanCorruptionDataset, raw_length
+from colibri.data.pretrain import INPUT_LEN, SpanCorruptionDataset, raw_length, spans_by_sentinel
 from colibri.data.render import IGNORE, collate_pretrain
 from colibri.model.colibri import Colibri
 from colibri.runtime import eval_mode, seed_everything
-from colibri.tokenizer.bpe import BYTE0, DEC, EOS, N_SENTINELS, SENTINEL0, BPETokenizer
+from colibri.tokenizer.bpe import BYTE0, DEC, EOS, BPETokenizer, is_sentinel
 from colibri.train.loop import TrainConfig, train
 
 SAMPLES = (
@@ -32,10 +32,6 @@ def span_loss(model: Colibri, batch: dict[str, torch.Tensor]) -> dict[str, torch
     return {"lm": F.cross_entropy(logits, batch["dec_labels"].flatten(), ignore_index=IGNORE)}
 
 
-def _is_sentinel(token: int) -> bool:
-    return SENTINEL0 <= token < SENTINEL0 + N_SENTINELS
-
-
 def prompt_ids(tokenizer: BPETokenizer, text: str) -> list[int]:
     """``text`` with ``<x0>``… holes -> encoder ids shaped like a pretraining input.
 
@@ -47,7 +43,7 @@ def prompt_ids(tokenizer: BPETokenizer, text: str) -> list[int]:
     return [
         t
         for i, t in enumerate(ids)
-        if not (i + 1 < len(ids) and _is_sentinel(ids[i + 1]) and tokenizer.decode([t]).isspace())
+        if not (i + 1 < len(ids) and is_sentinel(ids[i + 1]) and tokenizer.decode([t]).isspace())
     ]
 
 
@@ -100,20 +96,14 @@ def fill_in(
                 break
             dec.append(next_id)
 
-    spans: dict[int, list[int]] = {}
-    current = None
-    for token in dec[1:]:
-        if _is_sentinel(token):
-            current = spans.setdefault(token, [])
-        elif current is not None:
-            current.append(token)
+    spans = spans_by_sentinel(dec[1:])
     out = []
     for token in enc[0].tolist():
         if token in spans:
             span = tokenizer.decode(spans[token])
             space = " " if span.startswith(" ") else ""  # " Paris" -> " [Paris]"
             out.append(space + marks[0] + span.removeprefix(space) + marks[1])
-        elif _is_sentinel(token):
+        elif is_sentinel(token):
             out.append(" " + marks[0] + "?" + marks[1])  # a hole the model didn't fill
         else:
             out.append(tokenizer.decode([token]))
