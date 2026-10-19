@@ -1,4 +1,5 @@
 from dataclasses import dataclass, field
+from typing import Any
 
 from colibri.data.schema import Arg
 
@@ -68,7 +69,7 @@ class Record:
     entity: str
     titles: tuple[str, ...]
     statuses: tuple[str, ...] = ()
-    extra: tuple = ()  # ("enum", name, options, phrase) or ("int", name, lo, hi, phrase)
+    extra: tuple[Any, ...] = ()  # ("enum", name, options, phrase) or ("int", name, lo, hi, phrase)
 
     @property
     def article(self) -> str:

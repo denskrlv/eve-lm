@@ -1,4 +1,5 @@
 from pathlib import Path
+from typing import Any
 
 import torch
 import torch.nn.functional as F
@@ -146,7 +147,7 @@ def pretrain(
     )
     val_data = SpanCorruptionDataset(load_tokens(data_dir / "val.bin"), cfg.max_encoder_len)
 
-    def on_eval(m: Colibri) -> dict:
+    def on_eval(m: Colibri) -> dict[str, Any]:
         return {"samples": [fill_in(m, tokenizer, text) for text in samples]}
 
     return train(

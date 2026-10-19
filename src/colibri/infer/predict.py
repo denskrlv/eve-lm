@@ -1,5 +1,6 @@
 from collections.abc import Sequence
 from dataclasses import dataclass
+from typing import Any
 
 import torch
 
@@ -23,13 +24,13 @@ class Answers:
         """The most likely tool of each slot, up to the first STOP."""
         out = []
         for slot in self.slots:
-            best = max(slot, key=slot.get)
+            best = max(slot, key=slot.__getitem__)
             if best == STOP:
                 break
             out.append(best)
         return out
 
-    def to_json(self) -> dict:
+    def to_json(self) -> dict[str, Any]:
         return {"intent": self.intent, "calls": self.calls, "slots": self.slots}
 
 

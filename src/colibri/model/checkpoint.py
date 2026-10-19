@@ -1,6 +1,7 @@
 import os
 from dataclasses import dataclass, replace
 from pathlib import Path
+from typing import Any
 
 import torch
 
@@ -19,16 +20,16 @@ QUESTION_FIELDS = frozenset(  # config fields that change no pretrained weight's
 class Checkpoint:
     model: Colibri
     tokenizer: BPETokenizer
-    meta: dict
-    train_state: dict | None = None  # optimizer, step and RNG states, for resuming (M4)
+    meta: dict[str, Any]
+    train_state: dict[str, Any] | None = None  # optimizer, step and RNG states, for resuming (M4)
 
 
 def save_checkpoint(
     path: str | Path,
     model: Colibri,
     tokenizer: BPETokenizer,
-    meta: dict | None = None,
-    train_state: dict | None = None,
+    meta: dict[str, Any] | None = None,
+    train_state: dict[str, Any] | None = None,
 ) -> None:
     """Save everything needed to rebuild the model: ``{format, config, state_dict, tokenizer,
     meta}``. The book (ch. 5.4) saves only ``model.state_dict()`` and rebuilds the model from
@@ -63,7 +64,7 @@ def save_checkpoint(
     os.replace(tmp, path)
 
 
-def _read(path: str | Path) -> dict:
+def _read(path: str | Path) -> dict[str, Any]:
     data = torch.load(path, map_location="cpu", weights_only=True)
     if not isinstance(data, dict) or data.get("format") != FORMAT:
         raise ValueError(f"{path} is not a Colibri checkpoint ({FORMAT})")
@@ -81,7 +82,7 @@ def load_checkpoint(path: str | Path, device: str | torch.device = "cpu") -> Che
 
 
 def load_pretrained(
-    path: str | Path, device: str | torch.device = "cpu", **overrides
+    path: str | Path, device: str | torch.device = "cpu", **overrides: Any
 ) -> Checkpoint:
     """Box 7: start fine-tuning from the M4 pretraining checkpoint.
 

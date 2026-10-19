@@ -48,7 +48,8 @@ class FeedForward(nn.Module):
         )
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
-        return self.layers(x)
+        out: torch.Tensor = self.layers(x)
+        return out
 
 
 def attention(cfg: ModelConfig, causal: bool = False, rope: bool = False) -> MultiHeadAttention:

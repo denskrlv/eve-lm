@@ -116,7 +116,8 @@ class Colibri(nn.Module):
         x = self.embeddings.encoder(enc_ids)
         for block in self.encoder:
             x = block(x, enc_mask)
-        return self.encoder_norm(x)
+        memory: torch.Tensor = self.encoder_norm(x)
+        return memory
 
     def ask_questions(
         self,
@@ -125,7 +126,8 @@ class Colibri(nn.Module):
         tool_pos: torch.Tensor,
         tool_mask: torch.Tensor,
     ) -> Questions:
-        return self.questions(memory, enc_mask, tool_pos, tool_mask)
+        answers: Questions = self.questions(memory, enc_mask, tool_pos, tool_mask)
+        return answers
 
     def decode(
         self,
@@ -140,7 +142,8 @@ class Colibri(nn.Module):
         x = self.embeddings.decoder(dec_ids)
         for block in self.decoder:
             x = block(x, memory, mask=dec_mask, memory_mask=enc_mask)
-        return self.lm_head(self.decoder_norm(x))
+        logits: torch.Tensor = self.lm_head(self.decoder_norm(x))
+        return logits
 
     def forward(
         self,
@@ -155,6 +158,7 @@ class Colibri(nn.Module):
         memory = self.encode(enc_ids, enc_mask)
         questions = lm = None
         if tool_pos is not None:
+            assert tool_mask is not None, "tool_pos comes with tool_mask"
             questions = self.ask_questions(memory, enc_mask, tool_pos, tool_mask)
         if dec_ids is not None:
             lm = self.decode(dec_ids, memory, enc_mask, dec_mask)

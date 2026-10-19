@@ -1,4 +1,4 @@
-from collections.abc import Sequence
+from collections.abc import Callable, Sequence
 from dataclasses import dataclass
 from typing import Any
 
@@ -67,7 +67,7 @@ class TaskExample:
                 raise SchemaError(f"call to {call.tool}: {'; '.join(errors)}")
 
     @classmethod
-    def from_json(cls, d: dict, library: dict[str, Tool] | None = None) -> "TaskExample":
+    def from_json(cls, d: dict[str, Any], library: dict[str, Tool] | None = None) -> "TaskExample":
         """``{"utterance", "tools", "intent", "calls": [{"tool", "args"}]}``.
 
         A tool is a name looked up in ``library``, or a whole schema (a dict, as in
@@ -76,13 +76,13 @@ class TaskExample:
         return cls(
             utterance=d["utterance"],
             tools=tuple(
-                Tool.from_dict(t) if isinstance(t, dict) else library[t] for t in d["tools"]
+                Tool.from_dict(t) if isinstance(t, dict) else _named(t, library) for t in d["tools"]
             ),
             intent=d["intent"],
             calls=tuple(Call(c["tool"], dict(c.get("args", {}))) for c in d.get("calls", ())),
         )
 
-    def to_json(self, inline: bool = False) -> dict:
+    def to_json(self, inline: bool = False) -> dict[str, Any]:
         """With ``inline``, tools are written as whole schemas instead of names."""
         return {
             "utterance": self.utterance,
@@ -90,6 +90,12 @@ class TaskExample:
             "intent": self.intent,
             "calls": [{"tool": c.tool, "args": c.args} for c in self.calls],
         }
+
+
+def _named(name: str, library: dict[str, Tool] | None) -> Tool:
+    if library is None:
+        raise TypeError(f"tool {name!r} is a name, but no library was given to look it up")
+    return library[name]
 
 
 @dataclass
@@ -181,7 +187,7 @@ def render(
     )
 
 
-class TaskDataset(Dataset):
+class TaskDataset(Dataset[Rendered]):
     """Renders examples on the fly, with the tool order shuffled differently each epoch.
 
     Call ``set_epoch(e)`` before each epoch (with ``num_workers > 0``, before creating the
@@ -232,7 +238,9 @@ def pad(seqs: Sequence[Sequence[int]], length: int, value: int) -> torch.Tensor:
     return out
 
 
-def _sequences(batch: Sequence[Any], get) -> dict[str, torch.Tensor]:
+def _sequences(
+    batch: Sequence[Any], get: Callable[[Any, str], list[int]]
+) -> dict[str, torch.Tensor]:
     """Pad the encoder and decoder sequences of a batch to their buckets."""
     enc = [get(b, "enc_ids") for b in batch]
     dec = [get(b, "dec_ids") for b in batch]

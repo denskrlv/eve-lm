@@ -71,13 +71,13 @@ class Arg:
             raise SchemaError(f"argument {self.name}: only int and float have a range")
 
     @classmethod
-    def from_dict(cls, d: dict) -> "Arg":
+    def from_dict(cls, d: dict[str, Any]) -> "Arg":
         unknown = set(d) - {"name", "type", "required", "options", "min", "max", "description"}
         if unknown:
             raise SchemaError(f"argument {d.get('name')!r}: unknown keys {sorted(unknown)}")
         return cls(**{**d, "options": tuple(d.get("options", ()))})
 
-    def to_dict(self) -> dict:
+    def to_dict(self) -> dict[str, Any]:
         d: dict[str, Any] = {"name": self.name, "type": self.type}
         if not self.required:
             d["required"] = False
@@ -131,7 +131,8 @@ class Arg:
             return "true" if value else "false"
         if self.type in ("int", "float"):
             return _number(value)
-        return value
+        text: str = value  # str and enum values are already text
+        return text
 
 
 @dataclass(frozen=True)
@@ -153,14 +154,14 @@ class Tool:
             raise SchemaError(f"tool {self.name}: more than {MAX_ARGS} arguments")
 
     @classmethod
-    def from_dict(cls, d: dict, domain: str = "") -> "Tool":
+    def from_dict(cls, d: dict[str, Any], domain: str = "") -> "Tool":
         unknown = set(d) - {"name", "description", "args"}
         if unknown:
             raise SchemaError(f"tool {d.get('name')!r}: unknown keys {sorted(unknown)}")
         args = tuple(Arg.from_dict(a) for a in d.get("args", ()))
         return cls(d["name"], d["description"], args, domain)
 
-    def to_dict(self) -> dict:
+    def to_dict(self) -> dict[str, Any]:
         return {
             "name": self.name,
             "description": self.description,

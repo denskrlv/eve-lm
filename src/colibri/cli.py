@@ -3,6 +3,7 @@ import glob
 import json
 import sys
 import time
+from collections.abc import Callable, Sequence
 from pathlib import Path
 from typing import TYPE_CHECKING, Any
 
@@ -12,6 +13,7 @@ from colibri.config import PRESETS
 from colibri.runtime import pick_device
 
 if TYPE_CHECKING:
+    from colibri.data.schema import Tool
     from colibri.train.loop import TrainConfig
 
 DEFAULT_PARQUET = "data/raw/fineweb-edu/*.parquet"
@@ -91,7 +93,7 @@ def tokenizer_stats(args: argparse.Namespace) -> None:
     tools = load_library(args.tools)
     commands = read_lines(args.commands)
     schemas = [t.render_parts() for t in tools.values()]
-    samples = {
+    samples: dict[str, Sequence[str | list[str]]] = {
         "web text (held out)": docs,
         "commands": commands,
         "tool schemas": schemas,
@@ -109,7 +111,8 @@ def tokenizer_stats(args: argparse.Namespace) -> None:
         print(f"{name:<22}{words:>9,}{n_ours / words:>13.2f}")
     print(f"vocabulary: {ours.vocab_size:,}")
 
-    for text in [commands[1], schemas[0]]:
+    examples: list[str | list[str]] = [commands[1], schemas[0]]
+    for text in examples:
         print("\n" + " | ".join(ours.pieces(ours_encode(text))))
 
 
@@ -222,24 +225,25 @@ def finetune(args: argparse.Namespace) -> None:
 
 def compare(args: argparse.Namespace) -> None:
     """Learn (M4): val metrics of several runs side by side, one row per eval step."""
-    runs = {}
+    runs: dict[str, tuple[dict[str, Any], dict[int, dict[str, Any]]]] = {}
     for run in args.runs:
         path = Path(run) / "metrics.jsonl"
         if not path.exists():
             raise SystemExit(f"no metrics in {run}")
         records = [json.loads(line) for line in path.read_text().splitlines()]
-        start = next((r for r in records if r["kind"] == "start"), {})
+        start: dict[str, Any] = next((r for r in records if r["kind"] == "start"), {})
         vals = {r["step"]: r for r in records if r["kind"] == "val"}
         runs[Path(run).name] = (start, vals)
 
     width = max(12, *(len(name) for name in runs)) + 2
     print(f"{'':<14}" + "".join(f"{name:>{width}}" for name in runs))
-    for label, get in [
+    settings: list[tuple[str, Callable[[dict[str, Any]], Any]]] = [
         ("lr", lambda s: s.get("train_config", {}).get("lr")),
         ("dropout", lambda s: s.get("model_config", {}).get("dropout")),
         ("rope", lambda s: s.get("model_config", {}).get("rope", False)),
         ("qk_norm", lambda s: s.get("model_config", {}).get("qk_norm", False)),
-    ]:
+    ]
+    for label, get in settings:
         print(f"{label:<14}" + "".join(f"{get(s)!s:>{width}}" for s, _ in runs.values()))
     steps = sorted({step for _, vals in runs.values() for step in vals})
     for metric in args.metric:
@@ -290,7 +294,7 @@ def fill(args: argparse.Namespace) -> None:
     print()
 
 
-def _tools(args: argparse.Namespace) -> list:
+def _tools(args: argparse.Namespace) -> list["Tool"]:
     """The tools for ``colibri ask``: names from the library and/or schemas from JSON files."""
     from colibri.data.generate.build import Sources
     from colibri.data.schema import GENERATION_KEYS, Tool
@@ -339,7 +343,7 @@ def ask(args: argparse.Namespace) -> None:
         print(f"  {style(f'{"intent":<8}', '2', stream=sys.stdout)} {ranked(a.intent, 4)}")
         for i, slot in enumerate(a.slots, 1):
             print(f"  {style(f'{f"call {i}":<8}', '2', stream=sys.stdout)} {ranked(slot, 3)}")
-            if max(slot, key=slot.get) == STOP:
+            if max(slot, key=slot.__getitem__) == STOP:
                 break
 
     if args.text:

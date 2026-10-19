@@ -96,8 +96,8 @@ class MultiHeadAttention(nn.Module):
         self.out_proj = nn.Linear(d_model, d_model)  # mixes the heads' outputs, as in the book
         self.drop = nn.Dropout(dropout)
         if qk_norm:
-            self.q_norm = RMSNorm(self.head_dim)
-            self.k_norm = RMSNorm(self.head_dim)
+            self.q_norm: RMSNorm | None = RMSNorm(self.head_dim)
+            self.k_norm: RMSNorm | None = RMSNorm(self.head_dim)
         else:
             self.q_norm = self.k_norm = None
 
@@ -134,7 +134,7 @@ class MultiHeadAttention(nn.Module):
         k = self._split(self.W_key(kv))
         v = self._split(self.W_value(kv))
         # 1b. Options: normalize the queries and keys, then rotate them by their positions.
-        if self.q_norm is not None:
+        if self.q_norm is not None and self.k_norm is not None:  # both or neither
             q, k = self.q_norm(q), self.k_norm(k)
         if self.rope and self_attention:
             cos, sin = rope_angles(n_q, self.head_dim, self.rope_base, x.device)
@@ -163,8 +163,11 @@ class MultiHeadAttention(nn.Module):
             out = self.drop(weights) @ v  # (B, heads, n_q, head_dim)
 
         # 6. Merge the heads back into one vector per query, then let out_proj mix them.
-        out = self.out_proj(out.transpose(1, 2).reshape(b, n_q, d))
-        return (out, weights) if return_weights else out
+        merged: torch.Tensor = self.out_proj(out.transpose(1, 2).reshape(b, n_q, d))
+        if return_weights:
+            assert weights is not None  # return_weights always takes the manual path
+            return merged, weights
+        return merged
 
     def _split(self, t: torch.Tensor) -> torch.Tensor:
         b, n, _ = t.shape

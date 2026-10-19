@@ -7,7 +7,7 @@ import numpy as np
 from colibri.config import ModelConfig
 from colibri.data.draw import pick, shuffled
 from colibri.data.generate.library import ToolSpec
-from colibri.data.generate.templates import MAX_CALLS, fill
+from colibri.data.generate.templates import MAX_CALLS, Filled, fill
 from colibri.data.render import Call, TaskExample
 
 INTENT_MIX = {"call": 0.55, "ask": 0.15, "unsupported": 0.15, "none": 0.15}
@@ -61,9 +61,9 @@ class ToolBank:
 
     def pick(self, rng: np.random.Generator, pool: Sequence[int] | None = None) -> int:
         """A tool to be the correct one, by weight."""
-        pool = np.arange(len(self.specs)) if pool is None else np.asarray(pool)
-        w = self.weights[pool]
-        return int(pool[rng.choice(len(pool), p=w / w.sum())])
+        candidates = np.arange(len(self.specs)) if pool is None else np.asarray(pool)
+        w = self.weights[candidates]
+        return int(candidates[rng.choice(len(candidates), p=w / w.sum())])
 
     def distractors(
         self,
@@ -120,7 +120,9 @@ def _decorate(text: str, rng: np.random.Generator) -> str:
     return text
 
 
-def _fill_any(spec: ToolSpec, rng: np.random.Generator, ask: bool = False):
+def _fill_any(spec: ToolSpec, rng: np.random.Generator, ask: bool = False) -> Filled | None:
+    """The spec's templates in random order until one fills. None only for ``ask``: without
+    it every template fills, and ``ToolBank.pick`` only picks specs that have templates."""
     for t in rng.permutation(len(spec.templates)):
         filled = fill(spec.tool, spec.templates[t], spec.values, rng, ask=ask)
         if filled is not None and not (ask and filled.fanout):
@@ -133,7 +135,13 @@ def prompt_size(rng: np.random.Generator) -> int:
     return int(rng.integers(1, MAX_PROMPT_TOOLS + 1))
 
 
-def _prompt(bank: ToolBank, gold: list[int], rng, unsupported=False, hard=True) -> list[int]:
+def _prompt(
+    bank: ToolBank,
+    gold: list[int],
+    rng: np.random.Generator,
+    unsupported: bool = False,
+    hard: bool = True,
+) -> list[int]:
     k = max(len(gold), prompt_size(rng))
     if unsupported:
         k = prompt_size(rng)
@@ -143,28 +151,35 @@ def _prompt(bank: ToolBank, gold: list[int], rng, unsupported=False, hard=True) 
     return shuffled(rng, tools)
 
 
-def sample_call(bank: ToolBank, rng: np.random.Generator, pool=None) -> Sample:
+def _pick_new_capability(
+    bank: ToolBank, rng: np.random.Generator, pool: Sequence[int] | None, gold: list[int]
+) -> int | None:
+    """A tool, by weight, whose capability no earlier call has; None after ``PICK_TRIES``."""
+    caps = {bank.specs[i].capability for i in gold}
+    candidates = (bank.pick(rng, pool) for _ in range(PICK_TRIES))
+    return next((i for i in candidates if bank.specs[i].capability not in caps), None)
+
+
+def sample_call(
+    bank: ToolBank, rng: np.random.Generator, pool: Sequence[int] | None = None
+) -> Sample:
     n_calls = int(rng.choice(CALL_COUNTS, p=CALL_COUNT_WEIGHTS))
     gold: list[int] = []
-    parts, calls, implied = [], [], set()
+    parts: list[str] = []
+    calls: list[Call] = []
+    implied: set[tuple[int, str]] = set()
     for c in range(n_calls):
         if c > 0 and rng.random() < REPEAT_TOOL_SHARE and bank.specs[gold[-1]].tool.args:
             g = gold[-1]  # the same tool again, with other values
         else:
-            caps = {bank.specs[i].capability for i in gold}
-            g = next(
-                (
-                    i
-                    for i in (bank.pick(rng, pool) for _ in range(PICK_TRIES))
-                    if bank.specs[i].capability not in caps
-                ),
-                None,
-            )
-            if g is None:
+            picked = _pick_new_capability(bank, rng, pool, gold)
+            if picked is None:
                 break
+            g = picked
         spec = bank.specs[g]
         for _ in range(FILL_TRIES):
             filled = _fill_any(spec, rng)
+            assert filled is not None  # see _fill_any
             new = filled.expand(spec.tool)
             repeated = any(c.tool == spec.name and c.args in new for c in calls)
             if not repeated and len(calls) + len(new) <= MAX_CALLS:
@@ -187,7 +202,9 @@ def sample_call(bank: ToolBank, rng: np.random.Generator, pool=None) -> Sample:
     return Sample(example, text, implied=implied)
 
 
-def sample_ask(bank: ToolBank, rng: np.random.Generator, pool=None) -> Sample:
+def sample_ask(
+    bank: ToolBank, rng: np.random.Generator, pool: Sequence[int] | None = None
+) -> Sample:
     for _ in range(ASK_TRIES):
         g = bank.pick(rng, pool)
         spec = bank.specs[g]
@@ -208,7 +225,10 @@ def sample_ask(bank: ToolBank, rng: np.random.Generator, pool=None) -> Sample:
 
 
 def sample_unsupported(
-    bank: ToolBank, rng: np.random.Generator, pool=None, requests: Sequence[str] = ()
+    bank: ToolBank,
+    rng: np.random.Generator,
+    pool: Sequence[int] | None = None,
+    requests: Sequence[str] = (),
 ) -> Sample:
     """A request no offered tool can do: either a real tool's request with that tool (and
     anything else that could serve it) left out, or one from a list of unsupported requests."""
@@ -217,7 +237,9 @@ def sample_unsupported(
         tools = _prompt(bank, [], rng, unsupported=True, hard=False)
     else:
         g = bank.pick(rng, pool)
-        text = _fill_any(bank.specs[g], rng).text
+        filled = _fill_any(bank.specs[g], rng)
+        assert filled is not None  # see _fill_any
+        text = filled.text
         tools = _prompt(bank, [g], rng, unsupported=True) or _prompt(
             bank, [g], rng, unsupported=True, hard=False
         )
@@ -228,7 +250,10 @@ def sample_unsupported(
 
 
 def sample_none(
-    bank: ToolBank, rng: np.random.Generator, pool=None, chitchat: Sequence[str] = ()
+    bank: ToolBank,
+    rng: np.random.Generator,
+    pool: Sequence[int] | None = None,
+    chitchat: Sequence[str] = (),
 ) -> Sample:
     """Small talk with random tools in the prompt (with ``pool``, at least one from it)."""
     text = pick(rng, chitchat) if chitchat else None

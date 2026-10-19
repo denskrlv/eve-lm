@@ -4,6 +4,7 @@ from collections.abc import Iterable, Iterator
 from itertools import islice
 from multiprocessing import Pool
 from pathlib import Path
+from typing import Any
 
 import numpy as np
 import pyarrow.parquet as pq
@@ -64,6 +65,7 @@ def _init_worker(tokenizer_path: str) -> None:
 
 
 def _encode_docs(docs: list[str]) -> np.ndarray:
+    assert _tokenizer is not None, "_init_worker runs first in each worker"
     ids: list[int] = []
     for doc in docs:
         ids.extend(_tokenizer.encode(doc))
@@ -85,7 +87,7 @@ def encode_corpus(
     val_tokens: int,
     workers: int | None = None,
     docs_per_chunk: int = 256,
-) -> dict:
+) -> dict[str, Any]:
     """Encode documents into ``val.bin`` (whole documents, at least ``val_tokens``) and then
     ``train.bin`` (exactly ``train_tokens``). Returns what it writes to ``meta.json``."""
     paths = list(paths)

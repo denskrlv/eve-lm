@@ -5,12 +5,11 @@ from collections.abc import Callable, Sequence
 from contextlib import AbstractContextManager, nullcontext
 from dataclasses import asdict, dataclass, field
 from pathlib import Path
-from typing import Any
+from typing import Any, Protocol, cast
 
 import numpy as np
 import torch
 from torch import nn
-from torch.utils.data import Dataset
 
 from colibri import progress
 from colibri.model.checkpoint import load_checkpoint, save_checkpoint
@@ -29,6 +28,15 @@ RUN_FIELDS = (
     "log_every",
     "compile",
 )  # may change on resume
+
+
+class Items(Protocol):
+    """A map-style dataset: a length and an item per index (``TaskDataset``,
+    ``SpanCorruptionDataset``)."""
+
+    def __len__(self) -> int: ...
+
+    def __getitem__(self, index: int, /) -> Any: ...
 
 
 @dataclass(frozen=True)
@@ -54,7 +62,7 @@ class TrainConfig:
         if self.dtype not in DTYPES:
             raise ValueError(f"dtype must be one of {sorted(DTYPES)}, got {self.dtype!r}")
 
-    def to_dict(self) -> dict:
+    def to_dict(self) -> dict[str, Any]:
         return asdict(self)
 
 
@@ -72,7 +80,7 @@ def lr_at(step: int, cfg: TrainConfig) -> float:
     return min_lr + (cfg.lr - min_lr) * 0.5 * (1 + math.cos(math.pi * min(progress, 1.0)))
 
 
-def param_groups(model: nn.Module, weight_decay: float) -> list[dict]:
+def param_groups(model: nn.Module, weight_decay: float) -> list[dict[str, Any]]:
     """Weight decay only on the weight matrices of linear layers.
 
     Decay pulls every weight a little towards 0 each step. That makes sense for matrices,
@@ -87,7 +95,8 @@ def param_groups(model: nn.Module, weight_decay: float) -> list[dict]:
         for m in model.modules()
         if isinstance(m, nn.Linear) and id(m.weight) not in embeddings
     }
-    decay, no_decay = [], []
+    decay: list[nn.Parameter] = []
+    no_decay: list[nn.Parameter] = []
     for p in model.parameters():  # each tensor once, even the tied one
         (decay if id(p) in matrices else no_decay).append(p)
     return [
@@ -108,8 +117,8 @@ def batch_indices(step: int, n_items: int, cfg: TrainConfig) -> np.ndarray:
     return order[i * cfg.batch_size : (i + 1) * cfg.batch_size]
 
 
-def _rng_state() -> dict:
-    state = {"torch": torch.get_rng_state()}
+def _rng_state() -> dict[str, Any]:
+    state: dict[str, Any] = {"torch": torch.get_rng_state()}
     if torch.backends.mps.is_available():
         state["mps"] = torch.mps.get_rng_state()
     if torch.cuda.is_available():
@@ -117,7 +126,7 @@ def _rng_state() -> dict:
     return state
 
 
-def _set_rng_state(state: dict) -> None:
+def _set_rng_state(state: dict[str, Any]) -> None:
     torch.set_rng_state(state["torch"])
     if "mps" in state and torch.backends.mps.is_available():
         torch.mps.set_rng_state(state["mps"])
@@ -129,7 +138,7 @@ def _set_rng_state(state: dict) -> None:
 def evaluate(
     model: Colibri,
     loss_fn: LossFn,
-    batches: Sequence[dict],
+    batches: Sequence[dict[str, Any]],
     device: torch.device,
     autocast: Autocast,
 ) -> dict[str, float]:
@@ -188,7 +197,7 @@ class _Evaluator:
         val_batches: Sequence[dict[str, torch.Tensor]],
         device: torch.device,
         autocast: Autocast,
-        on_eval: Callable[[Colibri], dict] | None,
+        on_eval: Callable[[Colibri], dict[str, Any]] | None,
     ) -> None:
         self.runner, self.model, self.eval_fn = runner, model, eval_fn
         self.val_batches, self.device, self.autocast = val_batches, device, autocast
@@ -242,7 +251,7 @@ def _optimizer(model: Colibri, cfg: TrainConfig, device: torch.device) -> torch.
 
 
 def _val_batches(
-    val_data: Dataset, collate: Collate, cfg: TrainConfig
+    val_data: Items, collate: Collate, cfg: TrainConfig
 ) -> list[dict[str, torch.Tensor]]:
     """The first ``eval_batches`` whole batches of ``val_data``: the same ones at every eval."""
     size = cfg.batch_size
@@ -256,7 +265,7 @@ def _val_batches(
 
 
 def _train_batch(
-    train_data: Dataset, collate: Collate, cfg: TrainConfig, step: int
+    train_data: Items, collate: Collate, cfg: TrainConfig, step: int
 ) -> dict[str, torch.Tensor]:
     """Batch ``step``, after telling a dataset with ``set_epoch`` which epoch it is in."""
     idx = batch_indices(step, len(train_data), cfg)
@@ -282,7 +291,7 @@ def _train_step(
         group["lr"] = lr
     with autocast():
         losses = loss_fn(runner, to_device(batch, device))
-    loss = sum(losses.values())
+    loss = cast(torch.Tensor, sum(losses.values()))
     optimizer.zero_grad(set_to_none=True)
     loss.backward()
     grad_norm = nn.utils.clip_grad_norm_(model.parameters(), cfg.grad_clip)
@@ -341,18 +350,18 @@ def _start_step(
 def train(
     model: Colibri,
     loss_fn: LossFn,
-    train_data: Dataset,
-    val_data: Dataset,
+    train_data: Items,
+    val_data: Items,
     collate: Collate,
     cfg: TrainConfig,
     out_dir: str | Path,
     tokenizer: BPETokenizer,
     device: str | torch.device,
-    on_eval: Callable[[Colibri], dict] | None = None,
+    on_eval: Callable[[Colibri], dict[str, Any]] | None = None,
     eval_fn: LossFn | None = None,
     resume: bool = False,
     stop_after: int | None = None,
-    meta: dict | None = None,
+    meta: dict[str, Any] | None = None,
 ) -> dict[str, float]:
     """The training loop for pretraining and fine-tuning (book ch. 5.2 ``train_model_simple``
     plus App. D's warmup, cosine decay and gradient clipping).
@@ -387,7 +396,7 @@ def train(
     # LayerNorm, GELU and RMSNorm here is 5-10 of them) into a few kernels: about 2x faster on
     # MPS, same losses. The first step takes ~20 s to compile. ``model`` itself stays eager for
     # ``on_eval``, whose generation changes shape every token, and for saving.
-    runner = torch.compile(model) if cfg.compile else model
+    runner = cast(Colibri, torch.compile(model)) if cfg.compile else model
     optimizer = _optimizer(model, cfg, device)
     autocast = _autocast(device, cfg.dtype)
 
@@ -440,7 +449,7 @@ def _save_last(
     optimizer: torch.optim.Optimizer,
     step: int,
     cfg: TrainConfig,
-    meta: dict | None,
+    meta: dict[str, Any] | None,
     last_val: dict[str, float],
 ) -> None:
     """``last.pt``: everything ``_resume`` needs to continue exactly where the run is now."""
@@ -455,7 +464,7 @@ def _finish(
     tokenizer: BPETokenizer,
     step: int,
     cfg: TrainConfig,
-    meta: dict | None,
+    meta: dict[str, Any] | None,
     last_val: dict[str, float],
 ) -> None:
     """Save ``model.pt`` if the run reached its last step, else say how to continue."""
@@ -483,10 +492,12 @@ def _resume(
             f"can't resume with a different {', '.join(changed)}: "
             + ", ".join(f"{k} was {saved.get(k)!r}" for k in changed)
         )
+    if ckpt.train_state is None:
+        raise ValueError(f"{out_dir}/last.pt has no optimizer and RNG state to resume from")
     model.load_state_dict(ckpt.model.state_dict())
     optimizer.load_state_dict(ckpt.train_state["optimizer"])  # moves its state to the device
     _set_rng_state(ckpt.train_state["rng"])
-    step = ckpt.train_state["step"]
+    step: int = ckpt.train_state["step"]
 
     # Drop metrics logged after the checkpoint: those steps run again now.
     path = out_dir / "metrics.jsonl"

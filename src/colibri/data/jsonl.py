@@ -1,6 +1,7 @@
 import json
 from collections.abc import Iterable
 from pathlib import Path
+from typing import Any
 
 
 def read_lines(path: str | Path) -> list[str]:
@@ -9,12 +10,12 @@ def read_lines(path: str | Path) -> list[str]:
     return [line.strip() for line in lines if line.strip() and not line.startswith("#")]
 
 
-def read_jsonl(path: str | Path) -> list[dict]:
+def read_jsonl(path: str | Path) -> list[dict[str, Any]]:
     """One dict per non-empty line."""
     return [json.loads(line) for line in Path(path).read_text().splitlines() if line.strip()]
 
 
-def write_jsonl(path: str | Path, rows: Iterable[dict]) -> None:
+def write_jsonl(path: str | Path, rows: Iterable[dict[str, Any]]) -> None:
     """One JSON line per row, creating the parent directory if needed."""
     Path(path).parent.mkdir(parents=True, exist_ok=True)
     with open(path, "w") as f:

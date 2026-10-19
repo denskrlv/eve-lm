@@ -2,6 +2,7 @@ from collections import Counter
 from collections.abc import Sequence
 from dataclasses import dataclass, replace
 from pathlib import Path
+from typing import Any
 
 import torch
 import torch.nn.functional as F
@@ -10,7 +11,13 @@ from colibri.config import INTENTS, STOP, ModelConfig
 from colibri.data.jsonl import read_jsonl
 from colibri.data.render import IGNORE, TaskCollator, TaskDataset, TaskExample
 from colibri.data.schema import Tool
-from colibri.model.checkpoint import FRESH, QUESTION_FIELDS, load_checkpoint, load_pretrained
+from colibri.model.checkpoint import (
+    FRESH,
+    QUESTION_FIELDS,
+    Checkpoint,
+    load_checkpoint,
+    load_pretrained,
+)
 from colibri.model.colibri import Colibri, Questions, ask
 from colibri.runtime import eval_mode, seed_everything, to_device
 from colibri.tokenizer.bpe import BPETokenizer
@@ -103,7 +110,8 @@ def score(model: Colibri, batches: Sequence[dict[str, torch.Tensor]]) -> dict[st
     val is 84% CALL, so answering CALL every time already gets 84% intent accuracy, but a
     recall of 0 for ASK, UNSUPPORTED and NONE. ``macro_recall`` is the mean of the recalls.
     """
-    n, right = Counter(), Counter()
+    n: Counter[str] = Counter()
+    right: Counter[str] = Counter()
     with eval_mode(model) as device:
         for batch in batches:
             batch = to_device(batch, device)
@@ -151,7 +159,7 @@ def freeze_body(model: Colibri) -> int:
     return sum(p.numel() for p in model.parameters() if p.requires_grad)
 
 
-def load_init(path: str | Path, device: str | torch.device = "cpu", **overrides):
+def load_init(path: str | Path, device: str | torch.device = "cpu", **overrides: Any) -> Checkpoint:
     """The model to fine-tune, from either kind of checkpoint:
 
     - a pretraining checkpoint (box 7): ``load_pretrained``, so the question block starts new;
@@ -220,7 +228,7 @@ def describe(
 
 def _shown(examples: Sequence[TaskExample]) -> list[int]:
     """The first val example of each intent: the same ones at every eval."""
-    first = {}
+    first: dict[str, int] = {}
     for i, e in enumerate(examples):
         first.setdefault(e.intent, i)
     return [first[intent] for intent in INTENTS if intent in first]
@@ -236,7 +244,7 @@ def finetune(
     scratch: ModelConfig | None = None,
     tokenizer_path: str | Path | None = None,
     freeze: bool = False,
-    overrides: dict | None = None,
+    overrides: dict[str, Any] | None = None,
     resume: bool = False,
     stop_after: int | None = None,
     sdpa: bool = True,
@@ -256,6 +264,9 @@ def finetune(
         ckpt = load_init(init, **(overrides or {}))
         model, tokenizer = ckpt.model, ckpt.tokenizer
     else:
+        assert scratch is not None  # checked above: exactly one of init and scratch
+        if tokenizer_path is None:
+            raise ValueError("scratch needs tokenizer_path")
         model = Colibri(replace(scratch, **(overrides or {})))
         tokenizer = BPETokenizer.load(tokenizer_path)
     trainable = freeze_body(model) if freeze else sum(p.numel() for p in model.parameters())
@@ -280,9 +291,9 @@ def finetune(
     scored = {"val": ("val", batches(val_data)), "heldout": ("held-out tools", batches(heldout))}
     shown = _shown(val_examples)
 
-    def on_eval(m: Colibri) -> dict:
+    def on_eval(m: Colibri) -> dict[str, Any]:
         lines = describe(m, val_examples, val_data, shown)
-        out: dict = {"samples": lines}
+        out: dict[str, Any] = {"samples": lines}
         for key, (label, data) in scored.items():
             if data:
                 out[key] = score(m, data)

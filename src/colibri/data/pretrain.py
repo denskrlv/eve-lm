@@ -78,7 +78,7 @@ def uncorrupt(inputs: list[int], targets: list[int]) -> list[int]:
     return out
 
 
-class SpanCorruptionDataset(Dataset):
+class SpanCorruptionDataset(Dataset[dict[str, list[int]]]):
     """Non-overlapping windows over the token stream, each corrupted with its own fixed seed.
 
     Item i is always the same sample (seeded by ``(seed, i)``), so runs can be repeated and

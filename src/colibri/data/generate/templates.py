@@ -141,7 +141,7 @@ def check_template(tool: Tool, template: str, values: Mapping[str, Sequence[str]
             pool = values.get(arg.name, ())
             if not pool:
                 errors.append(f"str argument {arg.name} has no value pool")
-            errors += [e for v in pool if (e := arg.check(v)) is not None]
+            errors += [problem for v in pool if (problem := arg.check(v)) is not None]
     for arg in tool.args:
         if arg.required and arg.name not in names:
             errors.append(f"required argument {arg.name} is never filled")
@@ -164,23 +164,25 @@ def sample_value(
 ) -> tuple[Any, str]:
     """A value for ``arg`` and how the utterance says it."""
     if arg.type == "bool":
-        v = bool(rng.random() < 0.5)
-        return v, slot.true_text if v else slot.false_text
+        flag = bool(rng.random() < 0.5)
+        said = slot.true_text if flag else slot.false_text
+        assert said is not None  # check_template: a bool slot names both words
+        return flag, said
     if arg.type == "enum":
-        v = pick(rng, arg.options)
-        return v, v
+        option = pick(rng, arg.options)
+        return option, option
     if arg.type == "str":
-        v = pick(rng, values[arg.name])
-        return v, v
+        text = pick(rng, values[arg.name])
+        return text, text
     if arg.type == "int":
-        v = _int_value(arg, rng)
-        words = 0 <= v <= 100 and rng.random() < NUMBER_WORDS_SHARE
-        return v, number_words(v) if words else str(v)
+        number = _int_value(arg, rng)
+        words = 0 <= number <= 100 and rng.random() < NUMBER_WORDS_SHARE
+        return number, number_words(number) if words else str(number)
     lo = arg.min if arg.min is not None else 0.0
     hi = arg.max if arg.max is not None else 100.0
     step = 1 if rng.random() < WHOLE_NUMBER_SHARE else 0.5
-    v = float(np.clip(round(rng.uniform(lo, hi) / step) * step, lo, hi))
-    return v, arg.format(v)
+    value = float(np.clip(round(rng.uniform(lo, hi) / step) * step, lo, hi))
+    return value, arg.format(value)
 
 
 @dataclass

@@ -1,4 +1,5 @@
 from dataclasses import asdict, dataclass, replace
+from typing import Any
 
 INTENTS = ("call", "ask", "unsupported", "none")
 STOP = "STOP"  # the slot answer after the last call
@@ -44,7 +45,7 @@ class ModelConfig:
     def n_intents(self) -> int:
         return len(INTENTS)
 
-    def to_dict(self) -> dict:
+    def to_dict(self) -> dict[str, Any]:
         return asdict(self)
 
     def approx_params(self) -> int:
@@ -99,7 +100,7 @@ PRESETS: dict[str, ModelConfig] = {
 }
 
 
-def preset(name: str, **overrides) -> ModelConfig:
+def preset(name: str, **overrides: Any) -> ModelConfig:
     """Return a preset, optionally with some fields changed: ``preset("small", dropout=0.0)``."""
     if name not in PRESETS:
         raise KeyError(f"unknown preset {name!r}; choose from {sorted(PRESETS)}")

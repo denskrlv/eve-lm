@@ -3,6 +3,7 @@ from collections import Counter
 from collections.abc import Sequence
 from dataclasses import dataclass
 from pathlib import Path
+from typing import Any
 
 import numpy as np
 
@@ -17,6 +18,7 @@ from colibri.data.schema import SchemaError, Tool
 from colibri.tokenizer.bpe import BPETokenizer
 
 CHAT_SPLITS = ("train", "val", "probe")
+Reject = tuple[dict[str, Any], list[str]]  # a written line and why it was rejected
 TEMPLATE_TRIES = 3  # samples drawn per template example wanted (repeats are skipped)
 PROBE_HELDOUT_SHARE = 0.5  # probe scenarios whose correct tool is from a held-out domain
 
@@ -29,7 +31,14 @@ class Sources:
     unsupported: list[str]
 
     @classmethod
-    def load(cls, tools_dir="data/tools", generation_dir="data/generation", seed=0) -> "Sources":
+    def load(
+        cls,
+        tools_dir: str | Path = "data/tools",
+        generation_dir: str | Path = "data/generation",
+        seed: int = 0,
+    ) -> "Sources":
+        """The hand-written and generated tools, held-out tools, and line lists for NONE and
+        UNSUPPORTED requests."""
         tools_dir, generation_dir = Path(tools_dir), Path(generation_dir)
         return cls(
             load_specs(tools_dir) + generated_specs(seed),
@@ -56,9 +65,10 @@ def template_examples(
     rng: np.random.Generator,
     sources: Sources,
     pool: Sequence[int] | None = None,
-) -> list[dict]:
+) -> list[dict[str, Any]]:
     """``n`` template examples with valid labels; exact repeats are skipped."""
-    rows, seen = [], set()
+    rows: list[dict[str, Any]] = []
+    seen: set[tuple[str, tuple[str, ...], str]] = set()
     for _ in range(n * TEMPLATE_TRIES):
         if len(rows) == n:
             break
@@ -77,7 +87,7 @@ def template_examples(
 
 def make_batch(
     sources: Sources, name: str, n: int, split: str, seed: int, ask: float | None = None
-) -> dict:
+) -> dict[str, Any]:
     """Scenarios for a chat to write requests for (see data/generation/README.md).
 
     ``probe`` batches take the correct tool from the held-out domains half of the time.
@@ -121,10 +131,13 @@ def next_batch_name(batches_dir: str | Path) -> str:
     return f"batch-{max(numbers, default=0) + 1:04d}"
 
 
-def check_written(batch: dict, written: list[dict], library: dict[str, Tool]) -> tuple[list, list]:
+def check_written(
+    batch: dict[str, Any], written: list[dict[str, Any]], library: dict[str, Tool]
+) -> tuple[list[dict[str, Any]], list[Reject]]:
     """Join written utterances to their scenarios. Returns (examples, rejects)."""
     scenarios = {s["id"]: s for s in batch["scenarios"]}
-    examples, rejects = [], []
+    examples: list[dict[str, Any]] = []
+    rejects: list[Reject] = []
     for line in written:
         scenario = scenarios.get(line.get("id"))
         if scenario is None:
@@ -145,11 +158,13 @@ def check_written(batch: dict, written: list[dict], library: dict[str, Tool]) ->
     return examples, rejects
 
 
-def chat_examples(sources: Sources, generation_dir="data/generation") -> tuple[dict, list]:
+def chat_examples(
+    sources: Sources, generation_dir: str | Path = "data/generation"
+) -> tuple[dict[str, list[dict[str, Any]]], list[tuple[str, dict[str, Any], list[str]]]]:
     """All written batches, by split, and everything that failed validation."""
     generation_dir = Path(generation_dir)
-    by_split: dict[str, list[dict]] = {s: [] for s in CHAT_SPLITS}
-    rejects = []
+    by_split: dict[str, list[dict[str, Any]]] = {s: [] for s in CHAT_SPLITS}
+    rejects: list[tuple[str, dict[str, Any], list[str]]] = []
     for path in sorted((generation_dir / "batches").glob("batch-*.json")):
         written = generation_dir / "written" / f"{path.stem}.jsonl"
         if not written.exists():
@@ -164,7 +179,7 @@ def chat_examples(sources: Sources, generation_dir="data/generation") -> tuple[d
 # ---- the whole dataset ----------------------------------------------------------------------
 
 
-def _stats(rows: list[dict], sources: Sources) -> dict:
+def _stats(rows: list[dict[str, Any]], sources: Sources) -> dict[str, Any]:
     return {
         "examples": len(rows),
         "intent": dict(Counter(r["intent"] for r in rows)),
@@ -190,10 +205,10 @@ def build(
     seed: int = 0,
     tokenizer: BPETokenizer | None = None,
     cfg: ModelConfig | None = None,
-    tools_dir="data/tools",
-    generation_dir="data/generation",
-    external_dir="data/external",
-) -> dict:
+    tools_dir: str | Path = "data/tools",
+    generation_dir: str | Path = "data/generation",
+    external_dir: str | Path = "data/external",
+) -> dict[str, Any]:
     """Write the task splits as .jsonl files and return a report.
 
     - train: template examples + chat-written train batches + xLAM + MASSIVE train
@@ -214,7 +229,7 @@ def build(
 
     chat, rejects = chat_examples(sources, generation_dir)
 
-    def external(name: str) -> list[dict]:
+    def external(name: str) -> list[dict[str, Any]]:
         path = Path(external_dir) / f"{name}.jsonl"
         return read_jsonl(path) if path.exists() else []
 
@@ -229,7 +244,7 @@ def build(
         "massive-test": external("massive-test"),
     }
 
-    removed = Counter()
+    removed: Counter[str] = Counter()
     for keep, drop in [
         ("probe-candidates", "val"),
         ("probe-candidates", "train"),
@@ -242,7 +257,7 @@ def build(
         splits[drop] = [r for r in splits[drop] if normalize(r["utterance"]) not in seen]
         removed[f"{drop} (in {keep})"] += before - len(splits[drop])
 
-    too_long = Counter()
+    too_long: Counter[str] = Counter()
     if tokenizer is not None and cfg is not None:
         for name, rows in splits.items():
             fits = []

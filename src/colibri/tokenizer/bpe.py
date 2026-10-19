@@ -3,6 +3,7 @@ import json
 from collections import Counter, defaultdict
 from collections.abc import Iterable
 from pathlib import Path
+from typing import Any
 
 import regex
 from tqdm import tqdm
@@ -196,7 +197,7 @@ class BPETokenizer:
         """Each token as a string, for looking at how text was split."""
         return [self.vocab[i].decode("utf-8", errors="replace") for i in ids]
 
-    def to_dict(self) -> dict:
+    def to_dict(self) -> dict[str, Any]:
         return {
             "format": "colibri-bpe-1",
             "split_pattern": SPLIT_PATTERN,
@@ -205,7 +206,7 @@ class BPETokenizer:
         }
 
     @classmethod
-    def from_dict(cls, data: dict) -> "BPETokenizer":
+    def from_dict(cls, data: dict[str, Any]) -> "BPETokenizer":
         if data.get("format") != "colibri-bpe-1":
             raise ValueError("not a Colibri tokenizer")
         if (
