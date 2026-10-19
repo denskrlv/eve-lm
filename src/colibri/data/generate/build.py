@@ -17,6 +17,8 @@ from colibri.data.schema import SchemaError, Tool
 from colibri.tokenizer.bpe import BPETokenizer
 
 CHAT_SPLITS = ("train", "val", "probe")
+TEMPLATE_TRIES = 3  # samples drawn per template example wanted (repeats are skipped)
+PROBE_HELDOUT_SHARE = 0.5  # probe scenarios whose correct tool is from a held-out domain
 
 
 @dataclass
@@ -57,7 +59,7 @@ def template_examples(
 ) -> list[dict]:
     """``n`` template examples with valid labels; exact repeats are skipped."""
     rows, seen = [], set()
-    for _ in range(n * 3):
+    for _ in range(n * TEMPLATE_TRIES):
         if len(rows) == n:
             break
         s = sample(bank, rng, pool=pool, chitchat=sources.chitchat, unsupported=sources.unsupported)
@@ -93,7 +95,7 @@ def make_batch(
         mix = {k: v / rest * (1 - ask) for k, v in mix.items()} | {"ask": ask}
     scenarios = []
     for i in range(n):
-        pool = heldout if heldout and rng.random() < 0.5 else None
+        pool = heldout if heldout and rng.random() < PROBE_HELDOUT_SHARE else None
         intent = str(rng.choice(list(mix), p=list(mix.values())))
         s = sample(
             bank, rng, intent, pool, chitchat=sources.chitchat, unsupported=sources.unsupported

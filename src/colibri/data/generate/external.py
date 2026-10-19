@@ -6,8 +6,9 @@ from typing import Any
 
 import numpy as np
 
+from colibri.data.draw import pick, shuffled
 from colibri.data.generate.library import ToolSpec
-from colibri.data.generate.sampler import ToolBank
+from colibri.data.generate.sampler import MAX_PROMPT_TOOLS, ToolBank, prompt_size
 from colibri.data.generate.templates import MAX_CALLS
 from colibri.data.generate.validate import check_example, mentions, value_forms
 from colibri.data.jsonl import read_jsonl, write_jsonl
@@ -25,6 +26,8 @@ HELD_OUT = re.compile(
     re.IGNORECASE,
 )
 UNSUPPORTED_SHARE = 0.1  # extra UNSUPPORTED copies, made by removing the correct tools
+VARIANT_TRIES = 30  # random tools tried for an UNSUPPORTED variant
+MIN_SLOT_COUNT, MIN_SLOT_SHARE = 5, 0.03  # how often a MASSIVE slot must appear to be an arg
 
 
 def snake(name: str) -> str:
@@ -138,11 +141,10 @@ def convert_xlam(row: dict, rng: np.random.Generator) -> tuple[TaskExample | Non
 
     gold = [converted[n][0] for n in gold_names]
     others = [c[0] for n, c in converted.items() if n not in gold_names]
-    others = [others[i] for i in rng.permutation(len(others))][: max(0, 5 - len(gold))]
-    if len(gold) > 5:
-        return None, "more than 5 tools needed"
-    tools = gold + others
-    tools = [tools[i] for i in rng.permutation(len(tools))]
+    others = shuffled(rng, others)[: max(0, MAX_PROMPT_TOOLS - len(gold))]
+    if len(gold) > MAX_PROMPT_TOOLS:
+        return None, f"more than {MAX_PROMPT_TOOLS} tools needed"
+    tools = shuffled(rng, gold + others)
     try:
         example = TaskExample(query, tuple(tools), "call", tuple(calls))
     except SchemaError:
@@ -157,11 +159,11 @@ def unsupported_variant(example: TaskExample, pool: list[Tool], rng) -> TaskExam
     the correct ones, labelled UNSUPPORTED."""
     words = {w for c in example.calls for w in c.tool.split("_") if len(w) > 3}
     tools: dict[str, Tool] = {}
-    want = int(rng.integers(1, 6))
-    for _ in range(30):
+    want = prompt_size(rng)
+    for _ in range(VARIANT_TRIES):
         if len(tools) == want:
             break
-        t = pool[rng.integers(len(pool))]
+        t = pick(rng, pool)
         if not words & set(t.name.split("_")) and t.name not in {c.tool for c in example.calls}:
             tools[t.name] = t
     if not tools:
@@ -254,7 +256,7 @@ def massive_tools(rows: list[dict]) -> dict[str, Tool]:
         common = [
             s
             for s, n in counts.get(intent, Counter()).most_common(MAX_ARGS)
-            if n >= max(5, 0.03 * sizes[intent])
+            if n >= max(MIN_SLOT_COUNT, MIN_SLOT_SHARE * sizes[intent])
         ]
         args = tuple(
             Arg(s, "str", required=False, description=SLOT_NOTES.get(s, "")) for s in common
@@ -287,7 +289,7 @@ def convert_massive(rows: list[dict], rng: np.random.Generator) -> tuple[dict[st
             dropped["held-out topic in the request"] += 1
             continue
         if intent in MASSIVE_NONE:
-            k = int(rng.integers(1, 6))
+            k = prompt_size(rng)
             prompt = [bank.specs[i].tool for i in bank.distractors([], k, rng, hard=False)]
             out[r["partition"]].append(TaskExample(text, tuple(prompt), "none"))
             continue
@@ -302,16 +304,16 @@ def convert_massive(rows: list[dict], rng: np.random.Generator) -> tuple[dict[st
         names = {a.name for a in tool.args}
         args = {s: v.strip() for s, v in slots if s in names}
         g = bank.index[tool.name]
-        k = int(rng.integers(1, 6))
+        k = prompt_size(rng)
         prompt = [g] + bank.distractors([g], k - 1, rng)
-        prompt = [bank.specs[i].tool for i in (prompt[i] for i in rng.permutation(len(prompt)))]
+        prompt = [bank.specs[i].tool for i in shuffled(rng, prompt)]
         example = TaskExample(text, tuple(prompt), "call", (Call(tool.name, args),))
         if check_example(example):
             dropped["value not in the request"] += 1
             continue
         out[r["partition"]].append(example)
         if rng.random() < UNSUPPORTED_SHARE:
-            k = int(rng.integers(1, 6))
+            k = prompt_size(rng)
             prompt = [bank.specs[i].tool for i in bank.distractors([g], k, rng, unsupported=True)]
             if prompt:
                 out[r["partition"]].append(TaskExample(text, tuple(prompt), "unsupported"))

@@ -7,10 +7,16 @@ from typing import Any
 import numpy as np
 
 from colibri.config import ModelConfig
+from colibri.data.draw import pick
 from colibri.data.schema import ASK_VALUE, Arg, Tool
 
 FANOUT = "*"  # {room=*}: one call per option of a required enum ("lights off everywhere")
 MAX_CALLS = ModelConfig().n_slots
+ROUND_NUMBER_SHARE = 0.5  # people say round numbers more often
+NUMBER_WORDS_SHARE = 0.15  # numbers up to 100 written as words: "forty-five"
+WHOLE_NUMBER_SHARE = 0.7  # floats: mostly whole numbers, sometimes halves: 21.5
+KEEP_OPTIONAL_SHARE = 0.5  # optional segments without a required argument that are kept
+SENSIBLE_TRIES = 100  # samples before giving up on a sensible conversion
 # Units convert only to units of the same kind: never celsius to km.
 UNIT_KINDS = {
     "km": "length",
@@ -145,7 +151,7 @@ def check_template(tool: Tool, template: str, values: Mapping[str, Sequence[str]
 def _int_value(arg: Arg, rng: np.random.Generator) -> int:
     lo = int(arg.min) if arg.min is not None else 1
     hi = int(arg.max) if arg.max is not None else lo + 99
-    if rng.random() < 0.5 and hi - lo >= 10:  # people say round numbers more often
+    if rng.random() < ROUND_NUMBER_SHARE and hi - lo >= 10:
         step = 10 if hi - lo > 100 else 5
         rounds = [v for v in range(lo, hi + 1) if v % step == 0]
         if rounds:
@@ -161,19 +167,18 @@ def sample_value(
         v = bool(rng.random() < 0.5)
         return v, slot.true_text if v else slot.false_text
     if arg.type == "enum":
-        v = arg.options[rng.integers(len(arg.options))]
+        v = pick(rng, arg.options)
         return v, v
     if arg.type == "str":
-        pool = values[arg.name]
-        v = pool[rng.integers(len(pool))]
+        v = pick(rng, values[arg.name])
         return v, v
     if arg.type == "int":
         v = _int_value(arg, rng)
-        words = 0 <= v <= 100 and rng.random() < 0.15
+        words = 0 <= v <= 100 and rng.random() < NUMBER_WORDS_SHARE
         return v, number_words(v) if words else str(v)
     lo = arg.min if arg.min is not None else 0.0
     hi = arg.max if arg.max is not None else 100.0
-    step = 1 if rng.random() < 0.7 else 0.5  # mostly whole numbers, sometimes halves: 21.5
+    step = 1 if rng.random() < WHOLE_NUMBER_SHARE else 0.5
     v = float(np.clip(round(rng.uniform(lo, hi) / step) * step, lo, hi))
     return v, arg.format(v)
 
@@ -220,7 +225,7 @@ def fill(
     argument becomes "?" (the user must be asked). Returns None if ``ask`` is impossible.
     Values that make no ``sensible`` conversion are sampled again.
     """
-    for _ in range(100):
+    for _ in range(SENSIBLE_TRIES):
         filled = _fill(tool, template, values, rng, ask)
         if filled is None or sensible(filled.args):
             return filled
@@ -239,7 +244,7 @@ def _fill(
     droppable = [i for i, s in enumerate(segments) if s.optional and s.args & required]
     if ask and not droppable:
         return None
-    drop = droppable[rng.integers(len(droppable))] if ask else -1
+    drop = pick(rng, droppable) if ask else -1
 
     args = {a.name: a for a in tool.args}
     out = Filled("")
@@ -248,7 +253,7 @@ def _fill(
         keep = (
             not segment.optional
             or (i != drop and bool(segment.args & required))
-            or (i != drop and rng.random() < 0.5)
+            or (i != drop and rng.random() < KEEP_OPTIONAL_SHARE)
         )
         if not keep:
             if i == drop:

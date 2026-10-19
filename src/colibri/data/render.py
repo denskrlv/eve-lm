@@ -7,6 +7,7 @@ import torch
 from torch.utils.data import Dataset
 
 from colibri.config import INTENTS, ModelConfig
+from colibri.data.draw import shuffled
 from colibri.data.schema import ASK_VALUE, MAX_ARGS, SchemaError, Tool
 from colibri.tokenizer.bpe import (
     ABSENT,
@@ -112,7 +113,7 @@ def render(
     """Tokenize an example and build its labels. With ``rng``, the tools are shuffled first."""
     tools = list(example.tools)
     if rng is not None:
-        tools = [tools[i] for i in rng.permutation(len(tools))]
+        tools = shuffled(rng, tools)
     if len(tools) > cfg.max_tools:
         raise ValueError(f"{len(tools)} tools, but the model takes at most {cfg.max_tools}")
     if len(example.calls) > cfg.n_slots:

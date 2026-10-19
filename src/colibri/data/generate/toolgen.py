@@ -3,6 +3,7 @@ from functools import partial
 
 import numpy as np
 
+from colibri.data.draw import pick
 from colibri.data.generate.catalog import (
     DEVICES,
     LOOKUPS,
@@ -73,6 +74,9 @@ FIND_TEMPLATES = (
     "find <e>s about {<q>}",
     "do I have any <e>s about {<q>}",
 )
+MIN_ROOMS, MAX_ROOMS = 3, 5  # rooms a device with a room argument can be in
+REQUIRED_ROOM_SHARE = 0.4  # devices whose room argument is required
+REQUIRED_EXTRA_SHARE = 0.5  # create tools whose extra field is required
 STATUS_TEMPLATES = (
     "mark the {<t>} <e> as {<s>}",
     "change the status of {<t>} to {<s>}",
@@ -90,10 +94,6 @@ def _sub(text: str, **values: str) -> str:
     for name, value in values.items():
         text = text.replace(f"<{name}>", value)
     return text
-
-
-def _pick[T](rng: np.random.Generator, options: Sequence[T]) -> T:
-    return options[rng.integers(len(options))]
 
 
 def _variants(
@@ -116,16 +116,18 @@ def _rooms(
     """
     if not device.rooms:
         return [], tuple(t.replace("<r>", "") for t in templates)
-    name = _pick(rng, ["room", "location"])
-    rooms = tuple(rng.choice(ROOMS, size=int(rng.integers(3, 6)), replace=False).tolist())
-    required = bool(rng.random() < 0.4)
+    name = pick(rng, ["room", "location"])
+    rooms = tuple(
+        rng.choice(ROOMS, size=int(rng.integers(MIN_ROOMS, MAX_ROOMS + 1)), replace=False).tolist()
+    )
+    required = bool(rng.random() < REQUIRED_ROOM_SHARE)
     if required:
         templates = [t if "<r>" in t else t + "<r>" for t in templates]
         templates += [e + "{" + name + "=*}" for e in everywhere]
         description = ""
     else:
         templates = list(templates) + list(everywhere)
-        description = _pick(rng, ["", "all rooms if not given"])
+        description = pick(rng, ["", "all rooms if not given"])
     segment = "[ in the {" + name + "}]"
     arg = Arg(name, "enum", required=required, options=rooms, description=description)
     return [arg], tuple(t.replace("<r>", segment) for t in templates)
@@ -136,8 +138,8 @@ def _rooms(
 
 def _power_tool(name: str, device: Device, rng: np.random.Generator, weight: float) -> ToolSpec:
     noun = device.noun
-    x = _pick(rng, ["on", "power", "enabled", "turn_on"])
-    desc = _pick(rng, ["Turn the <noun> on or off", "Switch the <noun> on or off"])
+    x = pick(rng, ["on", "power", "enabled", "turn_on"])
+    desc = pick(rng, ["Turn the <noun> on or off", "Switch the <noun> on or off"])
     templates = [_sub(t, x=x, noun=noun) for t in POWER_TEMPLATES]
     everywhere = [_sub(t, x=x, noun=noun) for t in POWER_EVERYWHERE]
     rooms, room_templates = _rooms(device, rng, templates, everywhere)
@@ -150,8 +152,8 @@ def _level_tool(
 ) -> ToolSpec:
     attr_key = _key(level.attr)
     unit = " " + level.unit if level.unit else ""
-    v = _pick(rng, [attr_key, "level", "value"])
-    desc = _pick(rng, ["Set the <noun> <attr>", "Change the <attr> of the <noun>"])
+    v = pick(rng, [attr_key, "level", "value"])
+    desc = pick(rng, ["Set the <noun> <attr>", "Change the <attr> of the <noun>"])
     subs = {"noun": device.noun, "attr": level.attr, "v": v, "unit": unit}
     everywhere = [_sub("set the <noun> <attr> to {<v>}<unit> in every room", **subs)]
     templates = [_sub(t, **subs) for t in LEVEL_TEMPLATES]
@@ -164,8 +166,8 @@ def _level_tool(
 
 def _mode_tool(name: str, device: Device, rng: np.random.Generator, weight: float) -> ToolSpec:
     noun = device.noun
-    m = _pick(rng, ["mode", "setting", "program"])
-    desc = _pick(rng, ["Set the <noun> mode", "Choose a program for the <noun>"])
+    m = pick(rng, ["mode", "setting", "program"])
+    desc = pick(rng, ["Set the <noun> mode", "Choose a program for the <noun>"])
     everywhere = [_sub("set every <noun> to {<m>}", noun=noun, m=m)]
     templates = [_sub(t, noun=noun, m=m) for t in MODE_TEMPLATES]
     rooms, room_templates = _rooms(device, rng, templates, everywhere)
@@ -217,15 +219,14 @@ def _extra_arg(record: Record, required: bool) -> tuple[Arg, str]:
 
 
 def _create_tool(name: str, record: Record, rng: np.random.Generator, weight: float) -> ToolSpec:
-    t = _pick(rng, ["title", "name"])
+    t = pick(rng, ["title", "name"])
     args = [Arg(t, "str")]
     extra = ""
-    # Half the tools with an extra field require it.
-    both = bool(record.extra) and rng.random() < 0.5
+    both = bool(record.extra) and rng.random() < REQUIRED_EXTRA_SHARE
     if record.extra:
         extra_arg, extra = _extra_arg(record, required=both)
         args.append(extra_arg)
-    desc = _pick(rng, ["Create a new <e>", "Add <art> <e>"])
+    desc = pick(rng, ["Create a new <e>", "Add <art> <e>"])
     subs = _record_subs(record)
     chosen = CREATE_TEMPLATES_BOTH_REQUIRED if both else CREATE_TEMPLATES
     templates = tuple(_sub(x, t=t, extra=extra, **subs) for x in chosen)
@@ -235,28 +236,28 @@ def _create_tool(name: str, record: Record, rng: np.random.Generator, weight: fl
 
 
 def _delete_tool(name: str, record: Record, rng: np.random.Generator, weight: float) -> ToolSpec:
-    t = _pick(rng, ["title", "name"])
+    t = pick(rng, ["title", "name"])
     subs = _record_subs(record)
     templates = tuple(_sub(x, t=t, **subs) for x in DELETE_TEMPLATES)
-    desc = _sub(_pick(rng, ["Delete a <e>", "Remove a <e>"]), **subs)
+    desc = _sub(pick(rng, ["Delete a <e>", "Remove a <e>"]), **subs)
     tool = Tool(name, desc, (Arg(t, "str"),), "generated-records")
     capability = f"{_key(record.entity)}.delete"
     return ToolSpec(tool, templates, {t: record.titles}, capability, weight=weight)
 
 
 def _find_tool(name: str, record: Record, rng: np.random.Generator, weight: float) -> ToolSpec:
-    q = _pick(rng, ["query", "text", "keyword"])
+    q = pick(rng, ["query", "text", "keyword"])
     subs = _record_subs(record)
     templates = tuple(_sub(x, q=q, **subs) for x in FIND_TEMPLATES)
-    desc = _sub(_pick(rng, ["Search <e>s", "Find <e>s matching a text"]), **subs)
+    desc = _sub(pick(rng, ["Search <e>s", "Find <e>s matching a text"]), **subs)
     tool = Tool(name, desc, (Arg(q, "str"),), "generated-records")
     capability = f"{_key(record.entity)}.find"
     return ToolSpec(tool, templates, {q: record.titles}, capability, weight=weight)
 
 
 def _status_tool(name: str, record: Record, rng: np.random.Generator, weight: float) -> ToolSpec:
-    t = _pick(rng, ["title", "name"])
-    s = _pick(rng, ["status", "state"])
+    t = pick(rng, ["title", "name"])
+    s = pick(rng, ["status", "state"])
     templates = tuple(_sub(x, t=t, s=s, **_record_subs(record)) for x in STATUS_TEMPLATES)
     args = (Arg(t, "str"), Arg(s, "enum", options=record.statuses))
     tool = Tool(name, f"Change the status of a {record.entity}", args, "generated-records")
@@ -285,7 +286,7 @@ def _record_specs(record: Record, rng: np.random.Generator, weight: float) -> li
 
 def _lookup_tool(name: str, lookup: Lookup, rng: np.random.Generator, weight: float) -> ToolSpec:
     k, key = _key(lookup.thing), lookup.key
-    desc = _pick(rng, ["Get the <thing>", "Look up the <thing>", "Check the <thing>"])
+    desc = pick(rng, ["Get the <thing>", "Look up the <thing>", "Check the <thing>"])
     templates = tuple(_sub(p, k="{" + key + "}") for p in lookup.phrasings)
     tool = Tool(name, _sub(desc, thing=lookup.thing), (Arg(key, "str"),), "generated-lookups")
     return ToolSpec(tool, templates, {key: lookup.keys}, f"lookup.{k}", weight=weight)
@@ -298,7 +299,7 @@ def _lookup_specs(lookup: Lookup, rng: np.random.Generator, weight: float) -> li
 
 
 def _operation_tool(name: str, op: Operation, rng: np.random.Generator, weight: float) -> ToolSpec:
-    tool = Tool(name, _pick(rng, op.descriptions), op.args, "generated-operations")
+    tool = Tool(name, pick(rng, op.descriptions), op.args, "generated-operations")
     capability = "op." + op.names[0]
     return ToolSpec(tool, op.templates, op.values, capability, weight=weight)
 
