@@ -355,6 +355,53 @@ def _start_step(
     return 0
 
 
+def _prepare(
+    model: Colibri, cfg: TrainConfig, device: torch.device
+) -> tuple[Colibri, torch.optim.Optimizer, Autocast]:
+    """The model to run forward passes with, the optimizer, and the autocast context."""
+    # torch.compile traces the forward pass once and fuses its many small operations (each
+    # LayerNorm, GELU and RMSNorm here is 5-10 of them) into a few kernels: about 2x faster on
+    # MPS, same losses. The first step takes ~20 s to compile. ``model`` itself stays eager for
+    # ``on_eval``, whose generation changes shape every token, and for saving.
+    runner = cast(Colibri, torch.compile(model)) if cfg.compile else model
+    return runner, _optimizer(model, cfg, device), _autocast(device, cfg.dtype)
+
+
+@dataclass
+class _Run:
+    """What one run's periodic logs, evals and saves need."""
+
+    cfg: TrainConfig
+    end: int  # the step this run stops at
+    out_dir: Path
+    model: Colibri
+    tokenizer: BPETokenizer
+    optimizer: torch.optim.Optimizer
+    meta: dict[str, Any] | None
+    log: MetricsLog
+    bar: progress.Bar
+    evaluator: _Evaluator
+
+
+def _after_step(
+    run: _Run, step: int, lr: float, grad_norm: torch.Tensor, window: _Window
+) -> _Window:
+    """Log, evaluate and save when ``step`` is due; returns the stats window to go on with."""
+    if step % run.cfg.log_every == 0 or step == run.end:
+        _report_train(window, step, run.end, lr, grad_norm, run.log, run.bar)
+        window = _Window()
+    paused = time.time()
+    if step % run.cfg.eval_every == 0 or step == run.cfg.steps:
+        run.evaluator.run(step, run.log, run.bar)
+    if step % run.cfg.save_every == 0 or step == run.end:
+        last_val = run.evaluator.last_val
+        _save_last(
+            run.out_dir, run.model, run.tokenizer, run.optimizer, step, run.cfg, run.meta, last_val
+        )
+    window.start += time.time() - paused  # eval and saving don't count towards tok/s
+    return window
+
+
 def train(
     model: Colibri,
     loss_fn: LossFn,
@@ -400,13 +447,7 @@ def train(
     out_dir.mkdir(parents=True, exist_ok=True)
     log = MetricsLog(out_dir / "metrics.jsonl")
     model.to(device).train()
-    # torch.compile traces the forward pass once and fuses its many small operations (each
-    # LayerNorm, GELU and RMSNorm here is 5-10 of them) into a few kernels: about 2x faster on
-    # MPS, same losses. The first step takes ~20 s to compile. ``model`` itself stays eager for
-    # ``on_eval``, whose generation changes shape every token, and for saving.
-    runner = cast(Colibri, torch.compile(model)) if cfg.compile else model
-    optimizer = _optimizer(model, cfg, device)
-    autocast = _autocast(device, cfg.dtype)
+    runner, optimizer, autocast = _prepare(model, cfg, device)
 
     step = _start_step(model, optimizer, out_dir, cfg, resume)
     if step == 0:
@@ -423,6 +464,7 @@ def train(
         )
         evaluator.run(step, log, bar)  # at step 0 the loss should be about ln(vocab_size)
 
+    run = _Run(cfg, end, out_dir, model, tokenizer, optimizer, meta, log, bar, evaluator)
     window = _Window()
     while step < end:
         batch = _train_batch(train_data, collate, cfg, step)
@@ -434,16 +476,7 @@ def train(
         step += 1
         window.add(losses)
         bar.update()
-
-        if step % cfg.log_every == 0 or step == end:
-            _report_train(window, step, end, lr, grad_norm, log, bar)
-            window = _Window()
-        paused = time.time()
-        if step % cfg.eval_every == 0 or step == cfg.steps:
-            evaluator.run(step, log, bar)
-        if step % cfg.save_every == 0 or step == end:
-            _save_last(out_dir, model, tokenizer, optimizer, step, cfg, meta, evaluator.last_val)
-        window.start += time.time() - paused  # eval and saving don't count towards tok/s
+        window = _after_step(run, step, lr, grad_norm, window)
 
     bar.close()
     _finish(out_dir, model, tokenizer, step, cfg, meta, evaluator.last_val)

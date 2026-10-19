@@ -128,7 +128,33 @@ class MultiHeadAttention(nn.Module):
         self_attention = kv is None
         kv = x if kv is None else kv  # self-attention: queries, keys and values all come from x
         b, n_q, d = x.shape
+        q, k, v = self._project(x, kv, self_attention)  # steps 1 and 1b
 
+        # 2. Which query may look at which key (True = allowed), broadcast to the scores' shape.
+        allowed = self._allowed(key_mask, n_q, kv.shape[1], x.device)
+
+        weights: torch.Tensor | None = None
+        if self.use_sdpa and not return_weights:
+            # PyTorch's fused kernel does steps 3-5 in one call. Its dropout doesn't know about
+            # train/eval mode, so it is switched off outside training.
+            out = F.scaled_dot_product_attention(
+                q, k, v, attn_mask=allowed, dropout_p=self.dropout if self.training else 0.0
+            )
+        else:
+            out, weights = self._manual_attention(q, k, v, allowed)  # steps 3 to 5
+
+        # 6. Merge the heads back into one vector per query, then let out_proj mix them.
+        merged: torch.Tensor = self.out_proj(out.transpose(1, 2).reshape(b, n_q, d))
+        if return_weights:
+            assert weights is not None  # return_weights always takes the manual path
+            return merged, weights
+        return merged
+
+    def _project(
+        self, x: torch.Tensor, kv: torch.Tensor, self_attention: bool
+    ) -> tuple[torch.Tensor, torch.Tensor, torch.Tensor]:
+        """Steps 1 and 1b: queries from ``x``, keys and values from ``kv``, each split into
+        heads, (B, heads, n, head_dim); then the optional norms and rotary positions."""
         # 1. Project, then split d into n_heads × head_dim: (B, n, d) -> (B, heads, n, head_dim).
         #    Each head works on its own head_dim-sized slice, like the book's view + transpose.
         q = self._split(self.W_query(x))
@@ -138,37 +164,26 @@ class MultiHeadAttention(nn.Module):
         if self.q_norm is not None and self.k_norm is not None:  # both or neither
             q, k = self.q_norm(q), self.k_norm(k)
         if self.rope and self_attention:
-            cos, sin = rope_angles(n_q, self.head_dim, self.rope_base, x.device)
+            cos, sin = rope_angles(x.shape[1], self.head_dim, self.rope_base, x.device)
             cos, sin = cos.to(q.dtype), sin.to(q.dtype)  # bf16 under autocast
             q, k = apply_rope(q, cos, sin), apply_rope(k, cos, sin)
+        return q, k, v
 
-        # 2. Which query may look at which key (True = allowed), broadcast to the scores' shape.
-        allowed = self._allowed(key_mask, n_q, kv.shape[1], x.device)
-
-        if self.use_sdpa and not return_weights:
-            # PyTorch's fused kernel does steps 3-5 in one call. Its dropout doesn't know about
-            # train/eval mode, so it is switched off outside training.
-            out = F.scaled_dot_product_attention(
-                q, k, v, attn_mask=allowed, dropout_p=self.dropout if self.training else 0.0
-            )
-            weights = None
-        else:
-            # 3. Scaled dot-product scores (ch. 3.5): how well each query matches each key.
-            #    Dividing by √head_dim keeps the scores from growing with the vector size.
-            scores = q @ k.transpose(-2, -1) / self.head_dim**0.5  # (B, heads, n_q, n_kv)
-            # 4. Forbidden pairs get -inf, so softmax gives them exactly zero weight.
-            if allowed is not None:
-                scores = scores.masked_fill(~allowed, float("-inf"))
-            weights = torch.softmax(scores, dim=-1)  # each row sums to 1
-            # 5. Each query's output is a weighted average of the values (dropout as in ch. 3.5.2).
-            out = self.drop(weights) @ v  # (B, heads, n_q, head_dim)
-
-        # 6. Merge the heads back into one vector per query, then let out_proj mix them.
-        merged: torch.Tensor = self.out_proj(out.transpose(1, 2).reshape(b, n_q, d))
-        if return_weights:
-            assert weights is not None  # return_weights always takes the manual path
-            return merged, weights
-        return merged
+    def _manual_attention(
+        self, q: torch.Tensor, k: torch.Tensor, v: torch.Tensor, allowed: torch.Tensor | None
+    ) -> tuple[torch.Tensor, torch.Tensor]:
+        """Steps 3 to 5, written out: the heads' outputs (B, heads, n_q, head_dim) and the
+        attention weights (B, heads, n_q, n_kv)."""
+        # 3. Scaled dot-product scores (ch. 3.5): how well each query matches each key.
+        #    Dividing by √head_dim keeps the scores from growing with the vector size.
+        scores = q @ k.transpose(-2, -1) / self.head_dim**0.5  # (B, heads, n_q, n_kv)
+        # 4. Forbidden pairs get -inf, so softmax gives them exactly zero weight.
+        if allowed is not None:
+            scores = scores.masked_fill(~allowed, float("-inf"))
+        weights = torch.softmax(scores, dim=-1)  # each row sums to 1
+        # 5. Each query's output is a weighted average of the values (dropout as in ch. 3.5.2).
+        out: torch.Tensor = self.drop(weights) @ v  # (B, heads, n_q, head_dim)
+        return out, weights
 
     def _split(self, t: torch.Tensor) -> torch.Tensor:
         b, n, _ = t.shape

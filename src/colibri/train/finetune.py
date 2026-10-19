@@ -9,7 +9,7 @@ import torch.nn.functional as F
 
 from colibri.config import INTENTS, STOP, ModelConfig
 from colibri.data.jsonl import read_jsonl
-from colibri.data.render import IGNORE, TaskCollator, TaskDataset, TaskExample
+from colibri.data.render import IGNORE, Rendered, TaskCollator, TaskDataset, TaskExample
 from colibri.data.schema import Tool
 from colibri.model.checkpoint import (
     FRESH,
@@ -188,6 +188,43 @@ def load_examples(path: str | Path, library: dict[str, Tool]) -> list[TaskExampl
     return [TaskExample.from_json(row, library) for row in read_jsonl(path)]
 
 
+def _calls(answers: list[int], tools: list[str], stop: int) -> list[str]:
+    """Slot answers as tool names, up to and including the first STOP."""
+    names = []
+    for answer in answers:
+        names.append(STOP if answer == stop else tools[answer])
+        if answer == stop:
+            break
+    return names
+
+
+def _describe_line(
+    utterance: str,
+    intent_probs: torch.Tensor,
+    slot_probs: torch.Tensor,
+    item: Rendered,
+    stop: int,
+) -> str:
+    """One example's line for ``describe``, from its intent (n_intents,) and slot
+    (n_slots, max_tools + 1) probabilities."""
+    best = int(intent_probs.argmax())
+    answers = slot_probs.argmax(-1).tolist()
+    said = [
+        f"{name} {slot_probs[s, a]:.0%}"
+        for s, (a, name) in enumerate(
+            zip(answers, _calls(answers, item.tool_names, stop), strict=False)
+        )
+    ]
+    gold = INTENTS[item.intent]
+    if item.slots[0] != IGNORE and item.slots[0] != stop:
+        gold += " · " + ", ".join(n for n in _calls(item.slots, item.tool_names, stop) if n != STOP)
+    return (
+        f"{utterance} → {INTENTS[best]} {intent_probs[best]:.0%} · "
+        + ", ".join(said)
+        + f" | gold {gold}"
+    )
+
+
 @torch.no_grad()
 def describe(
     model: Colibri, examples: Sequence[TaskExample], data: TaskDataset, indices: Sequence[int]
@@ -202,34 +239,10 @@ def describe(
 
     intent_p, slot_p = questions.intent.softmax(-1).cpu(), questions.slots.softmax(-1).cpu()
     stop = model.cfg.max_tools
-
-    def calls(answers: list[int], tools: list[str]) -> list[str]:
-        names = []
-        for answer in answers:
-            names.append(STOP if answer == stop else tools[answer])
-            if answer == stop:
-                break
-        return names
-
-    lines = []
-    for row, (i, item) in enumerate(zip(indices, rendered, strict=True)):
-        best = int(intent_p[row].argmax())
-        answers = slot_p[row].argmax(-1).tolist()
-        said = [
-            f"{name} {slot_p[row, s, a]:.0%}"
-            for s, (a, name) in enumerate(
-                zip(answers, calls(answers, item.tool_names), strict=False)
-            )
-        ]
-        gold = INTENTS[item.intent]
-        if item.slots[0] != IGNORE and item.slots[0] != stop:
-            gold += " · " + ", ".join(n for n in calls(item.slots, item.tool_names) if n != STOP)
-        lines.append(
-            f"{examples[i].utterance} → {INTENTS[best]} {intent_p[row, best]:.0%} · "
-            + ", ".join(said)
-            + f" | gold {gold}"
-        )
-    return lines
+    return [
+        _describe_line(examples[i].utterance, intent_p[row], slot_p[row], item, stop)
+        for row, (i, item) in enumerate(zip(indices, rendered, strict=True))
+    ]
 
 
 def _shown(examples: Sequence[TaskExample]) -> list[int]:
@@ -293,6 +306,19 @@ def _eval_report(
     return on_eval
 
 
+def _task_data(
+    task_dir: Path, library: dict[str, Tool], tokenizer: BPETokenizer, cfg: ModelConfig
+) -> tuple[TaskDataset, list[TaskExample], TaskDataset, TaskDataset]:
+    """The train set, the val examples and set, and the held-out-tool set of ``task_dir``."""
+    train_data = TaskDataset(load_examples(task_dir / "train.jsonl", library), tokenizer, cfg)
+    val_examples = load_examples(task_dir / "val.jsonl", library)
+    val_data = TaskDataset(val_examples, tokenizer, cfg, seed=1)  # tools shuffled, always alike
+    heldout = TaskDataset(
+        load_examples(task_dir / "heldout-templates.jsonl", library), tokenizer, cfg
+    )
+    return train_data, val_examples, val_data, heldout
+
+
 def finetune(
     train_cfg: TrainConfig,
     task_dir: str | Path,
@@ -324,12 +350,7 @@ def finetune(
     model.set_sdpa(sdpa)
 
     cfg = model.cfg
-    train_data = TaskDataset(load_examples(task_dir / "train.jsonl", library), tokenizer, cfg)
-    val_examples = load_examples(task_dir / "val.jsonl", library)
-    val_data = TaskDataset(val_examples, tokenizer, cfg, seed=1)  # tools shuffled, always alike
-    heldout = TaskDataset(
-        load_examples(task_dir / "heldout-templates.jsonl", library), tokenizer, cfg
-    )
+    train_data, val_examples, val_data, heldout = _task_data(task_dir, library, tokenizer, cfg)
     collate = TaskCollator(cfg)
     on_eval = _eval_report(val_examples, val_data, heldout, collate, train_cfg.batch_size)
     meta = {"task": TASK, "frozen": freeze, "trainable": trainable, "init": str(init or "scratch")}

@@ -101,7 +101,7 @@ def _sub(text: str, **values: str) -> str:
 def _variants(
     rng: np.random.Generator, names: Sequence[str], make: Callable[[str], ToolSpec], count: int = 2
 ) -> list[ToolSpec]:
-    """``n`` tools for one capability, each with a different name."""
+    """``count`` tools for one capability, each with a different name."""
     chosen = rng.choice(len(names), size=min(count, len(names)), replace=False)
     return [make(names[i]) for i in chosen]
 

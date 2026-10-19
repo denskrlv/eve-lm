@@ -28,6 +28,8 @@ HELD_OUT = re.compile(
 )
 TOOL_DESCRIPTION_CHARS, ARG_DESCRIPTION_CHARS = 120, 60  # longer xLAM descriptions are cut
 MIN_SHARED_WORD_LEN = 4  # name words this long count as shared with a correct tool
+XLAM_FILE = "xlam/xlam_function_calling_60k.json"  # where convert_external finds it in raw
+MASSIVE_FILE = "massive/1.1/data/en-US.jsonl"
 UNSUPPORTED_SHARE = 0.1  # extra UNSUPPORTED copies, made by removing the correct tools
 VARIANT_TRIES = 30  # random tools tried for an UNSUPPORTED variant
 MIN_SLOT_COUNT, MIN_SLOT_SHARE = 5, 0.03  # how often a MASSIVE slot must appear to be an arg
@@ -318,6 +320,34 @@ def _massive_bank(tools: dict[str, Tool]) -> ToolBank:
     return ToolBank(specs)
 
 
+def _massive_call(
+    text: str,
+    tool: Tool,
+    slots: list[tuple[str, str]],
+    gold: int,
+    bank: ToolBank,
+    rng: np.random.Generator,
+) -> TaskExample:
+    """A CALL example: the slots that are arguments of ``tool``, among similar tools."""
+    names = {a.name for a in tool.args}
+    args = {s: v.strip() for s, v in slots if s in names}
+    n_tools = prompt_size(rng)
+    indices = [gold] + bank.distractors([gold], n_tools - 1, rng)
+    prompt = [bank.specs[i].tool for i in shuffled(rng, indices)]
+    return TaskExample(text, tuple(prompt), "call", (Call(tool.name, args),))
+
+
+def _massive_unsupported(
+    text: str, gold: int, bank: ToolBank, rng: np.random.Generator
+) -> TaskExample | None:
+    """The request again, labelled UNSUPPORTED, with no tool of its scenario in the prompt."""
+    n_tools = prompt_size(rng)
+    prompt = [bank.specs[i].tool for i in bank.distractors([gold], n_tools, rng, unsupported=True)]
+    if not prompt:
+        return None
+    return TaskExample(text, tuple(prompt), "unsupported")
+
+
 def _massive_row(
     row: dict[str, Any], tools: dict[str, Tool], bank: ToolBank, rng: np.random.Generator
 ) -> tuple[list[TaskExample], str | None]:
@@ -335,23 +365,15 @@ def _massive_row(
     if len({s for s, _ in slots}) != len(slots):
         return [], "the same slot twice"
     tool = tools[intent]
-    names = {a.name for a in tool.args}
-    args = {s: v.strip() for s, v in slots if s in names}
     gold = bank.index[tool.name]
-    n_tools = prompt_size(rng)
-    indices = [gold] + bank.distractors([gold], n_tools - 1, rng)
-    prompt = [bank.specs[i].tool for i in shuffled(rng, indices)]
-    example = TaskExample(text, tuple(prompt), "call", (Call(tool.name, args),))
+    example = _massive_call(text, tool, slots, gold, bank, rng)
     if check_example(example):
         return [], "value not in the request"
     examples = [example]
     if rng.random() < UNSUPPORTED_SHARE:
-        n_tools = prompt_size(rng)
-        prompt = [
-            bank.specs[i].tool for i in bank.distractors([gold], n_tools, rng, unsupported=True)
-        ]
-        if prompt:
-            examples.append(TaskExample(text, tuple(prompt), "unsupported"))
+        variant = _massive_unsupported(text, gold, bank, rng)
+        if variant is not None:
+            examples.append(variant)
     return examples, None
 
 
@@ -379,6 +401,39 @@ def convert_massive(
 # ---- both ------------------------------------------------------------------------------------
 
 
+def _convert_xlam_file(path: Path, out_dir: Path, rng: np.random.Generator) -> dict[str, Any]:
+    """Convert xLAM into ``out_dir/xlam.jsonl``, plus UNSUPPORTED variants; return its report."""
+    reasons: Counter[str] = Counter()
+    examples: list[TaskExample] = []
+    for row in json.loads(path.read_text()):
+        example, reason = convert_xlam(row, rng)
+        reasons[reason] += 1
+        if example is not None:
+            examples.append(example)
+    pool = list({t.name: t for ex in examples for t in ex.tools}.values())
+    variants = [
+        v
+        for ex in examples
+        if rng.random() < UNSUPPORTED_SHARE and (v := unsupported_variant(ex, pool, rng))
+    ]
+    rows = [{**ex.to_json(inline=True), "source": "xlam"} for ex in examples + variants]
+    write_jsonl(out_dir / "xlam.jsonl", rows)
+    return {"kept": len(examples), "unsupported_variants": len(variants), "reasons": dict(reasons)}
+
+
+def _convert_massive_file(path: Path, out_dir: Path, rng: np.random.Generator) -> dict[str, Any]:
+    """Convert MASSIVE into ``out_dir/massive-{train,dev,test}.jsonl``; return its report."""
+    parts, dropped = convert_massive(read_jsonl(path), rng)
+    for name, examples in parts.items():
+        out = [{**ex.to_json(inline=True), "source": "massive"} for ex in examples]
+        write_jsonl(out_dir / f"massive-{name}.jsonl", out)
+    return {
+        "examples": {k: len(v) for k, v in parts.items()},
+        "intent": dict(Counter(ex.intent for v in parts.values() for ex in v)),
+        "dropped": dict(dropped),
+    }
+
+
 def convert_external(
     raw_dir: str | Path = defaults.RAW_DIR,
     out_dir: str | Path = defaults.EXTERNAL_DIR,
@@ -389,40 +444,11 @@ def convert_external(
     rng = np.random.default_rng(seed)
     report: dict[str, Any] = {}
 
-    xlam_path = raw_dir / "xlam" / "xlam_function_calling_60k.json"
+    xlam_path = raw_dir / XLAM_FILE
     if xlam_path.exists():
-        reasons: Counter[str] = Counter()
-        examples: list[TaskExample] = []
-        for row in json.loads(xlam_path.read_text()):
-            example, reason = convert_xlam(row, rng)
-            reasons[reason] += 1
-            if example is not None:
-                examples.append(example)
-        pool = list({t.name: t for ex in examples for t in ex.tools}.values())
-        variants = [
-            v
-            for ex in examples
-            if rng.random() < UNSUPPORTED_SHARE and (v := unsupported_variant(ex, pool, rng))
-        ]
-        rows = [{**ex.to_json(inline=True), "source": "xlam"} for ex in examples + variants]
-        write_jsonl(out_dir / "xlam.jsonl", rows)
-        report["xlam"] = {
-            "kept": len(examples),
-            "unsupported_variants": len(variants),
-            "reasons": dict(reasons),
-        }
-
-    massive_path = raw_dir / "massive" / "1.1" / "data" / "en-US.jsonl"
+        report["xlam"] = _convert_xlam_file(xlam_path, out_dir, rng)
+    massive_path = raw_dir / MASSIVE_FILE
     if massive_path.exists():
-        rows = read_jsonl(massive_path)
-        parts, dropped = convert_massive(rows, rng)
-        for name, examples in parts.items():
-            out = [{**ex.to_json(inline=True), "source": "massive"} for ex in examples]
-            write_jsonl(out_dir / f"massive-{name}.jsonl", out)
-        report["massive"] = {
-            "examples": {k: len(v) for k, v in parts.items()},
-            "intent": dict(Counter(ex.intent for v in parts.values() for ex in v)),
-            "dropped": dict(dropped),
-        }
+        report["massive"] = _convert_massive_file(massive_path, out_dir, rng)
     (out_dir / "report.json").write_text(json.dumps(report, indent=2))
     return report

@@ -1,6 +1,7 @@
 import re
 from collections.abc import Sequence
 from dataclasses import dataclass, field
+from typing import Any
 
 import numpy as np
 
@@ -71,7 +72,7 @@ class ToolBank:
         unsupported: bool = False,
         hard: bool = True,
     ) -> list[int]:
-        """``k`` other tools, mostly similar ones when ``hard``.
+        """``count`` other tools, mostly similar ones when ``hard``.
 
         Never a tool with a gold tool's capability. When the request is labelled UNSUPPORTED,
         also never a tool that could serve it anyway (``overlaps``).
@@ -160,11 +161,26 @@ def _pick_new_capability(
     return next((i for i in candidates if bank.specs[i].capability not in caps), None)
 
 
-def sample_call(
-    bank: ToolBank, rng: np.random.Generator, pool: Sequence[int] | None = None
-) -> Sample:
-    """A CALL example: 1-3 calls (a fan-out adds more) joined into one request."""
-    n_calls = int(rng.choice(CALL_COUNTS, p=CALL_COUNT_WEIGHTS))
+def _fill_new(
+    spec: ToolSpec, rng: np.random.Generator, calls: list[Call]
+) -> tuple[Filled, list[dict[str, Any]]] | None:
+    """A fill of ``spec`` and its calls' arguments, repeating no call in ``calls`` and still
+    within ``MAX_CALLS``; None after ``FILL_TRIES``."""
+    for _ in range(FILL_TRIES):
+        filled = _fill_any(spec, rng)
+        assert filled is not None  # see _fill_any
+        new = filled.expand(spec.tool)
+        repeated = any(call.tool == spec.name and call.args in new for call in calls)
+        if not repeated and len(calls) + len(new) <= MAX_CALLS:
+            return filled, new
+    return None
+
+
+def _draw_calls(
+    bank: ToolBank, rng: np.random.Generator, pool: Sequence[int] | None, n_calls: int
+) -> tuple[list[int], list[str], list[Call], set[tuple[int, str]]]:
+    """Up to ``n_calls`` calls: each one's gold tool and text, the calls themselves (a fan-out
+    adds several) and the (call, argument) pairs a template set. Stops when nothing fits."""
     gold: list[int] = []
     parts: list[str] = []
     calls: list[Call] = []
@@ -178,25 +194,34 @@ def sample_call(
                 break
             gold_index = picked
         spec = bank.specs[gold_index]
-        for _ in range(FILL_TRIES):
-            filled = _fill_any(spec, rng)
-            assert filled is not None  # see _fill_any
-            new = filled.expand(spec.tool)
-            repeated = any(call.tool == spec.name and call.args in new for call in calls)
-            if not repeated and len(calls) + len(new) <= MAX_CALLS:
-                break
-        else:
+        fill = _fill_new(spec, rng, calls)
+        if fill is None:
             break
+        filled, new = fill
         gold.append(gold_index)
         parts.append(filled.text)
         for args in new:  # a fan-out ("lights off everywhere") adds one call per option
             implied |= {(len(calls), name) for name in filled.implied}
             calls.append(Call(spec.name, args))
+    return gold, parts, calls, implied
+
+
+def _join_parts(parts: list[str], rng: np.random.Generator) -> str:
+    """The calls' texts as one request: "turn off the fan and then lock the door"."""
     text = parts[0]
     for part in parts[1:]:
         text += pick(rng, CONNECTORS) + part
-    distinct = list(dict.fromkeys(gold))
-    tools = _prompt(bank, distinct, rng)
+    return text
+
+
+def sample_call(
+    bank: ToolBank, rng: np.random.Generator, pool: Sequence[int] | None = None
+) -> Sample:
+    """A CALL example: 1-3 calls (a fan-out adds more) joined into one request."""
+    n_calls = int(rng.choice(CALL_COUNTS, p=CALL_COUNT_WEIGHTS))
+    gold, parts, calls, implied = _draw_calls(bank, rng, pool, n_calls)
+    text = _join_parts(parts, rng)
+    tools = _prompt(bank, list(dict.fromkeys(gold)), rng)
     example = TaskExample(
         _decorate(text, rng), tuple(bank.specs[i].tool for i in tools), "call", tuple(calls)
     )

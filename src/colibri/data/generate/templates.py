@@ -116,6 +116,29 @@ def parse(template: str) -> list[Segment]:
     return segments
 
 
+def _check_slot(arg: Arg, slot: Slot, values: Mapping[str, Sequence[str]]) -> list[str]:
+    """Problems with one slot of a known argument: its fan-out, fixed value, bool words or
+    str value pool."""
+    if slot.has_fixed and slot.fixed == FANOUT:
+        if arg.type != "enum" or not arg.required:
+            return [f"fan-out {{{arg.name}=*}} needs a required enum argument"]
+        if len(arg.options) > MAX_CALLS:
+            return [f"fan-out over {len(arg.options)} options; at most {MAX_CALLS} calls"]
+        return []
+    if slot.has_fixed:
+        error = arg.check(slot.fixed)
+        return [] if error is None else [error]
+    if arg.type == "bool" and slot.true_text is None:
+        return [f"bool {arg.name} needs {{{arg.name}:yes|no}} or {{{arg.name}=true}}"]
+    if arg.type != "bool" and slot.true_text is not None:
+        return [f"only bool arguments take {{name:a|b}}, not {arg.name}"]
+    if arg.type == "str":
+        pool = values.get(arg.name, ())
+        errors = [] if pool else [f"str argument {arg.name} has no value pool"]
+        return errors + [problem for v in pool if (problem := arg.check(v)) is not None]
+    return []
+
+
 def check_template(tool: Tool, template: str, values: Mapping[str, Sequence[str]]) -> list[str]:
     """Problems with a template for ``tool`` (empty list = fine). ``values`` are the str pools."""
     try:
@@ -134,23 +157,8 @@ def check_template(tool: Tool, template: str, values: Mapping[str, Sequence[str]
         arg = args.get(slot.arg)
         if arg is None:
             errors.append(f"unknown argument {slot.arg!r}")
-        elif slot.has_fixed and slot.fixed == FANOUT:
-            if arg.type != "enum" or not arg.required:
-                errors.append(f"fan-out {{{arg.name}=*}} needs a required enum argument")
-            elif len(arg.options) > MAX_CALLS:
-                errors.append(f"fan-out over {len(arg.options)} options; at most {MAX_CALLS} calls")
-        elif slot.has_fixed:
-            if (error := arg.check(slot.fixed)) is not None:
-                errors.append(error)
-        elif arg.type == "bool" and slot.true_text is None:
-            errors.append(f"bool {arg.name} needs {{{arg.name}:yes|no}} or {{{arg.name}=true}}")
-        elif arg.type != "bool" and slot.true_text is not None:
-            errors.append(f"only bool arguments take {{name:a|b}}, not {arg.name}")
-        elif arg.type == "str":
-            pool = values.get(arg.name, ())
-            if not pool:
-                errors.append(f"str argument {arg.name} has no value pool")
-            errors += [problem for v in pool if (problem := arg.check(v)) is not None]
+        else:
+            errors += _check_slot(arg, slot, values)
     for arg in tool.args:
         if arg.required and arg.name not in names:
             errors.append(f"required argument {arg.name} is never filled")
@@ -247,6 +255,41 @@ def fill(
     raise RuntimeError(f"no sensible values for {tool.name}, {template!r}")
 
 
+def _keep_segment(
+    index: int, segment: Segment, drop: int, required: set[str], rng: np.random.Generator
+) -> bool:
+    """Whether a segment is in the request: fixed ones always; optional ones that hold a
+    required argument unless dropped for ASK (``drop``); other optional ones at random."""
+    return (
+        not segment.optional
+        or (index != drop and bool(segment.args & required))
+        or (index != drop and rng.random() < KEEP_OPTIONAL_SHARE)
+    )
+
+
+def _fill_segment(
+    segment: Segment,
+    args: dict[str, Arg],
+    values: Mapping[str, Sequence[str]],
+    rng: np.random.Generator,
+    out: Filled,
+    words: list[str],
+) -> None:
+    """Add a kept segment's text to ``words`` and its arguments' values to ``out``."""
+    for part in segment.parts:
+        if isinstance(part, str):
+            words.append(part)
+        elif part.has_fixed and part.fixed == FANOUT:
+            out.fanout = part.arg
+        elif part.has_fixed:
+            out.args[part.arg] = part.fixed
+            out.implied.add(part.arg)
+        else:
+            value, text = sample_value(args[part.arg], part, values, rng)
+            out.args[part.arg] = value
+            words.append(text)
+
+
 def _fill(
     tool: Tool,
     template: str,
@@ -254,6 +297,7 @@ def _fill(
     rng: np.random.Generator,
     ask: bool,
 ) -> Filled | None:
+    """One attempt at ``fill``: may give values that make no ``sensible`` conversion."""
     segments = parse(template)
     required = {a.name for a in tool.args if a.required}
     droppable = [i for i, s in enumerate(segments) if s.optional and s.args & required]
@@ -263,30 +307,13 @@ def _fill(
 
     args = {a.name: a for a in tool.args}
     out = Filled("")
-    words = []
+    words: list[str] = []
     for i, segment in enumerate(segments):
-        keep = (
-            not segment.optional
-            or (i != drop and bool(segment.args & required))
-            or (i != drop and rng.random() < KEEP_OPTIONAL_SHARE)
-        )
-        if not keep:
-            if i == drop:
-                for name in segment.args & required:
-                    out.args[name] = ASK_VALUE
-            continue
-        for part in segment.parts:
-            if isinstance(part, str):
-                words.append(part)
-            elif part.has_fixed and part.fixed == FANOUT:
-                out.fanout = part.arg
-            elif part.has_fixed:
-                out.args[part.arg] = part.fixed
-                out.implied.add(part.arg)
-            else:
-                value, text = sample_value(args[part.arg], part, values, rng)
-                out.args[part.arg] = value
-                words.append(text)
+        if _keep_segment(i, segment, drop, required, rng):
+            _fill_segment(segment, args, values, rng, out, words)
+        elif i == drop:
+            for name in segment.args & required:
+                out.args[name] = ASK_VALUE
     out.text = tidy("".join(words))
     return out
 

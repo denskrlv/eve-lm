@@ -11,18 +11,24 @@ from typing import TYPE_CHECKING, Any
 import torch
 
 from colibri import defaults
-from colibri.config import PRESETS, ModelConfig
+from colibri.config import PRESETS, STOP, ModelConfig
+from colibri.progress import style
 from colibri.runtime import pick_device
 from colibri.train.loop import DTYPES, TrainConfig
 
 if TYPE_CHECKING:
     from colibri.data.schema import Tool
+    from colibri.infer.predict import Answers
+    from colibri.tokenizer.bpe import BPETokenizer
 
 TRAIN_DEFAULTS = TrainConfig(steps=1)  # the CLI's defaults are TrainConfig's own
 DTYPE_CHOICES = list(DTYPES)
 FROZEN_LR, FULL_LR = 1e-3, 3e-4  # finetune's default lr with and without --freeze
 ALL_VAL_BATCHES = 10_000  # finetune evaluates on all of val: it is small
 FINETUNE_WARMUP = 200
+
+INTENTS_SHOWN, TOOLS_SHOWN = 4, 3  # answers colibri ask shows for the intent and per call
+Sample = str | list[str]  # a text, or a tool schema as its parts
 
 type Subcommands = argparse._SubParsersAction[argparse.ArgumentParser]
 
@@ -104,6 +110,22 @@ def tokenizer_train(args: argparse.Namespace) -> None:
     print(f"{tokenizer.vocab_size} tokens in {time.time() - start:.0f}s -> {args.out}")
 
 
+def _encode_sample(tokenizer: "BPETokenizer", sample: Sample) -> list[int]:
+    """A sample's token ids; a schema is a list of parts (see ``Tool.render_parts``)."""
+    parts = [sample] if isinstance(sample, str) else sample
+    return [i for part in parts for i in tokenizer.encode(part, specials=True)]
+
+
+def _print_tokens_per_word(tokenizer: "BPETokenizer", samples: dict[str, Sequence[Sample]]) -> None:
+    """A table of words and tokens per word for each kind of sample, then the vocab size."""
+    print(f"{'':<22}{'words':>9}{'tokens/word':>13}")
+    for name, texts in samples.items():
+        words = sum(len(" ".join(t if isinstance(t, list) else [t]).split()) for t in texts)
+        n_tokens = sum(len(_encode_sample(tokenizer, t)) for t in texts)
+        print(f"{name:<22}{words:>9,}{n_tokens / words:>13.2f}")
+    print(f"vocabulary: {tokenizer.vocab_size:,}")
+
+
 def tokenizer_stats(args: argparse.Namespace) -> None:
     """Learn (M1): tokens per word on unseen web text, on commands and on tool schemas."""
     from colibri.data.corpus import iter_documents, take_bytes
@@ -117,30 +139,17 @@ def tokenizer_stats(args: argparse.Namespace) -> None:
             iter_documents(_parquet_files(args.parquet)), _count(args.text), _count(args.skip)
         )
     )
-    tools = load_library(args.tools)
     commands = read_lines(args.commands)
-    schemas = [t.render_parts() for t in tools.values()]
-    samples: dict[str, Sequence[str | list[str]]] = {
+    schemas = [t.render_parts() for t in load_library(args.tools).values()]
+    samples: dict[str, Sequence[Sample]] = {
         "web text (held out)": docs,
         "commands": commands,
         "tool schemas": schemas,
     }
-
-    # A schema is a list of parts (see Tool.render_parts); other samples are plain strings.
-    def encode_sample(sample: str | list[str]) -> list[int]:
-        parts = [sample] if isinstance(sample, str) else sample
-        return [i for part in parts for i in tokenizer.encode(part, specials=True)]
-
-    print(f"{'':<22}{'words':>9}{'tokens/word':>13}")
-    for name, texts in samples.items():
-        words = sum(len(" ".join(t if isinstance(t, list) else [t]).split()) for t in texts)
-        n_tokens = sum(len(encode_sample(t)) for t in texts)
-        print(f"{name:<22}{words:>9,}{n_tokens / words:>13.2f}")
-    print(f"vocabulary: {tokenizer.vocab_size:,}")
-
-    examples: list[str | list[str]] = [commands[1], schemas[0]]
+    _print_tokens_per_word(tokenizer, samples)
+    examples: list[Sample] = [commands[1], schemas[0]]
     for text in examples:
-        print("\n" + " | ".join(tokenizer.pieces(encode_sample(text))))
+        print("\n" + " | ".join(tokenizer.pieces(_encode_sample(tokenizer, text))))
 
 
 def corpus(args: argparse.Namespace) -> None:
@@ -182,7 +191,6 @@ def _stop_note(args: argparse.Namespace) -> str:
 def pretrain(args: argparse.Namespace) -> None:
     """Run span-corruption pretraining with the command line's options."""
     from colibri.config import preset
-    from colibri.progress import style
     from colibri.train.pretrain import pretrain as run
     from colibri.train.pretrain import steps_for
 
@@ -213,12 +221,25 @@ def pretrain(args: argparse.Namespace) -> None:
     )
 
 
+def _finetune_banner(
+    args: argparse.Namespace, device: torch.device, lr: float, steps: int, n_train: int
+) -> str:
+    """The line ``finetune`` prints before it starts: where from, how, and for how long."""
+
+    start = args.init or f"{args.scratch} from scratch"
+    return (
+        f"{style('finetune', '1')} questions · from {start} · {device} · lr {lr:g} · "
+        + ("body frozen · " if args.freeze else "")
+        + f"{steps:,} steps × {args.batch_size} ({steps * args.batch_size / n_train:.1f} epochs)"
+        + _stop_note(args)
+    )
+
+
 def finetune(args: argparse.Namespace) -> None:
     """Fine-tune the question heads with the command line's options."""
     from colibri.config import preset
     from colibri.data.generate.build import Sources
     from colibri.data.jsonl import read_jsonl
-    from colibri.progress import style
     from colibri.train.finetune import finetune as run
 
     n_train = len(read_jsonl(Path(args.task) / "train.jsonl"))
@@ -226,13 +247,7 @@ def finetune(args: argparse.Namespace) -> None:
     lr = args.lr or (FROZEN_LR if args.freeze else FULL_LR)
     train_cfg = _train_config(args, steps, lr, eval_batches=ALL_VAL_BATCHES)
     device = pick_device(args.device)
-    start = args.init or f"{args.scratch} from scratch"
-    print(
-        f"{style('finetune', '1')} questions · from {start} · {device} · lr {lr:g} · "
-        + ("body frozen · " if args.freeze else "")
-        + f"{steps:,} steps × {args.batch_size} ({steps * args.batch_size / n_train:.1f} epochs)"
-        + _stop_note(args)
-    )
+    print(_finetune_banner(args, device, lr, steps, n_train))
     run(
         train_cfg,
         args.task,
@@ -249,10 +264,19 @@ def finetune(args: argparse.Namespace) -> None:
     )
 
 
-def compare(args: argparse.Namespace) -> None:
-    """Learn (M4): val metrics of several runs side by side, one row per eval step."""
-    runs: dict[str, tuple[dict[str, Any], dict[int, dict[str, Any]]]] = {}
-    for run in args.runs:
+Runs = dict[str, tuple[dict[str, Any], dict[int, dict[str, Any]]]]  # name -> (start, evals)
+SETTINGS: list[tuple[str, Callable[[dict[str, Any]], Any]]] = [  # rows of compare's header
+    ("lr", lambda s: s.get("train_config", {}).get("lr")),
+    ("dropout", lambda s: s.get("model_config", {}).get("dropout")),
+    ("rope", lambda s: s.get("model_config", {}).get("rope", False)),
+    ("qk_norm", lambda s: s.get("model_config", {}).get("qk_norm", False)),
+]
+
+
+def _read_runs(run_dirs: list[str]) -> Runs:
+    """Each run's start record and its val records by step, from its ``metrics.jsonl``."""
+    runs: Runs = {}
+    for run in run_dirs:
         path = Path(run) / "metrics.jsonl"
         if not path.exists():
             raise SystemExit(f"no metrics in {run}")
@@ -260,32 +284,61 @@ def compare(args: argparse.Namespace) -> None:
         start: dict[str, Any] = next((r for r in records if r["kind"] == "start"), {})
         vals = {r["step"]: r for r in records if r["kind"] == "val"}
         runs[Path(run).name] = (start, vals)
+    return runs
 
-    width = max(12, *(len(name) for name in runs)) + 2
-    print(f"{'':<14}" + "".join(f"{name:>{width}}" for name in runs))
-    settings: list[tuple[str, Callable[[dict[str, Any]], Any]]] = [
-        ("lr", lambda s: s.get("train_config", {}).get("lr")),
-        ("dropout", lambda s: s.get("model_config", {}).get("dropout")),
-        ("rope", lambda s: s.get("model_config", {}).get("rope", False)),
-        ("qk_norm", lambda s: s.get("model_config", {}).get("qk_norm", False)),
-    ]
-    for label, get in settings:
+
+def _print_settings(runs: Runs, width: int) -> None:
+    """One row per setting in ``SETTINGS``, one column per run."""
+    for label, get in SETTINGS:
         print(f"{label:<14}" + "".join(f"{get(s)!s:>{width}}" for s, _ in runs.values()))
+
+
+def _cell(value: float | None, metric: str) -> str:
+    """A metric value as compare shows it: a percentage for accuracies, blank if missing."""
+    if value is None:
+        return ""
+    return f"{value:.1%}" if metric.endswith("acc") else f"{value:.4f}"
+
+
+def _print_metric_tables(runs: Runs, metrics: list[str], width: int) -> None:
+    """For each metric, one row per eval step that any run logged, one column per run."""
     steps = sorted({step for _, vals in runs.values() for step in vals})
-    for metric in args.metric:
+    for metric in metrics:
         print(f"\n{metric}")
         for step in steps:
-            cells = []
-            for _, vals in runs.values():
-                value = vals.get(step, {}).get(metric)
-                cells.append(
-                    ""
-                    if value is None
-                    else f"{value:.1%}"
-                    if metric.endswith("acc")
-                    else f"{value:.4f}"
-                )
+            cells = [_cell(vals.get(step, {}).get(metric), metric) for _, vals in runs.values()]
             print(f"  step {step:<8,}" + "".join(f"{c:>{width}}" for c in cells))
+
+
+def compare(args: argparse.Namespace) -> None:
+    """Learn (M4): val metrics of several runs side by side, one row per eval step."""
+    runs = _read_runs(args.runs)
+    width = max(12, *(len(name) for name in runs)) + 2
+    print(f"{'':<14}" + "".join(f"{name:>{width}}" for name in runs))
+    _print_settings(runs, width)
+    _print_metric_tables(runs, args.metric, width)
+
+
+def _print_row(label: str, value: str) -> None:
+    """``  label      value``, the label dimmed in a terminal."""
+    print(f"  {style(f'{label:<11}', '2', stream=sys.stdout)}{value}")
+
+
+def _print_fill_report(
+    model_path: str, meta: dict[str, Any], device: torch.device, filled: list[str]
+) -> None:
+    """Which checkpoint filled the holes and how far it was trained, then each filled text."""
+    trained = f"{meta['step']:,} steps" if "step" in meta else "?"
+    if "val_lm" in meta:
+        trained += f" · val loss {meta['val_lm']:.3f}"
+    print()
+    _print_row("checkpoint", model_path)
+    _print_row("trained", trained)
+    _print_row("device", str(device))
+    print()
+    for i, line in enumerate(filled, 1):
+        print(f"  {style(f'{i:>2}', '2', stream=sys.stdout)}  {line}")
+    print()
 
 
 def fill(args: argparse.Namespace) -> None:
@@ -307,21 +360,7 @@ def fill(args: argparse.Namespace) -> None:
             filled.append(fill_in(ckpt.model, ckpt.tokenizer, text, args.max_new, progress.marks()))
             bar.update()
 
-    def row(label: str, value: str) -> None:
-        print(f"  {progress.style(f'{label:<11}', '2', stream=sys.stdout)}{value}")
-
-    meta = ckpt.meta
-    trained = f"{meta['step']:,} steps" if "step" in meta else "?"
-    if "val_lm" in meta:
-        trained += f" · val loss {meta['val_lm']:.3f}"
-    print()
-    row("checkpoint", str(args.model))
-    row("trained", trained)
-    row("device", str(device))
-    print()
-    for i, line in enumerate(filled, 1):
-        print(f"  {progress.style(f'{i:>2}', '2', stream=sys.stdout)}  {line}")
-    print()
+    _print_fill_report(str(args.model), ckpt.meta, device, filled)
 
 
 def _tools(args: argparse.Namespace) -> list["Tool"]:
@@ -347,43 +386,34 @@ def _tools(args: argparse.Namespace) -> list["Tool"]:
     return tools
 
 
-def ask(args: argparse.Namespace) -> None:
-    """Learn (M7): what the question heads answer for a typed request, with probabilities."""
-    from colibri.config import STOP
-    from colibri.infer.predict import answer_questions
-    from colibri.model.checkpoint import load_checkpoint
-    from colibri.progress import style
+def _ranked(probs: dict[str, float], count: int) -> str:
+    """The ``count`` most likely answers with their probabilities, the first in bold."""
+    top = sorted(probs.items(), key=lambda kv: -kv[1])[:count]
+    return " · ".join(
+        (style(f"{k} {p:.0%}", "1", stream=sys.stdout) if i == 0 else f"{k} {p:.0%}")
+        for i, (k, p) in enumerate(top)
+    )
 
-    tools = _tools(args)
-    ckpt = load_checkpoint(args.model, pick_device(args.device))
 
-    def show(text: str) -> None:
-        answers = answer_questions(ckpt.model, ckpt.tokenizer, text, tools)
-        if args.json:
-            print(json.dumps({"utterance": text, **answers.to_json()}))
-            return
-
-        def ranked(probs: dict[str, float], count: int) -> str:
-            top = sorted(probs.items(), key=lambda kv: -kv[1])[:count]
-            return " · ".join(
-                (style(f"{k} {p:.0%}", "1", stream=sys.stdout) if i == 0 else f"{k} {p:.0%}")
-                for i, (k, p) in enumerate(top)
-            )
-
-        print(f"  {style(f'{"intent":<8}', '2', stream=sys.stdout)} {ranked(answers.intent, 4)}")
-        for i, slot in enumerate(answers.slots, 1):
-            print(f"  {style(f'{f"call {i}":<8}', '2', stream=sys.stdout)} {ranked(slot, 3)}")
-            if max(slot, key=slot.__getitem__) == STOP:
-                break
-
-    if args.text:
-        for text in args.text:
-            if not args.json:
-                print(text)
-            show(text)
+def _print_answers(text: str, answers: "Answers", as_json: bool) -> None:
+    """The heads' answers for one request: one JSON line, or the intent and each call slot up
+    to the first one that says STOP."""
+    if as_json:
+        print(json.dumps({"utterance": text, **answers.to_json()}))
         return
-    names = ", ".join(t.name for t in tools)
-    print(f"{args.model} · tools: {names}\ntype a request (empty line or Ctrl-D to quit)")
+    intent_label = f"{'intent':<8}"
+    print(
+        f"  {style(intent_label, '2', stream=sys.stdout)} {_ranked(answers.intent, INTENTS_SHOWN)}"
+    )
+    for i, slot in enumerate(answers.slots, 1):
+        slot_label = f"{f'call {i}':<8}"
+        print(f"  {style(slot_label, '2', stream=sys.stdout)} {_ranked(slot, TOOLS_SHOWN)}")
+        if max(slot, key=slot.__getitem__) == STOP:
+            break
+
+
+def _ask_interactively(show: Callable[[str], None]) -> None:
+    """Read requests from the terminal and show the answers, until an empty line or Ctrl-D."""
     while True:
         try:
             text = input("> ").strip()
@@ -393,6 +423,29 @@ def ask(args: argparse.Namespace) -> None:
         if not text:
             break
         show(text)
+
+
+def ask(args: argparse.Namespace) -> None:
+    """Learn (M7): what the question heads answer for a typed request, with probabilities."""
+    from colibri.infer.predict import answer_questions
+    from colibri.model.checkpoint import load_checkpoint
+
+    tools = _tools(args)
+    ckpt = load_checkpoint(args.model, pick_device(args.device))
+
+    def show(text: str) -> None:
+        answers = answer_questions(ckpt.model, ckpt.tokenizer, text, tools)
+        _print_answers(text, answers, args.json)
+
+    if args.text:
+        for text in args.text:
+            if not args.json:
+                print(text)
+            show(text)
+        return
+    names = ", ".join(t.name for t in tools)
+    print(f"{args.model} · tools: {names}\ntype a request (empty line or Ctrl-D to quit)")
+    _ask_interactively(show)
 
 
 def data_build(args: argparse.Namespace) -> None:

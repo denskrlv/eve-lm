@@ -10,7 +10,7 @@ import numpy as np
 from colibri import defaults
 from colibri.config import ModelConfig
 from colibri.data.generate.library import ToolSpec, load_specs
-from colibri.data.generate.sampler import INTENT_MIX, ToolBank, sample
+from colibri.data.generate.sampler import INTENT_MIX, Sample, ToolBank, sample
 from colibri.data.generate.toolgen import generated_specs
 from colibri.data.generate.validate import check_example, normalize
 from colibri.data.jsonl import read_jsonl, read_lines, write_jsonl
@@ -71,7 +71,7 @@ def template_examples(
     sources: Sources,
     pool: Sequence[int] | None = None,
 ) -> list[dict[str, Any]]:
-    """``n`` template examples with valid labels; exact repeats are skipped."""
+    """``count`` template examples with valid labels; exact repeats are skipped."""
     rows: list[dict[str, Any]] = []
     seen: set[tuple[str, tuple[str, ...], str]] = set()
     for _ in range(count * TEMPLATE_TRIES):
@@ -92,6 +92,28 @@ def template_examples(
 # ---- chat-written examples ------------------------------------------------------------------
 
 
+def _intent_mix(ask: float | None) -> dict[str, float]:
+    """``INTENT_MIX``, or with ASK at ``ask`` and the other intents scaled to share the rest."""
+    mix = dict(INTENT_MIX)
+    if ask is not None:
+        rest = 1 - mix.pop("ask")
+        mix = {k: v / rest * (1 - ask) for k, v in mix.items()} | {"ask": ask}
+    return mix
+
+
+def _scenario(drawn: Sample, scenario_id: str) -> dict[str, Any]:
+    """A drawn example as a scenario for chat writers: everything but the utterance."""
+    row = drawn.example.to_json(inline=True)  # whole schemas: valid even if tools change
+    del row["utterance"]
+    return {
+        "id": scenario_id,
+        **row,
+        "meaning": drawn.meaning,
+        "missing": drawn.missing,
+        "implied": sorted(drawn.implied),
+    }
+
+
 def make_batch(
     sources: Sources, name: str, count: int, split: str, seed: int, ask: float | None = None
 ) -> dict[str, Any]:
@@ -105,11 +127,8 @@ def make_batch(
     rng = np.random.default_rng(seed)
     specs = sources.train + (sources.heldout if split == "probe" else [])
     bank = ToolBank(specs)
-    heldout = [bank.index[drawn.name] for drawn in sources.heldout] if split == "probe" else None
-    mix = dict(INTENT_MIX)
-    if ask is not None:
-        rest = 1 - mix.pop("ask")
-        mix = {k: v / rest * (1 - ask) for k, v in mix.items()} | {"ask": ask}
+    heldout = [bank.index[spec.name] for spec in sources.heldout] if split == "probe" else None
+    mix = _intent_mix(ask)
     scenarios = []
     for i in range(count):
         pool = heldout if heldout and rng.random() < PROBE_HELDOUT_SHARE else None
@@ -117,20 +136,8 @@ def make_batch(
         drawn = sample(
             bank, rng, intent, pool, chitchat=sources.chitchat, unsupported=sources.unsupported
         )
-        row = drawn.example.to_json(
-            inline=True
-        )  # whole schemas: the batch stays valid if tools change
-        del row["utterance"]
-        scenarios.append(
-            {
-                "id": f"{name}-{i:03d}",
-                **row,
-                "meaning": drawn.meaning,
-                "missing": drawn.missing,
-                "implied": sorted(drawn.implied),
-            }
-        )
-    used = {t["name"]: Tool.from_dict(t) for drawn in scenarios for t in drawn["tools"]}
+        scenarios.append(_scenario(drawn, f"{name}-{i:03d}"))
+    used = {t["name"]: Tool.from_dict(t) for scenario in scenarios for t in scenario["tools"]}
     schemas = {name: used[name].render() for name in sorted(used)}
     return {"batch": name, "split": split, "seed": seed, "schemas": schemas, "scenarios": scenarios}
 
