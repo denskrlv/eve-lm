@@ -8,6 +8,8 @@ from colibri.model.attention import MultiHeadAttention
 from colibri.model.blocks import DecoderBlock, EncoderBlock, LayerNorm
 from colibri.model.embeddings import Embeddings
 
+INIT_STD = 0.02  # GPT-2's initialization: small normal weights
+
 
 @dataclass
 class Questions:
@@ -42,7 +44,7 @@ class QuestionBlock(nn.Module):
 
     def __init__(self, cfg: ModelConfig):
         super().__init__()
-        self.queries = nn.Parameter(torch.randn(1 + cfg.n_slots, cfg.d_model) * 0.02)
+        self.queries = nn.Parameter(torch.randn(1 + cfg.n_slots, cfg.d_model) * INIT_STD)
         self.layers = nn.ModuleList(
             DecoderBlock(cfg, causal=False) for _ in range(cfg.n_question_layers)
         )
@@ -50,7 +52,7 @@ class QuestionBlock(nn.Module):
         self.intent_head = nn.Linear(cfg.d_model, cfg.n_intents)
         self.W_q = nn.Linear(cfg.d_model, cfg.pointer_dim, bias=False)
         self.W_k = nn.Linear(cfg.d_model, cfg.pointer_dim, bias=False)
-        self.stop_key = nn.Parameter(torch.randn(cfg.pointer_dim) * 0.02)
+        self.stop_key = nn.Parameter(torch.randn(cfg.pointer_dim) * INIT_STD)
 
     def forward(
         self,
@@ -109,7 +111,7 @@ class Colibri(nn.Module):
         """GPT-2's initialization: small normal weights (std 0.02), zero biases. PyTorch's
         default N(0, 1) embeddings would give the tied LM head logits with std ≈ √d ≈ 16."""
         if isinstance(module, nn.Linear | nn.Embedding):
-            nn.init.normal_(module.weight, std=0.02)
+            nn.init.normal_(module.weight, std=INIT_STD)
         if isinstance(module, nn.Linear) and module.bias is not None:
             nn.init.zeros_(module.bias)
 

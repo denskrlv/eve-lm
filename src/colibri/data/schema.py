@@ -5,6 +5,7 @@ from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any
 
+from colibri import defaults
 from colibri.tokenizer.bpe import SPECIAL_TOKENS
 
 ARG_TYPES = ("str", "int", "float", "bool", "enum")
@@ -227,7 +228,7 @@ def load_tools(path: str | Path) -> list[Tool]:
     ]
 
 
-def load_library(directory: str | Path = "data/tools") -> dict[str, Tool]:
+def load_library(directory: str | Path = defaults.TOOLS_DIR) -> dict[str, Tool]:
     """All tools in ``directory/*.json`` by name. Tool names are unique across files."""
     library: dict[str, Tool] = {}
     for path in sorted(Path(directory).glob("*.json")):

@@ -4,9 +4,10 @@ from typing import Any
 import torch
 import torch.nn.functional as F
 
+from colibri import defaults
 from colibri.config import ModelConfig
 from colibri.data.corpus import load_tokens
-from colibri.data.pretrain import SpanCorruptionDataset, raw_length
+from colibri.data.pretrain import INPUT_LEN, SpanCorruptionDataset, raw_length
 from colibri.data.render import IGNORE, collate_pretrain
 from colibri.model.colibri import Colibri
 from colibri.runtime import eval_mode, seed_everything
@@ -77,7 +78,7 @@ def fill_in(
     model: Colibri,
     tokenizer: BPETokenizer,
     text: str,
-    max_new: int = 24,
+    max_new: int = defaults.MAX_NEW_TOKENS,
     marks: tuple[str, str] = ("[", "]"),
 ) -> str:
     """Fill the ``<x0>``, ``<x1>``… holes of ``text`` by greedy decoding (book ch. 5.1.1's
@@ -167,6 +168,6 @@ def pretrain(
     )
 
 
-def steps_for(tokens: int, batch_size: int, input_len: int = 512) -> int:
+def steps_for(tokens: int, batch_size: int, input_len: int = INPUT_LEN) -> int:
     """Optimizer steps to read ``tokens`` corpus tokens once."""
     return tokens // (batch_size * raw_length(input_len))

@@ -74,6 +74,8 @@ FIND_TEMPLATES = (
     "find <e>s about {<q>}",
     "do I have any <e>s about {<q>}",
 )
+GENERATED_WEIGHT = 0.08  # sampling weight per generated tool (hand-written tools have 1.0)
+OPERATION_WEIGHT_FACTOR = 3  # operations are few, so each counts this many times more
 MIN_ROOMS, MAX_ROOMS = 3, 5  # rooms a device with a room argument can be in
 REQUIRED_ROOM_SHARE = 0.4  # devices whose room argument is required
 REQUIRED_EXTRA_SHARE = 0.5  # create tools whose extra field is required
@@ -326,7 +328,7 @@ def _operation_specs(op: Operation, rng: np.random.Generator, weight: float) -> 
     return _variants(rng, list(op.names), make)
 
 
-def generated_specs(seed: int = 0, weight: float = 0.08) -> list[ToolSpec]:
+def generated_specs(seed: int = 0, weight: float = GENERATED_WEIGHT) -> list[ToolSpec]:
     """All generated tools. The same seed always gives the same tools.
 
     ``weight`` is per tool: ~1,000 of them at 0.08 against 47 hand-written tools at 1.0 make
@@ -341,5 +343,5 @@ def generated_specs(seed: int = 0, weight: float = 0.08) -> list[ToolSpec]:
     for lookup in LOOKUPS + MORE_LOOKUPS:
         specs += _lookup_specs(lookup, rng, weight)
     for op in OPERATIONS:  # few tools, so each counts more
-        specs += _operation_specs(op, rng, 3 * weight)
+        specs += _operation_specs(op, rng, OPERATION_WEIGHT_FACTOR * weight)
     return specs

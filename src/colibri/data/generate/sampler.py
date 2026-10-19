@@ -4,10 +4,9 @@ from dataclasses import dataclass, field
 
 import numpy as np
 
-from colibri.config import ModelConfig
 from colibri.data.draw import pick, shuffled
 from colibri.data.generate.library import ToolSpec
-from colibri.data.generate.templates import MAX_CALLS, Filled, fill
+from colibri.data.generate.templates import MAX_CALLS, MAX_PROMPT_TOOLS, Filled, fill
 from colibri.data.render import Call, TaskExample
 
 INTENT_MIX = {"call": 0.55, "ask": 0.15, "unsupported": 0.15, "none": 0.15}
@@ -15,7 +14,6 @@ CONNECTORS = (" and ", ", then ", " and then ", ". Also ", ", and also ")
 PREFIXES = ("please ", "can you ", "could you ", "hey, ", "ok, ", "I want to ")
 SUFFIXES = (" please", "?", ".", " thanks", " now", "!")
 PREFIX_SHARE, SUFFIX_SHARE, CAPITALIZE_SHARE = 0.25, 0.3, 0.3  # how often _decorate adds each
-MAX_PROMPT_TOOLS = ModelConfig().max_tools  # a prompt offers 1 to this many tools
 SAME_DOMAIN_BONUS = 0.3  # added to the similarity of two tools from one domain
 SIMILARITY_FLOOR = 0.002  # every allowed distractor keeps a small chance
 CALL_COUNTS, CALL_COUNT_WEIGHTS = (1, 2, 3), (0.75, 0.2, 0.05)  # calls in a CALL example

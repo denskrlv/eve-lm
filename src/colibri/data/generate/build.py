@@ -7,6 +7,7 @@ from typing import Any
 
 import numpy as np
 
+from colibri import defaults
 from colibri.config import ModelConfig
 from colibri.data.generate.library import ToolSpec, load_specs
 from colibri.data.generate.sampler import INTENT_MIX, ToolBank, sample
@@ -35,8 +36,8 @@ class Sources:
     @classmethod
     def load(
         cls,
-        tools_dir: str | Path = "data/tools",
-        generation_dir: str | Path = "data/generation",
+        tools_dir: str | Path = defaults.TOOLS_DIR,
+        generation_dir: str | Path = defaults.GENERATION_DIR,
         seed: int = 0,
     ) -> "Sources":
         """The hand-written and generated tools, held-out tools, and line lists for NONE and
@@ -168,7 +169,7 @@ def check_written(
 
 
 def chat_examples(
-    sources: Sources, generation_dir: str | Path = "data/generation"
+    sources: Sources, generation_dir: str | Path = defaults.GENERATION_DIR
 ) -> tuple[dict[str, list[dict[str, Any]]], list[tuple[str, dict[str, Any], list[str]]]]:
     """All written batches, by split, and everything that failed validation."""
     generation_dir = Path(generation_dir)
@@ -279,15 +280,15 @@ def _drop_too_long(
 
 
 def build(
-    out_dir: str | Path = "data/task",
-    n_templates: int = 80_000,
-    n_heldout: int = 2_000,
+    out_dir: str | Path = defaults.TASK_DIR,
+    n_templates: int = defaults.TEMPLATE_EXAMPLES,
+    n_heldout: int = defaults.HELDOUT_EXAMPLES,
     seed: int = 0,
     tokenizer: BPETokenizer | None = None,
     cfg: ModelConfig | None = None,
-    tools_dir: str | Path = "data/tools",
-    generation_dir: str | Path = "data/generation",
-    external_dir: str | Path = "data/external",
+    tools_dir: str | Path = defaults.TOOLS_DIR,
+    generation_dir: str | Path = defaults.GENERATION_DIR,
+    external_dir: str | Path = defaults.EXTERNAL_DIR,
 ) -> dict[str, Any]:
     """Write the task splits as .jsonl files and return a report.
 

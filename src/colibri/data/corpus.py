@@ -11,6 +11,7 @@ import numpy as np
 import pyarrow.parquet as pq
 from tqdm import tqdm
 
+from colibri import defaults
 from colibri.data.schema import load_library
 from colibri.tokenizer.bpe import EOS, BPETokenizer
 
@@ -18,7 +19,9 @@ from colibri.tokenizer.bpe import EOS, BPETokenizer
 def iter_documents(paths: Iterable[str | Path]) -> Iterator[str]:
     """The ``text`` column of each parquet file, one document at a time."""
     for path in paths:
-        for batch in pq.ParquetFile(path).iter_batches(batch_size=1024, columns=["text"]):
+        for batch in pq.ParquetFile(path).iter_batches(
+            batch_size=PARQUET_BATCH_ROWS, columns=["text"]
+        ):
             yield from batch.column(0).to_pylist()
 
 
@@ -36,9 +39,9 @@ def take_bytes(docs: Iterable[str], n_bytes: int, skip_bytes: int = 0) -> Iterat
 
 def tokenizer_texts(
     corpus: Iterable[str],
-    tools_dir: str | Path = "data/tools",
-    commands_file: str | Path | None = "data/tokenizer/commands.txt",
-    weight: int = 50,
+    tools_dir: str | Path = defaults.TOOLS_DIR,
+    commands_file: str | Path | None = defaults.COMMANDS_FILE,
+    weight: int = defaults.TOKENIZER_WEIGHT,
 ) -> Iterator[tuple[str, int]]:
     """Tokenizer training text: the corpus, plus every tool schema and sample command.
 
@@ -61,6 +64,7 @@ def tokenizer_texts(
 CHUNKS_PER_WORKER = 4
 _tokenizer: BPETokenizer | None = None
 logger = logging.getLogger(__name__)
+PARQUET_BATCH_ROWS = 1024  # rows read from a parquet file at a time
 
 
 def _init_worker(tokenizer_path: str) -> None:

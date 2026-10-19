@@ -6,10 +6,11 @@ from typing import Any
 
 import numpy as np
 
+from colibri import defaults
 from colibri.data.draw import pick, shuffled
 from colibri.data.generate.library import ToolSpec
-from colibri.data.generate.sampler import MAX_PROMPT_TOOLS, ToolBank, prompt_size
-from colibri.data.generate.templates import MAX_CALLS
+from colibri.data.generate.sampler import ToolBank, prompt_size
+from colibri.data.generate.templates import MAX_CALLS, MAX_PROMPT_TOOLS
 from colibri.data.generate.validate import check_example, mentions, value_forms
 from colibri.data.jsonl import read_jsonl, write_jsonl
 from colibri.data.render import Call, TaskExample
@@ -25,6 +26,8 @@ HELD_OUT = re.compile(
     r"integral|derivatives?|matrix|matrices)\b",
     re.IGNORECASE,
 )
+TOOL_DESCRIPTION_CHARS, ARG_DESCRIPTION_CHARS = 120, 60  # longer xLAM descriptions are cut
+MIN_SHARED_WORD_LEN = 4  # name words this long count as shared with a correct tool
 UNSUPPORTED_SHARE = 0.1  # extra UNSUPPORTED copies, made by removing the correct tools
 VARIANT_TRIES = 30  # random tools tried for an UNSUPPORTED variant
 MIN_SLOT_COUNT, MIN_SLOT_SHARE = 5, 0.03  # how often a MASSIVE slot must appear to be an arg
@@ -74,7 +77,7 @@ def xlam_tool(raw: dict[str, Any]) -> tuple[Tool, dict[str, str], dict[str, Any]
     isn't a simple type (lists, dicts, tuples...)."""
     args: list[Arg] = []
     names: dict[str, str] = {}
-    defaults: dict[str, Any] = {}
+    default_values: dict[str, Any] = {}
     for pname, param in (raw.get("parameters") or {}).items():
         parts = [x.strip() for x in str(param.get("type", "")).split(",")]
         if parts[0] not in _XLAM_TYPES:
@@ -85,14 +88,16 @@ def xlam_tool(raw: dict[str, Any]) -> tuple[Tool, dict[str, str], dict[str, Any]
         if not name or name in names.values():
             return None
         names[pname] = name
-        defaults[name] = param.get("default")
-        desc = short(param.get("description", ""), 60)
+        default_values[name] = param.get("default")
+        desc = short(param.get("description", ""), ARG_DESCRIPTION_CHARS)
         args.append(Arg(name, _XLAM_TYPES[parts[0]], required=not optional, description=desc))
     if len(args) > MAX_ARGS:
         return None
     try:
-        description = short(raw.get("description", ""), 120) or raw["name"].replace("_", " ")
-        return Tool(snake(raw["name"]), description, tuple(args), "xlam"), names, defaults
+        description = short(raw.get("description", ""), TOOL_DESCRIPTION_CHARS) or raw[
+            "name"
+        ].replace("_", " ")
+        return Tool(snake(raw["name"]), description, tuple(args), "xlam"), names, default_values
     except SchemaError:
         return None
 
@@ -136,7 +141,7 @@ def _xlam_call(
     answer: dict[str, Any], converted: dict[str, XlamTool], query: str
 ) -> tuple[Call | None, str]:
     """One xLAM answer as a call, or None and why the example is dropped."""
-    tool, names, defaults = converted[answer["name"]]
+    tool, names, default_values = converted[answer["name"]]
     args = {}
     for key, raw in (answer.get("arguments") or {}).items():
         if key not in names:
@@ -145,7 +150,7 @@ def _xlam_call(
         value = _coerce(arg, raw)
         if value is None or arg.check(value) is not None:
             return None, "value of the wrong type"
-        if not arg.required and _absent(arg, value, defaults[arg.name], query):
+        if not arg.required and _absent(arg, value, default_values[arg.name], query):
             continue
         args[arg.name] = value
     return Call(tool.name, args), "ok"
@@ -190,7 +195,7 @@ def unsupported_variant(
 ) -> TaskExample | None:
     """The same request with random tools from other examples that share no name word with
     the correct ones, labelled UNSUPPORTED."""
-    words = {w for c in example.calls for w in c.tool.split("_") if len(w) > 3}
+    words = {w for c in example.calls for w in c.tool.split("_") if len(w) >= MIN_SHARED_WORD_LEN}
     tools: dict[str, Tool] = {}
     want = prompt_size(rng)
     for _ in range(VARIANT_TRIES):
@@ -375,7 +380,9 @@ def convert_massive(
 
 
 def convert_external(
-    raw_dir: str | Path = "data/raw", out_dir: str | Path = "data/external", seed: int = 0
+    raw_dir: str | Path = defaults.RAW_DIR,
+    out_dir: str | Path = defaults.EXTERNAL_DIR,
+    seed: int = 0,
 ) -> dict[str, Any]:
     """Convert xLAM and MASSIVE (when downloaded) into ``out_dir/*.jsonl``; return a report."""
     raw_dir, out_dir = Path(raw_dir), Path(out_dir)

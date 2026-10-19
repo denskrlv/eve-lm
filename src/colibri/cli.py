@@ -10,18 +10,19 @@ from typing import TYPE_CHECKING, Any
 
 import torch
 
-from colibri.config import PRESETS
+from colibri import defaults
+from colibri.config import PRESETS, ModelConfig
 from colibri.runtime import pick_device
+from colibri.train.loop import DTYPES, TrainConfig
 
 if TYPE_CHECKING:
     from colibri.data.schema import Tool
-    from colibri.train.loop import TrainConfig
 
-DEFAULT_PARQUET = "data/raw/fineweb-edu/*.parquet"
-DEFAULT_TOKENIZER = "artifacts/tokenizer/colibri-8k.json"
-DTYPE_CHOICES = ["float32", "bfloat16"]  # train.loop.DTYPES; listed here to keep startup fast
+TRAIN_DEFAULTS = TrainConfig(steps=1)  # the CLI's defaults are TrainConfig's own
+DTYPE_CHOICES = list(DTYPES)
 FROZEN_LR, FULL_LR = 1e-3, 3e-4  # finetune's default lr with and without --freeze
 ALL_VAL_BATCHES = 10_000  # finetune evaluates on all of val: it is small
+FINETUNE_WARMUP = 200
 
 type Subcommands = argparse._SubParsersAction[argparse.ArgumentParser]
 
@@ -157,10 +158,8 @@ def corpus(args: argparse.Namespace) -> None:
     print(f"train {meta['train_tokens']:,} and val {meta['val_tokens']:,} tokens -> {args.out}")
 
 
-def _train_config(args: argparse.Namespace, steps: int, lr: float, **extra: Any) -> "TrainConfig":
+def _train_config(args: argparse.Namespace, steps: int, lr: float, **extra: Any) -> TrainConfig:
     """The ``TrainConfig`` from the options ``pretrain`` and ``finetune`` share."""
-    from colibri.train.loop import TrainConfig
-
     return TrainConfig(
         steps=steps,
         batch_size=args.batch_size,
@@ -465,17 +464,19 @@ def _add_schedule_args(
     parser: argparse.ArgumentParser, lr: float | None, lr_help: str | None, warmup: int
 ) -> None:
     """Batch size, learning rate, warmup and precision: the options both training runs take."""
-    parser.add_argument("--batch-size", type=int, default=32)
+    parser.add_argument("--batch-size", type=int, default=TRAIN_DEFAULTS.batch_size)
     parser.add_argument("--lr", type=float, default=lr, help=lr_help)
     parser.add_argument("--warmup", type=int, default=warmup)
-    parser.add_argument("--dtype", choices=DTYPE_CHOICES, default="float32")
+    parser.add_argument("--dtype", choices=DTYPE_CHOICES, default=TRAIN_DEFAULTS.dtype)
 
 
 def _add_run_args(parser: argparse.ArgumentParser) -> None:
     """Seed, eval/log cadence, device, resuming and stopping: shared by both training runs."""
-    parser.add_argument("--seed", type=int, default=0)
-    parser.add_argument("--eval-every", type=int, default=500, help="also how often to save")
-    parser.add_argument("--log-every", type=int, default=20)
+    parser.add_argument("--seed", type=int, default=TRAIN_DEFAULTS.seed)
+    parser.add_argument(
+        "--eval-every", type=int, default=TRAIN_DEFAULTS.eval_every, help="also how often to save"
+    )
+    parser.add_argument("--log-every", type=int, default=TRAIN_DEFAULTS.log_every)
     parser.add_argument("--device", default=None)
     parser.add_argument("--resume", action="store_true", help="continue from <out>/last.pt")
     parser.add_argument("--stop-after", type=int, default=None, help="stop early at this step")
@@ -497,18 +498,21 @@ def _add_tokenizer_commands(commands: Subcommands) -> None:
     ]:
         parser = tok_commands.add_parser(name, help=help_)
         parser.set_defaults(run=run)
-        parser.add_argument("--parquet", default=DEFAULT_PARQUET)
-        parser.add_argument("--tools", default="data/tools")
-        parser.add_argument("--commands", default="data/tokenizer/commands.txt")
+        parser.add_argument("--parquet", default=defaults.PARQUET_GLOB)
+        parser.add_argument("--tools", default=defaults.TOOLS_DIR)
+        parser.add_argument("--commands", default=defaults.COMMANDS_FILE)
         if name == "train":
             parser.add_argument("--text", default="50M", help="bytes of web text to train on")
-            parser.add_argument("--vocab-size", type=int, default=8192)
+            parser.add_argument("--vocab-size", type=int, default=ModelConfig.vocab_size)
             parser.add_argument(
-                "--weight", type=int, default=50, help="weight of schemas and commands"
+                "--weight",
+                type=int,
+                default=defaults.TOKENIZER_WEIGHT,
+                help="weight of schemas and commands",
             )
-            parser.add_argument("--out", default=DEFAULT_TOKENIZER)
+            parser.add_argument("--out", default=defaults.TOKENIZER_FILE)
         else:
-            parser.add_argument("--tokenizer", default=DEFAULT_TOKENIZER)
+            parser.add_argument("--tokenizer", default=defaults.TOKENIZER_FILE)
             parser.add_argument("--text", default="5M", help="bytes of web text to measure on")
             parser.add_argument("--skip", default="100M", help="bytes to skip (the training text)")
 
@@ -516,9 +520,9 @@ def _add_tokenizer_commands(commands: Subcommands) -> None:
 def _add_corpus_command(commands: Subcommands) -> None:
     parser = commands.add_parser("corpus", help="encode the pretraining corpus to token ids (M1)")
     parser.set_defaults(run=corpus)
-    parser.add_argument("--parquet", default=DEFAULT_PARQUET)
-    parser.add_argument("--tokenizer", default=DEFAULT_TOKENIZER)
-    parser.add_argument("--out", default="data/bin")
+    parser.add_argument("--parquet", default=defaults.PARQUET_GLOB)
+    parser.add_argument("--tokenizer", default=defaults.TOKENIZER_FILE)
+    parser.add_argument("--out", default=defaults.BIN_DIR)
     parser.add_argument("--train-tokens", default="250M")
     parser.add_argument("--val-tokens", default="2M")
     parser.add_argument("--workers", type=int, default=None)
@@ -528,12 +532,14 @@ def _add_pretrain_command(commands: Subcommands) -> None:
     parser = commands.add_parser("pretrain", help="span-corruption pretraining (M4)")
     parser.set_defaults(run=pretrain)
     parser.add_argument("--preset", choices=sorted(PRESETS), default="small")
-    parser.add_argument("--data", default="data/bin")
-    parser.add_argument("--tokenizer", default=DEFAULT_TOKENIZER)
-    parser.add_argument("--out", default="artifacts/runs/pretrain-small")
+    parser.add_argument("--data", default=defaults.BIN_DIR)
+    parser.add_argument("--tokenizer", default=defaults.TOKENIZER_FILE)
+    parser.add_argument("--out", default=defaults.PRETRAIN_RUN)
     parser.add_argument("--tokens", default="250M", help="corpus tokens to read (sets --steps)")
     parser.add_argument("--steps", type=int, default=None, help="default: from --tokens")
-    _add_schedule_args(parser, lr=1e-3, lr_help=None, warmup=500)
+    _add_schedule_args(
+        parser, lr=TRAIN_DEFAULTS.lr, lr_help=None, warmup=TRAIN_DEFAULTS.warmup_steps
+    )
     parser.add_argument("--dropout", type=float, default=None, help="default: the preset's (0.1)")
     parser.add_argument("--rope", action="store_true", help="rotary positions, no position tables")
     parser.add_argument("--compile", action="store_true", help="torch.compile: ~2x faster on MPS")
@@ -548,12 +554,14 @@ def _add_finetune_command(commands: Subcommands) -> None:
     start.add_argument("--init", help="a pretraining checkpoint or an earlier finetune's model.pt")
     start.add_argument("--scratch", choices=sorted(PRESETS), help="random init (experiment E1)")
     parser.add_argument("--freeze", action="store_true", help="train only the question block (E2)")
-    parser.add_argument("--task", default="data/task")
-    parser.add_argument("--tokenizer", default=DEFAULT_TOKENIZER, help="for --scratch")
-    parser.add_argument("--out", default="artifacts/runs/questions")
+    parser.add_argument("--task", default=defaults.TASK_DIR)
+    parser.add_argument("--tokenizer", default=defaults.TOKENIZER_FILE, help="for --scratch")
+    parser.add_argument("--out", default=defaults.FINETUNE_RUN)
     parser.add_argument("--epochs", type=float, default=2.0, help="sets --steps")
     parser.add_argument("--steps", type=int, default=None, help="default: from --epochs")
-    _add_schedule_args(parser, lr=None, lr_help="default: 1e-3 frozen, else 3e-4", warmup=200)
+    _add_schedule_args(
+        parser, lr=None, lr_help="default: 1e-3 frozen, else 3e-4", warmup=FINETUNE_WARMUP
+    )
     parser.add_argument("--dropout", type=float, default=None, help="default: the checkpoint's")
     _add_run_args(parser)
 
@@ -566,7 +574,7 @@ def _add_inspect_commands(commands: Subcommands) -> None:
     parser.add_argument(
         "--schema", action="append", help="a JSON file of tool schemas (repeatable)"
     )
-    parser.add_argument("--model", default="artifacts/runs/questions-full/model.pt")
+    parser.add_argument("--model", default=defaults.FINETUNED_MODEL)
     parser.add_argument("--json", action="store_true", help="one JSON line per request")
     parser.add_argument("--device", default=None)
 
@@ -578,8 +586,10 @@ def _add_inspect_commands(commands: Subcommands) -> None:
     parser = commands.add_parser("fill", help="fill <x0> holes with a pretrained model (M4)")
     parser.set_defaults(run=fill)
     parser.add_argument("text", nargs="*", help='e.g. "Paris is the capital of <x0>."')
-    parser.add_argument("--model", default="artifacts/runs/pretrain-small/model.pt")
-    parser.add_argument("--max-new", type=int, default=24, help="most tokens to write")
+    parser.add_argument("--model", default=defaults.PRETRAINED_MODEL)
+    parser.add_argument(
+        "--max-new", type=int, default=defaults.MAX_NEW_TOKENS, help="most tokens to write"
+    )
     parser.add_argument("--device", default=None)
 
 
@@ -588,15 +598,15 @@ def _add_data_commands(commands: Subcommands) -> None:
     data_commands = data.add_subparsers(dest="data_command", required=True)
     parser = data_commands.add_parser("build", help="templates + chat-written -> data/task/*.jsonl")
     parser.set_defaults(run=data_build)
-    parser.add_argument("--out", default="data/task")
+    parser.add_argument("--out", default=defaults.TASK_DIR)
     parser.add_argument("--templates", default="80k", help="template examples for train")
     parser.add_argument("--heldout", default="2k", help="template examples with held-out tools")
     parser.add_argument("--seed", type=int, default=0)
-    parser.add_argument("--tokenizer", default=DEFAULT_TOKENIZER)
+    parser.add_argument("--tokenizer", default=defaults.TOKENIZER_FILE)
     parser = data_commands.add_parser("external", help="convert xLAM and MASSIVE -> data/external")
     parser.set_defaults(run=data_external)
-    parser.add_argument("--raw", default="data/raw")
-    parser.add_argument("--out", default="data/external")
+    parser.add_argument("--raw", default=defaults.RAW_DIR)
+    parser.add_argument("--out", default=defaults.EXTERNAL_DIR)
     parser.add_argument("--seed", type=int, default=0)
     parser = data_commands.add_parser("batch", help="new scenario batches for chat writers")
     parser.set_defaults(run=data_batch)
@@ -604,11 +614,11 @@ def _add_data_commands(commands: Subcommands) -> None:
     parser.add_argument("--n", type=int, default=50, help="scenarios per batch")
     parser.add_argument("--count", type=int, default=1, help="how many batches")
     parser.add_argument("--ask", type=float, default=None, help="share of ASK scenarios, e.g. 0.3")
-    parser.add_argument("--dir", default="data/generation")
+    parser.add_argument("--dir", default=defaults.GENERATION_DIR)
     parser = data_commands.add_parser("check", help="validate a chat-written batch")
     parser.set_defaults(run=data_check)
     parser.add_argument("batch", help="e.g. batch-0001")
-    parser.add_argument("--dir", default="data/generation")
+    parser.add_argument("--dir", default=defaults.GENERATION_DIR)
 
 
 def build_parser() -> argparse.ArgumentParser:

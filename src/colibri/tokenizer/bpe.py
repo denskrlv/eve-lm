@@ -8,7 +8,11 @@ from typing import Any
 import regex
 from tqdm import tqdm
 
+from colibri.config import ModelConfig
+
 N_SENTINELS = 32
+N_BYTES = 256  # one base token per byte value
+_NO_RANK = 1 << 30  # rank of a pair never merged: above every merge id
 SPECIAL_TOKENS: tuple[str, ...] = (
     "<pad>",  # padding, ignored by attention and the loss
     "<bos>",  # start of the encoder input
@@ -70,7 +74,7 @@ class BPETokenizer:
     def __init__(self, merges: Iterable[tuple[int, int]]):
         self.merges: list[tuple[int, int]] = [(a, b) for a, b in merges]
         self.vocab: list[bytes] = [t.encode() for t in SPECIAL_TOKENS] + [
-            bytes([b]) for b in range(256)
+            bytes([b]) for b in range(N_BYTES)
         ]
         self.ranks: dict[tuple[int, int], int] = {}  # pair -> merged id (= its merge order)
         for pair in self.merges:
@@ -87,15 +91,15 @@ class BPETokenizer:
     def train(
         cls,
         texts: Iterable[tuple[str, int]],
-        vocab_size: int = 8192,
+        vocab_size: int = ModelConfig.vocab_size,
         min_count: int = 2,
         progress: bool = False,
     ) -> "BPETokenizer":
         """Learn merges from weighted ``texts`` until there are ``vocab_size`` tokens, or
         until no pair is seen ``min_count`` times."""
-        n_merges = vocab_size - BYTE0 - 256
+        n_merges = vocab_size - BYTE0 - N_BYTES
         if n_merges < 0:
-            raise ValueError(f"vocab_size must be at least {BYTE0 + 256}")
+            raise ValueError(f"vocab_size must be at least {BYTE0 + N_BYTES}")
 
         # 1. Word-frequency counts: train on the distinct pieces, not the raw text.
         piece_counts: Counter[str] = Counter()
@@ -131,7 +135,7 @@ class BPETokenizer:
                 continue  # outdated entry
             if count < min_count:
                 break
-            new_id = BYTE0 + 256 + len(merges)
+            new_id = BYTE0 + N_BYTES + len(merges)
             merges.append(pair)
             bar.update()
 
@@ -190,7 +194,7 @@ class BPETokenizer:
         ids = [BYTE0 + b for b in piece.encode("utf-8")]
         while len(ids) > 1:
             # The pair that was merged earliest in training goes first.
-            pair = min(zip(ids, ids[1:], strict=False), key=lambda p: self.ranks.get(p, 1 << 30))
+            pair = min(zip(ids, ids[1:], strict=False), key=lambda p: self.ranks.get(p, _NO_RANK))
             if pair not in self.ranks:
                 break
             ids = _merge_pair(ids, pair, self.ranks[pair])

@@ -12,6 +12,10 @@ from colibri.data.schema import ASK_VALUE, Arg, Tool
 
 FANOUT = "*"  # {room=*}: one call per option of a required enum ("lights off everywhere")
 MAX_CALLS = ModelConfig().n_slots
+MAX_PROMPT_TOOLS = ModelConfig().max_tools  # a prompt offers 1 to this many tools
+DEFAULT_INT_SPAN = 99  # an int without a max goes up to min + this
+MIN_ROUNDED_SPAN = 10  # ranges at least this wide may get a round number
+WIDE_SPAN, WIDE_ROUND_STEP, NARROW_ROUND_STEP = 100, 10, 5  # round to 10s above 100 wide, else 5s
 ROUND_NUMBER_SHARE = 0.5  # people say round numbers more often
 NUMBER_WORDS_SHARE = 0.15  # numbers up to 100 written as words: "forty-five"
 WHOLE_NUMBER_SHARE = 0.7  # floats: mostly whole numbers, sometimes halves: 21.5
@@ -155,9 +159,9 @@ def check_template(tool: Tool, template: str, values: Mapping[str, Sequence[str]
 
 def _int_value(arg: Arg, rng: np.random.Generator) -> int:
     lo = int(arg.min) if arg.min is not None else 1
-    hi = int(arg.max) if arg.max is not None else lo + 99
-    if rng.random() < ROUND_NUMBER_SHARE and hi - lo >= 10:
-        step = 10 if hi - lo > 100 else 5
+    hi = int(arg.max) if arg.max is not None else lo + DEFAULT_INT_SPAN
+    if rng.random() < ROUND_NUMBER_SHARE and hi - lo >= MIN_ROUNDED_SPAN:
+        step = WIDE_ROUND_STEP if hi - lo > WIDE_SPAN else NARROW_ROUND_STEP
         rounds = [v for v in range(lo, hi + 1) if v % step == 0]
         if rounds:
             return int(rng.choice(rounds))

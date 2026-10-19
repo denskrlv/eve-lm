@@ -1,7 +1,12 @@
 import numpy as np
 from torch.utils.data import Dataset
 
+from colibri.config import ModelConfig
 from colibri.tokenizer.bpe import DEC, EOS, N_SENTINELS, SENTINEL0, sentinel
+
+INPUT_LEN = ModelConfig().max_encoder_len  # pretraining fills the whole encoder
+NOISE_DENSITY = 0.15  # share of a window's tokens that are corrupted
+MEAN_SPAN = 3.0  # mean length of a corrupted span
 
 
 def span_counts(length: int, noise_density: float, mean_span: float) -> tuple[int, int]:
@@ -11,7 +16,9 @@ def span_counts(length: int, noise_density: float, mean_span: float) -> tuple[in
     return n_noise, n_spans
 
 
-def raw_length(input_len: int, noise_density: float = 0.15, mean_span: float = 3.0) -> int:
+def raw_length(
+    input_len: int, noise_density: float = NOISE_DENSITY, mean_span: float = MEAN_SPAN
+) -> int:
     """The window length whose corrupted version is exactly ``input_len`` tokens long."""
     length = input_len
     while True:
@@ -89,9 +96,9 @@ class SpanCorruptionDataset(Dataset[dict[str, list[int]]]):
     def __init__(
         self,
         tokens: np.ndarray,
-        input_len: int = 512,
-        noise_density: float = 0.15,
-        mean_span: float = 3.0,
+        input_len: int = INPUT_LEN,
+        noise_density: float = NOISE_DENSITY,
+        mean_span: float = MEAN_SPAN,
         seed: int = 0,
     ):
         self.tokens = tokens
