@@ -198,6 +198,77 @@ def _stats(rows: list[dict[str, Any]], sources: Sources) -> dict[str, Any]:
     }
 
 
+Splits = dict[str, list[dict[str, Any]]]
+# (keep, drop): an utterance in ``keep`` is removed from ``drop``, so test and val stay unseen.
+DEDUP_ORDER = (
+    ("probe-candidates", "val"),
+    ("probe-candidates", "train"),
+    ("massive-test", "val"),
+    ("massive-test", "train"),
+    ("val", "train"),
+)
+
+
+def _external(external_dir: Path, name: str) -> list[dict[str, Any]]:
+    """A converted external dataset (``colibri data external``), or nothing if absent."""
+    path = external_dir / f"{name}.jsonl"
+    return read_jsonl(path) if path.exists() else []
+
+
+def _assemble(
+    sources: Sources,
+    chat: Splits,
+    rng: np.random.Generator,
+    n_templates: int,
+    n_heldout: int,
+    external_dir: Path,
+) -> Splits:
+    """Every split from its sources (see ``build``)."""
+    train_bank = ToolBank(sources.train)
+    all_bank = ToolBank(sources.train + sources.heldout)
+    heldout_pool = [all_bank.index[s.name] for s in sources.heldout]
+    return {
+        "train": template_examples(train_bank, n_templates, rng, sources)
+        + chat["train"]
+        + _external(external_dir, "xlam")
+        + _external(external_dir, "massive-train"),
+        "val": chat["val"] + _external(external_dir, "massive-dev"),
+        "probe-candidates": chat["probe"],
+        "heldout-templates": template_examples(all_bank, n_heldout, rng, sources, heldout_pool),
+        "massive-test": _external(external_dir, "massive-test"),
+    }
+
+
+def _remove_duplicates(splits: Splits) -> Counter[str]:
+    """Remove utterances that also appear in an earlier split (``DEDUP_ORDER``), in place.
+    Returns how many were removed from where."""
+    removed: Counter[str] = Counter()
+    for keep, drop in DEDUP_ORDER:
+        seen = {normalize(r["utterance"]) for r in splits[keep]}
+        before = len(splits[drop])
+        splits[drop] = [r for r in splits[drop] if normalize(r["utterance"]) not in seen]
+        removed[f"{drop} (in {keep})"] += before - len(splits[drop])
+    return removed
+
+
+def _drop_too_long(
+    splits: Splits, library: dict[str, Tool], tokenizer: BPETokenizer, cfg: ModelConfig
+) -> Counter[str]:
+    """Remove examples too long for the model's encoder or decoder, in place. Returns how many
+    were removed per split."""
+    too_long: Counter[str] = Counter()
+    for name, rows in splits.items():
+        fits = []
+        for r in rows:
+            try:
+                render(TaskExample.from_json(r, library), tokenizer, cfg)
+                fits.append(r)
+            except ValueError:
+                too_long[name] += 1
+        splits[name] = fits
+    return too_long
+
+
 def build(
     out_dir: str | Path = "data/task",
     n_templates: int = 80_000,
@@ -223,51 +294,12 @@ def build(
     """
     sources = Sources.load(tools_dir, generation_dir)
     rng = np.random.default_rng(seed)
-    train_bank = ToolBank(sources.train)
-    all_bank = ToolBank(sources.train + sources.heldout)
-    heldout_pool = [all_bank.index[s.name] for s in sources.heldout]
-
     chat, rejects = chat_examples(sources, generation_dir)
-
-    def external(name: str) -> list[dict[str, Any]]:
-        path = Path(external_dir) / f"{name}.jsonl"
-        return read_jsonl(path) if path.exists() else []
-
-    splits = {
-        "train": template_examples(train_bank, n_templates, rng, sources)
-        + chat["train"]
-        + external("xlam")
-        + external("massive-train"),
-        "val": chat["val"] + external("massive-dev"),
-        "probe-candidates": chat["probe"],
-        "heldout-templates": template_examples(all_bank, n_heldout, rng, sources, heldout_pool),
-        "massive-test": external("massive-test"),
-    }
-
-    removed: Counter[str] = Counter()
-    for keep, drop in [
-        ("probe-candidates", "val"),
-        ("probe-candidates", "train"),
-        ("massive-test", "val"),
-        ("massive-test", "train"),
-        ("val", "train"),
-    ]:
-        seen = {normalize(r["utterance"]) for r in splits[keep]}
-        before = len(splits[drop])
-        splits[drop] = [r for r in splits[drop] if normalize(r["utterance"]) not in seen]
-        removed[f"{drop} (in {keep})"] += before - len(splits[drop])
-
+    splits = _assemble(sources, chat, rng, n_templates, n_heldout, Path(external_dir))
+    removed = _remove_duplicates(splits)
     too_long: Counter[str] = Counter()
     if tokenizer is not None and cfg is not None:
-        for name, rows in splits.items():
-            fits = []
-            for r in rows:
-                try:
-                    render(TaskExample.from_json(r, sources.library), tokenizer, cfg)
-                    fits.append(r)
-                except ValueError:
-                    too_long[name] += 1
-            splits[name] = fits
+        too_long = _drop_too_long(splits, sources.library, tokenizer, cfg)
 
     out_dir = Path(out_dir)
     for name, rows in splits.items():

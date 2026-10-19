@@ -8,7 +8,7 @@ from torch.utils.data import Dataset
 
 from colibri.config import INTENTS, ModelConfig
 from colibri.data.draw import shuffled
-from colibri.data.schema import ASK_VALUE, MAX_ARGS, SchemaError, Tool
+from colibri.data.schema import ASK_VALUE, MAX_ARGS, Arg, SchemaError, Tool
 from colibri.tokenizer.bpe import (
     ABSENT,
     ARG,
@@ -110,6 +110,74 @@ class Rendered:
     tool_names: list[str]  # prompt order, for debugging
 
 
+def _encoder(
+    utterance: str, tools: Sequence[Tool], tokenizer: BPETokenizer, cfg: ModelConfig
+) -> tuple[list[int], list[int], list[list[int]]]:
+    """Encoder ids, the position of each ``<tool>`` marker, and each tool's ``<arg>`` positions.
+
+    User text never gets special tokens. Every piece of text starts with a space, so a word is
+    the same token in the utterance, the schema and a decoder value.
+    """
+    enc = [BOS, UTT, *tokenizer.encode(" " + utterance), TOOLS]
+    tool_pos, arg_pos = [], []
+    for tool in tools:
+        ids = [i for part in tool.render_parts() for i in tokenizer.encode(part, specials=True)]
+        tool_pos.append(len(enc))
+        arg_pos.append([len(enc) + j for j, t in enumerate(ids) if t == ARG])
+        assert ids[0] == TOOL and len(arg_pos[-1]) == len(tool.args)
+        enc.extend(ids)
+    enc.append(EOS)
+    if len(enc) > cfg.max_encoder_len:
+        raise ValueError(f"encoder input is {len(enc)} tokens, max {cfg.max_encoder_len}")
+    return enc, tool_pos, arg_pos
+
+
+def _slot_labels(example: TaskExample, tools: Sequence[Tool], cfg: ModelConfig) -> list[int]:
+    """Question labels (M7): per slot, the index of its call's tool in the prompt, then STOP."""
+    if example.intent == "ask" and not example.calls:
+        return [IGNORE] * cfg.n_slots  # the tool itself is unclear: no slot loss
+    index = {t.name: k for k, t in enumerate(tools)}
+    slots = [index[c.tool] for c in example.calls]
+    return slots + [cfg.max_tools] * (cfg.n_slots - len(slots))  # max_tools = STOP
+
+
+def _value_ids(arg: Arg, call: Call, intent: str, tokenizer: BPETokenizer) -> list[int]:
+    """What the decoder writes for one argument: <absent>, <ask>, or the value then <end>."""
+    if arg.name not in call.args:
+        return [ABSENT]
+    if call.args[arg.name] == ASK_VALUE and intent == "ask" and arg.required:
+        return [ASK]
+    return [*tokenizer.encode(" " + arg.format(call.args[arg.name])), END]
+
+
+def _decoder(
+    example: TaskExample, tools: Sequence[Tool], tokenizer: BPETokenizer, cfg: ModelConfig
+) -> tuple[list[int], list[int]]:
+    """Decoder input and labels (M8): structure copied from the schema (no loss), values
+    predicted (loss)."""
+    seq, loss = [DEC], [False]
+
+    def add(ids: Sequence[int], predicted: bool) -> None:
+        seq.extend(ids)
+        loss.extend([predicted] * len(ids))
+
+    by_name = {t.name: t for t in tools}
+    for call in example.calls:
+        tool = by_name[call.tool]
+        add([CALL, *tokenizer.encode(" " + tool.name)], False)
+        for arg in tool.args:
+            add([ARG, *tokenizer.encode(" " + arg.name), VAL], False)
+            add(_value_ids(arg, call, example.intent, tokenizer), True)
+    add([EOS], False)
+    dec_ids = seq[:-1]
+    dec_labels = [
+        t if predicted else IGNORE for t, predicted in zip(seq[1:], loss[1:], strict=True)
+    ]
+    if len(dec_ids) > cfg.max_decoder_len:
+        raise ValueError(f"decoder input is {len(dec_ids)} tokens, max {cfg.max_decoder_len}")
+    return dec_ids, dec_labels
+
+
 def render(
     example: TaskExample,
     tokenizer: BPETokenizer,
@@ -124,57 +192,9 @@ def render(
         raise ValueError(f"{len(tools)} tools, but the model takes at most {cfg.max_tools}")
     if len(example.calls) > cfg.n_slots:
         raise ValueError(f"{len(example.calls)} calls, but the model has {cfg.n_slots} slots")
-
-    # Encoder. User text never gets special tokens. Every piece of text starts with a space,
-    # so a word is the same token in the utterance, the schema and a decoder value.
-    enc = [BOS, UTT, *tokenizer.encode(" " + example.utterance), TOOLS]
-    tool_pos, arg_pos = [], []
-    for tool in tools:
-        ids = [i for part in tool.render_parts() for i in tokenizer.encode(part, specials=True)]
-        tool_pos.append(len(enc))
-        arg_pos.append([len(enc) + j for j, t in enumerate(ids) if t == ARG])
-        assert ids[0] == TOOL and len(arg_pos[-1]) == len(tool.args)
-        enc.extend(ids)
-    enc.append(EOS)
-    if len(enc) > cfg.max_encoder_len:
-        raise ValueError(f"encoder input is {len(enc)} tokens, max {cfg.max_encoder_len}")
-
-    # Question labels (M7).
-    stop = cfg.max_tools
-    if example.intent == "ask" and not example.calls:
-        slots = [IGNORE] * cfg.n_slots  # the tool itself is unclear: no slot loss
-    else:
-        index = {t.name: k for k, t in enumerate(tools)}
-        slots = [index[c.tool] for c in example.calls]
-        slots += [stop] * (cfg.n_slots - len(slots))
-
-    # Decoder (M8): structure copied from the schema (no loss), values predicted (loss).
-    seq, loss = [DEC], [False]
-
-    def add(ids: Sequence[int], predicted: bool) -> None:
-        seq.extend(ids)
-        loss.extend([predicted] * len(ids))
-
-    by_name = {t.name: t for t in tools}
-    for call in example.calls:
-        tool = by_name[call.tool]
-        add([CALL, *tokenizer.encode(" " + tool.name)], False)
-        for arg in tool.args:
-            add([ARG, *tokenizer.encode(" " + arg.name), VAL], False)
-            if arg.name not in call.args:
-                add([ABSENT], True)
-            elif call.args[arg.name] == ASK_VALUE and example.intent == "ask" and arg.required:
-                add([ASK], True)
-            else:
-                add([*tokenizer.encode(" " + arg.format(call.args[arg.name])), END], True)
-    add([EOS], False)
-    dec_ids = seq[:-1]
-    dec_labels = [
-        t if predicted else IGNORE for t, predicted in zip(seq[1:], loss[1:], strict=True)
-    ]
-    if len(dec_ids) > cfg.max_decoder_len:
-        raise ValueError(f"decoder input is {len(dec_ids)} tokens, max {cfg.max_decoder_len}")
-
+    enc, tool_pos, arg_pos = _encoder(example.utterance, tools, tokenizer, cfg)
+    slots = _slot_labels(example, tools, cfg)
+    dec_ids, dec_labels = _decoder(example, tools, tokenizer, cfg)
     return Rendered(
         enc_ids=enc,
         tool_pos=tool_pos,

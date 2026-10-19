@@ -56,6 +56,8 @@ def tokenizer_texts(
 
 # ---- encoding with several processes --------------------------------------------------------
 
+# A few chunks per worker at a time, so we never read far ahead of what we need.
+CHUNKS_PER_WORKER = 4
 _tokenizer: BPETokenizer | None = None
 
 
@@ -79,6 +81,43 @@ def _chunks(docs: Iterable[str], size: int) -> Iterator[list[str]]:
         yield chunk
 
 
+def _encode_splits(
+    paths: list[str | Path],
+    tokenizer_path: str | Path,
+    out_dir: Path,
+    train_tokens: int,
+    val_tokens: int,
+    workers: int,
+    docs_per_chunk: int,
+) -> dict[str, int]:
+    """Encode documents with ``workers`` processes into ``val.bin``, then ``train.bin``.
+    Returns the tokens written to each."""
+    counts = {"val": 0, "train": 0}
+    chunks = _chunks(iter_documents(paths), docs_per_chunk)
+    bar = tqdm(total=val_tokens + train_tokens, unit="tok", unit_scale=True, desc="encoding")
+    with (
+        Pool(workers, initializer=_init_worker, initargs=(str(tokenizer_path),)) as pool,
+        open(out_dir / "val.bin", "wb") as val_file,
+        open(out_dir / "train.bin", "wb") as train_file,
+    ):
+        files = {"val": val_file, "train": train_file}
+        while counts["train"] < train_tokens:
+            in_flight = list(islice(chunks, workers * CHUNKS_PER_WORKER))
+            if not in_flight:
+                break
+            for ids in pool.imap(_encode_docs, in_flight):
+                split = "val" if counts["val"] < val_tokens else "train"
+                if split == "train":
+                    ids = ids[: train_tokens - counts["train"]]
+                ids.tofile(files[split])
+                counts[split] += len(ids)
+                bar.update(len(ids))
+                if counts["train"] >= train_tokens:
+                    break
+    bar.close()
+    return counts
+
+
 def encode_corpus(
     paths: Iterable[str | Path],
     tokenizer_path: str | Path,
@@ -98,31 +137,9 @@ def encode_corpus(
     out_dir.mkdir(parents=True, exist_ok=True)
     workers = workers or max(1, (os.cpu_count() or 2) - 1)
 
-    counts = {"val": 0, "train": 0}
-    chunks = _chunks(iter_documents(paths), docs_per_chunk)
-    bar = tqdm(total=val_tokens + train_tokens, unit="tok", unit_scale=True, desc="encoding")
-    with (
-        Pool(workers, initializer=_init_worker, initargs=(str(tokenizer_path),)) as pool,
-        open(out_dir / "val.bin", "wb") as val_file,
-        open(out_dir / "train.bin", "wb") as train_file,
-    ):
-        while counts["train"] < train_tokens:
-            # A few chunks per worker at a time, so we never read far ahead of what we need.
-            round_ = list(islice(chunks, workers * 4))
-            if not round_:
-                break
-            for ids in pool.imap(_encode_docs, round_):
-                if counts["val"] < val_tokens:
-                    split, f = "val", val_file
-                else:
-                    split, f = "train", train_file
-                    ids = ids[: train_tokens - counts["train"]]
-                ids.tofile(f)
-                counts[split] += len(ids)
-                bar.update(len(ids))
-                if counts["train"] >= train_tokens:
-                    break
-    bar.close()
+    counts = _encode_splits(
+        paths, tokenizer_path, out_dir, train_tokens, val_tokens, workers, docs_per_chunk
+    )
 
     meta = {
         "tokenizer": str(tokenizer_path),

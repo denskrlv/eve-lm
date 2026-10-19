@@ -97,18 +97,21 @@ def xlam_tool(d: dict[str, Any]) -> tuple[Tool, dict[str, str], dict[str, Any]] 
         return None
 
 
-def convert_xlam(row: dict[str, Any], rng: np.random.Generator) -> tuple[TaskExample | None, str]:
-    """One xLAM example in our format, or None and the reason it was dropped."""
-    query = row["query"]
-    raw_tools, answers = json.loads(row["tools"]), json.loads(row["answers"])
-    if HELD_OUT.search(query) or any(
+XlamTool = tuple[Tool, dict[str, str], dict[str, Any]]  # see xlam_tool
+
+
+def _held_out_xlam(query: str, raw_tools: list[dict[str, Any]]) -> bool:
+    """The request or one of the offered tools touches a held-out topic."""
+    return bool(HELD_OUT.search(query)) or any(
         HELD_OUT.search(t["name"].replace("_", " ") + " " + t.get("description", ""))
         for t in raw_tools
-    ):
-        return None, "held-out topic"
-    if not 1 <= len(answers) <= MAX_CALLS:
-        return None, f"more than {MAX_CALLS} calls"
-    gold_names = list(dict.fromkeys(a["name"] for a in answers))
+    )
+
+
+def _xlam_tools(
+    raw_tools: list[dict[str, Any]], gold_names: list[str]
+) -> tuple[dict[str, XlamTool] | None, str]:
+    """The offered tools that convert, by xLAM name, or None and why the example is dropped."""
     converted = {}
     for t in raw_tools:
         c = xlam_tool(t)
@@ -120,26 +123,52 @@ def convert_xlam(row: dict[str, Any], rng: np.random.Generator) -> tuple[TaskExa
         return None, "two tools with the same name"
     if any(n not in converted for n in gold_names):
         return None, "call to a tool not in the list"
+    return converted, "ok"
 
+
+def _absent(arg: Arg, value: Any, default: Any, query: str) -> bool:
+    """An optional value the user never said: the default applies, so the call leaves it out."""
+    said = arg.type == "bool" or any(mentions(query, f) for f in value_forms(arg, value))
+    return value == default or not said
+
+
+def _xlam_call(
+    answer: dict[str, Any], converted: dict[str, XlamTool], query: str
+) -> tuple[Call | None, str]:
+    """One xLAM answer as a call, or None and why the example is dropped."""
+    tool, names, defaults = converted[answer["name"]]
+    args = {}
+    for key, raw in (answer.get("arguments") or {}).items():
+        if key not in names:
+            return None, "unknown argument"
+        arg = tool.arg(names[key])
+        value = _coerce(arg, raw)
+        if value is None or arg.check(value) is not None:
+            return None, "value of the wrong type"
+        if not arg.required and _absent(arg, value, defaults[arg.name], query):
+            continue
+        args[arg.name] = value
+    return Call(tool.name, args), "ok"
+
+
+def convert_xlam(row: dict[str, Any], rng: np.random.Generator) -> tuple[TaskExample | None, str]:
+    """One xLAM example in our format, or None and the reason it was dropped."""
+    query = row["query"]
+    raw_tools, answers = json.loads(row["tools"]), json.loads(row["answers"])
+    if _held_out_xlam(query, raw_tools):
+        return None, "held-out topic"
+    if not 1 <= len(answers) <= MAX_CALLS:
+        return None, f"more than {MAX_CALLS} calls"
+    gold_names = list(dict.fromkeys(a["name"] for a in answers))
+    converted, reason = _xlam_tools(raw_tools, gold_names)
+    if converted is None:
+        return None, reason
     calls = []
-    for a in answers:
-        tool, names, defaults = converted[a["name"]]
-        args = {}
-        for key, raw in (a.get("arguments") or {}).items():
-            if key not in names:
-                return None, "unknown argument"
-            arg = tool.arg(names[key])
-            value = _coerce(arg, raw)
-            if value is None or arg.check(value) is not None:
-                return None, "value of the wrong type"
-            if not arg.required:
-                said = arg.type == "bool" or any(
-                    mentions(query, f) for f in value_forms(arg, value)
-                )
-                if value == defaults[arg.name] or not said:
-                    continue  # never said by the user: the default applies, so it's absent
-            args[arg.name] = value
-        calls.append(Call(tool.name, args))
+    for answer in answers:
+        call, reason = _xlam_call(answer, converted, query)
+        if call is None:
+            return None, reason
+        calls.append(call)
 
     gold = [converted[n][0] for n in gold_names]
     others = [c[0] for n, c in converted.items() if n not in gold_names]
@@ -269,6 +298,54 @@ def massive_tools(rows: list[dict[str, Any]]) -> dict[str, Tool]:
     return tools
 
 
+def _massive_bank(tools: dict[str, Tool]) -> ToolBank:
+    """The MASSIVE tools as a bank. Tools of one scenario overlap: none of them is offered for
+    an UNSUPPORTED copy of another's request."""
+    by_scenario: dict[str, list[str]] = {}
+    for t in tools.values():
+        by_scenario.setdefault(t.domain, []).append(t.name)
+    specs = [
+        ToolSpec(t, (), capability=t.name, overlaps=tuple(by_scenario[t.domain]))
+        for t in tools.values()
+    ]
+    return ToolBank(specs)
+
+
+def _massive_row(
+    row: dict[str, Any], tools: dict[str, Tool], bank: ToolBank, rng: np.random.Generator
+) -> tuple[list[TaskExample], str | None]:
+    """The examples one MASSIVE row gives, or none and why it was dropped."""
+    intent, text = row["intent"], row["utt"]
+    if HELD_OUT.search(text):  # e.g. "can you convert my this money into", in any intent
+        return [], "held-out topic in the request"
+    if intent in MASSIVE_NONE:
+        k = prompt_size(rng)
+        prompt = [bank.specs[i].tool for i in bank.distractors([], k, rng, hard=False)]
+        return [TaskExample(text, tuple(prompt), "none")], None
+    if intent not in tools:
+        return [], "intent left out (held-out topic or too rare)"
+    slots = _SLOT.findall(row["annot_utt"])
+    if len({s for s, _ in slots}) != len(slots):
+        return [], "the same slot twice"
+    tool = tools[intent]
+    names = {a.name for a in tool.args}
+    args = {s: v.strip() for s, v in slots if s in names}
+    g = bank.index[tool.name]
+    k = prompt_size(rng)
+    indices = [g] + bank.distractors([g], k - 1, rng)
+    prompt = [bank.specs[i].tool for i in shuffled(rng, indices)]
+    example = TaskExample(text, tuple(prompt), "call", (Call(tool.name, args),))
+    if check_example(example):
+        return [], "value not in the request"
+    examples = [example]
+    if rng.random() < UNSUPPORTED_SHARE:
+        k = prompt_size(rng)
+        prompt = [bank.specs[i].tool for i in bank.distractors([g], k, rng, unsupported=True)]
+        if prompt:
+            examples.append(TaskExample(text, tuple(prompt), "unsupported"))
+    return examples, None
+
+
 def convert_massive(
     rows: list[dict[str, Any]], rng: np.random.Generator
 ) -> tuple[dict[str, list[TaskExample]], Counter[str]]:
@@ -278,51 +355,15 @@ def convert_massive(
     the requests is copied once more as UNSUPPORTED, with the whole scenario's tools removed.
     """
     tools = massive_tools(rows)
-    by_scenario: dict[str, list[str]] = {}
-    for t in tools.values():
-        by_scenario.setdefault(t.domain, []).append(t.name)
-    specs = [
-        ToolSpec(t, (), capability=t.name, overlaps=tuple(by_scenario[t.domain]))
-        for t in tools.values()
-    ]
-    bank = ToolBank(specs)
-
+    bank = _massive_bank(tools)
     out: dict[str, list[TaskExample]] = {"train": [], "dev": [], "test": []}
     dropped: Counter[str] = Counter()
-    for r in rows:
-        intent, text = r["intent"], r["utt"]
-        if HELD_OUT.search(text):  # e.g. "can you convert my this money into", in any intent
-            dropped["held-out topic in the request"] += 1
-            continue
-        if intent in MASSIVE_NONE:
-            k = prompt_size(rng)
-            prompt = [bank.specs[i].tool for i in bank.distractors([], k, rng, hard=False)]
-            out[r["partition"]].append(TaskExample(text, tuple(prompt), "none"))
-            continue
-        if intent not in tools:
-            dropped["intent left out (held-out topic or too rare)"] += 1
-            continue
-        slots = _SLOT.findall(r["annot_utt"])
-        if len({s for s, _ in slots}) != len(slots):
-            dropped["the same slot twice"] += 1
-            continue
-        tool = tools[intent]
-        names = {a.name for a in tool.args}
-        args = {s: v.strip() for s, v in slots if s in names}
-        g = bank.index[tool.name]
-        k = prompt_size(rng)
-        indices = [g] + bank.distractors([g], k - 1, rng)
-        prompt = [bank.specs[i].tool for i in shuffled(rng, indices)]
-        example = TaskExample(text, tuple(prompt), "call", (Call(tool.name, args),))
-        if check_example(example):
-            dropped["value not in the request"] += 1
-            continue
-        out[r["partition"]].append(example)
-        if rng.random() < UNSUPPORTED_SHARE:
-            k = prompt_size(rng)
-            prompt = [bank.specs[i].tool for i in bank.distractors([g], k, rng, unsupported=True)]
-            if prompt:
-                out[r["partition"]].append(TaskExample(text, tuple(prompt), "unsupported"))
+    for row in rows:
+        examples, reason = _massive_row(row, tools, bank, rng)
+        if reason is not None:
+            dropped[reason] += 1
+        if examples:
+            out[row["partition"]] += examples
     return out, dropped
 
 

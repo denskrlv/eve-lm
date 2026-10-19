@@ -1,5 +1,5 @@
 from collections import Counter
-from collections.abc import Sequence
+from collections.abc import Callable, Sequence
 from dataclasses import dataclass, replace
 from pathlib import Path
 from typing import Any
@@ -234,6 +234,59 @@ def _shown(examples: Sequence[TaskExample]) -> list[int]:
     return [first[intent] for intent in INTENTS if intent in first]
 
 
+def _start_model(
+    init: str | Path | None,
+    scratch: ModelConfig | None,
+    tokenizer_path: str | Path | None,
+    overrides: dict[str, Any],
+) -> tuple[Colibri, BPETokenizer]:
+    """The model to fine-tune and its tokenizer: from the ``init`` checkpoint, or a random model
+    with the ``scratch`` config and the tokenizer at ``tokenizer_path``."""
+    if init is not None:
+        ckpt = load_init(init, **overrides)
+        return ckpt.model, ckpt.tokenizer
+    assert scratch is not None  # finetune checks: exactly one of init and scratch
+    if tokenizer_path is None:
+        raise ValueError("scratch needs tokenizer_path")
+    model = Colibri(replace(scratch, **overrides))
+    return model, BPETokenizer.load(tokenizer_path)
+
+
+def _batches(data: TaskDataset, collate: TaskCollator, size: int) -> list[dict[str, torch.Tensor]]:
+    """All of ``data`` in order, in batches of ``size`` (the last one may be smaller)."""
+    return [
+        collate([data[j] for j in range(i, min(i + size, len(data)))])
+        for i in range(0, len(data), size)
+    ]
+
+
+def _eval_report(
+    val_examples: Sequence[TaskExample],
+    val_data: TaskDataset,
+    heldout: TaskDataset,
+    collate: TaskCollator,
+    batch_size: int,
+) -> Callable[[Colibri], dict[str, Any]]:
+    """``on_eval`` for fine-tuning: the answers for the first val example of each intent, then
+    the val and held-out-tool scores."""
+    scored = {
+        "val": ("val", _batches(val_data, collate, batch_size)),
+        "heldout": ("held-out tools", _batches(heldout, collate, batch_size)),
+    }
+    shown = _shown(val_examples)
+
+    def on_eval(model: Colibri) -> dict[str, Any]:
+        lines = describe(model, val_examples, val_data, shown)
+        out: dict[str, Any] = {"samples": lines}
+        for key, (label, data) in scored.items():
+            if data:
+                out[key] = score(model, data)
+                lines.append(score_line(label, out[key]))
+        return out
+
+    return on_eval
+
+
 def finetune(
     train_cfg: TrainConfig,
     task_dir: str | Path,
@@ -260,15 +313,7 @@ def finetune(
         raise ValueError("give either init (a checkpoint) or scratch (a config)")
     task_dir = Path(task_dir)
     seed_everything(train_cfg.seed)  # the new question block's initialization
-    if init is not None:
-        ckpt = load_init(init, **(overrides or {}))
-        model, tokenizer = ckpt.model, ckpt.tokenizer
-    else:
-        assert scratch is not None  # checked above: exactly one of init and scratch
-        if tokenizer_path is None:
-            raise ValueError("scratch needs tokenizer_path")
-        model = Colibri(replace(scratch, **(overrides or {})))
-        tokenizer = BPETokenizer.load(tokenizer_path)
+    model, tokenizer = _start_model(init, scratch, tokenizer_path, overrides or {})
     trainable = freeze_body(model) if freeze else sum(p.numel() for p in model.parameters())
     model.set_sdpa(sdpa)
 
@@ -280,26 +325,7 @@ def finetune(
         load_examples(task_dir / "heldout-templates.jsonl", library), tokenizer, cfg
     )
     collate = TaskCollator(cfg)
-    bs = train_cfg.batch_size
-
-    def batches(data: TaskDataset) -> list[dict[str, torch.Tensor]]:
-        return [
-            collate([data[j] for j in range(i, min(i + bs, len(data)))])
-            for i in range(0, len(data), bs)
-        ]
-
-    scored = {"val": ("val", batches(val_data)), "heldout": ("held-out tools", batches(heldout))}
-    shown = _shown(val_examples)
-
-    def on_eval(m: Colibri) -> dict[str, Any]:
-        lines = describe(m, val_examples, val_data, shown)
-        out: dict[str, Any] = {"samples": lines}
-        for key, (label, data) in scored.items():
-            if data:
-                out[key] = score(m, data)
-                lines.append(score_line(label, out[key]))
-        return out
-
+    on_eval = _eval_report(val_examples, val_data, heldout, collate, train_cfg.batch_size)
     meta = {"task": TASK, "frozen": freeze, "trainable": trainable, "init": str(init or "scratch")}
     return train(
         model,
