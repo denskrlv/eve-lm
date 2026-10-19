@@ -143,12 +143,14 @@ def pretrain(args: argparse.Namespace) -> None:
         eval_every=args.eval_every,
         save_every=args.eval_every,
         log_every=args.log_every,
+        compile=args.compile,
     )
     device = pick_device(args.device)
     print(
         f"{style('pretrain', '1')} {args.preset} · {cfg.approx_params() / 1e6:.1f}M params · "
         f"{device} · {args.dtype} · lr {args.lr:g} · dropout {cfg.dropout:g} · "
         + "".join(f"{name} · " for name in ("rope", "qk_norm") if getattr(cfg, name))
+        + ("compiled · " if args.compile else "")
         + f"{steps:,} steps × {args.batch_size} windows of {cfg.max_encoder_len} tokens"
         + (f" · stopping at step {args.stop_after:,}" if args.stop_after else "")
     )
@@ -462,6 +464,7 @@ def main(argv: list[str] | None = None) -> None:
     p.add_argument("--dtype", choices=["float32", "bfloat16"], default="float32")
     p.add_argument("--dropout", type=float, default=None, help="default: the preset's (0.1)")
     p.add_argument("--rope", action="store_true", help="rotary positions, no position tables")
+    p.add_argument("--compile", action="store_true", help="torch.compile: ~2x faster on MPS")
     p.add_argument("--qk-norm", action="store_true", help="RMS-normalize queries and keys")
     p.add_argument("--seed", type=int, default=0)
     p.add_argument("--eval-every", type=int, default=500, help="also how often to save")

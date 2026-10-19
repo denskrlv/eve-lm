@@ -139,3 +139,37 @@ def test_datasets_are_told_the_epoch(tokenizer, tmp_path):
     per_epoch = len(data) // 4
     run(tmp_path, tokenizer, small_run(steps=per_epoch + 2), train_data=data)
     assert data.seen == [0] * per_epoch + [1, 1]
+
+
+def test_compile_runs_the_losses_through_the_compiled_model(tokenizer, tmp_path, monkeypatch):
+    import colibri.train.loop as loop
+
+    seen = {"loss": set(), "on_eval": set()}
+
+    class Wrapped(torch.nn.Module):  # stands in for torch.compile's wrapper
+        def __init__(self, model):
+            super().__init__()
+            self.model = model
+
+        def forward(self, *args, **kwargs):
+            return self.model(*args, **kwargs)
+
+    monkeypatch.setattr(loop.torch, "compile", Wrapped)
+
+    def loss_fn(m, batch):
+        seen["loss"].add(type(m).__name__)
+        return span_loss(m, batch)
+
+    def on_eval(m):
+        seen["on_eval"].add(type(m).__name__)
+        return {}
+
+    torch.manual_seed(0)
+    model = Colibri(CFG)
+    train(
+        model, loss_fn, corpus(), corpus(seed=1), collate_pretrain, small_run(compile=True),
+        tmp_path, tokenizer, CPU, on_eval=on_eval,
+    )  # fmt: skip
+    assert seen == {"loss": {"Wrapped"}, "on_eval": {"Colibri"}}
+    ckpt = load_checkpoint(tmp_path / "model.pt")  # saved from the plain model: no prefixes
+    assert ckpt.model.state_dict().keys() == model.state_dict().keys()

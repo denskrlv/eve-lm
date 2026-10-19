@@ -222,7 +222,7 @@ __marimo__/
 # Colibri: large or generated files
 artifacts/
 data/raw/
-data/bin/
+data/bin*/
 
 data/task/
 data/external/
