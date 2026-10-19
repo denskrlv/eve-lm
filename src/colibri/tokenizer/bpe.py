@@ -10,20 +10,20 @@ from tqdm import tqdm
 
 N_SENTINELS = 32
 SPECIAL_TOKENS: tuple[str, ...] = (
-    "<pad>",                                    # padding, ignored by attention and the loss
-    "<bos>",                                    # start of the encoder input
-    "<eos>",                                    # end of a sequence; also separates documents in the pretraining corpus
-    "<utt>",                                    # the user's utterance follows
-    "<tools>",                                  # the tool schemas follow
-    "<tool>",                                   # one tool: its name, description and arguments follow
-    "<arg>",                                    # one argument of a tool
-    "<dec>",                                    # start of the decoder sequence
-    "<call>",                                   # decoder: one call starts (the tool name is copied in, M8)
-    "<val>",                                    # decoder: an argument value follows
-    "<end>",                                    # decoder: end of an argument value
-    "<absent>",                                 # decoder: an optional argument the user didn't give
-    "<ask>",                                    # decoder: a required argument the user didn't give; we must ask
-    *(f"<x{i}>" for i in range(N_SENTINELS)),   # span-corruption sentinels (pretraining only)
+    "<pad>",  # padding, ignored by attention and the loss
+    "<bos>",  # start of the encoder input
+    "<eos>",  # end of a sequence; also separates documents in the pretraining corpus
+    "<utt>",  # the user's utterance follows
+    "<tools>",  # the tool schemas follow
+    "<tool>",  # one tool: its name, description and arguments follow
+    "<arg>",  # one argument of a tool
+    "<dec>",  # start of the decoder sequence
+    "<call>",  # decoder: one call starts (the tool name is copied in, M8)
+    "<val>",  # decoder: an argument value follows
+    "<end>",  # decoder: end of an argument value
+    "<absent>",  # decoder: an optional argument the user didn't give
+    "<ask>",  # decoder: a required argument the user didn't give; we must ask
+    *(f"<x{i}>" for i in range(N_SENTINELS)),  # span-corruption sentinels (pretraining only)
 )
 (PAD, BOS, EOS, UTT, TOOLS, TOOL, ARG, DEC, CALL, VAL, END, ABSENT, ASK) = range(13)
 SENTINEL0 = 13
@@ -39,12 +39,12 @@ def sentinel(i: int) -> int:
 
 
 SPLIT_PATTERN = (
-    r"""'(?i:[sdmt]|ll|ve|re)"""                # contractions: 's 't 'd 'm 'll 've 're
-    r"""|[^\r\n\p{L}\p{N}_]?\p{L}+"""           # a word, with at most one leading space or symbol
-    r"""|\p{N}"""                               # one digit
-    r"""| ?[^\s\p{L}\p{N}]+[\r\n]*"""           # a run of punctuation (this is where "_" goes)
-    r"""|\s*[\r\n]+"""                          # newlines
-    r"""|\s+(?!\S)"""                           # spaces, except the last one before a word
+    r"""'(?i:[sdmt]|ll|ve|re)"""  # contractions: 's 't 'd 'm 'll 've 're
+    r"""|[^\r\n\p{L}\p{N}_]?\p{L}+"""  # a word, with at most one leading space or symbol
+    r"""|\p{N}"""  # one digit
+    r"""| ?[^\s\p{L}\p{N}]+[\r\n]*"""  # a run of punctuation (this is where "_" goes)
+    r"""|\s*[\r\n]+"""  # newlines
+    r"""|\s+(?!\S)"""  # spaces, except the last one before a word
     r"""|\s+"""
 )
 _SPLIT = regex.compile(SPLIT_PATTERN)
@@ -66,6 +66,7 @@ def _merge_pair(ids: list[int], pair: tuple[int, int], new_id: int) -> list[int]
 
 class BPETokenizer:
     """Byte-level BPE with special tokens (book ch. 2.5); ``train`` learns it."""
+
     def __init__(self, merges: Iterable[tuple[int, int]]):
         self.merges: list[tuple[int, int]] = [(a, b) for a, b in merges]
         self.vocab: list[bytes] = [t.encode() for t in SPECIAL_TOKENS] + [
