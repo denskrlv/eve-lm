@@ -1,4 +1,5 @@
 import json
+import logging
 import math
 import time
 from collections.abc import Callable, Sequence
@@ -16,6 +17,8 @@ from colibri.model.checkpoint import load_checkpoint, save_checkpoint
 from colibri.model.colibri import Colibri
 from colibri.runtime import to_device
 from colibri.tokenizer.bpe import BPETokenizer
+
+logger = logging.getLogger(__name__)
 
 LossFn = Callable[[Colibri, dict[str, torch.Tensor]], dict[str, torch.Tensor]]
 Collate = Callable[[Sequence[Any]], dict[str, torch.Tensor]]
@@ -328,7 +331,9 @@ def _report_train(
     stats += [f"lr {lr:.1e}", f"{tok_s / 1e3:.1f}k tok/s"]
     if bar.disable:  # not a terminal: plain lines for the log file
         eta = (end - step) * elapsed / window.steps
-        print(f"step {step:>6}/{end} | " + " | ".join(stats) + f" | eta {_format_duration(eta)}")
+        logger.info(
+            f"step {step:>6}/{end} | " + " | ".join(stats) + f" | eta {_format_duration(eta)}"
+        )
     bar.set_stats(*stats)
 
 
@@ -344,7 +349,7 @@ def _start_step(
     if resume and (out_dir / "last.pt").exists():
         return _resume(model, optimizer, out_dir, cfg, device)
     if resume:
-        print(f"nothing to resume in {out_dir}: starting a new run")
+        logger.info(f"nothing to resume in {out_dir}: starting a new run")
     return 0
 
 
@@ -472,9 +477,10 @@ def _finish(
     if step == cfg.steps:
         info = {**(meta or {}), "step": step, **last_val}
         save_checkpoint(out_dir / "model.pt", model, tokenizer, info)
-        print(f"{progress.style('done', '1', '32')} {out_dir / 'model.pt'}")
+        logger.info(f"{progress.style('done', '1', '32')} {out_dir / 'model.pt'}")
     else:
-        print(f"{progress.style('stopped', '1', '33')} at step {step:,}; continue with --resume")
+        stopped = progress.style("stopped", "1", "33")
+        logger.info(f"{stopped} at step {step:,}; continue with --resume")
 
 
 def _resume(
@@ -505,7 +511,7 @@ def _resume(
     lines = path.read_text().splitlines() if path.exists() else []
     kept = [ln for ln in lines if json.loads(ln).get("step", 0) <= step]
     path.write_text("".join(ln + "\n" for ln in kept))
-    print(f"resumed {out_dir} at step {step}")
+    logger.info(f"resumed {out_dir} at step {step}")
     return step
 
 

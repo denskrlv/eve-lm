@@ -1,6 +1,7 @@
 import argparse
 import glob
 import json
+import logging
 import sys
 import time
 from collections.abc import Callable, Sequence
@@ -23,6 +24,29 @@ FROZEN_LR, FULL_LR = 1e-3, 3e-4  # finetune's default lr with and without --free
 ALL_VAL_BATCHES = 10_000  # finetune evaluates on all of val: it is small
 
 type Subcommands = argparse._SubParsersAction[argparse.ArgumentParser]
+
+
+class _StdoutHandler(logging.StreamHandler):  # type: ignore[type-arg]
+    """Writes plain lines to whatever ``sys.stdout`` is when a record arrives, like ``print``
+    (pytest and redirects swap it). Warnings and errors start with their level: "warning: …"."""
+
+    def emit(self, record: logging.LogRecord) -> None:
+        self.stream = sys.stdout
+        super().emit(record)
+
+    def format(self, record: logging.LogRecord) -> str:
+        message = record.getMessage()
+        if record.levelno >= logging.WARNING:
+            return f"{record.levelname.lower()}: {message}"
+        return message
+
+
+def setup_logging() -> None:
+    """Show the library's status lines (the ``colibri`` loggers, INFO and up) on stdout."""
+    logger = logging.getLogger("colibri")
+    logger.handlers = [_StdoutHandler()]  # replaced, not added: main() may run more than once
+    logger.setLevel(logging.INFO)
+    logger.propagate = False
 
 
 def _count(text: str) -> int:
@@ -597,4 +621,5 @@ def build_parser() -> argparse.ArgumentParser:
 def main(argv: list[str] | None = None) -> None:
     """Parse the command line and run the chosen subcommand."""
     args = build_parser().parse_args(argv)
+    setup_logging()
     args.run(args)

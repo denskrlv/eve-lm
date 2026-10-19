@@ -1,4 +1,5 @@
 import json
+import logging
 import os
 from collections.abc import Iterable, Iterator
 from itertools import islice
@@ -59,6 +60,7 @@ def tokenizer_texts(
 # A few chunks per worker at a time, so we never read far ahead of what we need.
 CHUNKS_PER_WORKER = 4
 _tokenizer: BPETokenizer | None = None
+logger = logging.getLogger(__name__)
 
 
 def _init_worker(tokenizer_path: str) -> None:
@@ -151,7 +153,7 @@ def encode_corpus(
     }
     (out_dir / "meta.json").write_text(json.dumps(meta, indent=2))
     if counts["train"] < train_tokens:
-        print(f"warning: the corpus ran out after {counts['train']:,} train tokens")
+        logger.warning(f"the corpus ran out after {counts['train']:,} train tokens")
     return meta
 
 
