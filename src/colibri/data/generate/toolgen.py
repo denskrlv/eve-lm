@@ -1,4 +1,4 @@
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 
 import numpy as np
 
@@ -711,6 +711,301 @@ MORE_LOOKUPS = (
 )
 
 
+@dataclass(frozen=True)
+class Operation:
+    """A tool that does something to values instead of to a named object: "roll two dice",
+    "how do you say thank you in French". Many requests use other words than the tool's name
+    and description, so the model can't just match a noun. Several have 2-3 required
+    arguments, each in an optional template segment: ASK examples then give one value and
+    leave out another ("reserve a table at Luigi's for 4", no time).
+    """
+
+    names: tuple[str, ...]
+    descriptions: tuple[str, ...]
+    args: tuple[Arg, ...]
+    templates: tuple[str, ...]
+    values: dict[str, tuple[str, ...]] = field(default_factory=dict)
+
+
+WORDS = ("necessary", "banana", "listen", "colibri", "rhythm", "pineapple", "garden", "silent")
+DATES = ("May 3", "December 25", "July 4", "March 15", "October 31", "February 29")
+RESTAURANTS = ("Luigi's", "Sakura Sushi", "Golden Wok", "The Burger Barn", "Casa Maria")
+STORES = ("Target", "Best Buy", "IKEA", "Walmart", "the corner shop")
+
+OPERATIONS = (
+    Operation(
+        ("roll_dice", "dice_roll", "throw_dice"),
+        ("Roll dice", "Throw one or more dice"),
+        (Arg("count", "int", min=1, max=10), Arg("sides", "int", required=False, min=4, max=20)),
+        (
+            "roll {count} dice",
+            "throw {count} dice[ with {sides} sides]",
+            "roll[ {count}] dice for me",
+            "I need {count} random dice rolls",
+        ),
+    ),
+    Operation(
+        ("flip_coin", "coin_toss", "toss_coin"),
+        ("Flip a coin", "Toss a coin and say heads or tails"),
+        (Arg("times", "int", required=False, min=1, max=10),),
+        ("flip a coin[ {times} times]", "heads or tails", "toss a coin[ {times} times]"),
+    ),
+    Operation(
+        ("random_number", "pick_number", "generate_random_number"),
+        ("Pick a random whole number in a range", "Generate a random number"),
+        (Arg("low", "int", min=0, max=50), Arg("high", "int", min=51, max=1000)),
+        (
+            "pick a number between {low} and {high}",
+            "give me a random number from {low} to {high}",
+            "choose a number[ from {low}][ up to {high}]",
+            "random number[ between {low} and {high}]",
+        ),
+    ),
+    Operation(
+        ("days_until", "countdown_to", "time_left_until"),
+        ("Count the days until a date or holiday", "How long until an occasion"),
+        (Arg("occasion", "str"),),
+        (
+            "how many days until {occasion}",
+            "how long is it until {occasion}",
+            "count down to[ {occasion}]",
+            "how many sleeps until {occasion}",
+        ),
+        {
+            "occasion": (
+                "Christmas",
+                "Halloween",
+                "New Year's Day",
+                "my birthday",
+                "Valentine's Day",
+                "the summer holidays",
+            )
+        },
+    ),
+    Operation(
+        ("day_of_week", "weekday_for_date", "which_weekday"),
+        ("Tell which day of the week a date falls on", "Find the weekday of a date"),
+        (Arg("date", "str"),),
+        (
+            "what day of the week is {date}",
+            "which day is {date} this year",
+            "is {date} a weekend",
+            "what weekday does[ {date}] fall on",
+        ),
+        {"date": DATES},
+    ),
+    Operation(
+        ("reverse_text", "reverse_word", "mirror_text"),
+        ("Write a text backwards", "Reverse the letters of a word"),
+        (Arg("text", "str"),),
+        ("what is {text} backwards", "write {text} back to front", "reverse[ the word {text}]"),
+        {"text": WORDS},
+    ),
+    Operation(
+        ("count_letters", "letter_count", "word_length"),
+        ("Count the letters in a word", "Tell how long a word is"),
+        (Arg("word", "str"),),
+        (
+            "how many letters are in {word}",
+            "how long is the word {word}",
+            "count the letters[ in {word}]",
+        ),
+        {"word": WORDS},
+    ),
+    Operation(
+        ("find_anagrams", "anagram_finder", "make_anagram"),
+        ("Find anagrams of a word", "Rearrange a word's letters into other words"),
+        (Arg("word", "str"),),
+        (
+            "find an anagram of {word}",
+            "what words can I make from the letters in {word}",
+            "scramble[ {word}] into another word",
+        ),
+        {"word": WORDS},
+    ),
+    Operation(
+        ("to_morse_code", "morse_encode", "write_in_morse"),
+        ("Write a text in Morse code", "Encode text as dots and dashes"),
+        (Arg("text", "str"),),
+        (
+            "how do you write {text} in Morse code",
+            "{text} in dots and dashes",
+            "tap out[ {text}] in Morse",
+        ),
+        {"text": ("SOS", "hello", "help me", "good night", "yes")},
+    ),
+    Operation(
+        ("roman_numerals", "to_roman", "write_roman_numeral"),
+        ("Write a number as Roman numerals", "Give the Roman numeral for a number"),
+        (Arg("number", "int", min=1, max=3999),),
+        (
+            "what is {number} in Roman numerals",
+            "how do the Romans write {number}",
+            "write[ {number}] as a Roman numeral",
+        ),
+    ),
+    Operation(
+        ("is_leap_year", "check_leap_year", "leap_year"),
+        ("Tell if a year is a leap year", "Check whether a year has a February 29"),
+        (Arg("year", "int", min=1900, max=2100),),
+        ("is {year} a leap year", "does {year} have a February 29", "was[ {year}] a leap year"),
+    ),
+    Operation(
+        ("zodiac_sign", "star_sign_for", "get_star_sign"),
+        ("Give the star sign for a birthday", "Find the zodiac sign of a date"),
+        (Arg("birthday", "str"),),
+        (
+            "what star sign is someone born on {birthday}",
+            "if my birthday is {birthday} what's my sign",
+            "what's my star sign[ if I was born on {birthday}]",
+        ),
+        {"birthday": DATES},
+    ),
+    Operation(
+        ("shorten_link", "short_url", "make_short_link"),
+        ("Make a long link shorter", "Create a short URL"),
+        (Arg("url", "str"),),
+        ("shorten {url}", "make {url} shorter", "give me a short link[ for {url}]"),
+        {
+            "url": (
+                "example.com/very/long/path",
+                "github.com/denskrlv/colibri-lm",
+                "shop.io/item/42",
+            )
+        },
+    ),
+    Operation(
+        ("make_qr_code", "qr_code", "create_qr"),
+        ("Create a QR code", "Make a scannable code for a text or link"),
+        (Arg("content", "str"),),
+        (
+            "make a QR code for {content}",
+            "I want a code people can scan for {content}",
+            "generate a QR code[ with {content}]",
+        ),
+        {"content": ("example.com", "my wifi password", "my contact card", "the party invite")},
+    ),
+    Operation(
+        ("generate_password", "new_password", "strong_password"),
+        ("Generate a random password", "Create a strong password"),
+        (Arg("length", "int", min=8, max=32), Arg("symbols", "bool", required=False)),
+        (
+            "make me a {length} character password",
+            "I need a new password[ that is {length} characters long]",
+            "come up with a {length} letter password[ {symbols:with symbols|without symbols}]",
+        ),
+    ),
+    Operation(
+        ("translate_text", "translate", "say_in_language"),
+        ("Translate a phrase into another language", "Translate text"),
+        (
+            Arg("phrase", "str"),
+            Arg("language", "enum", options=("Spanish", "French", "German", "Italian", "Japanese")),
+        ),
+        (
+            "how do you say {phrase} in {language}",
+            "translate {phrase} to {language}",
+            "what's {phrase} in {language}",
+            "translate[ {phrase}][ into {language}]",
+        ),
+        {
+            "phrase": (
+                "good morning",
+                "thank you very much",
+                "where is the station",
+                "I love you",
+                "see you tomorrow",
+            )
+        },
+    ),
+    Operation(
+        ("find_emoji", "emoji_for", "suggest_emoji"),
+        ("Find an emoji for a word", "Suggest a matching emoji"),
+        (Arg("word", "str"),),
+        ("what emoji means {word}", "give me an emoji for {word}", "which emoji[ fits {word}]"),
+        {"word": ("pizza", "celebration", "sad", "rocket", "love", "sleepy")},
+    ),
+    Operation(
+        ("reserve_table", "book_table", "make_reservation"),
+        ("Reserve a table at a restaurant", "Book a restaurant table"),
+        (
+            Arg("restaurant", "str"),
+            Arg("people", "int", min=1, max=12),
+            Arg("time", "str"),
+        ),
+        (
+            "reserve a table at {restaurant} for {people} at {time}",
+            "get us a table for {people} at {restaurant} at {time}",
+            "book {restaurant}[ for {people} people][ at {time}]",
+            "can we eat at {restaurant} tonight[ at {time}], we are {people}",
+        ),
+        {"restaurant": RESTAURANTS, "time": ("7 pm", "8:30", "noon", "half past six")},
+    ),
+    Operation(
+        ("order_food", "order_delivery", "get_takeout"),
+        ("Order food from a restaurant", "Order a dish for delivery"),
+        (Arg("dish", "str"), Arg("restaurant", "str")),
+        (
+            "order {dish} from {restaurant}",
+            "I'm hungry, get me {dish} from {restaurant}",
+            "get[ {dish}] delivered[ from {restaurant}]",
+        ),
+        {
+            "dish": ("pad thai", "a margherita pizza", "two burritos", "sushi rolls", "dumplings"),
+            "restaurant": RESTAURANTS,
+        },
+    ),
+    Operation(
+        ("check_stock", "in_stock", "store_availability"),
+        ("Check if a store has a product in stock", "See whether a shop has an item"),
+        (Arg("product", "str"), Arg("store", "str")),
+        (
+            "does {store} have {product} in stock",
+            "can I get {product} at {store} today",
+            "is[ {product}] available[ at {store}]",
+        ),
+        {
+            "product": ("AirPods", "a yoga mat", "printer ink", "running shoes", "a desk lamp"),
+            "store": STORES,
+        },
+    ),
+    Operation(
+        ("rate_place", "leave_rating", "review_place"),
+        ("Give a place a star rating", "Rate a restaurant or shop"),
+        (Arg("place", "str"), Arg("stars", "int", min=1, max=5)),
+        (
+            "give {place} {stars} stars",
+            "rate {place} {stars} out of 5",
+            "{place} deserves {stars} stars",
+            "rate[ {place}][ {stars} stars]",
+        ),
+        {"place": RESTAURANTS + STORES},
+    ),
+    Operation(
+        ("fun_fact", "random_fact", "tell_fact"),
+        ("Tell a fun fact", "Share an interesting fact"),
+        (
+            Arg(
+                "topic",
+                "enum",
+                required=False,
+                options=("space", "animals", "history", "the ocean", "food"),
+            ),
+        ),
+        ("tell me a fun fact[ about {topic}]", "I want to learn something new[ about {topic}]"),
+    ),
+)
+
+
+def _operation_specs(op: Operation, rng, weight: float) -> list[ToolSpec]:
+    def make(name):
+        tool = Tool(name, _pick(rng, op.descriptions), op.args, "generated-operations")
+        capability = "op." + op.names[0]
+        return ToolSpec(tool, op.templates, op.values, capability, weight=weight)
+
+    return _variants(rng, list(op.names), make)
+
+
 def _key(text: str) -> str:
     return text.replace(" ", "_").replace("'", "")
 
@@ -851,20 +1146,32 @@ def _record_specs(record: Record, rng, weight: float) -> list[ToolSpec]:
         t = _pick(rng, ["title", "name"])
         args = [Arg(t, "str")]
         extra = ""
+        # Half the tools with an extra field require it. Their templates hold both required
+        # values in optional segments, so an ASK example can say one and leave out the other.
+        both = bool(record.extra) and rng.random() < 0.5
         if record.extra:
             kind, x = record.extra[0], record.extra[1]
             if kind == "enum":
-                args.append(Arg(x, "enum", required=False, options=record.extra[2]))
+                args.append(Arg(x, "enum", required=both, options=record.extra[2]))
             else:
-                args.append(Arg(x, "int", required=False, min=record.extra[2], max=record.extra[3]))
+                lo, hi = record.extra[2], record.extra[3]
+                args.append(Arg(x, "int", required=both, min=lo, max=hi))
             extra = "[ " + _sub(record.extra[-1], x="{" + x + "}") + "]"
         desc = _pick(rng, ["Create a new <e>", "Add <art> <e>"])
-        templates = [
-            "create <art> <e> called {<t>}<extra>",
-            "add a new <e>[ named {<t>}]",
-            "new <e>: {<t>}",
-            "make <art> <e> for {<t>}<extra>",
-        ]
+        if both:
+            templates = [
+                "create <art> <e> called {<t>}<extra>",
+                "add a new <e>[ named {<t>}]<extra>",
+                "new <e>[: {<t>}]<extra>",
+                "make <art> <e>[ for {<t>}]<extra>",
+            ]
+        else:
+            templates = [
+                "create <art> <e> called {<t>}<extra>",
+                "add a new <e>[ named {<t>}]",
+                "new <e>: {<t>}",
+                "make <art> <e> for {<t>}<extra>",
+            ]
         templates = tuple(_sub(x, t=t, extra=extra, **subs) for x in templates)
         tool = Tool(name, _sub(desc, **subs), tuple(args), "generated-records")
         return ToolSpec(tool, templates, {t: titles}, f"{k}.create", weight=weight)
@@ -944,4 +1251,6 @@ def generated_specs(seed: int = 0, weight: float = 0.08) -> list[ToolSpec]:
         specs += _record_specs(record, rng, weight)
     for lookup in LOOKUPS + MORE_LOOKUPS:
         specs += _lookup_specs(lookup, rng, weight)
+    for op in OPERATIONS:  # few tools, so each counts more
+        specs += _operation_specs(op, rng, 3 * weight)
     return specs

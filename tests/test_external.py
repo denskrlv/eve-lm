@@ -149,3 +149,30 @@ def test_inline_tools_round_trip():
         np.random.default_rng(0),
     )
     assert TaskExample.from_json(ex.to_json(inline=True)) == ex
+
+
+def test_held_out_topics_in_the_request_are_dropped():
+    rng = np.random.default_rng(0)
+    answers = [{"name": "getWeatherForecast", "arguments": {"location": "Oslo"}}]
+    assert convert_xlam(
+        xlam_row("Weather in Oslo, in celsius, then calculate the average", answers), rng
+    ) == (
+        None,
+        "held-out topic",
+    )
+    rows = [
+        {
+            "partition": "train",
+            "intent": "qa_factoid",
+            "utt": "can you convert my this money into",
+            "annot_utt": "can you convert my this money into",
+        },
+        {
+            "partition": "train",
+            "intent": "general_quirky",
+            "utt": "is division done before addition",
+            "annot_utt": "is division done before addition",
+        },
+    ]
+    parts, dropped = convert_massive(rows, rng)
+    assert parts["train"] == [] and dropped["held-out topic in the request"] == 2
