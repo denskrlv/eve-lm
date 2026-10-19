@@ -44,6 +44,8 @@ class Items(Protocol):
 
 @dataclass(frozen=True)
 class TrainConfig:
+    """Optimizer, schedule and run settings for ``train``."""
+
     steps: int
     batch_size: int = 32
     lr: float = 1e-3  # peak learning rate, reached at the end of warmup
@@ -66,6 +68,7 @@ class TrainConfig:
             raise ValueError(f"dtype must be one of {sorted(DTYPES)}, got {self.dtype!r}")
 
     def to_dict(self) -> dict[str, Any]:
+        """The config as plain values, for checkpoints and logs."""
         return asdict(self)
 
 

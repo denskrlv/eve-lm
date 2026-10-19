@@ -25,6 +25,8 @@ PROBE_HELDOUT_SHARE = 0.5  # probe scenarios whose correct tool is from a held-o
 
 @dataclass
 class Sources:
+    """What examples are drawn from: training and held-out tools, and request lists."""
+
     train: list[ToolSpec]  # hand-written training domains + generated tools
     heldout: list[ToolSpec]  # never trained on
     chitchat: list[str]
@@ -49,9 +51,11 @@ class Sources:
 
     @property
     def library(self) -> dict[str, Tool]:
+        """Every known tool by name, training and held-out."""
         return {s.name: s.tool for s in self.train + self.heldout}
 
     def source_of(self, name: str) -> str:
+        """Where a tool comes from: "hand", "generated", "heldout" or "older generated"."""
         if any(s.name == name for s in self.heldout):
             return "heldout"
         if name not in self.library:
@@ -131,6 +135,7 @@ def make_batch(
 
 
 def next_batch_name(batches_dir: str | Path) -> str:
+    """The next unused ``batch-NNNN`` name in ``batches_dir``."""
     numbers = [int(p.stem.split("-")[1]) for p in Path(batches_dir).glob("batch-*.json")]
     return f"batch-{max(numbers, default=0) + 1:04d}"
 

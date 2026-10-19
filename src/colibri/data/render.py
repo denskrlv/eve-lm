@@ -33,6 +33,8 @@ DECODER_BUCKETS = (64, 128, 256)
 
 @dataclass(frozen=True)
 class Call:
+    """One tool call: the tool's name and its argument values."""
+
     tool: str
     args: dict[str, Any]
 
@@ -103,6 +105,8 @@ def _named(name: str, library: dict[str, Tool] | None) -> Tool:
 
 @dataclass
 class Rendered:
+    """A tokenized example with its labels, ready for a collator."""
+
     enc_ids: list[int]
     tool_pos: list[int]  # position of each <tool> marker, in prompt order
     arg_pos: list[list[int]]  # position of each <arg> marker, per tool
@@ -233,6 +237,7 @@ class TaskDataset(Dataset[Rendered]):
         self.epoch = 0
 
     def set_epoch(self, epoch: int) -> None:
+        """Set the epoch, which reseeds each example's tool shuffle."""
         self.epoch = epoch
 
     def __len__(self) -> int:
@@ -255,6 +260,7 @@ def bucket(length: int, buckets: Sequence[int]) -> int:
 
 
 def pad(seqs: Sequence[Sequence[int]], length: int, value: int) -> torch.Tensor:
+    """Pad ``seqs`` with ``value`` into one (len(seqs), length) tensor."""
     out = torch.full((len(seqs), length), value, dtype=torch.long)
     for i, seq in enumerate(seqs):
         out[i, : len(seq)] = torch.as_tensor(seq, dtype=torch.long)
@@ -281,6 +287,7 @@ def _sequences(
 
 
 def collate_pretrain(batch: Sequence[dict[str, list[int]]]) -> dict[str, torch.Tensor]:
+    """Pad span-corruption samples into a batch."""
     return _sequences(batch, lambda b, k: b[k])
 
 

@@ -31,6 +31,7 @@ class Answers:
         return out
 
     def to_json(self) -> dict[str, Any]:
+        """The answers as plain values, with the most likely calls."""
         return {"intent": self.intent, "calls": self.calls, "slots": self.slots}
 
 

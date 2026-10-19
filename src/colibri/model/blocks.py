@@ -20,6 +20,7 @@ class LayerNorm(nn.Module):
         self.shift = nn.Parameter(torch.zeros(d))
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
+        """Normalize each vector to mean 0 and variance 1, then scale and shift."""
         mean = x.mean(dim=-1, keepdim=True)
         var = x.var(dim=-1, keepdim=True, unbiased=False)  # divide by d, as nn.LayerNorm does
         return self.scale * (x - mean) / torch.sqrt(var + self.eps) + self.shift
@@ -32,6 +33,7 @@ class GELU(nn.Module):
     """
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
+        """GELU with the tanh approximation, as in the book's ch. 4.3."""
         return 0.5 * x * (1 + torch.tanh(math.sqrt(2 / math.pi) * (x + 0.044715 * x**3)))
 
 
@@ -48,6 +50,7 @@ class FeedForward(nn.Module):
         )
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
+        """(B, n, d) -> (B, n, d), each position on its own."""
         out: torch.Tensor = self.layers(x)
         return out
 

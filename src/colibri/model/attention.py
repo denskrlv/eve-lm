@@ -17,6 +17,7 @@ class RMSNorm(nn.Module):
         self.scale = nn.Parameter(torch.ones(d))
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
+        """Divide each vector by its root mean square, then apply the scale."""
         return self.scale * x * torch.rsqrt(x.pow(2).mean(dim=-1, keepdim=True) + self.eps)
 
 

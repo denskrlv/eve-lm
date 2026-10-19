@@ -51,6 +51,8 @@ def number_words(number: int) -> str:
 
 @dataclass(frozen=True)
 class Slot:
+    """A ``{...}`` slot: the argument it fills, how a bool is said, or a fixed value."""
+
     arg: str
     true_text: str | None = None  # bool slots: {on:on|off}
     false_text: str | None = None
@@ -60,11 +62,14 @@ class Slot:
 
 @dataclass(frozen=True)
 class Segment:
+    """A run of template text and slots; optional when written in ``[...]``."""
+
     optional: bool
     parts: tuple[str | Slot, ...]
 
     @property
     def args(self) -> set[str]:
+        """The arguments this segment's slots fill."""
         return {p.arg for p in self.parts if isinstance(p, Slot)}
 
 
@@ -187,6 +192,8 @@ def sample_value(
 
 @dataclass
 class Filled:
+    """A filled template: the request text and the call arguments it implies."""
+
     text: str
     args: dict[str, Any] = field(default_factory=dict)
     implied: set[str] = field(default_factory=set)  # fixed by the template, not said in the text

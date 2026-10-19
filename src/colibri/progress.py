@@ -17,9 +17,11 @@ class Bar(tqdm):  # type: ignore[type-arg]  # tqdm is generic only in its stubs
 
     @property
     def format_dict(self) -> dict[str, Any]:
+        """tqdm's fields plus ``stats``."""
         return {**super().format_dict, "stats": self.stats}
 
     def set_stats(self, *parts: str) -> None:
+        """Show ``parts`` after the bar, joined by " · "."""
         self.stats = "· " + " · ".join(parts) if parts else ""
         self.refresh()
 

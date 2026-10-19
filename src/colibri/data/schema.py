@@ -15,7 +15,7 @@ _NAME = re.compile(r"[a-z][a-z0-9]*(?:_[a-z0-9]+)*")  # snake_case
 
 
 class SchemaError(ValueError):
-    pass
+    """A tool schema, call or example that breaks the rules."""
 
 
 def _check_text(what: str, text: str) -> None:
@@ -37,6 +37,8 @@ def _number(value: float) -> str:
 
 @dataclass(frozen=True)
 class Arg:
+    """One argument of a tool: its type, whether it is required, its options or range."""
+
     name: str
     type: str
     required: bool = True
@@ -72,12 +74,14 @@ class Arg:
 
     @classmethod
     def from_dict(cls, data: dict[str, Any]) -> "Arg":
+        """An argument from its JSON form, as in ``data/tools``."""
         unknown = set(data) - {"name", "type", "required", "options", "min", "max", "description"}
         if unknown:
             raise SchemaError(f"argument {data.get('name')!r}: unknown keys {sorted(unknown)}")
         return cls(**{**data, "options": tuple(data.get("options", ()))})
 
     def to_dict(self) -> dict[str, Any]:
+        """The JSON form, without the fields that have their default."""
         out: dict[str, Any] = {"name": self.name, "type": self.type}
         if not self.required:
             out["required"] = False
@@ -89,6 +93,7 @@ class Arg:
         return out
 
     def render(self) -> str:
+        """The argument as the encoder reads it: ``<arg> name ? : type : note``."""
         spec = self.type
         if self.type == "enum":
             spec += " " + " | ".join(self.options)
@@ -137,6 +142,8 @@ class Arg:
 
 @dataclass(frozen=True)
 class Tool:
+    """A tool the model can call: its name, description and arguments."""
+
     name: str
     description: str
     args: tuple[Arg, ...] = ()
@@ -155,6 +162,7 @@ class Tool:
 
     @classmethod
     def from_dict(cls, data: dict[str, Any], domain: str = "") -> "Tool":
+        """A tool from its JSON form, as in ``data/tools``."""
         unknown = set(data) - {"name", "description", "args"}
         if unknown:
             raise SchemaError(f"tool {data.get('name')!r}: unknown keys {sorted(unknown)}")
@@ -162,6 +170,7 @@ class Tool:
         return cls(data["name"], data["description"], args, domain)
 
     def to_dict(self) -> dict[str, Any]:
+        """The JSON form."""
         return {
             "name": self.name,
             "description": self.description,
@@ -177,9 +186,11 @@ class Tool:
         return [f"<tool> {self.name} : {self.description}"] + [a.render() for a in self.args]
 
     def render(self) -> str:
+        """The whole schema as one string (see ``render_parts``)."""
         return " ".join(self.render_parts())
 
     def arg(self, name: str) -> Arg:
+        """The argument called ``name``."""
         for arg in self.args:
             if arg.name == name:
                 return arg

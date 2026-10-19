@@ -104,6 +104,8 @@ class ToolBank:
 
 @dataclass
 class Sample:
+    """One sampled example, plus what chat writers need to rephrase it."""
+
     example: TaskExample
     meaning: str | None  # the template text before decoration; what chat writers rephrase
     missing: list[str] = field(default_factory=list)  # ASK: the required arguments left out
@@ -163,6 +165,7 @@ def _pick_new_capability(
 def sample_call(
     bank: ToolBank, rng: np.random.Generator, pool: Sequence[int] | None = None
 ) -> Sample:
+    """A CALL example: 1-3 calls (a fan-out adds more) joined into one request."""
     n_calls = int(rng.choice(CALL_COUNTS, p=CALL_COUNT_WEIGHTS))
     gold: list[int] = []
     parts: list[str] = []
@@ -205,6 +208,7 @@ def sample_call(
 def sample_ask(
     bank: ToolBank, rng: np.random.Generator, pool: Sequence[int] | None = None
 ) -> Sample:
+    """An ASK example: one call whose request leaves out a required value."""
     for _ in range(ASK_TRIES):
         gold_index = bank.pick(rng, pool)
         spec = bank.specs[gold_index]

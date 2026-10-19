@@ -32,6 +32,7 @@ SPECIAL_IDS = {token: i for i, token in enumerate(SPECIAL_TOKENS)}
 
 
 def sentinel(i: int) -> int:
+    """The token id of the sentinel ``<x{i}>``."""
     if not 0 <= i < N_SENTINELS:
         raise IndexError(f"there are only {N_SENTINELS} sentinels")
     return SENTINEL0 + i
@@ -64,6 +65,7 @@ def _merge_pair(ids: list[int], pair: tuple[int, int], new_id: int) -> list[int]
 
 
 class BPETokenizer:
+    """Byte-level BPE with special tokens (book ch. 2.5); ``train`` learns it."""
     def __init__(self, merges: Iterable[tuple[int, int]]):
         self.merges: list[tuple[int, int]] = [(a, b) for a, b in merges]
         self.vocab: list[bytes] = [t.encode() for t in SPECIAL_TOKENS] + [
@@ -77,6 +79,7 @@ class BPETokenizer:
 
     @property
     def vocab_size(self) -> int:
+        """Special tokens + 256 bytes + one token per merge."""
         return len(self.vocab)
 
     @classmethod
@@ -87,6 +90,8 @@ class BPETokenizer:
         min_count: int = 2,
         progress: bool = False,
     ) -> "BPETokenizer":
+        """Learn merges from weighted ``texts`` until there are ``vocab_size`` tokens, or
+        until no pair is seen ``min_count`` times."""
         n_merges = vocab_size - BYTE0 - 256
         if n_merges < 0:
             raise ValueError(f"vocab_size must be at least {BYTE0 + 256}")
@@ -191,6 +196,7 @@ class BPETokenizer:
         return tuple(ids)
 
     def decode(self, ids: Iterable[int]) -> str:
+        """Token ids back to text (bad UTF-8 becomes U+FFFD)."""
         return b"".join(self.vocab[i] for i in ids).decode("utf-8", errors="replace")
 
     def pieces(self, ids: Iterable[int]) -> list[str]:
@@ -198,6 +204,7 @@ class BPETokenizer:
         return [self.vocab[i].decode("utf-8", errors="replace") for i in ids]
 
     def to_dict(self) -> dict[str, Any]:
+        """The merges, plus the split pattern and special tokens they need."""
         return {
             "format": "colibri-bpe-1",
             "split_pattern": SPLIT_PATTERN,
@@ -207,6 +214,7 @@ class BPETokenizer:
 
     @classmethod
     def from_dict(cls, data: dict[str, Any]) -> "BPETokenizer":
+        """A tokenizer from ``to_dict``; refuses other split rules or tokens."""
         if data.get("format") != "colibri-bpe-1":
             raise ValueError("not a Colibri tokenizer")
         if (
@@ -217,11 +225,13 @@ class BPETokenizer:
         return cls(tuple(m) for m in data["merges"])
 
     def save(self, path: str | Path) -> None:
+        """Write the tokenizer as JSON."""
         Path(path).parent.mkdir(parents=True, exist_ok=True)
         Path(path).write_text(json.dumps(self.to_dict()))
 
     @classmethod
     def load(cls, path: str | Path) -> "BPETokenizer":
+        """Read a tokenizer written by ``save``."""
         try:
             return cls.from_dict(json.loads(Path(path).read_text()))
         except ValueError as e:

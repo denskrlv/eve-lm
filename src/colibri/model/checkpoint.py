@@ -18,6 +18,8 @@ QUESTION_FIELDS = frozenset(  # config fields that change no pretrained weight's
 
 @dataclass
 class Checkpoint:
+    """A loaded checkpoint: model, tokenizer, meta and, for resuming, train state."""
+
     model: Colibri
     tokenizer: BPETokenizer
     meta: dict[str, Any]

@@ -33,10 +33,12 @@ class ToolSpec:
 
     @property
     def name(self) -> str:
+        """The tool's name."""
         return self.tool.name
 
     @property
     def domain(self) -> str:
+        """The tool's domain."""
         return self.tool.domain
 
 

@@ -12,6 +12,8 @@ ROOMS = ("kitchen", "bedroom", "living room", "bathroom", "office", "garage", "b
 
 @dataclass(frozen=True)
 class Level:
+    """A numeric setting of a device, like a fan's speed from 1 to 5."""
+
     attr: str  # "fan speed"
     lo: int
     hi: int
@@ -20,6 +22,8 @@ class Level:
 
 @dataclass(frozen=True)
 class Device:
+    """A home device: its levels and modes, and whether it has power and rooms."""
+
     noun: str
     levels: tuple[Level, ...] = ()
     modes: tuple[str, ...] = ()
@@ -66,6 +70,8 @@ DEVICES = (
 
 @dataclass(frozen=True)
 class Record:
+    """A kind of record people create, delete, find and mark: a ticket, a note."""
+
     entity: str
     titles: tuple[str, ...]
     statuses: tuple[str, ...] = ()
@@ -73,6 +79,7 @@ class Record:
 
     @property
     def article(self) -> str:
+        """ "a" or "an", whichever goes before the entity."""
         return "an" if self.entity[0] in "aeiou" else "a"
 
 
@@ -166,6 +173,8 @@ RECORDS = (
 
 @dataclass(frozen=True)
 class Lookup:
+    """Something to look up by one key, like the air quality of a city."""
+
     thing: str  # "air quality"
     key: str  # argument: "city"
     keys: tuple[str, ...]

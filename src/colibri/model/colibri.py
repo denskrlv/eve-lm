@@ -19,6 +19,8 @@ class Questions:
 
 @dataclass
 class Output:
+    """What a forward pass returns: question logits and/or next-token logits."""
+
     questions: Questions | None  # None without tool positions (pretraining)
     lm: torch.Tensor | None  # (B, n_dec, vocab_size) next-token logits; None without dec_ids
 
@@ -126,6 +128,7 @@ class Colibri(nn.Module):
         tool_pos: torch.Tensor,
         tool_mask: torch.Tensor,
     ) -> Questions:
+        """Answer the fixed questions from encoder ``memory`` and the ``<tool>`` positions."""
         answers: Questions = self.questions(memory, enc_mask, tool_pos, tool_mask)
         return answers
 

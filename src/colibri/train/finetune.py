@@ -184,6 +184,7 @@ def load_init(path: str | Path, device: str | torch.device = "cpu", **overrides:
 
 
 def load_examples(path: str | Path, library: dict[str, Tool]) -> list[TaskExample]:
+    """The examples of a task .jsonl file, with tools looked up in ``library``."""
     return [TaskExample.from_json(row, library) for row in read_jsonl(path)]
 
 

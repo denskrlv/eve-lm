@@ -63,6 +63,7 @@ def _parquet_files(pattern: str) -> list[str]:
 
 
 def info(_: argparse.Namespace) -> None:
+    """Print the torch version, the device, and each preset's size."""
     print(f"torch {torch.__version__}, device: {pick_device()}")
     print(f"{'preset':<8}{'d_model':>9}{'heads':>7}{'enc':>5}{'dec':>5}{'q':>4}{'params':>10}")
     for name, cfg in PRESETS.items():
@@ -87,6 +88,7 @@ def model(args: argparse.Namespace) -> None:
 
 
 def tokenizer_train(args: argparse.Namespace) -> None:
+    """Train the BPE tokenizer on web text plus weighted schemas and commands."""
     from colibri.data.corpus import iter_documents, take_bytes, tokenizer_texts
     from colibri.tokenizer.bpe import BPETokenizer
 
@@ -141,6 +143,7 @@ def tokenizer_stats(args: argparse.Namespace) -> None:
 
 
 def corpus(args: argparse.Namespace) -> None:
+    """Encode the pretraining corpus into train and val token files."""
     from colibri.data.corpus import encode_corpus
 
     meta = encode_corpus(
@@ -394,6 +397,7 @@ def ask(args: argparse.Namespace) -> None:
 
 
 def data_build(args: argparse.Namespace) -> None:
+    """Build the task splits and print how many examples each has."""
     from colibri.config import preset
     from colibri.data.generate.build import build
     from colibri.tokenizer.bpe import BPETokenizer
@@ -416,6 +420,7 @@ def data_build(args: argparse.Namespace) -> None:
 
 
 def data_external(args: argparse.Namespace) -> None:
+    """Convert downloaded xLAM and MASSIVE data and print the report."""
     from colibri.data.generate.external import convert_external
 
     report = convert_external(args.raw, args.out, args.seed)
@@ -425,6 +430,7 @@ def data_external(args: argparse.Namespace) -> None:
 
 
 def data_batch(args: argparse.Namespace) -> None:
+    """Write new scenario batches for chat writers to fill in."""
     from colibri.data.generate.build import Sources, make_batch, next_batch_name
 
     batches = Path(args.dir) / "batches"
@@ -439,6 +445,7 @@ def data_batch(args: argparse.Namespace) -> None:
 
 
 def data_check(args: argparse.Namespace) -> None:
+    """Validate a chat-written batch; exit with 1 if a line is rejected or missing."""
     from colibri.data.generate.build import Sources, check_written
     from colibri.data.jsonl import read_jsonl
 
