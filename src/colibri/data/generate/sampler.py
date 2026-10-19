@@ -12,7 +12,9 @@ INTENT_MIX = {"call": 0.55, "ask": 0.15, "unsupported": 0.15, "none": 0.15}
 CONNECTORS = (" and ", ", then ", " and then ", ". Also ", ", and also ")
 PREFIXES = ("please ", "can you ", "could you ", "hey, ", "ok, ", "I want to ")
 SUFFIXES = (" please", "?", ".", " thanks", " now", "!")
-_QUESTION = re.compile(r"^(what|how|when|where|who|is|are|do|did|can|will|any)\b", re.I)
+_QUESTION = re.compile(
+    r"^(what|how|when|where|who|which|is|are|was|do|does|did|can|will|any|if)\b", re.I
+)
 _STOPWORDS = set(
     "the a an of or to in on and for with set get is it from by as at that this another be "
     "current new".split()

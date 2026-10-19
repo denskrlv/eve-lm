@@ -3,6 +3,51 @@ import torch.nn.functional as F
 from torch import nn
 
 
+class RMSNorm(nn.Module):
+    """RMSNorm (Zhang & Sennrich, 2019): LayerNorm without the mean and the shift. Each vector is
+    divided by its root mean square, then rescaled per feature by a learned ``scale``.
+
+    Used for QK-norm on each head's queries and keys: their dot products, and with them the
+    attention logits, can then no longer grow without bound as training goes on.
+    """
+
+    def __init__(self, d: int, eps: float = 1e-6):
+        super().__init__()
+        self.eps = eps
+        self.scale = nn.Parameter(torch.ones(d))
+
+    def forward(self, x: torch.Tensor) -> torch.Tensor:
+        return self.scale * x * torch.rsqrt(x.pow(2).mean(dim=-1, keepdim=True) + self.eps)
+
+
+def rope_angles(
+    n: int, head_dim: int, base: float, device: torch.device
+) -> tuple[torch.Tensor, torch.Tensor]:
+    """cos and sin, each (n, head_dim), of rotary position embeddings (RoPE, Su et al. 2021).
+
+    Feature pair (i, i + head_dim/2) of the vector at position m is rotated by the angle
+    m · base^(-2i/head_dim): the first pairs turn fast, the last ones slowly, like the hands
+    of a clock.
+    """
+    inv_freq = base ** (-torch.arange(0, head_dim, 2, device=device).float() / head_dim)
+    angles = torch.arange(n, device=device).float()[:, None] * inv_freq  # (n, head_dim / 2)
+    angles = torch.cat([angles, angles], dim=-1)
+    return angles.cos(), angles.sin()
+
+
+def apply_rope(x: torch.Tensor, cos: torch.Tensor, sin: torch.Tensor) -> torch.Tensor:
+    """Rotate each position's vector by its angles. ``x`` (..., n, head_dim).
+
+    Rotating the query at position m and the key at position n turns their dot product into a
+    function of the offset m - n only, so attention sees how far apart two tokens are, not
+    where they are. A learned position table has to learn "the token right before me" again
+    for every one of its positions.
+    """
+    half = x.shape[-1] // 2
+    rotated = torch.cat([-x[..., half:], x[..., :half]], dim=-1)  # (a, b) -> (-b, a) per pair
+    return x * cos + rotated * sin
+
+
 class MultiHeadAttention(nn.Module):
     """Multi-head attention, used three ways (book ch. 3.6, `MultiHeadAttention`):
 
@@ -16,6 +61,12 @@ class MultiHeadAttention(nn.Module):
     - ``ValueError`` if ``d_model`` isn't divisible by ``n_heads``.
     - ``use_sdpa`` is a plain attribute the tests flip on the same module: False runs the manual
       path, True runs ``F.scaled_dot_product_attention``. Both must give the same output.
+
+    Two options, both off by default:
+    - ``rope``: rotary positions on the queries and keys of self-attention. Cross-attention
+      never uses them: the decoder's and the encoder's positions don't count in the same frame.
+    - ``qk_norm``: ``q_norm`` and ``k_norm``, RMSNorms over head_dim shared by all heads, applied
+      to the queries and keys before RoPE (2·head_dim more parameters).
     """
 
     def __init__(
@@ -25,6 +76,9 @@ class MultiHeadAttention(nn.Module):
         causal: bool = False,
         dropout: float = 0.0,
         use_sdpa: bool = False,
+        rope: bool = False,
+        rope_base: float = 10000.0,
+        qk_norm: bool = False,
     ):
         super().__init__()
         if d_model % n_heads:
@@ -34,11 +88,18 @@ class MultiHeadAttention(nn.Module):
         self.causal = causal
         self.dropout = dropout
         self.use_sdpa = use_sdpa
+        self.rope = rope
+        self.rope_base = rope_base
         self.W_query = nn.Linear(d_model, d_model)
         self.W_key = nn.Linear(d_model, d_model)
         self.W_value = nn.Linear(d_model, d_model)
         self.out_proj = nn.Linear(d_model, d_model)  # mixes the heads' outputs, as in the book
         self.drop = nn.Dropout(dropout)
+        if qk_norm:
+            self.q_norm = RMSNorm(self.head_dim)
+            self.k_norm = RMSNorm(self.head_dim)
+        else:
+            self.q_norm = self.k_norm = None
 
     def forward(
         self,
@@ -63,6 +124,7 @@ class MultiHeadAttention(nn.Module):
         """
         if self.causal and kv is not None:
             raise ValueError("cross-attention is never causal")
+        self_attention = kv is None
         kv = x if kv is None else kv  # self-attention: queries, keys and values all come from x
         b, n_q, d = x.shape
 
@@ -71,6 +133,13 @@ class MultiHeadAttention(nn.Module):
         q = self._split(self.W_query(x))
         k = self._split(self.W_key(kv))
         v = self._split(self.W_value(kv))
+        # 1b. Options: normalize the queries and keys, then rotate them by their positions.
+        if self.q_norm is not None:
+            q, k = self.q_norm(q), self.k_norm(k)
+        if self.rope and self_attention:
+            cos, sin = rope_angles(n_q, self.head_dim, self.rope_base, x.device)
+            cos, sin = cos.to(q.dtype), sin.to(q.dtype)  # bf16 under autocast
+            q, k = apply_rope(q, cos, sin), apply_rope(k, cos, sin)
 
         # 2. Which query may look at which key (True = allowed), broadcast to the scores' shape.
         allowed = self._allowed(key_mask, n_q, kv.shape[1], x.device)

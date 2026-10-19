@@ -196,24 +196,32 @@ class BPETokenizer:
         """Each token as a string, for looking at how text was split."""
         return [self.vocab[i].decode("utf-8", errors="replace") for i in ids]
 
-    def save(self, path: str | Path) -> None:
-        data = {
+    def to_dict(self) -> dict:
+        return {
             "format": "colibri-bpe-1",
             "split_pattern": SPLIT_PATTERN,
             "special_tokens": list(SPECIAL_TOKENS),
-            "merges": self.merges,
+            "merges": [list(m) for m in self.merges],
         }
-        Path(path).parent.mkdir(parents=True, exist_ok=True)
-        Path(path).write_text(json.dumps(data))
 
     @classmethod
-    def load(cls, path: str | Path) -> "BPETokenizer":
-        data = json.loads(Path(path).read_text())
+    def from_dict(cls, data: dict) -> "BPETokenizer":
         if data.get("format") != "colibri-bpe-1":
-            raise ValueError(f"{path} is not a Colibri tokenizer")
+            raise ValueError("not a Colibri tokenizer")
         if (
             data["split_pattern"] != SPLIT_PATTERN
             or tuple(data["special_tokens"]) != SPECIAL_TOKENS
         ):
-            raise ValueError(f"{path} was trained with a different split pattern or special tokens")
+            raise ValueError("trained with a different split pattern or special tokens")
         return cls(tuple(m) for m in data["merges"])
+
+    def save(self, path: str | Path) -> None:
+        Path(path).parent.mkdir(parents=True, exist_ok=True)
+        Path(path).write_text(json.dumps(self.to_dict()))
+
+    @classmethod
+    def load(cls, path: str | Path) -> "BPETokenizer":
+        try:
+            return cls.from_dict(json.loads(Path(path).read_text()))
+        except ValueError as e:
+            raise ValueError(f"{path}: {e}") from None

@@ -199,7 +199,7 @@ def _stats(rows: list[dict], sources: Sources) -> dict:
 
 def build(
     out_dir: str | Path = "data/task",
-    n_templates: int = 50_000,
+    n_templates: int = 80_000,
     n_heldout: int = 2_000,
     seed: int = 0,
     tokenizer: BPETokenizer | None = None,

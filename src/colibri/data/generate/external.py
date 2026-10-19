@@ -13,8 +13,8 @@ from colibri.data.generate.validate import check_example, mentions, value_forms
 from colibri.data.render import Call, TaskExample
 from colibri.data.schema import MAX_ARGS, Arg, SchemaError, Tool
 
-# Topics of the held-out domains (math, travel). An external example whose tools touch them is
-# dropped, or the held-out test would no longer measure unseen tools.
+# Topics of the held-out domains (math, travel). An external example whose tools or request touch
+# them is dropped, or the held-out test would no longer measure unseen tools.
 HELD_OUT = re.compile(
     r"\b(flights?|airports?|airlines?|hotels?|travel\w*|trips?|currenc\w*|exchange rates?|"
     r"convert\w*|conversion|calculat\w*|arithmetic|math\w*|sum|addition|subtract\w*|"
@@ -95,7 +95,7 @@ def convert_xlam(row: dict, rng: np.random.Generator) -> tuple[TaskExample | Non
     """One xLAM example in our format, or None and the reason it was dropped."""
     query = row["query"]
     raw_tools, answers = json.loads(row["tools"]), json.loads(row["answers"])
-    if any(
+    if HELD_OUT.search(query) or any(
         HELD_OUT.search(t["name"].replace("_", " ") + " " + t.get("description", ""))
         for t in raw_tools
     ):
@@ -282,6 +282,9 @@ def convert_massive(rows: list[dict], rng: np.random.Generator) -> tuple[dict[st
     dropped = Counter()
     for r in rows:
         intent, text = r["intent"], r["utt"]
+        if HELD_OUT.search(text):  # e.g. "can you convert my this money into", in any intent
+            dropped["held-out topic in the request"] += 1
+            continue
         if intent in MASSIVE_NONE:
             k = int(rng.integers(1, 6))
             prompt = [bank.specs[i].tool for i in bank.distractors([], k, rng, hard=False)]
