@@ -30,9 +30,9 @@ def _check_name(what: str, name: str) -> None:
         raise SchemaError(f"{what} must be snake_case, got {name!r}")
 
 
-def _number(x: float) -> str:
+def _number(value: float) -> str:
     """16 -> "16", 21.5 -> "21.5" (never "16.0" or "2e+01")."""
-    return str(int(x)) if float(x).is_integer() else repr(float(x))
+    return str(int(value)) if float(value).is_integer() else repr(float(value))
 
 
 @dataclass(frozen=True)
@@ -71,22 +71,22 @@ class Arg:
             raise SchemaError(f"argument {self.name}: only int and float have a range")
 
     @classmethod
-    def from_dict(cls, d: dict[str, Any]) -> "Arg":
-        unknown = set(d) - {"name", "type", "required", "options", "min", "max", "description"}
+    def from_dict(cls, data: dict[str, Any]) -> "Arg":
+        unknown = set(data) - {"name", "type", "required", "options", "min", "max", "description"}
         if unknown:
-            raise SchemaError(f"argument {d.get('name')!r}: unknown keys {sorted(unknown)}")
-        return cls(**{**d, "options": tuple(d.get("options", ()))})
+            raise SchemaError(f"argument {data.get('name')!r}: unknown keys {sorted(unknown)}")
+        return cls(**{**data, "options": tuple(data.get("options", ()))})
 
     def to_dict(self) -> dict[str, Any]:
-        d: dict[str, Any] = {"name": self.name, "type": self.type}
+        out: dict[str, Any] = {"name": self.name, "type": self.type}
         if not self.required:
-            d["required"] = False
+            out["required"] = False
         if self.options:
-            d["options"] = list(self.options)
+            out["options"] = list(self.options)
         for key in ("min", "max", "description"):
             if getattr(self, key) not in (None, ""):
-                d[key] = getattr(self, key)
-        return d
+                out[key] = getattr(self, key)
+        return out
 
     def render(self) -> str:
         spec = self.type
@@ -154,12 +154,12 @@ class Tool:
             raise SchemaError(f"tool {self.name}: more than {MAX_ARGS} arguments")
 
     @classmethod
-    def from_dict(cls, d: dict[str, Any], domain: str = "") -> "Tool":
-        unknown = set(d) - {"name", "description", "args"}
+    def from_dict(cls, data: dict[str, Any], domain: str = "") -> "Tool":
+        unknown = set(data) - {"name", "description", "args"}
         if unknown:
-            raise SchemaError(f"tool {d.get('name')!r}: unknown keys {sorted(unknown)}")
-        args = tuple(Arg.from_dict(a) for a in d.get("args", ()))
-        return cls(d["name"], d["description"], args, domain)
+            raise SchemaError(f"tool {data.get('name')!r}: unknown keys {sorted(unknown)}")
+        args = tuple(Arg.from_dict(a) for a in data.get("args", ()))
+        return cls(data["name"], data["description"], args, domain)
 
     def to_dict(self) -> dict[str, Any]:
         return {
@@ -180,9 +180,9 @@ class Tool:
         return " ".join(self.render_parts())
 
     def arg(self, name: str) -> Arg:
-        for a in self.args:
-            if a.name == name:
-                return a
+        for arg in self.args:
+            if arg.name == name:
+                return arg
         raise KeyError(f"tool {self.name} has no argument {name!r}")
 
     def check_call(self, values: dict[str, Any], allow_ask: bool = False) -> list[str]:
@@ -190,14 +190,16 @@ class Tool:
 
         With ``allow_ask``, a required argument may be ``"?"``: the user must be asked for it.
         """
-        errors = [f"unknown argument {k!r}" for k in values if k not in {a.name for a in self.args}]
-        for a in self.args:
-            if a.name not in values:
-                if a.required:
-                    errors.append(f"missing required argument {a.name!r}")
-            elif allow_ask and a.required and values[a.name] == ASK_VALUE:
+        errors = [
+            f"unknown argument {k!r}" for k in values if k not in {arg.name for arg in self.args}
+        ]
+        for arg in self.args:
+            if arg.name not in values:
+                if arg.required:
+                    errors.append(f"missing required argument {arg.name!r}")
+            elif allow_ask and arg.required and values[arg.name] == ASK_VALUE:
                 continue
-            elif (error := a.check(values[a.name])) is not None:
+            elif (error := arg.check(values[arg.name])) is not None:
                 errors.append(error)
         return errors
 

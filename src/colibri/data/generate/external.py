@@ -32,10 +32,10 @@ MIN_SLOT_COUNT, MIN_SLOT_SHARE = 5, 0.03  # how often a MASSIVE slot must appear
 
 def snake(name: str) -> str:
     """Any identifier as snake_case: getUserInfo / get-user.info -> get_user_info."""
-    s = re.sub(r"([a-z0-9])([A-Z])", r"\1_\2", name)
-    s = re.sub(r"[^A-Za-z0-9]+", "_", s).strip("_").lower()
-    s = re.sub(r"_+", "_", s)
-    return "n_" + s if s[:1].isdigit() else s
+    text = re.sub(r"([a-z0-9])([A-Z])", r"\1_\2", name)
+    text = re.sub(r"[^A-Za-z0-9]+", "_", text).strip("_").lower()
+    text = re.sub(r"_+", "_", text)
+    return "n_" + text if text[:1].isdigit() else text
 
 
 def short(text: str, limit: int) -> str:
@@ -69,30 +69,30 @@ def _coerce(arg: Arg, value: Any) -> Any:
 _XLAM_TYPES = {"str": "str", "int": "int", "float": "float", "bool": "bool"}
 
 
-def xlam_tool(d: dict[str, Any]) -> tuple[Tool, dict[str, str], dict[str, Any]] | None:
+def xlam_tool(raw: dict[str, Any]) -> tuple[Tool, dict[str, str], dict[str, Any]] | None:
     """An xLAM tool as a Tool, with its parameter name map and defaults. None if any parameter
     isn't a simple type (lists, dicts, tuples...)."""
     args: list[Arg] = []
     names: dict[str, str] = {}
     defaults: dict[str, Any] = {}
-    for pname, p in (d.get("parameters") or {}).items():
-        parts = [x.strip() for x in str(p.get("type", "")).split(",")]
+    for pname, param in (raw.get("parameters") or {}).items():
+        parts = [x.strip() for x in str(param.get("type", "")).split(",")]
         if parts[0] not in _XLAM_TYPES:
             return None
         optional = any(x.startswith(("optional", "default")) for x in parts[1:])
-        optional = optional or p.get("default") not in (None, "")
+        optional = optional or param.get("default") not in (None, "")
         name = snake(pname)
         if not name or name in names.values():
             return None
         names[pname] = name
-        defaults[name] = p.get("default")
-        desc = short(p.get("description", ""), 60)
+        defaults[name] = param.get("default")
+        desc = short(param.get("description", ""), 60)
         args.append(Arg(name, _XLAM_TYPES[parts[0]], required=not optional, description=desc))
     if len(args) > MAX_ARGS:
         return None
     try:
-        description = short(d.get("description", ""), 120) or d["name"].replace("_", " ")
-        return Tool(snake(d["name"]), description, tuple(args), "xlam"), names, defaults
+        description = short(raw.get("description", ""), 120) or raw["name"].replace("_", " ")
+        return Tool(snake(raw["name"]), description, tuple(args), "xlam"), names, defaults
     except SchemaError:
         return None
 
@@ -113,13 +113,13 @@ def _xlam_tools(
 ) -> tuple[dict[str, XlamTool] | None, str]:
     """The offered tools that convert, by xLAM name, or None and why the example is dropped."""
     converted = {}
-    for t in raw_tools:
-        c = xlam_tool(t)
-        if c is None and t["name"] in gold_names:
+    for raw_tool in raw_tools:
+        conversion = xlam_tool(raw_tool)
+        if conversion is None and raw_tool["name"] in gold_names:
             return None, "list, dict or other complex argument"
-        if c is not None:
-            converted[t["name"]] = c
-    if len({c[0].name for c in converted.values()}) != len(converted):
+        if conversion is not None:
+            converted[raw_tool["name"]] = conversion
+    if len({conversion[0].name for conversion in converted.values()}) != len(converted):
         return None, "two tools with the same name"
     if any(n not in converted for n in gold_names):
         return None, "call to a tool not in the list"
@@ -196,9 +196,11 @@ def unsupported_variant(
     for _ in range(VARIANT_TRIES):
         if len(tools) == want:
             break
-        t = pick(rng, pool)
-        if not words & set(t.name.split("_")) and t.name not in {c.tool for c in example.calls}:
-            tools[t.name] = t
+        candidate = pick(rng, pool)
+        if not words & set(candidate.name.split("_")) and candidate.name not in {
+            c.tool for c in example.calls
+        }:
+            tools[candidate.name] = candidate
     if not tools:
         return None
     return TaskExample(example.utterance, tuple(tools.values()), "unsupported")
@@ -278,11 +280,11 @@ def massive_tools(rows: list[dict[str, Any]]) -> dict[str, Tool]:
     the intent's train examples, all optional strings."""
     counts: dict[str, Counter[str]] = {}
     sizes: Counter[str] = Counter()
-    for r in rows:
-        if r["partition"] == "train" and r["intent"] in MASSIVE_TOOLS:
-            sizes[r["intent"]] += 1
-            counts.setdefault(r["intent"], Counter()).update(
-                s for s, _ in _SLOT.findall(r["annot_utt"])
+    for row in rows:
+        if row["partition"] == "train" and row["intent"] in MASSIVE_TOOLS:
+            sizes[row["intent"]] += 1
+            counts.setdefault(row["intent"], Counter()).update(
+                s for s, _ in _SLOT.findall(row["annot_utt"])
             )
     tools = {}
     for intent, (name, description) in MASSIVE_TOOLS.items():
@@ -302,11 +304,11 @@ def _massive_bank(tools: dict[str, Tool]) -> ToolBank:
     """The MASSIVE tools as a bank. Tools of one scenario overlap: none of them is offered for
     an UNSUPPORTED copy of another's request."""
     by_scenario: dict[str, list[str]] = {}
-    for t in tools.values():
-        by_scenario.setdefault(t.domain, []).append(t.name)
+    for tool in tools.values():
+        by_scenario.setdefault(tool.domain, []).append(tool.name)
     specs = [
-        ToolSpec(t, (), capability=t.name, overlaps=tuple(by_scenario[t.domain]))
-        for t in tools.values()
+        ToolSpec(tool, (), capability=tool.name, overlaps=tuple(by_scenario[tool.domain]))
+        for tool in tools.values()
     ]
     return ToolBank(specs)
 
@@ -319,8 +321,8 @@ def _massive_row(
     if HELD_OUT.search(text):  # e.g. "can you convert my this money into", in any intent
         return [], "held-out topic in the request"
     if intent in MASSIVE_NONE:
-        k = prompt_size(rng)
-        prompt = [bank.specs[i].tool for i in bank.distractors([], k, rng, hard=False)]
+        n_tools = prompt_size(rng)
+        prompt = [bank.specs[i].tool for i in bank.distractors([], n_tools, rng, hard=False)]
         return [TaskExample(text, tuple(prompt), "none")], None
     if intent not in tools:
         return [], "intent left out (held-out topic or too rare)"
@@ -330,17 +332,19 @@ def _massive_row(
     tool = tools[intent]
     names = {a.name for a in tool.args}
     args = {s: v.strip() for s, v in slots if s in names}
-    g = bank.index[tool.name]
-    k = prompt_size(rng)
-    indices = [g] + bank.distractors([g], k - 1, rng)
+    gold = bank.index[tool.name]
+    n_tools = prompt_size(rng)
+    indices = [gold] + bank.distractors([gold], n_tools - 1, rng)
     prompt = [bank.specs[i].tool for i in shuffled(rng, indices)]
     example = TaskExample(text, tuple(prompt), "call", (Call(tool.name, args),))
     if check_example(example):
         return [], "value not in the request"
     examples = [example]
     if rng.random() < UNSUPPORTED_SHARE:
-        k = prompt_size(rng)
-        prompt = [bank.specs[i].tool for i in bank.distractors([g], k, rng, unsupported=True)]
+        n_tools = prompt_size(rng)
+        prompt = [
+            bank.specs[i].tool for i in bank.distractors([gold], n_tools, rng, unsupported=True)
+        ]
         if prompt:
             examples.append(TaskExample(text, tuple(prompt), "unsupported"))
     return examples, None

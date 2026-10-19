@@ -45,11 +45,11 @@ def answer_questions(
     """
     rendered = render(TaskExample(utterance, tuple(tools), "none"), tokenizer, model.cfg)
     with eval_mode(model) as device:
-        q = ask(model, to_device(TaskCollator(model.cfg)([rendered]), device))
+        questions = ask(model, to_device(TaskCollator(model.cfg)([rendered]), device))
 
     names = [t.name for t in tools]
-    intent = q.intent[0].softmax(-1).tolist()
-    slots = q.slots[0].softmax(-1)[:, [*range(len(names)), model.cfg.max_tools]].tolist()
+    intent = questions.intent[0].softmax(-1).tolist()
+    slots = questions.slots[0].softmax(-1)[:, [*range(len(names)), model.cfg.max_tools]].tolist()
     return Answers(
         intent=dict(zip(INTENTS, intent, strict=True)),
         slots=[dict(zip([*names, STOP], s, strict=True)) for s in slots],

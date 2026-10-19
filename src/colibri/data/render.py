@@ -67,19 +67,22 @@ class TaskExample:
                 raise SchemaError(f"call to {call.tool}: {'; '.join(errors)}")
 
     @classmethod
-    def from_json(cls, d: dict[str, Any], library: dict[str, Tool] | None = None) -> "TaskExample":
+    def from_json(
+        cls, data: dict[str, Any], library: dict[str, Tool] | None = None
+    ) -> "TaskExample":
         """``{"utterance", "tools", "intent", "calls": [{"tool", "args"}]}``.
 
         A tool is a name looked up in ``library``, or a whole schema (a dict, as in
         ``Tool.to_dict``) for tools from outside the library, like external datasets.
         """
         return cls(
-            utterance=d["utterance"],
+            utterance=data["utterance"],
             tools=tuple(
-                Tool.from_dict(t) if isinstance(t, dict) else _named(t, library) for t in d["tools"]
+                Tool.from_dict(t) if isinstance(t, dict) else _named(t, library)
+                for t in data["tools"]
             ),
-            intent=d["intent"],
-            calls=tuple(Call(c["tool"], dict(c.get("args", {}))) for c in d.get("calls", ())),
+            intent=data["intent"],
+            calls=tuple(Call(c["tool"], dict(c.get("args", {}))) for c in data.get("calls", ())),
         )
 
     def to_json(self, inline: bool = False) -> dict[str, Any]:
@@ -253,8 +256,8 @@ def bucket(length: int, buckets: Sequence[int]) -> int:
 
 def pad(seqs: Sequence[Sequence[int]], length: int, value: int) -> torch.Tensor:
     out = torch.full((len(seqs), length), value, dtype=torch.long)
-    for i, s in enumerate(seqs):
-        out[i, : len(s)] = torch.as_tensor(s, dtype=torch.long)
+    for i, seq in enumerate(seqs):
+        out[i, : len(seq)] = torch.as_tensor(seq, dtype=torch.long)
     return out
 
 
@@ -290,23 +293,23 @@ class TaskCollator:
 
     def __call__(self, batch: Sequence[Rendered]) -> dict[str, torch.Tensor]:
         out = _sequences(batch, getattr)
-        n, t = len(batch), self.max_tools
-        tool_pos = torch.zeros(n, t, dtype=torch.long)
-        tool_mask = torch.zeros(n, t, dtype=torch.bool)
-        arg_pos = torch.zeros(n, t, MAX_ARGS, dtype=torch.long)
-        arg_mask = torch.zeros(n, t, MAX_ARGS, dtype=torch.bool)
-        for i, r in enumerate(batch):
-            tool_pos[i, : len(r.tool_pos)] = torch.tensor(r.tool_pos)
-            tool_mask[i, : len(r.tool_pos)] = True
-            for k, positions in enumerate(r.arg_pos):
-                arg_pos[i, k, : len(positions)] = torch.tensor(positions, dtype=torch.long)
-                arg_mask[i, k, : len(positions)] = True
+        n_examples, n_tools = len(batch), self.max_tools
+        tool_pos = torch.zeros(n_examples, n_tools, dtype=torch.long)
+        tool_mask = torch.zeros(n_examples, n_tools, dtype=torch.bool)
+        arg_pos = torch.zeros(n_examples, n_tools, MAX_ARGS, dtype=torch.long)
+        arg_mask = torch.zeros(n_examples, n_tools, MAX_ARGS, dtype=torch.bool)
+        for i, item in enumerate(batch):
+            tool_pos[i, : len(item.tool_pos)] = torch.tensor(item.tool_pos)
+            tool_mask[i, : len(item.tool_pos)] = True
+            for tool_index, positions in enumerate(item.arg_pos):
+                arg_pos[i, tool_index, : len(positions)] = torch.tensor(positions, dtype=torch.long)
+                arg_mask[i, tool_index, : len(positions)] = True
         out |= {
             "tool_pos": tool_pos,
             "tool_mask": tool_mask,
             "arg_pos": arg_pos,
             "arg_mask": arg_mask,
-            "intent": torch.tensor([r.intent for r in batch]),
-            "slots": torch.tensor([r.slots for r in batch]),
+            "intent": torch.tensor([item.intent for item in batch]),
+            "slots": torch.tensor([item.slots for item in batch]),
         }
         return out

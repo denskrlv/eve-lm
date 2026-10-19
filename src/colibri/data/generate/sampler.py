@@ -45,30 +45,30 @@ class ToolBank:
 
     def __init__(self, specs: Sequence[ToolSpec]):
         self.specs = list(specs)
-        self.index = {s.name: i for i, s in enumerate(self.specs)}
-        words = [_words(s) for s in self.specs]
-        n = len(self.specs)
-        self.sim = np.zeros((n, n))
-        for i in range(n):
-            for j in range(i + 1, n):
+        self.index = {spec.name: i for i, spec in enumerate(self.specs)}
+        words = [_words(spec) for spec in self.specs]
+        n_specs = len(self.specs)
+        self.similarity = np.zeros((n_specs, n_specs))
+        for i in range(n_specs):
+            for j in range(i + 1, n_specs):
                 jaccard = len(words[i] & words[j]) / max(1, len(words[i] | words[j]))
                 same = SAME_DOMAIN_BONUS if self.specs[i].domain == self.specs[j].domain else 0.0
-                self.sim[i, j] = self.sim[j, i] = jaccard + same
-        self.weights = np.array([s.weight if s.templates else 0.0 for s in self.specs])
+                self.similarity[i, j] = self.similarity[j, i] = jaccard + same
+        self.weights = np.array([spec.weight if spec.templates else 0.0 for spec in self.specs])
         self.same_capability: dict[str, list[int]] = {}
-        for i, s in enumerate(self.specs):
-            self.same_capability.setdefault(s.capability, []).append(i)
+        for i, spec in enumerate(self.specs):
+            self.same_capability.setdefault(spec.capability, []).append(i)
 
     def pick(self, rng: np.random.Generator, pool: Sequence[int] | None = None) -> int:
         """A tool to be the correct one, by weight."""
         candidates = np.arange(len(self.specs)) if pool is None else np.asarray(pool)
-        w = self.weights[candidates]
-        return int(candidates[rng.choice(len(candidates), p=w / w.sum())])
+        weights = self.weights[candidates]
+        return int(candidates[rng.choice(len(candidates), p=weights / weights.sum())])
 
     def distractors(
         self,
         gold: Sequence[int],
-        k: int,
+        count: int,
         rng: np.random.Generator,
         unsupported: bool = False,
         hard: bool = True,
@@ -88,12 +88,12 @@ class ToolBank:
             ]
         )
         if hard and gold:
-            weights = self.sim[list(gold)].max(axis=0) ** 2 + SIMILARITY_FLOOR
+            weights = self.similarity[list(gold)].max(axis=0) ** 2 + SIMILARITY_FLOOR
         else:
             weights = np.ones(len(self.specs))
         weights = np.where(ok, weights, 0.0)
         chosen = []
-        for _ in range(k):
+        for _ in range(count):
             if weights.sum() == 0:
                 break
             i = int(rng.choice(len(weights), p=weights / weights.sum()))
@@ -123,8 +123,8 @@ def _decorate(text: str, rng: np.random.Generator) -> str:
 def _fill_any(spec: ToolSpec, rng: np.random.Generator, ask: bool = False) -> Filled | None:
     """The spec's templates in random order until one fills. None only for ``ask``: without
     it every template fills, and ``ToolBank.pick`` only picks specs that have templates."""
-    for t in rng.permutation(len(spec.templates)):
-        filled = fill(spec.tool, spec.templates[t], spec.values, rng, ask=ask)
+    for template_index in rng.permutation(len(spec.templates)):
+        filled = fill(spec.tool, spec.templates[template_index], spec.values, rng, ask=ask)
         if filled is not None and not (ask and filled.fanout):
             return filled
     return None
@@ -142,11 +142,11 @@ def _prompt(
     unsupported: bool = False,
     hard: bool = True,
 ) -> list[int]:
-    k = max(len(gold), prompt_size(rng))
+    n_tools = max(len(gold), prompt_size(rng))
     if unsupported:
-        k = prompt_size(rng)
+        n_tools = prompt_size(rng)
     tools = ([] if unsupported else list(gold)) + bank.distractors(
-        gold, k - (0 if unsupported else len(gold)), rng, unsupported, hard
+        gold, n_tools - (0 if unsupported else len(gold)), rng, unsupported, hard
     )
     return shuffled(rng, tools)
 
@@ -168,25 +168,25 @@ def sample_call(
     parts: list[str] = []
     calls: list[Call] = []
     implied: set[tuple[int, str]] = set()
-    for c in range(n_calls):
-        if c > 0 and rng.random() < REPEAT_TOOL_SHARE and bank.specs[gold[-1]].tool.args:
-            g = gold[-1]  # the same tool again, with other values
+    for call_number in range(n_calls):
+        if call_number > 0 and rng.random() < REPEAT_TOOL_SHARE and bank.specs[gold[-1]].tool.args:
+            gold_index = gold[-1]  # the same tool again, with other values
         else:
             picked = _pick_new_capability(bank, rng, pool, gold)
             if picked is None:
                 break
-            g = picked
-        spec = bank.specs[g]
+            gold_index = picked
+        spec = bank.specs[gold_index]
         for _ in range(FILL_TRIES):
             filled = _fill_any(spec, rng)
             assert filled is not None  # see _fill_any
             new = filled.expand(spec.tool)
-            repeated = any(c.tool == spec.name and c.args in new for c in calls)
+            repeated = any(call.tool == spec.name and call.args in new for call in calls)
             if not repeated and len(calls) + len(new) <= MAX_CALLS:
                 break
         else:
             break
-        gold.append(g)
+        gold.append(gold_index)
         parts.append(filled.text)
         for args in new:  # a fan-out ("lights off everywhere") adds one call per option
             implied |= {(len(calls), name) for name in filled.implied}
@@ -206,14 +206,14 @@ def sample_ask(
     bank: ToolBank, rng: np.random.Generator, pool: Sequence[int] | None = None
 ) -> Sample:
     for _ in range(ASK_TRIES):
-        g = bank.pick(rng, pool)
-        spec = bank.specs[g]
+        gold_index = bank.pick(rng, pool)
+        spec = bank.specs[gold_index]
         filled = _fill_any(spec, rng, ask=True)
         if filled is not None:
             break
     else:
         raise RuntimeError("no tool in the pool can make an ASK example")
-    tools = _prompt(bank, [g], rng)
+    tools = _prompt(bank, [gold_index], rng)
     missing = [k for k, v in filled.args.items() if v == "?"]
     example = TaskExample(
         _decorate(filled.text, rng),
@@ -236,12 +236,12 @@ def sample_unsupported(
         text = pick(rng, requests)
         tools = _prompt(bank, [], rng, unsupported=True, hard=False)
     else:
-        g = bank.pick(rng, pool)
-        filled = _fill_any(bank.specs[g], rng)
+        gold_index = bank.pick(rng, pool)
+        filled = _fill_any(bank.specs[gold_index], rng)
         assert filled is not None  # see _fill_any
         text = filled.text
-        tools = _prompt(bank, [g], rng, unsupported=True) or _prompt(
-            bank, [g], rng, unsupported=True, hard=False
+        tools = _prompt(bank, [gold_index], rng, unsupported=True) or _prompt(
+            bank, [gold_index], rng, unsupported=True, hard=False
         )
     example = TaskExample(
         _decorate(text, rng), tuple(bank.specs[i].tool for i in tools), "unsupported"
@@ -258,8 +258,8 @@ def sample_none(
     """Small talk with random tools in the prompt (with ``pool``, at least one from it)."""
     text = pick(rng, chitchat) if chitchat else None
     first = [] if pool is None else [bank.pick(rng, pool)]
-    k = prompt_size(rng) - len(first)
-    tools = shuffled(rng, first + bank.distractors(first, k, rng, hard=False))
+    n_tools = prompt_size(rng) - len(first)
+    tools = shuffled(rng, first + bank.distractors(first, n_tools, rng, hard=False))
     example = TaskExample(text or "thanks", tuple(bank.specs[i].tool for i in tools), "none")
     return Sample(example, None)
 

@@ -97,8 +97,8 @@ def param_groups(model: nn.Module, weight_decay: float) -> list[dict[str, Any]]:
     }
     decay: list[nn.Parameter] = []
     no_decay: list[nn.Parameter] = []
-    for p in model.parameters():  # each tensor once, even the tied one
-        (decay if id(p) in matrices else no_decay).append(p)
+    for param in model.parameters():  # each tensor once, even the tied one
+        (decay if id(param) in matrices else no_decay).append(param)
     return [
         {"params": decay, "weight_decay": weight_decay},
         {"params": no_decay, "weight_decay": 0.0},
@@ -226,11 +226,12 @@ class _Evaluator:
 def _changes(values: dict[str, float], before: dict[str, float]) -> str:
     """``val_lm 3.2100 (-0.0412) · …``: each metric and how it moved since the last eval."""
     parts = []
-    for k, v in values.items():
+    for name, value in values.items():
         change = ""
-        if k in before:
-            change = f" ({'+' if v >= before[k] else '-'}{_fmt(k, abs(v - before[k]))})"
-        parts.append(f"{k} {progress.style(_fmt(k, v), '1')}{change}")
+        if name in before:
+            sign = "+" if value >= before[name] else "-"
+            change = f" ({sign}{_format_metric(name, abs(value - before[name]))})"
+        parts.append(f"{name} {progress.style(_format_metric(name, value), '1')}{change}")
     return " · ".join(parts)
 
 
@@ -327,7 +328,7 @@ def _report_train(
     stats += [f"lr {lr:.1e}", f"{tok_s / 1e3:.1f}k tok/s"]
     if bar.disable:  # not a terminal: plain lines for the log file
         eta = (end - step) * elapsed / window.steps
-        print(f"step {step:>6}/{end} | " + " | ".join(stats) + f" | eta {_hms(eta)}")
+        print(f"step {step:>6}/{end} | " + " | ".join(stats) + f" | eta {_format_duration(eta)}")
     bar.set_stats(*stats)
 
 
@@ -508,11 +509,11 @@ def _resume(
     return step
 
 
-def _fmt(name: str, value: float) -> str:
+def _format_metric(name: str, value: float) -> str:
     return f"{value:.1%}" if name.endswith(("acc", "rate")) else f"{value:.4f}"
 
 
-def _hms(seconds: float) -> str:
-    m, s = divmod(int(seconds), 60)
-    h, m = divmod(m, 60)
-    return f"{h}h{m:02d}m" if h else f"{m}m{s:02d}s"
+def _format_duration(seconds: float) -> str:
+    minutes, secs = divmod(int(seconds), 60)
+    hours, minutes = divmod(minutes, 60)
+    return f"{hours}h{minutes:02d}m" if hours else f"{minutes}m{secs:02d}s"

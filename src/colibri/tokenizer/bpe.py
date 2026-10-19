@@ -52,9 +52,9 @@ _CACHE_SIZE = 500_000
 
 
 def _merge_pair(ids: list[int], pair: tuple[int, int], new_id: int) -> list[int]:
-    out, i, (a, b) = [], 0, pair
+    out, i, (first, second) = [], 0, pair
     while i < len(ids):
-        if i + 1 < len(ids) and ids[i] == a and ids[i + 1] == b:
+        if i + 1 < len(ids) and ids[i] == first and ids[i + 1] == second:
             out.append(new_id)
             i += 2
         else:
@@ -97,7 +97,7 @@ class BPETokenizer:
             for part in _SPECIAL_SPLIT.split(text)[::2]:  # odd items are special tokens
                 counts = Counter(_SPLIT.findall(part))
                 if weight != 1:
-                    counts = Counter({p: n * weight for p, n in counts.items()})
+                    counts = Counter({piece: n * weight for piece, n in counts.items()})
                 piece_counts.update(counts)
 
         words = [[BYTE0 + b for b in piece.encode("utf-8")] for piece in piece_counts]
@@ -106,10 +106,10 @@ class BPETokenizer:
         # 2. Count every adjacent pair, and remember which words contain it.
         pair_counts: dict[tuple[int, int], int] = defaultdict(int)
         where: dict[tuple[int, int], set[int]] = defaultdict(set)
-        for w, word in enumerate(words):
+        for word_id, word in enumerate(words):
             for pair in zip(word, word[1:], strict=False):
-                pair_counts[pair] += freqs[w]
-                where[pair].add(w)
+                pair_counts[pair] += freqs[word_id]
+                where[pair].add(word_id)
 
         # 3. Merge the most frequent pair, repeatedly. A heap finds the maximum quickly; when a
         #    pair's count changes we push its new count and skip outdated entries when popped.
@@ -132,24 +132,24 @@ class BPETokenizer:
             # Only the words that contain the pair change. Remove their old pairs from the
             # counts and add their new ones.
             changed = set()
-            for w in where.pop(pair):
-                old = words[w]
+            for word_id in where.pop(pair):
+                old = words[word_id]
                 new = _merge_pair(old, pair, new_id)
                 if len(new) == len(old):
                     continue  # this word lost the pair in an earlier merge
-                for p in zip(old, old[1:], strict=False):
-                    pair_counts[p] -= freqs[w]
-                    changed.add(p)
-                for p in zip(new, new[1:], strict=False):
-                    pair_counts[p] += freqs[w]
-                    where[p].add(w)
-                    changed.add(p)
-                words[w] = new
-            for p in changed:
-                if pair_counts[p] > 0:
-                    heapq.heappush(heap, (-pair_counts[p], p))
+                for adjacent in zip(old, old[1:], strict=False):
+                    pair_counts[adjacent] -= freqs[word_id]
+                    changed.add(adjacent)
+                for adjacent in zip(new, new[1:], strict=False):
+                    pair_counts[adjacent] += freqs[word_id]
+                    where[adjacent].add(word_id)
+                    changed.add(adjacent)
+                words[word_id] = new
+            for adjacent in changed:
+                if pair_counts[adjacent] > 0:
+                    heapq.heappush(heap, (-pair_counts[adjacent], adjacent))
                 else:
-                    del pair_counts[p]
+                    del pair_counts[adjacent]
         bar.close()
         return cls(merges)
 

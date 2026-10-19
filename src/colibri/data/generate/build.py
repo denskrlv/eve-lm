@@ -61,7 +61,7 @@ class Sources:
 
 def template_examples(
     bank: ToolBank,
-    n: int,
+    count: int,
     rng: np.random.Generator,
     sources: Sources,
     pool: Sequence[int] | None = None,
@@ -69,13 +69,15 @@ def template_examples(
     """``n`` template examples with valid labels; exact repeats are skipped."""
     rows: list[dict[str, Any]] = []
     seen: set[tuple[str, tuple[str, ...], str]] = set()
-    for _ in range(n * TEMPLATE_TRIES):
-        if len(rows) == n:
+    for _ in range(count * TEMPLATE_TRIES):
+        if len(rows) == count:
             break
-        s = sample(bank, rng, pool=pool, chitchat=sources.chitchat, unsupported=sources.unsupported)
-        ex = s.example
+        drawn = sample(
+            bank, rng, pool=pool, chitchat=sources.chitchat, unsupported=sources.unsupported
+        )
+        ex = drawn.example
         key = (normalize(ex.utterance), tuple(sorted(t.name for t in ex.tools)), ex.intent)
-        if key in seen or check_example(ex, s.implied):
+        if key in seen or check_example(ex, drawn.implied):
             continue
         seen.add(key)
         rows.append({**ex.to_json(), "source": "template"})
@@ -86,7 +88,7 @@ def template_examples(
 
 
 def make_batch(
-    sources: Sources, name: str, n: int, split: str, seed: int, ask: float | None = None
+    sources: Sources, name: str, count: int, split: str, seed: int, ask: float | None = None
 ) -> dict[str, Any]:
     """Scenarios for a chat to write requests for (see data/generation/README.md).
 
@@ -98,30 +100,32 @@ def make_batch(
     rng = np.random.default_rng(seed)
     specs = sources.train + (sources.heldout if split == "probe" else [])
     bank = ToolBank(specs)
-    heldout = [bank.index[s.name] for s in sources.heldout] if split == "probe" else None
+    heldout = [bank.index[drawn.name] for drawn in sources.heldout] if split == "probe" else None
     mix = dict(INTENT_MIX)
     if ask is not None:
         rest = 1 - mix.pop("ask")
         mix = {k: v / rest * (1 - ask) for k, v in mix.items()} | {"ask": ask}
     scenarios = []
-    for i in range(n):
+    for i in range(count):
         pool = heldout if heldout and rng.random() < PROBE_HELDOUT_SHARE else None
         intent = str(rng.choice(list(mix), p=list(mix.values())))
-        s = sample(
+        drawn = sample(
             bank, rng, intent, pool, chitchat=sources.chitchat, unsupported=sources.unsupported
         )
-        row = s.example.to_json(inline=True)  # whole schemas: the batch stays valid if tools change
+        row = drawn.example.to_json(
+            inline=True
+        )  # whole schemas: the batch stays valid if tools change
         del row["utterance"]
         scenarios.append(
             {
                 "id": f"{name}-{i:03d}",
                 **row,
-                "meaning": s.meaning,
-                "missing": s.missing,
-                "implied": sorted(s.implied),
+                "meaning": drawn.meaning,
+                "missing": drawn.missing,
+                "implied": sorted(drawn.implied),
             }
         )
-    used = {t["name"]: Tool.from_dict(t) for s in scenarios for t in s["tools"]}
+    used = {t["name"]: Tool.from_dict(t) for drawn in scenarios for t in drawn["tools"]}
     schemas = {name: used[name].render() for name in sorted(used)}
     return {"batch": name, "split": split, "seed": seed, "schemas": schemas, "scenarios": scenarios}
 
@@ -259,10 +263,10 @@ def _drop_too_long(
     too_long: Counter[str] = Counter()
     for name, rows in splits.items():
         fits = []
-        for r in rows:
+        for row in rows:
             try:
-                render(TaskExample.from_json(r, library), tokenizer, cfg)
-                fits.append(r)
+                render(TaskExample.from_json(row, library), tokenizer, cfg)
+                fits.append(row)
             except ValueError:
                 too_long[name] += 1
         splits[name] = fits

@@ -84,7 +84,7 @@ def tokenizer_stats(args: argparse.Namespace) -> None:
     from colibri.data.schema import load_library
     from colibri.tokenizer.bpe import BPETokenizer
 
-    ours = BPETokenizer.load(args.tokenizer)
+    tokenizer = BPETokenizer.load(args.tokenizer)
     docs = list(
         take_bytes(
             iter_documents(_parquet_files(args.parquet)), _count(args.text), _count(args.skip)
@@ -100,20 +100,20 @@ def tokenizer_stats(args: argparse.Namespace) -> None:
     }
 
     # A schema is a list of parts (see Tool.render_parts); other samples are plain strings.
-    def ours_encode(t: str | list[str]) -> list[int]:
-        parts = [t] if isinstance(t, str) else t
-        return [i for part in parts for i in ours.encode(part, specials=True)]
+    def encode_sample(sample: str | list[str]) -> list[int]:
+        parts = [sample] if isinstance(sample, str) else sample
+        return [i for part in parts for i in tokenizer.encode(part, specials=True)]
 
     print(f"{'':<22}{'words':>9}{'tokens/word':>13}")
     for name, texts in samples.items():
         words = sum(len(" ".join(t if isinstance(t, list) else [t]).split()) for t in texts)
-        n_ours = sum(len(ours_encode(t)) for t in texts)
-        print(f"{name:<22}{words:>9,}{n_ours / words:>13.2f}")
-    print(f"vocabulary: {ours.vocab_size:,}")
+        n_tokens = sum(len(encode_sample(t)) for t in texts)
+        print(f"{name:<22}{words:>9,}{n_tokens / words:>13.2f}")
+    print(f"vocabulary: {tokenizer.vocab_size:,}")
 
     examples: list[str | list[str]] = [commands[1], schemas[0]]
     for text in examples:
-        print("\n" + " | ".join(ours.pieces(ours_encode(text))))
+        print("\n" + " | ".join(tokenizer.pieces(encode_sample(text))))
 
 
 def corpus(args: argparse.Namespace) -> None:
@@ -251,9 +251,13 @@ def compare(args: argparse.Namespace) -> None:
         for step in steps:
             cells = []
             for _, vals in runs.values():
-                v = vals.get(step, {}).get(metric)
+                value = vals.get(step, {}).get(metric)
                 cells.append(
-                    "" if v is None else f"{v:.1%}" if metric.endswith("acc") else f"{v:.4f}"
+                    ""
+                    if value is None
+                    else f"{value:.1%}"
+                    if metric.endswith("acc")
+                    else f"{value:.4f}"
                 )
             print(f"  step {step:<8,}" + "".join(f"{c:>{width}}" for c in cells))
 
@@ -328,20 +332,20 @@ def ask(args: argparse.Namespace) -> None:
     ckpt = load_checkpoint(args.model, pick_device(args.device))
 
     def show(text: str) -> None:
-        a = answer_questions(ckpt.model, ckpt.tokenizer, text, tools)
+        answers = answer_questions(ckpt.model, ckpt.tokenizer, text, tools)
         if args.json:
-            print(json.dumps({"utterance": text, **a.to_json()}))
+            print(json.dumps({"utterance": text, **answers.to_json()}))
             return
 
-        def ranked(probs: dict[str, float], n: int) -> str:
-            top = sorted(probs.items(), key=lambda kv: -kv[1])[:n]
+        def ranked(probs: dict[str, float], count: int) -> str:
+            top = sorted(probs.items(), key=lambda kv: -kv[1])[:count]
             return " · ".join(
                 (style(f"{k} {p:.0%}", "1", stream=sys.stdout) if i == 0 else f"{k} {p:.0%}")
                 for i, (k, p) in enumerate(top)
             )
 
-        print(f"  {style(f'{"intent":<8}', '2', stream=sys.stdout)} {ranked(a.intent, 4)}")
-        for i, slot in enumerate(a.slots, 1):
+        print(f"  {style(f'{"intent":<8}', '2', stream=sys.stdout)} {ranked(answers.intent, 4)}")
+        for i, slot in enumerate(answers.slots, 1):
             print(f"  {style(f'{f"call {i}":<8}', '2', stream=sys.stdout)} {ranked(slot, 3)}")
             if max(slot, key=slot.__getitem__) == STOP:
                 break
@@ -427,30 +431,30 @@ def data_check(args: argparse.Namespace) -> None:
 
 
 def _add_schedule_args(
-    p: argparse.ArgumentParser, lr: float | None, lr_help: str | None, warmup: int
+    parser: argparse.ArgumentParser, lr: float | None, lr_help: str | None, warmup: int
 ) -> None:
     """Batch size, learning rate, warmup and precision: the options both training runs take."""
-    p.add_argument("--batch-size", type=int, default=32)
-    p.add_argument("--lr", type=float, default=lr, help=lr_help)
-    p.add_argument("--warmup", type=int, default=warmup)
-    p.add_argument("--dtype", choices=DTYPE_CHOICES, default="float32")
+    parser.add_argument("--batch-size", type=int, default=32)
+    parser.add_argument("--lr", type=float, default=lr, help=lr_help)
+    parser.add_argument("--warmup", type=int, default=warmup)
+    parser.add_argument("--dtype", choices=DTYPE_CHOICES, default="float32")
 
 
-def _add_run_args(p: argparse.ArgumentParser) -> None:
+def _add_run_args(parser: argparse.ArgumentParser) -> None:
     """Seed, eval/log cadence, device, resuming and stopping: shared by both training runs."""
-    p.add_argument("--seed", type=int, default=0)
-    p.add_argument("--eval-every", type=int, default=500, help="also how often to save")
-    p.add_argument("--log-every", type=int, default=20)
-    p.add_argument("--device", default=None)
-    p.add_argument("--resume", action="store_true", help="continue from <out>/last.pt")
-    p.add_argument("--stop-after", type=int, default=None, help="stop early at this step")
+    parser.add_argument("--seed", type=int, default=0)
+    parser.add_argument("--eval-every", type=int, default=500, help="also how often to save")
+    parser.add_argument("--log-every", type=int, default=20)
+    parser.add_argument("--device", default=None)
+    parser.add_argument("--resume", action="store_true", help="continue from <out>/last.pt")
+    parser.add_argument("--stop-after", type=int, default=None, help="stop early at this step")
 
 
 def _add_model_commands(commands: Subcommands) -> None:
     commands.add_parser("info", help="show the device and model presets").set_defaults(run=info)
-    p = commands.add_parser("model", help="parameters per part of a preset (M3)")
-    p.set_defaults(run=model)
-    p.add_argument("--preset", choices=sorted(PRESETS), default=None, help="default: all")
+    parser = commands.add_parser("model", help="parameters per part of a preset (M3)")
+    parser.set_defaults(run=model)
+    parser.add_argument("--preset", choices=sorted(PRESETS), default=None, help="default: all")
 
 
 def _add_tokenizer_commands(commands: Subcommands) -> None:
@@ -460,116 +464,120 @@ def _add_tokenizer_commands(commands: Subcommands) -> None:
         ("train", tokenizer_train, "train the BPE on web text, tool schemas and commands"),
         ("stats", tokenizer_stats, "tokens per word and sample splits"),
     ]:
-        p = tok_commands.add_parser(name, help=help_)
-        p.set_defaults(run=run)
-        p.add_argument("--parquet", default=DEFAULT_PARQUET)
-        p.add_argument("--tools", default="data/tools")
-        p.add_argument("--commands", default="data/tokenizer/commands.txt")
+        parser = tok_commands.add_parser(name, help=help_)
+        parser.set_defaults(run=run)
+        parser.add_argument("--parquet", default=DEFAULT_PARQUET)
+        parser.add_argument("--tools", default="data/tools")
+        parser.add_argument("--commands", default="data/tokenizer/commands.txt")
         if name == "train":
-            p.add_argument("--text", default="50M", help="bytes of web text to train on")
-            p.add_argument("--vocab-size", type=int, default=8192)
-            p.add_argument("--weight", type=int, default=50, help="weight of schemas and commands")
-            p.add_argument("--out", default=DEFAULT_TOKENIZER)
+            parser.add_argument("--text", default="50M", help="bytes of web text to train on")
+            parser.add_argument("--vocab-size", type=int, default=8192)
+            parser.add_argument(
+                "--weight", type=int, default=50, help="weight of schemas and commands"
+            )
+            parser.add_argument("--out", default=DEFAULT_TOKENIZER)
         else:
-            p.add_argument("--tokenizer", default=DEFAULT_TOKENIZER)
-            p.add_argument("--text", default="5M", help="bytes of web text to measure on")
-            p.add_argument("--skip", default="100M", help="bytes to skip (the training text)")
+            parser.add_argument("--tokenizer", default=DEFAULT_TOKENIZER)
+            parser.add_argument("--text", default="5M", help="bytes of web text to measure on")
+            parser.add_argument("--skip", default="100M", help="bytes to skip (the training text)")
 
 
 def _add_corpus_command(commands: Subcommands) -> None:
-    p = commands.add_parser("corpus", help="encode the pretraining corpus to token ids (M1)")
-    p.set_defaults(run=corpus)
-    p.add_argument("--parquet", default=DEFAULT_PARQUET)
-    p.add_argument("--tokenizer", default=DEFAULT_TOKENIZER)
-    p.add_argument("--out", default="data/bin")
-    p.add_argument("--train-tokens", default="250M")
-    p.add_argument("--val-tokens", default="2M")
-    p.add_argument("--workers", type=int, default=None)
+    parser = commands.add_parser("corpus", help="encode the pretraining corpus to token ids (M1)")
+    parser.set_defaults(run=corpus)
+    parser.add_argument("--parquet", default=DEFAULT_PARQUET)
+    parser.add_argument("--tokenizer", default=DEFAULT_TOKENIZER)
+    parser.add_argument("--out", default="data/bin")
+    parser.add_argument("--train-tokens", default="250M")
+    parser.add_argument("--val-tokens", default="2M")
+    parser.add_argument("--workers", type=int, default=None)
 
 
 def _add_pretrain_command(commands: Subcommands) -> None:
-    p = commands.add_parser("pretrain", help="span-corruption pretraining (M4)")
-    p.set_defaults(run=pretrain)
-    p.add_argument("--preset", choices=sorted(PRESETS), default="small")
-    p.add_argument("--data", default="data/bin")
-    p.add_argument("--tokenizer", default=DEFAULT_TOKENIZER)
-    p.add_argument("--out", default="artifacts/runs/pretrain-small")
-    p.add_argument("--tokens", default="250M", help="corpus tokens to read (sets --steps)")
-    p.add_argument("--steps", type=int, default=None, help="default: from --tokens")
-    _add_schedule_args(p, lr=1e-3, lr_help=None, warmup=500)
-    p.add_argument("--dropout", type=float, default=None, help="default: the preset's (0.1)")
-    p.add_argument("--rope", action="store_true", help="rotary positions, no position tables")
-    p.add_argument("--compile", action="store_true", help="torch.compile: ~2x faster on MPS")
-    p.add_argument("--qk-norm", action="store_true", help="RMS-normalize queries and keys")
-    _add_run_args(p)
+    parser = commands.add_parser("pretrain", help="span-corruption pretraining (M4)")
+    parser.set_defaults(run=pretrain)
+    parser.add_argument("--preset", choices=sorted(PRESETS), default="small")
+    parser.add_argument("--data", default="data/bin")
+    parser.add_argument("--tokenizer", default=DEFAULT_TOKENIZER)
+    parser.add_argument("--out", default="artifacts/runs/pretrain-small")
+    parser.add_argument("--tokens", default="250M", help="corpus tokens to read (sets --steps)")
+    parser.add_argument("--steps", type=int, default=None, help="default: from --tokens")
+    _add_schedule_args(parser, lr=1e-3, lr_help=None, warmup=500)
+    parser.add_argument("--dropout", type=float, default=None, help="default: the preset's (0.1)")
+    parser.add_argument("--rope", action="store_true", help="rotary positions, no position tables")
+    parser.add_argument("--compile", action="store_true", help="torch.compile: ~2x faster on MPS")
+    parser.add_argument("--qk-norm", action="store_true", help="RMS-normalize queries and keys")
+    _add_run_args(parser)
 
 
 def _add_finetune_command(commands: Subcommands) -> None:
-    p = commands.add_parser("finetune", help="fine-tune the question heads (M7)")
-    p.set_defaults(run=finetune)
-    start = p.add_mutually_exclusive_group(required=True)
+    parser = commands.add_parser("finetune", help="fine-tune the question heads (M7)")
+    parser.set_defaults(run=finetune)
+    start = parser.add_mutually_exclusive_group(required=True)
     start.add_argument("--init", help="a pretraining checkpoint or an earlier finetune's model.pt")
     start.add_argument("--scratch", choices=sorted(PRESETS), help="random init (experiment E1)")
-    p.add_argument("--freeze", action="store_true", help="train only the question block (E2)")
-    p.add_argument("--task", default="data/task")
-    p.add_argument("--tokenizer", default=DEFAULT_TOKENIZER, help="for --scratch")
-    p.add_argument("--out", default="artifacts/runs/questions")
-    p.add_argument("--epochs", type=float, default=2.0, help="sets --steps")
-    p.add_argument("--steps", type=int, default=None, help="default: from --epochs")
-    _add_schedule_args(p, lr=None, lr_help="default: 1e-3 frozen, else 3e-4", warmup=200)
-    p.add_argument("--dropout", type=float, default=None, help="default: the checkpoint's")
-    _add_run_args(p)
+    parser.add_argument("--freeze", action="store_true", help="train only the question block (E2)")
+    parser.add_argument("--task", default="data/task")
+    parser.add_argument("--tokenizer", default=DEFAULT_TOKENIZER, help="for --scratch")
+    parser.add_argument("--out", default="artifacts/runs/questions")
+    parser.add_argument("--epochs", type=float, default=2.0, help="sets --steps")
+    parser.add_argument("--steps", type=int, default=None, help="default: from --epochs")
+    _add_schedule_args(parser, lr=None, lr_help="default: 1e-3 frozen, else 3e-4", warmup=200)
+    parser.add_argument("--dropout", type=float, default=None, help="default: the checkpoint's")
+    _add_run_args(parser)
 
 
 def _add_inspect_commands(commands: Subcommands) -> None:
-    p = commands.add_parser("ask", help="ask the question heads about a request (M7)")
-    p.set_defaults(run=ask)
-    p.add_argument("text", nargs="*", help="requests; none: type them one by one")
-    p.add_argument("--tools", help="tool names from data/tools: set_lights,set_thermostat")
-    p.add_argument("--schema", action="append", help="a JSON file of tool schemas (repeatable)")
-    p.add_argument("--model", default="artifacts/runs/questions-full/model.pt")
-    p.add_argument("--json", action="store_true", help="one JSON line per request")
-    p.add_argument("--device", default=None)
+    parser = commands.add_parser("ask", help="ask the question heads about a request (M7)")
+    parser.set_defaults(run=ask)
+    parser.add_argument("text", nargs="*", help="requests; none: type them one by one")
+    parser.add_argument("--tools", help="tool names from data/tools: set_lights,set_thermostat")
+    parser.add_argument(
+        "--schema", action="append", help="a JSON file of tool schemas (repeatable)"
+    )
+    parser.add_argument("--model", default="artifacts/runs/questions-full/model.pt")
+    parser.add_argument("--json", action="store_true", help="one JSON line per request")
+    parser.add_argument("--device", default=None)
 
-    p = commands.add_parser("compare", help="val metrics of training runs side by side (M4)")
-    p.set_defaults(run=compare)
-    p.add_argument("runs", nargs="+", help="run directories, e.g. artifacts/runs/ab-*")
-    p.add_argument("--metric", nargs="+", default=["val_content", "val_content_acc", "val_lm"])
+    parser = commands.add_parser("compare", help="val metrics of training runs side by side (M4)")
+    parser.set_defaults(run=compare)
+    parser.add_argument("runs", nargs="+", help="run directories, e.g. artifacts/runs/ab-*")
+    parser.add_argument("--metric", nargs="+", default=["val_content", "val_content_acc", "val_lm"])
 
-    p = commands.add_parser("fill", help="fill <x0> holes with a pretrained model (M4)")
-    p.set_defaults(run=fill)
-    p.add_argument("text", nargs="*", help='e.g. "Paris is the capital of <x0>."')
-    p.add_argument("--model", default="artifacts/runs/pretrain-small/model.pt")
-    p.add_argument("--max-new", type=int, default=24, help="most tokens to write")
-    p.add_argument("--device", default=None)
+    parser = commands.add_parser("fill", help="fill <x0> holes with a pretrained model (M4)")
+    parser.set_defaults(run=fill)
+    parser.add_argument("text", nargs="*", help='e.g. "Paris is the capital of <x0>."')
+    parser.add_argument("--model", default="artifacts/runs/pretrain-small/model.pt")
+    parser.add_argument("--max-new", type=int, default=24, help="most tokens to write")
+    parser.add_argument("--device", default=None)
 
 
 def _add_data_commands(commands: Subcommands) -> None:
     data = commands.add_parser("data", help="build the task dataset (M6)")
     data_commands = data.add_subparsers(dest="data_command", required=True)
-    p = data_commands.add_parser("build", help="templates + chat-written -> data/task/*.jsonl")
-    p.set_defaults(run=data_build)
-    p.add_argument("--out", default="data/task")
-    p.add_argument("--templates", default="80k", help="template examples for train")
-    p.add_argument("--heldout", default="2k", help="template examples with held-out tools")
-    p.add_argument("--seed", type=int, default=0)
-    p.add_argument("--tokenizer", default=DEFAULT_TOKENIZER)
-    p = data_commands.add_parser("external", help="convert xLAM and MASSIVE -> data/external")
-    p.set_defaults(run=data_external)
-    p.add_argument("--raw", default="data/raw")
-    p.add_argument("--out", default="data/external")
-    p.add_argument("--seed", type=int, default=0)
-    p = data_commands.add_parser("batch", help="new scenario batches for chat writers")
-    p.set_defaults(run=data_batch)
-    p.add_argument("--split", choices=["train", "val", "probe"], default="train")
-    p.add_argument("--n", type=int, default=50, help="scenarios per batch")
-    p.add_argument("--count", type=int, default=1, help="how many batches")
-    p.add_argument("--ask", type=float, default=None, help="share of ASK scenarios, e.g. 0.3")
-    p.add_argument("--dir", default="data/generation")
-    p = data_commands.add_parser("check", help="validate a chat-written batch")
-    p.set_defaults(run=data_check)
-    p.add_argument("batch", help="e.g. batch-0001")
-    p.add_argument("--dir", default="data/generation")
+    parser = data_commands.add_parser("build", help="templates + chat-written -> data/task/*.jsonl")
+    parser.set_defaults(run=data_build)
+    parser.add_argument("--out", default="data/task")
+    parser.add_argument("--templates", default="80k", help="template examples for train")
+    parser.add_argument("--heldout", default="2k", help="template examples with held-out tools")
+    parser.add_argument("--seed", type=int, default=0)
+    parser.add_argument("--tokenizer", default=DEFAULT_TOKENIZER)
+    parser = data_commands.add_parser("external", help="convert xLAM and MASSIVE -> data/external")
+    parser.set_defaults(run=data_external)
+    parser.add_argument("--raw", default="data/raw")
+    parser.add_argument("--out", default="data/external")
+    parser.add_argument("--seed", type=int, default=0)
+    parser = data_commands.add_parser("batch", help="new scenario batches for chat writers")
+    parser.set_defaults(run=data_batch)
+    parser.add_argument("--split", choices=["train", "val", "probe"], default="train")
+    parser.add_argument("--n", type=int, default=50, help="scenarios per batch")
+    parser.add_argument("--count", type=int, default=1, help="how many batches")
+    parser.add_argument("--ask", type=float, default=None, help="share of ASK scenarios, e.g. 0.3")
+    parser.add_argument("--dir", default="data/generation")
+    parser = data_commands.add_parser("check", help="validate a chat-written batch")
+    parser.set_defaults(run=data_check)
+    parser.add_argument("batch", help="e.g. batch-0001")
+    parser.add_argument("--dir", default="data/generation")
 
 
 def build_parser() -> argparse.ArgumentParser:

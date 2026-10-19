@@ -94,10 +94,10 @@ def fill_in(
         for _ in range(max_new):
             ids = torch.tensor([dec], device=device)
             logits = model.decode(ids, memory, torch.ones_like(enc, dtype=torch.bool))
-            nxt = int(logits[0, -1].argmax())
-            if nxt == EOS:
+            next_id = int(logits[0, -1].argmax())
+            if next_id == EOS:
                 break
-            dec.append(nxt)
+            dec.append(next_id)
 
     spans: dict[int, list[int]] = {}
     current = None
@@ -147,8 +147,8 @@ def pretrain(
     )
     val_data = SpanCorruptionDataset(load_tokens(data_dir / "val.bin"), cfg.max_encoder_len)
 
-    def on_eval(m: Colibri) -> dict[str, Any]:
-        return {"samples": [fill_in(m, tokenizer, text) for text in samples]}
+    def on_eval(model: Colibri) -> dict[str, Any]:
+        return {"samples": [fill_in(model, tokenizer, text) for text in samples]}
 
     return train(
         model,

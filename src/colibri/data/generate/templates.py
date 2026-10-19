@@ -37,16 +37,16 @@ _ONES = (
 _TENS = "_ _ twenty thirty forty fifty sixty seventy eighty ninety".split()
 
 
-def number_words(n: int) -> str:
+def number_words(number: int) -> str:
     """0..999 in words: 7 -> "seven", 45 -> "forty-five", 300 -> "three hundred"."""
-    if not 0 <= n <= 999:
-        raise ValueError(f"{n} is out of range")
-    if n < 20:
-        return _ONES[n]
-    if n < 100:
-        return _TENS[n // 10] + ("" if n % 10 == 0 else "-" + _ONES[n % 10])
-    rest = n % 100
-    return _ONES[n // 100] + " hundred" + ("" if rest == 0 else " " + number_words(rest))
+    if not 0 <= number <= 999:
+        raise ValueError(f"{number} is out of range")
+    if number < 20:
+        return _ONES[number]
+    if number < 100:
+        return _TENS[number // 10] + ("" if number % 10 == 0 else "-" + _ONES[number % 10])
+    rest = number % 100
+    return _ONES[number // 100] + " hundred" + ("" if rest == 0 else " " + number_words(rest))
 
 
 @dataclass(frozen=True)
@@ -71,19 +71,19 @@ class Segment:
 def _segment(text: str, optional: bool) -> Segment:
     parts: list[str | Slot] = []
     pos = 0
-    for m in _SLOT.finditer(text):
-        parts.append(text[pos : m.start()])
-        name, true_text, false_text, fixed = m.groups()
+    for slot_match in _SLOT.finditer(text):
+        parts.append(text[pos : slot_match.start()])
+        name, true_text, false_text, fixed = slot_match.groups()
         if fixed is not None:
             parts.append(Slot(name, fixed=_literal(fixed), has_fixed=True))
         else:
             parts.append(Slot(name, true_text, false_text))
-        pos = m.end()
+        pos = slot_match.end()
     parts.append(text[pos:])
-    for p in parts:
-        if isinstance(p, str) and any(ch in p for ch in "{}[]"):
+    for part in parts:
+        if isinstance(part, str) and any(ch in part for ch in "{}[]"):
             raise ValueError(f"unbalanced or nested brackets in {text!r}")
-    return Segment(optional, tuple(p for p in parts if p != ""))
+    return Segment(optional, tuple(part for part in parts if part != ""))
 
 
 def _literal(text: str) -> Any:
@@ -97,11 +97,11 @@ def _literal(text: str) -> Any:
 def parse(template: str) -> list[Segment]:
     """Split a template into fixed and optional ([...]) segments of text and slots."""
     segments, pos = [], 0
-    for m in _OPTIONAL.finditer(template):
-        if m.start() > pos:
-            segments.append(_segment(template[pos : m.start()], False))
-        segments.append(_segment(m.group(1), True))
-        pos = m.end()
+    for optional_match in _OPTIONAL.finditer(template):
+        if optional_match.start() > pos:
+            segments.append(_segment(template[pos : optional_match.start()], False))
+        segments.append(_segment(optional_match.group(1), True))
+        pos = optional_match.end()
     if pos < len(template):
         segments.append(_segment(template[pos:], False))
     return segments
@@ -202,13 +202,15 @@ class Filled:
 def sensible(args: Mapping[str, Any]) -> bool:
     """False for a conversion no one asks for: the same value in from_x and to_x (EUR to EUR),
     or units of different kinds (``UNIT_KINDS``)."""
-    for name, a in args.items():
+    for name, source in args.items():
         if not name.startswith("from_"):
             continue
-        b = args.get("to_" + name.removeprefix("from_"))
-        if b is None or ASK_VALUE in (a, b):
+        target = args.get("to_" + name.removeprefix("from_"))
+        if target is None or ASK_VALUE in (source, target):
             continue
-        if a == b or (a in UNIT_KINDS and UNIT_KINDS[a] != UNIT_KINDS.get(b)):
+        if source == target or (
+            source in UNIT_KINDS and UNIT_KINDS[source] != UNIT_KINDS.get(target)
+        ):
             return False
     return True
 

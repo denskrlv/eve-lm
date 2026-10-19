@@ -46,8 +46,8 @@ def test_unsupported_never_offers_a_tool_that_could_serve_it(bank, sources):
 def test_distractors_are_mostly_similar(bank):
     rng = np.random.default_rng(0)
     g = bank.index["set_lights"]
-    sims = [bank.sim[g, d] for _ in range(200) for d in bank.distractors([g], 4, rng)]
-    random = bank.sim[g][np.arange(len(bank.specs)) != g].mean()
+    sims = [bank.similarity[g, d] for _ in range(200) for d in bank.distractors([g], 4, rng)]
+    random = bank.similarity[g][np.arange(len(bank.specs)) != g].mean()
     assert np.mean(sims) > 3 * random
 
 
