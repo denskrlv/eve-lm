@@ -3,14 +3,11 @@ from dataclasses import dataclass
 
 import torch
 
-from colibri.config import INTENTS
+from colibri.config import INTENTS, STOP
 from colibri.data.render import TaskCollator, TaskExample, render
 from colibri.data.schema import Tool
-from colibri.model.colibri import Colibri
+from colibri.model.colibri import Colibri, ask
 from colibri.tokenizer.bpe import BPETokenizer
-from colibri.train.finetune import ask
-
-STOP = "STOP"
 
 
 @dataclass

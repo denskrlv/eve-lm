@@ -180,3 +180,9 @@ class Colibri(nn.Module):
             "questions": count(self.questions),
             "total": count(self),
         }
+
+
+def ask(model: Colibri, batch: dict[str, torch.Tensor]) -> Questions:
+    """Encoder + question block only: the decoder isn't needed for the questions."""
+    memory = model.encode(batch["enc_ids"], batch["enc_mask"])
+    return model.ask_questions(memory, batch["enc_mask"], batch["tool_pos"], batch["tool_mask"])

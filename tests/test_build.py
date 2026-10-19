@@ -9,8 +9,8 @@ from colibri.data.generate.build import (
     check_written,
     make_batch,
     next_batch_name,
-    read_jsonl,
 )
+from colibri.data.jsonl import read_jsonl
 
 ROOT = Path(__file__).parents[1]
 

@@ -69,6 +69,7 @@ def tokenizer_train(args: argparse.Namespace) -> None:
 def tokenizer_stats(args: argparse.Namespace) -> None:
     """Learn (M1): tokens per word on unseen web text, on commands and on tool schemas."""
     from colibri.data.corpus import iter_documents, take_bytes
+    from colibri.data.jsonl import read_lines
     from colibri.data.schema import load_library
     from colibri.tokenizer.bpe import BPETokenizer
 
@@ -79,11 +80,7 @@ def tokenizer_stats(args: argparse.Namespace) -> None:
         )
     )
     tools = load_library(args.tools)
-    commands = [
-        line.strip()
-        for line in Path(args.commands).read_text().splitlines()
-        if line.strip() and not line.startswith("#")
-    ]
+    commands = read_lines(args.commands)
     schemas = [t.render_parts() for t in tools.values()]
     samples = {
         "web text (held out)": docs,
@@ -168,7 +165,8 @@ def pretrain(args: argparse.Namespace) -> None:
 
 def finetune(args: argparse.Namespace) -> None:
     from colibri.config import preset
-    from colibri.data.generate.build import Sources, read_jsonl
+    from colibri.data.generate.build import Sources
+    from colibri.data.jsonl import read_jsonl
     from colibri.progress import style
     from colibri.train.finetune import finetune as run
     from colibri.train.loop import TrainConfig
@@ -307,7 +305,8 @@ def _tools(args: argparse.Namespace) -> list:
 
 def ask(args: argparse.Namespace) -> None:
     """Learn (M7): what the question heads answer for a typed request, with probabilities."""
-    from colibri.infer.predict import STOP, answer_questions
+    from colibri.config import STOP
+    from colibri.infer.predict import answer_questions
     from colibri.model.checkpoint import load_checkpoint
     from colibri.progress import style
 
@@ -398,7 +397,8 @@ def data_batch(args: argparse.Namespace) -> None:
 
 
 def data_check(args: argparse.Namespace) -> None:
-    from colibri.data.generate.build import Sources, check_written, read_jsonl
+    from colibri.data.generate.build import Sources, check_written
+    from colibri.data.jsonl import read_jsonl
 
     batch = json.loads((Path(args.dir) / "batches" / f"{args.batch}.json").read_text())
     written_path = Path(args.dir) / "written" / f"{args.batch}.jsonl"

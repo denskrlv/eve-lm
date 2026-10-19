@@ -6,23 +6,17 @@ from pathlib import Path
 import torch
 import torch.nn.functional as F
 
-from colibri.config import INTENTS, ModelConfig
-from colibri.data.generate.build import read_jsonl
+from colibri.config import INTENTS, STOP, ModelConfig
+from colibri.data.jsonl import read_jsonl
 from colibri.data.render import IGNORE, TaskCollator, TaskDataset, TaskExample
 from colibri.data.schema import Tool
 from colibri.model.checkpoint import FRESH, QUESTION_FIELDS, load_checkpoint, load_pretrained
-from colibri.model.colibri import Colibri, Questions
+from colibri.model.colibri import Colibri, Questions, ask
 from colibri.runtime import seed_everything
 from colibri.tokenizer.bpe import BPETokenizer
 from colibri.train.loop import TrainConfig, train
 
 TASK = "questions"  # meta["task"] of the checkpoints this run writes
-
-
-def ask(model: Colibri, batch: dict[str, torch.Tensor]) -> Questions:
-    """Encoder + question block only: the decoder isn't needed for the questions."""
-    memory = model.encode(batch["enc_ids"], batch["enc_mask"])
-    return model.ask_questions(memory, batch["enc_mask"], batch["tool_pos"], batch["tool_mask"])
 
 
 def _losses(q: Questions, batch: dict[str, torch.Tensor]) -> dict[str, torch.Tensor]:
@@ -189,7 +183,7 @@ def describe(
     def calls(answers: list[int], tools: list[str]) -> list[str]:
         names = []
         for a in answers:
-            names.append("STOP" if a == stop else tools[a])
+            names.append(STOP if a == stop else tools[a])
             if a == stop:
                 break
         return names
@@ -204,7 +198,7 @@ def describe(
         ]
         gold = INTENTS[r.intent]
         if r.slots[0] != IGNORE and r.slots[0] != stop:
-            gold += " · " + ", ".join(n for n in calls(r.slots, r.tool_names) if n != "STOP")
+            gold += " · " + ", ".join(n for n in calls(r.slots, r.tool_names) if n != STOP)
         lines.append(
             f"{examples[i].utterance} → {INTENTS[k]} {intent_p[row, k]:.0%} · "
             + ", ".join(said)

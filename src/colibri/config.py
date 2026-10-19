@@ -1,6 +1,7 @@
 from dataclasses import asdict, dataclass, replace
 
 INTENTS = ("call", "ask", "unsupported", "none")
+STOP = "STOP"  # the slot answer after the last call
 
 
 @dataclass(frozen=True)

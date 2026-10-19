@@ -1,6 +1,6 @@
 import json
 from collections import Counter
-from collections.abc import Iterable, Sequence
+from collections.abc import Sequence
 from dataclasses import dataclass
 from pathlib import Path
 
@@ -11,28 +11,12 @@ from colibri.data.generate.library import ToolSpec, load_specs
 from colibri.data.generate.sampler import INTENT_MIX, ToolBank, sample
 from colibri.data.generate.toolgen import generated_specs
 from colibri.data.generate.validate import check_example, normalize
+from colibri.data.jsonl import read_jsonl, read_lines, write_jsonl
 from colibri.data.render import TaskExample, render
 from colibri.data.schema import SchemaError, Tool
 from colibri.tokenizer.bpe import BPETokenizer
 
 CHAT_SPLITS = ("train", "val", "probe")
-
-
-def read_lines(path: str | Path) -> list[str]:
-    """Non-empty lines that aren't # comments."""
-    lines = Path(path).read_text().splitlines()
-    return [line.strip() for line in lines if line.strip() and not line.startswith("#")]
-
-
-def read_jsonl(path: str | Path) -> list[dict]:
-    return [json.loads(line) for line in Path(path).read_text().splitlines() if line.strip()]
-
-
-def write_jsonl(path: str | Path, rows: Iterable[dict]) -> None:
-    Path(path).parent.mkdir(parents=True, exist_ok=True)
-    with open(path, "w") as f:
-        for row in rows:
-            f.write(json.dumps(row, ensure_ascii=False) + "\n")
 
 
 @dataclass

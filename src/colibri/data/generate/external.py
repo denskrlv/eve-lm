@@ -10,6 +10,7 @@ from colibri.data.generate.library import ToolSpec
 from colibri.data.generate.sampler import ToolBank
 from colibri.data.generate.templates import MAX_CALLS
 from colibri.data.generate.validate import check_example, mentions, value_forms
+from colibri.data.jsonl import read_jsonl, write_jsonl
 from colibri.data.render import Call, TaskExample
 from colibri.data.schema import MAX_ARGS, Arg, SchemaError, Tool
 
@@ -322,8 +323,6 @@ def convert_massive(rows: list[dict], rng: np.random.Generator) -> tuple[dict[st
 
 def convert_external(raw_dir="data/raw", out_dir="data/external", seed: int = 0) -> dict:
     """Convert xLAM and MASSIVE (when downloaded) into ``out_dir/*.jsonl``; return a report."""
-    from colibri.data.generate.build import write_jsonl
-
     raw_dir, out_dir = Path(raw_dir), Path(out_dir)
     rng = np.random.default_rng(seed)
     report = {}
@@ -352,7 +351,7 @@ def convert_external(raw_dir="data/raw", out_dir="data/external", seed: int = 0)
 
     massive_path = raw_dir / "massive" / "1.1" / "data" / "en-US.jsonl"
     if massive_path.exists():
-        rows = [json.loads(line) for line in massive_path.read_text().splitlines()]
+        rows = read_jsonl(massive_path)
         parts, dropped = convert_massive(rows, rng)
         for name, examples in parts.items():
             out = [{**ex.to_json(inline=True), "source": "massive"} for ex in examples]
