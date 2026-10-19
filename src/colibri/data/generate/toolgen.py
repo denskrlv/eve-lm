@@ -267,6 +267,450 @@ LOOKUPS = (
 )
 
 
+# More objects (2026-10-17). With only the 55 above, a model can pass every generated example by
+# memorizing which noun goes with which capability; with many more it has to compare the request
+# with each schema. They stay clear of what the hand-written tools do (lights, temperature,
+# locks, blinds, vacuums, media, workouts, weather, time, notes, lists, messages, cars, events)
+# and of the held-out topics.
+
+MORE_DEVICES = (
+    Device("toaster", (Level("browning", 1, 6),), ("bagel", "defrost", "reheat")),
+    Device("microwave", (Level("power level", 1, 10),), ("defrost", "popcorn", "reheat")),
+    Device("blender", (Level("speed", 1, 10),), ("pulse", "smoothie", "ice crush")),
+    Device("air fryer", (Level("temperature", 80, 200, "degrees"),), ("fries", "chicken", "bake")),
+    Device("stand mixer", (Level("speed", 1, 10),)),
+    Device("juicer", ()),
+    Device("food processor", (Level("speed", 1, 3),), ("chop", "puree", "knead")),
+    Device("ice maker", (), ("small cubes", "large cubes", "crushed ice")),
+    Device("wine fridge", (Level("temperature", 5, 18, "degrees"),)),
+    Device("freezer", (Level("cold setting", 1, 7),), ("fast freeze", "holiday")),
+    Device("range hood", (Level("fan speed", 1, 4),)),
+    Device("garbage disposal", ()),
+    Device("sous vide", (Level("temperature", 40, 90, "degrees"),)),
+    Device(
+        "pressure cooker", (Level("cooking time", 1, 120, "minutes"),), ("soup", "stew", "beans")
+    ),
+    Device("coffee grinder", (Level("grind size", 1, 20),), ("espresso", "drip", "french press")),
+    Device("popcorn maker", ()),
+    Device("waffle iron", (Level("browning", 1, 5),)),
+    Device("soda maker", (Level("fizz level", 1, 3),)),
+    Device("exhaust fan", (Level("speed", 1, 3),), rooms=True),
+    Device("towel warmer", (Level("heat level", 1, 3),)),
+    Device("hair dryer", (Level("heat", 1, 3),), ("cool shot", "diffuser", "turbo")),
+    Device("electric toothbrush", (), ("clean", "whiten", "sensitive")),
+    Device("smart mirror", (Level("brightness", 1, 10),), ("makeup", "news", "standby")),
+    Device("sauna", (Level("temperature", 60, 100, "degrees"),)),
+    Device("hot tub", (Level("temperature", 30, 40, "degrees"),), ("jets", "economy", "filter")),
+    Device("steam shower", (Level("steam level", 1, 5),)),
+    Device("ceiling fan", (Level("speed", 1, 6),), ("breeze", "reverse"), rooms=True),
+    Device("pool heater", (Level("temperature", 20, 35, "degrees"),)),
+    Device("fountain", (Level("flow", 1, 5),), ("gentle", "jet", "cascade")),
+    Device("pond pump", (Level("flow", 1, 5),)),
+    Device("ventilation system", (Level("airflow", 1, 4),), ("boost", "away", "home")),
+    Device("electric bike", (Level("assist level", 1, 5),), ("eco", "tour", "sport")),
+    Device(
+        "electric scooter", (Level("speed limit", 10, 25, "kilometers per hour"),), ("eco", "sport")
+    ),
+    Device("kiln", (Level("temperature", 600, 1300, "degrees"),), ("bisque", "glaze")),
+    Device("label printer", ()),
+    Device("paper shredder", (), ("auto", "reverse")),
+    Device("laminator", (Level("heat level", 1, 3),)),
+    Device("monitor", (Level("brightness", 0, 100, "percent"),), ("game", "movie", "reading")),
+    Device("game console", (), ("performance", "quiet")),
+    Device("router", (), ("normal", "gaming", "guest only")),
+    Device("pet feeder", (Level("portion size", 1, 5),)),
+    Device("litter box", (), ("auto clean", "manual")),
+    Device("pet fountain", (Level("flow", 1, 3),)),
+    Device("grill", (Level("temperature", 100, 300, "degrees"),), ("smoke", "sear")),
+    Device("smoker", (Level("temperature", 90, 150, "degrees"),)),
+    Device("pizza oven", (Level("temperature", 200, 500, "degrees"),)),
+    Device("patio heater", (Level("heat level", 1, 3),)),
+    Device("snow blower", ()),
+    Device("leaf blower", (Level("speed", 1, 3),)),
+    Device("pressure washer", (Level("pressure", 1, 5),), ("rinse", "soap")),
+    Device("hedge trimmer", ()),
+    Device("greenhouse fan", (Level("speed", 1, 3),)),
+    Device("garage heater", (Level("heat level", 1, 5),)),
+    Device("dust collector", ()),
+    Device("air compressor", (Level("pressure", 60, 150, "psi"),)),
+    Device(
+        "white noise machine",
+        (Level("intensity", 1, 10),),
+        ("rain", "ocean", "fan sound"),
+        rooms=True,
+    ),
+    Device("crib mobile", (), ("lullaby", "nature sounds")),
+    Device("bottle warmer", (Level("temperature", 30, 45, "degrees"),)),
+    Device("baby swing", (Level("speed", 1, 5),)),
+    Device("clothes steamer", (Level("steam level", 1, 3),)),
+    Device("sewing machine", (Level("speed", 1, 10),)),
+    Device("foot spa", (Level("temperature", 30, 45, "degrees"),), ("massage", "bubbles")),
+    Device("massage gun", (Level("speed", 1, 5),)),
+    Device("standing desk", (Level("height", 60, 125, "centimeters"),), power=False),
+    Device(
+        "smart bed", (Level("firmness", 1, 10),), ("snore", "zero gravity", "flat"), power=False
+    ),
+    Device("photo frame", (Level("brightness", 1, 10),), ("slideshow", "clock")),
+    Device("smart plug", (), rooms=True),
+    Device("heated driveway", ()),
+    Device("awning", (Level("extension", 0, 100, "percent"),), power=False),
+    Device("trash compactor", ()),
+    Device("beverage cooler", (Level("temperature", 2, 12, "degrees"),)),
+    Device("yogurt maker", (Level("fermentation time", 4, 12, "hours"),)),
+    Device("food dehydrator", (Level("temperature", 35, 75, "degrees"),)),
+    Device("egg cooker", (), ("soft", "medium", "hard")),
+    Device("milk frother", (), ("hot foam", "cold foam", "warm milk")),
+    Device("deep fryer", (Level("temperature", 150, 190, "degrees"),)),
+    Device("induction hob", (Level("power level", 1, 9),)),
+    Device("warming drawer", (Level("temperature", 30, 80, "degrees"),)),
+    Device("water dispenser", (), ("hot", "cold", "room temperature")),
+    Device("aquarium pump", (Level("flow", 1, 5),)),
+    Device("egg incubator", (Level("temperature", 35, 39, "degrees"),)),
+    Device("home battery", (), ("backup", "self consumption", "time of use"), power=False),
+    Device("generator", ()),
+    Device("sump pump", ()),
+)
+
+MORE_RECORDS = (
+    Record(
+        "budget",
+        ("groceries", "holiday fund", "home repairs", "eating out"),
+        ("on track", "over budget"),
+        ("int", "amount", 50, 5000, "of <x> dollars"),
+    ),
+    Record(
+        "subscription",
+        ("Netflix", "the gym membership", "Spotify", "cloud storage"),
+        ("active", "cancelled"),
+        ("int", "price", 1, 100, "at <x> dollars a month"),
+    ),
+    Record(
+        "warranty", ("the dishwasher", "my laptop", "the sofa", "my phone"), ("valid", "expired")
+    ),
+    Record(
+        "lead",
+        ("Initech", "Hooli", "Umbrella Inc", "Stark Industries"),
+        ("new", "contacted", "qualified"),
+        ("enum", "source", ("website", "referral", "trade show"), "from <x>"),
+    ),
+    Record(
+        "deal",
+        ("the Q3 renewal", "the Globex upgrade", "the pilot program", "the school contract"),
+        ("open", "won", "lost"),
+        ("int", "value", 100, 90000, "worth <x> dollars"),
+    ),
+    Record(
+        "candidate",
+        ("Maria Lopez", "James Chen", "Aisha Khan", "Tom Becker"),
+        ("applied", "interviewing", "hired", "rejected"),
+    ),
+    Record(
+        "job posting",
+        ("backend engineer", "product designer", "sales lead", "office manager"),
+        ("open", "closed"),
+    ),
+    Record(
+        "survey",
+        ("customer feedback", "team pulse", "event satisfaction", "onboarding check"),
+        ("draft", "live", "closed"),
+    ),
+    Record(
+        "poll", ("lunch spot", "team name", "offsite date", "office snacks"), ("open", "closed")
+    ),
+    Record(
+        "book",
+        ("Dune", "Educated", "Atomic Habits", "The Hobbit", "Beloved"),
+        ("to read", "reading", "finished"),
+        ("int", "rating", 1, 5, "rated <x> stars"),
+    ),
+    Record(
+        "course",
+        ("intro to Python", "watercolor basics", "public speaking", "beginner guitar"),
+        ("enrolled", "completed", "dropped"),
+    ),
+    Record(
+        "assignment",
+        ("history essay", "lab report", "book review", "chemistry worksheet"),
+        ("todo", "submitted", "graded"),
+    ),
+    Record("client", ("Dr. Patel", "the Lee family", "Northwind", "Bluebird Cafe")),
+    Record("vendor", ("Northwind Traders", "Contoso", "Fabrikam", "Wingtip Supplies")),
+    Record(
+        "purchase order",
+        ("office laptops", "printer toner", "standing desks", "safety gloves"),
+        ("pending", "approved", "received"),
+        ("int", "quantity", 1, 500, "for <x> units"),
+    ),
+    Record(
+        "asset",
+        ("laptop 42", "projector B", "the spare monitor", "van 3"),
+        ("in use", "in storage", "retired"),
+    ),
+    Record(
+        "wiki page",
+        ("onboarding", "API guide", "holiday policy", "coding standards"),
+        ("draft", "published"),
+    ),
+    Record(
+        "blog post",
+        ("launch announcement", "hiring update", "year in review", "customer story"),
+        ("draft", "scheduled", "published"),
+    ),
+    Record(
+        "newsletter",
+        ("October issue", "product update", "holiday edition", "welcome series"),
+        ("draft", "sent"),
+    ),
+    Record(
+        "campaign",
+        ("spring sale", "back to school", "referral push", "summer launch"),
+        ("planned", "running", "ended"),
+        ("int", "budget", 100, 50000, "with a budget of <x> dollars"),
+    ),
+    Record(
+        "coupon",
+        ("WELCOME10", "SPRING25", "FREESHIP", "VIP50"),
+        ("active", "expired"),
+        ("int", "discount", 5, 90, "for <x> percent off"),
+    ),
+    Record(
+        "listing",
+        ("vintage lamp", "mountain bike", "old textbooks", "baby stroller"),
+        ("active", "sold"),
+        ("int", "price", 1, 2000, "for <x> dollars"),
+    ),
+    Record(
+        "pet",
+        ("Max", "Luna", "Bella", "Charlie"),
+        (),
+        ("enum", "species", ("dog", "cat", "rabbit", "parrot"), "who is a <x>"),
+    ),
+    Record(
+        "supplement",
+        ("vitamin D", "magnesium", "fish oil", "zinc"),
+        (),
+        ("int", "dose", 1, 5, "<x> pills a day"),
+    ),
+    Record("journal entry", ("first day at work", "rainy sunday", "big news", "lessons learned")),
+    Record(
+        "gift idea",
+        ("mom's birthday", "secret santa", "our anniversary", "the teacher"),
+        ("idea", "bought", "wrapped"),
+    ),
+    Record(
+        "chore",
+        ("take out the trash", "water the lawn", "clean the gutters", "mop the floors"),
+        ("todo", "done"),
+        ("int", "times_per_week", 1, 7, "<x> times a week"),
+    ),
+    Record(
+        "repair",
+        ("leaky faucet", "cracked tile", "broken fence", "loose railing"),
+        ("reported", "scheduled", "fixed"),
+    ),
+    Record("garden bed", ("tomatoes", "herbs", "strawberries", "pumpkins")),
+    Record("meal plan", ("monday dinner", "sunday brunch", "work lunches", "party snacks")),
+    Record(
+        "volunteer shift",
+        ("food bank", "animal shelter", "park cleanup", "book fair"),
+        ("open", "filled"),
+    ),
+    Record("folder", ("taxes", "receipts", "school stuff", "house papers")),
+    Record(
+        "domain name",
+        ("myshop.com", "colibri.dev", "bestpizza.net", "lucyart.io"),
+        ("active", "expiring"),
+    ),
+    Record(
+        "server",
+        ("web one", "db primary", "staging box", "build agent"),
+        ("running", "stopped"),
+    ),
+    Record(
+        "backup",
+        ("photos", "work laptop", "the database", "family videos"),
+        ("scheduled", "completed", "failed"),
+    ),
+    Record(
+        "experiment",
+        ("new onboarding flow", "blue button", "price test", "shorter signup"),
+        ("draft", "running", "stopped"),
+    ),
+    Record(
+        "feature flag",
+        ("dark mode", "new checkout", "beta search", "smart replies"),
+        ("enabled", "disabled"),
+    ),
+    Record(
+        "sprint",
+        ("sprint 12", "sprint 13", "the holiday sprint", "the cleanup sprint"),
+        ("planned", "active", "closed"),
+    ),
+    Record(
+        "milestone",
+        ("beta launch", "version two", "first customer", "public release"),
+        ("open", "reached"),
+    ),
+    Record(
+        "quote",
+        ("roof repair", "kitchen tiles", "website build", "fence painting"),
+        ("sent", "accepted", "declined"),
+        ("int", "amount", 50, 20000, "for <x> dollars"),
+    ),
+    Record(
+        "contract",
+        ("office lease", "cleaning service", "phone plan", "internet plan"),
+        ("draft", "signed", "expired"),
+    ),
+    Record(
+        "work shift",
+        ("monday morning", "weekend night", "friday late", "holiday cover"),
+        ("open", "covered"),
+    ),
+)
+
+
+def _lookup(thing: str, key: str, keys: tuple[str, ...], *extra: str) -> Lookup:
+    """A lookup with phrasings that name the thing, plus any ``extra`` ones."""
+    phrasings = (
+        f"what's the {thing} for <k>",
+        f"check the {thing} of <k>",
+        f"{thing} for <k>",
+        f"look up the {thing}[ for <k>]",
+        *extra,
+    )
+    return Lookup(thing, key, keys, phrasings)
+
+
+MORE_LOOKUPS = (
+    _lookup("calorie count", "food", ("a banana", "a bagel", "an avocado", "greek yogurt")),
+    _lookup("synonyms", "word", ("happy", "fast", "big", "smart"), "another word for <k>"),
+    _lookup("rhymes", "word", ("orange", "cat", "light", "dream"), "what rhymes with <k>"),
+    _lookup(
+        "population", "country", ("Canada", "Kenya", "Japan", "Peru"), "how many people live in <k>"
+    ),
+    _lookup(
+        "opening hours",
+        "place",
+        ("the library", "City Museum", "the post office", "Green Grocer"),
+        "when does <k> open",
+        "is <k> open now",
+    ),
+    _lookup(
+        "wait time",
+        "restaurant",
+        ("Joe's Diner", "Sakura Sushi", "The Burger Barn"),
+        "how long is the wait at <k>",
+    ),
+    _lookup(
+        "menu", "restaurant", ("Luigi's", "Taco Town", "Golden Wok"), "what's on the menu at <k>"
+    ),
+    _lookup(
+        "book availability",
+        "title",
+        ("Dune", "Beloved", "Circe", "Educated"),
+        "is <k> available at the library",
+    ),
+    _lookup(
+        "lyrics",
+        "song",
+        ("Yesterday", "Hey Jude", "Bohemian Rhapsody"),
+        "show me the lyrics to <k>",
+    ),
+    _lookup(
+        "plant care",
+        "plant",
+        ("monstera", "fiddle leaf fig", "snake plant", "aloe"),
+        "how do I take care of a <k>",
+    ),
+    _lookup(
+        "breed info", "breed", ("beagle", "corgi", "husky", "poodle"), "tell me about the <k> breed"
+    ),
+    _lookup(
+        "standings",
+        "league",
+        ("Premier League", "NBA", "Bundesliga", "NHL"),
+        "who is top of the <k>",
+    ),
+    _lookup(
+        "player stats",
+        "player",
+        ("LeBron James", "Erling Haaland", "Serena Williams"),
+        "how is <k> playing this season",
+    ),
+    _lookup("water level", "river", ("the Thames", "the Rhine", "the Danube")),
+    _lookup(
+        "sunset time", "city", ("Lisbon", "Reykjavik", "Denver", "Nairobi"), "when is sunset in <k>"
+    ),
+    _lookup(
+        "moon phase",
+        "date",
+        ("tonight", "Friday", "next Saturday"),
+        "what will the moon look like <k>",
+    ),
+    _lookup("earnings date", "symbol", ("KO", "JNJ", "PG", "PEP"), "when does <k> report earnings"),
+    _lookup(
+        "repository stars",
+        "repository",
+        ("react", "pytorch", "linux"),
+        "how many stars does <k> have",
+    ),
+    _lookup("website status", "website", ("example.com", "github.com", "my blog"), "is <k> down"),
+    _lookup(
+        "domain availability",
+        "domain",
+        ("colibri.dev", "bestpizza.com", "myband.io"),
+        "is <k> taken",
+    ),
+    _lookup("return policy", "store", ("IKEA", "Target", "Best Buy"), "can I return things to <k>"),
+    _lookup(
+        "product reviews",
+        "product",
+        ("the Kindle", "AirPods Pro", "the Instant Pot"),
+        "are <k> any good",
+    ),
+    _lookup("price history", "product", ("the Kindle", "a PS5", "the iPad Air")),
+    _lookup(
+        "lunch menu",
+        "school",
+        ("Lincoln Elementary", "Oak Ridge High", "Maple Middle School"),
+        "what's for lunch at <k>",
+    ),
+    _lookup(
+        "recycling schedule",
+        "street",
+        ("Maple Street", "5th Avenue", "Elm Road"),
+        "when is recycling picked up on <k>",
+    ),
+    _lookup(
+        "power outage map",
+        "neighborhood",
+        ("Downtown", "Riverside", "Hillcrest"),
+        "is there a power cut in <k>",
+    ),
+    _lookup("movie rating", "movie", ("Dune", "Barbie", "Up", "Arrival"), "is <k> any good"),
+    _lookup(
+        "public holidays", "country", ("Germany", "Japan", "Brazil"), "what are the holidays in <k>"
+    ),
+    _lookup(
+        "salary range", "job", ("nurse", "data analyst", "electrician"), "how much does a <k> earn"
+    ),
+    _lookup("nutrition label", "product", ("oat milk", "peanut butter", "granola")),
+    _lookup(
+        "museum exhibits",
+        "museum",
+        ("the Louvre", "MoMA", "the Science Museum"),
+        "what's on at <k>",
+    ),
+    _lookup(
+        "trail conditions",
+        "trail",
+        ("Eagle Peak", "River Loop", "Cedar Ridge"),
+        "is the <k> trail muddy",
+    ),
+)
+
+
 def _key(text: str) -> str:
     return text.replace(" ", "_").replace("'", "")
 
@@ -486,14 +930,18 @@ def _lookup_specs(lookup: Lookup, rng, weight: float) -> list[ToolSpec]:
     return _variants(rng, [f"get_{k}", f"check_{k}", f"lookup_{k}", f"fetch_{k}"], get)
 
 
-def generated_specs(seed: int = 0, weight: float = 0.2) -> list[ToolSpec]:
-    """All generated tools. The same seed always gives the same tools."""
+def generated_specs(seed: int = 0, weight: float = 0.08) -> list[ToolSpec]:
+    """All generated tools. The same seed always gives the same tools.
+
+    ``weight`` is per tool: ~1,000 of them at 0.08 against 47 hand-written tools at 1.0 make
+    about 63% of the template examples generated, each tool the gold one ~50 times in 80k.
+    """
     rng = np.random.default_rng(seed)
     specs = []
-    for device in DEVICES:
+    for device in DEVICES + MORE_DEVICES:
         specs += _device_specs(device, rng, weight)
-    for record in RECORDS:
+    for record in RECORDS + MORE_RECORDS:
         specs += _record_specs(record, rng, weight)
-    for lookup in LOOKUPS:
+    for lookup in LOOKUPS + MORE_LOOKUPS:
         specs += _lookup_specs(lookup, rng, weight)
     return specs

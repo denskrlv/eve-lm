@@ -518,7 +518,7 @@ def main(argv: list[str] | None = None) -> None:
     p = data_commands.add_parser("build", help="templates + chat-written -> data/task/*.jsonl")
     p.set_defaults(run=data_build)
     p.add_argument("--out", default="data/task")
-    p.add_argument("--templates", default="50k", help="template examples for train")
+    p.add_argument("--templates", default="80k", help="template examples for train")
     p.add_argument("--heldout", default="2k", help="template examples with held-out tools")
     p.add_argument("--seed", type=int, default=0)
     p.add_argument("--tokenizer", default=DEFAULT_TOKENIZER)

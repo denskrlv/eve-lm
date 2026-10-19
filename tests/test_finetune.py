@@ -15,6 +15,8 @@ from colibri.train.finetune import (
     load_init,
     question_loss,
     question_metrics,
+    score,
+    score_line,
 )
 from colibri.train.loop import TrainConfig
 
@@ -156,7 +158,7 @@ def test_finetune_frozen_then_full(library, tokenizer, tmp_path):
     records = [json.loads(line) for line in (tmp_path / "frozen" / "metrics.jsonl").open()]
     samples = [r for r in records if r["kind"] == "samples"]
     assert [r["step"] for r in samples] == [0, 2, 4]
-    assert "intent_acc" in samples[-1]["heldout"]
+    assert {"macro_recall", "exact_acc"} <= set(samples[-1]["heldout"]) & set(samples[-1]["val"])
 
     # Stage 2 starts from stage 1 with its trained question block, then trains everything.
     stage2 = load_init(tmp_path / "frozen" / "model.pt")
@@ -190,3 +192,16 @@ def test_tools_are_reshuffled_each_epoch(library, tokenizer):
         data.set_epoch(epoch)
         orders.add(tuple(data[0].tool_names))
     assert len(orders) > 1
+
+
+def test_score_counts_recall_per_intent(batch):
+    s = score(Oracle(batch), [batch])
+    assert s["macro_recall"] == s["tools_acc"] == s["exact_acc"] == 1.0
+    assert set(s) >= {f"recall_{i}" for i in INTENTS}
+
+    # The 6 examples: call, call, ask, ask, unsupported, none. Shifting every intent by one
+    # makes each one wrong, but the slots stay right.
+    wrong = score(Oracle(batch, wrong_intent=True), [batch, batch])  # counts add up
+    assert wrong["macro_recall"] == 0.0 and wrong["exact_acc"] == 0.0
+    assert wrong["tools_acc"] == 1.0
+    assert "macro recall 0.0% (call 0% · ask 0%" in score_line("val", wrong)

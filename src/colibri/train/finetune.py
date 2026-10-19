@@ -1,5 +1,5 @@
+from collections import Counter
 from collections.abc import Sequence
-from contextlib import nullcontext
 from dataclasses import replace
 from pathlib import Path
 
@@ -14,10 +14,9 @@ from colibri.model.checkpoint import FRESH, QUESTION_FIELDS, load_checkpoint, lo
 from colibri.model.colibri import Colibri, Questions
 from colibri.runtime import seed_everything
 from colibri.tokenizer.bpe import BPETokenizer
-from colibri.train.loop import TrainConfig, evaluate, train
+from colibri.train.loop import TrainConfig, train
 
 TASK = "questions"  # meta["task"] of the checkpoints this run writes
-HELDOUT_BATCHES = 10
 
 
 def ask(model: Colibri, batch: dict[str, torch.Tensor]) -> Questions:
@@ -81,6 +80,53 @@ def question_metrics(model: Colibri, batch: dict[str, torch.Tensor]) -> dict[str
             (intent == INTENTS.index("call")) & (slots[:, 0] == model.cfg.max_tools)
         ),
     }
+
+
+@torch.no_grad()
+def score(model: Colibri, batches: Sequence[dict[str, torch.Tensor]]) -> dict[str, float]:
+    """Accuracy counted over all of ``batches`` at once, not averaged per batch, so rare
+    classes count right. A recall per intent says how often its examples get that answer:
+    val is 84% CALL, so answering CALL every time already gets 84% intent accuracy, but a
+    recall of 0 for ASK, UNSUPPORTED and NONE. ``macro_recall`` is the mean of the recalls.
+    """
+    was_training = model.training
+    model.eval()
+    device = next(model.parameters()).device
+    n, right = Counter(), Counter()
+    for batch in batches:
+        batch = {k: v.to(device) for k, v in batch.items()}
+        q = ask(model, batch)
+        intent, slots = q.intent.argmax(-1).cpu(), q.slots.argmax(-1).cpu()
+        gold, labels = batch["intent"].cpu(), batch["slots"].cpu()
+        rows = (labels != IGNORE).all(-1)
+        tools_right = (slots == labels).all(-1)
+        columns = (gold.tolist(), intent.tolist(), rows.tolist(), tools_right.tolist())
+        for g, p, r, t in zip(*columns, strict=True):
+            n[INTENTS[g]] += 1
+            right[INTENTS[g]] += p == g
+            n["tools"] += r
+            right["tools"] += r and t
+            right["exact"] += p == g and (t or not r)
+    model.train(was_training)
+    recalls = {f"recall_{i}": right[i] / n[i] for i in INTENTS if n[i]}
+    total = sum(n[i] for i in INTENTS)
+    return {
+        "macro_recall": sum(recalls.values()) / len(recalls),
+        **recalls,
+        "tools_acc": right["tools"] / max(1, n["tools"]),
+        "exact_acc": right["exact"] / total,
+    }
+
+
+def score_line(name: str, s: dict[str, float]) -> str:
+    """``held-out · macro recall 52% (call 90% · ask 10% · …) · tools 51% · exact 40%``"""
+    recalls = " · ".join(
+        f"{k.removeprefix('recall_')} {v:.0%}" for k, v in s.items() if k.startswith("recall_")
+    )
+    return (
+        f"{name} · macro recall {s['macro_recall']:.1%} ({recalls}) · "
+        f"tools {s['tools_acc']:.1%} · exact {s['exact_acc']:.1%}"
+    )
 
 
 def freeze_body(model: Colibri) -> int:
@@ -219,24 +265,23 @@ def finetune(
     )
     collate = TaskCollator(cfg)
     bs = train_cfg.batch_size
-    heldout_batches = [
-        collate([heldout[j] for j in range(i * bs, (i + 1) * bs)])
-        for i in range(min(HELDOUT_BATCHES, len(heldout) // bs))
-    ]
+
+    def batches(data: TaskDataset) -> list[dict[str, torch.Tensor]]:
+        return [
+            collate([data[j] for j in range(i, min(i + bs, len(data)))])
+            for i in range(0, len(data), bs)
+        ]
+
+    scored = {"val": ("val", batches(val_data)), "heldout": ("held-out tools", batches(heldout))}
     shown = _shown(val_examples)
 
     def on_eval(m: Colibri) -> dict:
         lines = describe(m, val_examples, val_data, shown)
         out: dict = {"samples": lines}
-        if heldout_batches:
-            dev = next(m.parameters()).device
-            scores = evaluate(m, question_metrics, heldout_batches, dev, nullcontext)
-            scores = {k.removeprefix("val_"): v for k, v in scores.items()}
-            out["heldout"] = scores
-            lines.append(
-                f"held-out tools · intent {scores['intent_acc']:.1%} · "
-                f"tools {scores['tools_acc']:.1%} · exact {scores['exact_acc']:.1%}"
-            )
+        for key, (label, data) in scored.items():
+            if data:
+                out[key] = score(m, data)
+                lines.append(score_line(label, out[key]))
         return out
 
     meta = {"task": TASK, "frozen": freeze, "trainable": trainable, "init": str(init or "scratch")}
