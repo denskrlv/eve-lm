@@ -4,14 +4,23 @@ import json
 import sys
 import time
 from pathlib import Path
+from typing import TYPE_CHECKING, Any
 
 import torch
 
 from colibri.config import PRESETS
 from colibri.runtime import pick_device
 
+if TYPE_CHECKING:
+    from colibri.train.loop import TrainConfig
+
 DEFAULT_PARQUET = "data/raw/fineweb-edu/*.parquet"
 DEFAULT_TOKENIZER = "artifacts/tokenizer/colibri-8k.json"
+DTYPE_CHOICES = ["float32", "bfloat16"]  # train.loop.DTYPES; listed here to keep startup fast
+FROZEN_LR, FULL_LR = 1e-3, 3e-4  # finetune's default lr with and without --freeze
+ALL_VAL_BATCHES = 10_000  # finetune evaluates on all of val: it is small
+
+type Subcommands = argparse._SubParsersAction[argparse.ArgumentParser]
 
 
 def _count(text: str) -> int:
@@ -118,10 +127,33 @@ def corpus(args: argparse.Namespace) -> None:
     print(f"train {meta['train_tokens']:,} and val {meta['val_tokens']:,} tokens -> {args.out}")
 
 
+def _train_config(args: argparse.Namespace, steps: int, lr: float, **extra: Any) -> "TrainConfig":
+    """The ``TrainConfig`` from the options ``pretrain`` and ``finetune`` share."""
+    from colibri.train.loop import TrainConfig
+
+    return TrainConfig(
+        steps=steps,
+        batch_size=args.batch_size,
+        lr=lr,
+        warmup_steps=min(args.warmup, steps),
+        dtype=args.dtype,
+        seed=args.seed,
+        eval_every=args.eval_every,
+        save_every=args.eval_every,
+        log_every=args.log_every,
+        **extra,
+    )
+
+
+def _stop_note(args: argparse.Namespace) -> str:
+    """The end of a run's banner: where ``--stop-after`` ends it, if given."""
+    return f" · stopping at step {args.stop_after:,}" if args.stop_after else ""
+
+
 def pretrain(args: argparse.Namespace) -> None:
+    """Run span-corruption pretraining with the command line's options."""
     from colibri.config import preset
     from colibri.progress import style
-    from colibri.train.loop import TrainConfig
     from colibri.train.pretrain import pretrain as run
     from colibri.train.pretrain import steps_for
 
@@ -130,18 +162,7 @@ def pretrain(args: argparse.Namespace) -> None:
         overrides["dropout"] = args.dropout
     cfg = preset(args.preset, **overrides)
     steps = args.steps or steps_for(_count(args.tokens), args.batch_size, cfg.max_encoder_len)
-    train_cfg = TrainConfig(
-        steps=steps,
-        batch_size=args.batch_size,
-        lr=args.lr,
-        warmup_steps=min(args.warmup, steps),
-        dtype=args.dtype,
-        seed=args.seed,
-        eval_every=args.eval_every,
-        save_every=args.eval_every,
-        log_every=args.log_every,
-        compile=args.compile,
-    )
+    train_cfg = _train_config(args, steps, args.lr, compile=args.compile)
     device = pick_device(args.device)
     print(
         f"{style('pretrain', '1')} {args.preset} · {cfg.approx_params() / 1e6:.1f}M params · "
@@ -149,7 +170,7 @@ def pretrain(args: argparse.Namespace) -> None:
         + "".join(f"{name} · " for name in ("rope", "qk_norm") if getattr(cfg, name))
         + ("compiled · " if args.compile else "")
         + f"{steps:,} steps × {args.batch_size} windows of {cfg.max_encoder_len} tokens"
-        + (f" · stopping at step {args.stop_after:,}" if args.stop_after else "")
+        + _stop_note(args)
     )
     run(
         cfg,
@@ -164,35 +185,24 @@ def pretrain(args: argparse.Namespace) -> None:
 
 
 def finetune(args: argparse.Namespace) -> None:
+    """Fine-tune the question heads with the command line's options."""
     from colibri.config import preset
     from colibri.data.generate.build import Sources
     from colibri.data.jsonl import read_jsonl
     from colibri.progress import style
     from colibri.train.finetune import finetune as run
-    from colibri.train.loop import TrainConfig
 
     n_train = len(read_jsonl(Path(args.task) / "train.jsonl"))
     steps = args.steps or round(args.epochs * n_train / args.batch_size)
-    lr = args.lr or (1e-3 if args.freeze else 3e-4)
-    train_cfg = TrainConfig(
-        steps=steps,
-        batch_size=args.batch_size,
-        lr=lr,
-        warmup_steps=min(args.warmup, steps),
-        dtype=args.dtype,
-        seed=args.seed,
-        eval_every=args.eval_every,
-        eval_batches=10_000,  # all of val: it is small
-        save_every=args.eval_every,
-        log_every=args.log_every,
-    )
+    lr = args.lr or (FROZEN_LR if args.freeze else FULL_LR)
+    train_cfg = _train_config(args, steps, lr, eval_batches=ALL_VAL_BATCHES)
     device = pick_device(args.device)
     start = args.init or f"{args.scratch} from scratch"
     print(
         f"{style('finetune', '1')} questions · from {start} · {device} · lr {lr:g} · "
         + ("body frozen · " if args.freeze else "")
         + f"{steps:,} steps × {args.batch_size} ({steps * args.batch_size / n_train:.1f} epochs)"
-        + (f" · stopping at step {args.stop_after:,}" if args.stop_after else "")
+        + _stop_note(args)
     )
     run(
         train_cfg,
@@ -412,14 +422,34 @@ def data_check(args: argparse.Namespace) -> None:
         raise SystemExit(1)
 
 
-def main(argv: list[str] | None = None) -> None:
-    parser = argparse.ArgumentParser(prog="colibri")
-    commands = parser.add_subparsers(dest="command", required=True)
+def _add_schedule_args(
+    p: argparse.ArgumentParser, lr: float | None, lr_help: str | None, warmup: int
+) -> None:
+    """Batch size, learning rate, warmup and precision: the options both training runs take."""
+    p.add_argument("--batch-size", type=int, default=32)
+    p.add_argument("--lr", type=float, default=lr, help=lr_help)
+    p.add_argument("--warmup", type=int, default=warmup)
+    p.add_argument("--dtype", choices=DTYPE_CHOICES, default="float32")
+
+
+def _add_run_args(p: argparse.ArgumentParser) -> None:
+    """Seed, eval/log cadence, device, resuming and stopping: shared by both training runs."""
+    p.add_argument("--seed", type=int, default=0)
+    p.add_argument("--eval-every", type=int, default=500, help="also how often to save")
+    p.add_argument("--log-every", type=int, default=20)
+    p.add_argument("--device", default=None)
+    p.add_argument("--resume", action="store_true", help="continue from <out>/last.pt")
+    p.add_argument("--stop-after", type=int, default=None, help="stop early at this step")
+
+
+def _add_model_commands(commands: Subcommands) -> None:
     commands.add_parser("info", help="show the device and model presets").set_defaults(run=info)
     p = commands.add_parser("model", help="parameters per part of a preset (M3)")
     p.set_defaults(run=model)
     p.add_argument("--preset", choices=sorted(PRESETS), default=None, help="default: all")
 
+
+def _add_tokenizer_commands(commands: Subcommands) -> None:
     tok = commands.add_parser("tokenizer", help="train or inspect the BPE tokenizer (M1)")
     tok_commands = tok.add_subparsers(dest="tokenizer_command", required=True)
     for name, run, help_ in [
@@ -441,6 +471,8 @@ def main(argv: list[str] | None = None) -> None:
             p.add_argument("--text", default="5M", help="bytes of web text to measure on")
             p.add_argument("--skip", default="100M", help="bytes to skip (the training text)")
 
+
+def _add_corpus_command(commands: Subcommands) -> None:
     p = commands.add_parser("corpus", help="encode the pretraining corpus to token ids (M1)")
     p.set_defaults(run=corpus)
     p.add_argument("--parquet", default=DEFAULT_PARQUET)
@@ -450,6 +482,8 @@ def main(argv: list[str] | None = None) -> None:
     p.add_argument("--val-tokens", default="2M")
     p.add_argument("--workers", type=int, default=None)
 
+
+def _add_pretrain_command(commands: Subcommands) -> None:
     p = commands.add_parser("pretrain", help="span-corruption pretraining (M4)")
     p.set_defaults(run=pretrain)
     p.add_argument("--preset", choices=sorted(PRESETS), default="small")
@@ -458,21 +492,15 @@ def main(argv: list[str] | None = None) -> None:
     p.add_argument("--out", default="artifacts/runs/pretrain-small")
     p.add_argument("--tokens", default="250M", help="corpus tokens to read (sets --steps)")
     p.add_argument("--steps", type=int, default=None, help="default: from --tokens")
-    p.add_argument("--batch-size", type=int, default=32)
-    p.add_argument("--lr", type=float, default=1e-3)
-    p.add_argument("--warmup", type=int, default=500)
-    p.add_argument("--dtype", choices=["float32", "bfloat16"], default="float32")
+    _add_schedule_args(p, lr=1e-3, lr_help=None, warmup=500)
     p.add_argument("--dropout", type=float, default=None, help="default: the preset's (0.1)")
     p.add_argument("--rope", action="store_true", help="rotary positions, no position tables")
     p.add_argument("--compile", action="store_true", help="torch.compile: ~2x faster on MPS")
     p.add_argument("--qk-norm", action="store_true", help="RMS-normalize queries and keys")
-    p.add_argument("--seed", type=int, default=0)
-    p.add_argument("--eval-every", type=int, default=500, help="also how often to save")
-    p.add_argument("--log-every", type=int, default=20)
-    p.add_argument("--device", default=None)
-    p.add_argument("--resume", action="store_true", help="continue from <out>/last.pt")
-    p.add_argument("--stop-after", type=int, default=None, help="stop early at this step")
+    _add_run_args(p)
 
+
+def _add_finetune_command(commands: Subcommands) -> None:
     p = commands.add_parser("finetune", help="fine-tune the question heads (M7)")
     p.set_defaults(run=finetune)
     start = p.add_mutually_exclusive_group(required=True)
@@ -484,17 +512,12 @@ def main(argv: list[str] | None = None) -> None:
     p.add_argument("--out", default="artifacts/runs/questions")
     p.add_argument("--epochs", type=float, default=2.0, help="sets --steps")
     p.add_argument("--steps", type=int, default=None, help="default: from --epochs")
-    p.add_argument("--batch-size", type=int, default=32)
-    p.add_argument("--lr", type=float, default=None, help="default: 1e-3 frozen, else 3e-4")
-    p.add_argument("--warmup", type=int, default=200)
-    p.add_argument("--dtype", choices=["float32", "bfloat16"], default="float32")
+    _add_schedule_args(p, lr=None, lr_help="default: 1e-3 frozen, else 3e-4", warmup=200)
     p.add_argument("--dropout", type=float, default=None, help="default: the checkpoint's")
-    p.add_argument("--seed", type=int, default=0)
-    p.add_argument("--eval-every", type=int, default=500, help="also how often to save")
-    p.add_argument("--log-every", type=int, default=20)
-    p.add_argument("--device", default=None)
-    p.add_argument("--resume", action="store_true", help="continue from <out>/last.pt")
-    p.add_argument("--stop-after", type=int, default=None, help="stop early at this step")
+    _add_run_args(p)
+
+
+def _add_inspect_commands(commands: Subcommands) -> None:
     p = commands.add_parser("ask", help="ask the question heads about a request (M7)")
     p.set_defaults(run=ask)
     p.add_argument("text", nargs="*", help="requests; none: type them one by one")
@@ -516,6 +539,8 @@ def main(argv: list[str] | None = None) -> None:
     p.add_argument("--max-new", type=int, default=24, help="most tokens to write")
     p.add_argument("--device", default=None)
 
+
+def _add_data_commands(commands: Subcommands) -> None:
     data = commands.add_parser("data", help="build the task dataset (M6)")
     data_commands = data.add_subparsers(dest="data_command", required=True)
     p = data_commands.add_parser("build", help="templates + chat-written -> data/task/*.jsonl")
@@ -542,5 +567,22 @@ def main(argv: list[str] | None = None) -> None:
     p.add_argument("batch", help="e.g. batch-0001")
     p.add_argument("--dir", default="data/generation")
 
-    args = parser.parse_args(argv)
+
+def build_parser() -> argparse.ArgumentParser:
+    """The ``colibri`` command line: one subcommand per stage, each with a ``run`` function."""
+    parser = argparse.ArgumentParser(prog="colibri")
+    commands = parser.add_subparsers(dest="command", required=True)
+    _add_model_commands(commands)
+    _add_tokenizer_commands(commands)
+    _add_corpus_command(commands)
+    _add_pretrain_command(commands)
+    _add_finetune_command(commands)
+    _add_inspect_commands(commands)
+    _add_data_commands(commands)
+    return parser
+
+
+def main(argv: list[str] | None = None) -> None:
+    """Parse the command line and run the chosen subcommand."""
+    args = build_parser().parse_args(argv)
     args.run(args)

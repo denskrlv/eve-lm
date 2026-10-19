@@ -50,3 +50,10 @@ def test_info_command(capsys):
     main(["info"])
     out = capsys.readouterr().out
     assert "small" in out and "base" in out
+
+
+def test_cli_dtype_choices_match_the_training_loop():
+    from colibri.cli import DTYPE_CHOICES
+    from colibri.train.loop import DTYPES
+
+    assert DTYPE_CHOICES == list(DTYPES)
