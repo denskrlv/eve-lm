@@ -20,7 +20,6 @@
   "change_sprinkler_duration": "<tool> change_sprinkler_duration : Change the duration of the sprinkler <arg> duration : int 5..60 : minutes",
   "check_parking_availability": "<tool> check_parking_availability : Check the parking availability <arg> garage : str",
   "check_pollen_count": "<tool> check_pollen_count : Check the pollen count <arg> city : str",
-  "convert_currency": "<tool> convert_currency : Convert an amount of money to another currency <arg> amount : float 0.. <arg> from_currency : enum USD | EUR | GBP | JPY <arg> to_currency : enum USD | EUR | GBP | JPY",
   "convert_units": "<tool> convert_units : Convert a value between units <arg> value : float <arg> from_unit : enum km | miles | kg | pounds | celsius | fahrenheit <arg> to_unit : enum km | miles | kg | pounds | celsius | fahrenheit",
   "create_deck": "<tool> create_deck : Add a deck <arg> name : str",
   "create_event": "<tool> create_event : Add an event to the calendar <arg> title : str <arg> day : str : as the user said it <arg> time ? : str <arg> duration ? : int 5..480 : minutes",
@@ -32,7 +31,6 @@
   "find_bookmark": "<tool> find_bookmark : Search bookmarks <arg> text : str",
   "find_goal": "<tool> find_goal : Search goals <arg> text : str",
   "find_nearby": "<tool> find_nearby : Find places of a kind near the user <arg> place : str <arg> open_now ? : bool",
-  "find_plant": "<tool> find_plant : Find plants matching a text <arg> query : str",
   "find_project": "<tool> find_project : Search projects <arg> text : str",
   "find_recipe": "<tool> find_recipe : Search recipes <arg> query : str",
   "get_air_quality": "<tool> get_air_quality : Check the air quality <arg> city : str",
@@ -51,6 +49,7 @@
   "lookup_photo_album": "<tool> lookup_photo_album : Search photo albums <arg> query : str",
   "lookup_sunrise_time": "<tool> lookup_sunrise_time : Get the sunrise time <arg> city : str",
   "mark_ticket": "<tool> mark_ticket : Change the status of a ticket <arg> title : str <arg> state : enum open | in progress | closed",
+  "mark_warranty": "<tool> mark_warranty : Change the status of a warranty <arg> name : str <arg> status : enum valid | expired",
   "multiply": "<tool> multiply : Multiply two numbers <arg> a : float <arg> b : float",
   "new_expense": "<tool> new_expense : Create a new expense <arg> title : str <arg> amount ? : int 1..500",
   "new_goal": "<tool> new_goal : Create a new goal <arg> name : str",
@@ -59,6 +58,7 @@
   "new_recipe": "<tool> new_recipe : Create a new recipe <arg> name : str <arg> servings ? : int 1..12",
   "pause_media": "<tool> pause_media : Pause whatever is playing",
   "printer_mode": "<tool> printer_mode : Choose a program for the printer <arg> mode : enum color | black and white | draft",
+  "remove_book": "<tool> remove_book : Delete a book <arg> title : str",
   "remove_issue": "<tool> remove_issue : Delete a issue <arg> name : str",
   "remove_photo_album": "<tool> remove_photo_album : Delete a photo album <arg> title : str",
   "remove_plant": "<tool> remove_plant : Delete a plant <arg> title : str",
@@ -76,7 +76,6 @@
   "set_alarm": "<tool> set_alarm : Set an alarm <arg> time : str : as the user said it, like 7:30 am <arg> repeat ? : enum once | daily | weekdays | weekends",
   "set_aquarium_heater_temperature": "<tool> set_aquarium_heater_temperature : Set the aquarium heater temperature <arg> temperature : int 22..30 : degrees",
   "set_bread_maker_power": "<tool> set_bread_maker_power : Switch the bread maker on or off <arg> enabled : bool",
-  "set_dehumidifier_humidity": "<tool> set_dehumidifier_humidity : Set the dehumidifier humidity <arg> value : int 30..70 : percent <arg> room ? : enum office | kitchen | bedroom | garage",
   "set_humidifier_power": "<tool> set_humidifier_power : Switch the humidifier on or off <arg> power : bool <arg> location ? : enum garage | living room | basement",
   "set_kettle_power": "<tool> set_kettle_power : Turn the kettle on or off <arg> enabled : bool",
   "set_kettle_temperature": "<tool> set_kettle_temperature : Change the temperature of the kettle <arg> value : int 60..100 : degrees",
@@ -91,7 +90,9 @@
   "subtract": "<tool> subtract : Subtract one number from another <arg> a : float <arg> b : float",
   "switch_electric_blanket": "<tool> switch_electric_blanket : Turn the electric blanket on or off <arg> on : bool",
   "toggle_air_purifier": "<tool> toggle_air_purifier : Switch the air purifier on or off <arg> enabled : bool <arg> location : enum nursery | kitchen | bedroom | bathroom",
+  "toggle_dehumidifier": "<tool> toggle_dehumidifier : Turn the dehumidifier on or off <arg> turn_on : bool <arg> room ? : enum bathroom | nursery | office | garage",
   "toggle_water_heater": "<tool> toggle_water_heater : Switch the water heater on or off <arg> turn_on : bool",
+  "update_candidate_status": "<tool> update_candidate_status : Change the status of a candidate <arg> name : str <arg> status : enum applied | interviewing | hired | rejected",
   "update_document_status": "<tool> update_document_status : Change the status of a document <arg> title : str <arg> status : enum draft | final",
   "update_goal_status": "<tool> update_goal_status : Change the status of a goal <arg> name : str <arg> status : enum active | achieved | abandoned",
   "update_issue_status": "<tool> update_issue_status : Change the status of a issue <arg> title : str <arg> status : enum open | closed",
@@ -1092,50 +1093,32 @@
    "id": "batch-0013-016",
    "tools": [
     {
-     "name": "convert_currency",
-     "description": "Convert an amount of money to another currency",
+     "name": "adjust_aroma_diffuser_intensity",
+     "description": "Change the intensity of the aroma diffuser",
      "args": [
       {
-       "name": "amount",
-       "type": "float",
-       "min": 0
+       "name": "value",
+       "type": "int",
+       "min": 1,
+       "max": 3
       },
       {
-       "name": "from_currency",
+       "name": "location",
        "type": "enum",
+       "required": false,
        "options": [
-        "USD",
-        "EUR",
-        "GBP",
-        "JPY"
+        "nursery",
+        "basement",
+        "bathroom",
+        "living room"
        ]
-      },
-      {
-       "name": "to_currency",
-       "type": "enum",
-       "options": [
-        "USD",
-        "EUR",
-        "GBP",
-        "JPY"
-       ]
-      }
-     ]
-    },
-    {
-     "name": "find_plant",
-     "description": "Find plants matching a text",
-     "args": [
-      {
-       "name": "query",
-       "type": "str"
       }
      ]
     }
    ],
    "intent": "unsupported",
    "calls": [],
-   "meaning": "convert 18 miles to miles",
+   "meaning": "47 + 47.5",
    "missing": [],
    "implied": []
   },
@@ -1514,50 +1497,55 @@
    "id": "batch-0013-024",
    "tools": [
     {
-     "name": "multiply",
-     "description": "Multiply two numbers",
+     "name": "remove_book",
+     "description": "Delete a book",
      "args": [
       {
-       "name": "a",
-       "type": "float"
-      },
-      {
-       "name": "b",
-       "type": "float"
+       "name": "title",
+       "type": "str"
       }
      ]
     },
     {
-     "name": "convert_units",
-     "description": "Convert a value between units",
+     "name": "update_candidate_status",
+     "description": "Change the status of a candidate",
      "args": [
       {
-       "name": "value",
-       "type": "float"
+       "name": "name",
+       "type": "str"
       },
       {
-       "name": "from_unit",
+       "name": "status",
        "type": "enum",
        "options": [
-        "km",
-        "miles",
-        "kg",
-        "pounds",
-        "celsius",
-        "fahrenheit"
+        "applied",
+        "interviewing",
+        "hired",
+        "rejected"
        ]
+      }
+     ]
+    },
+    {
+     "name": "book_hotel",
+     "description": "Book a hotel room",
+     "args": [
+      {
+       "name": "city",
+       "type": "str"
       },
       {
-       "name": "to_unit",
-       "type": "enum",
-       "options": [
-        "km",
-        "miles",
-        "kg",
-        "pounds",
-        "celsius",
-        "fahrenheit"
-       ]
+       "name": "nights",
+       "type": "int",
+       "min": 1,
+       "max": 30
+      },
+      {
+       "name": "guests",
+       "type": "int",
+       "required": false,
+       "min": 1,
+       "max": 10
       }
      ]
     }
@@ -1565,22 +1553,14 @@
    "intent": "call",
    "calls": [
     {
-     "tool": "multiply",
+     "tool": "book_hotel",
      "args": {
-      "a": 48.0,
-      "b": 24.0
-     }
-    },
-    {
-     "tool": "convert_units",
-     "args": {
-      "to_unit": "celsius",
-      "value": 63.5,
-      "from_unit": "kg"
+      "city": "Amsterdam",
+      "nights": 10
      }
     }
    ],
-   "meaning": "48 multiplied by 24 and how many celsius is 63.5 kg",
+   "meaning": "book a hotel in Amsterdam for 10 nights",
    "missing": [],
    "implied": []
   },
@@ -1910,46 +1890,50 @@
    "id": "batch-0013-031",
    "tools": [
     {
-     "name": "get_air_quality",
-     "description": "Check the air quality",
+     "name": "get_flight_status",
+     "description": "Check whether a flight is on time",
      "args": [
       {
-       "name": "city",
-       "type": "str"
+       "name": "flight",
+       "type": "str",
+       "description": "flight number"
       }
      ]
     },
     {
-     "name": "convert_units",
-     "description": "Convert a value between units",
+     "name": "mark_warranty",
+     "description": "Change the status of a warranty",
      "args": [
       {
-       "name": "value",
-       "type": "float"
+       "name": "name",
+       "type": "str"
       },
       {
-       "name": "from_unit",
+       "name": "status",
        "type": "enum",
        "options": [
-        "km",
-        "miles",
-        "kg",
-        "pounds",
-        "celsius",
-        "fahrenheit"
+        "valid",
+        "expired"
        ]
+      }
+     ]
+    },
+    {
+     "name": "search_flights",
+     "description": "Find flights between two cities",
+     "args": [
+      {
+       "name": "origin",
+       "type": "str"
       },
       {
-       "name": "to_unit",
-       "type": "enum",
-       "options": [
-        "km",
-        "miles",
-        "kg",
-        "pounds",
-        "celsius",
-        "fahrenheit"
-       ]
+       "name": "destination",
+       "type": "str"
+      },
+      {
+       "name": "date",
+       "type": "str",
+       "description": "as the user said it"
       }
      ]
     }
@@ -1957,15 +1941,27 @@
    "intent": "call",
    "calls": [
     {
-     "tool": "convert_units",
+     "tool": "get_flight_status",
      "args": {
-      "value": 11.0,
-      "from_unit": "km",
-      "to_unit": "celsius"
+      "flight": "LH 400"
+     }
+    },
+    {
+     "tool": "get_flight_status",
+     "args": {
+      "flight": "UA 901"
+     }
+    },
+    {
+     "tool": "search_flights",
+     "args": {
+      "origin": "Chicago",
+      "destination": "Amsterdam",
+      "date": "on Friday"
      }
     }
    ],
-   "meaning": "11 km in celsius",
+   "meaning": "status of flight LH 400 and then is UA 901 on time, and also find flights from Chicago to Amsterdam on Friday",
    "missing": [],
    "implied": []
   },
@@ -2730,57 +2726,51 @@
    "id": "batch-0013-047",
    "tools": [
     {
-     "name": "convert_currency",
-     "description": "Convert an amount of money to another currency",
+     "name": "add",
+     "description": "Add two numbers",
      "args": [
       {
-       "name": "amount",
-       "type": "float",
-       "min": 0
+       "name": "a",
+       "type": "float"
       },
       {
-       "name": "from_currency",
-       "type": "enum",
-       "options": [
-        "USD",
-        "EUR",
-        "GBP",
-        "JPY"
-       ]
-      },
-      {
-       "name": "to_currency",
-       "type": "enum",
-       "options": [
-        "USD",
-        "EUR",
-        "GBP",
-        "JPY"
-       ]
+       "name": "b",
+       "type": "float"
       }
      ]
     },
     {
-     "name": "set_dehumidifier_humidity",
-     "description": "Set the dehumidifier humidity",
+     "name": "toggle_dehumidifier",
+     "description": "Turn the dehumidifier on or off",
      "args": [
       {
-       "name": "value",
-       "type": "int",
-       "min": 30,
-       "max": 70,
-       "description": "percent"
+       "name": "turn_on",
+       "type": "bool"
       },
       {
        "name": "room",
        "type": "enum",
        "required": false,
        "options": [
+        "bathroom",
+        "nursery",
         "office",
-        "kitchen",
-        "bedroom",
         "garage"
        ]
+      }
+     ]
+    },
+    {
+     "name": "multiply",
+     "description": "Multiply two numbers",
+     "args": [
+      {
+       "name": "a",
+       "type": "float"
+      },
+      {
+       "name": "b",
+       "type": "float"
       }
      ]
     }
@@ -2788,15 +2778,14 @@
    "intent": "call",
    "calls": [
     {
-     "tool": "convert_currency",
+     "tool": "multiply",
      "args": {
-      "amount": 66.5,
-      "from_currency": "EUR",
-      "to_currency": "EUR"
+      "a": 48.0,
+      "b": 2.0
      }
     }
    ],
-   "meaning": "convert 66.5 EUR to EUR",
+   "meaning": "48 multiplied by 2",
    "missing": [],
    "implied": []
   },

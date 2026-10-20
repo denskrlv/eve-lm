@@ -3,7 +3,7 @@
 # not learn that "book a flight" is always unsupported.
 order me a pizza
 book a table for two at 8
-call a taxi
+book me a ride to the airport
 pay my electricity bill
 transfer 50 dollars to Sam
 write me a poem about cats
@@ -12,8 +12,8 @@ draw a picture of a dog
 sing me a song
 order new running shoes
 renew my library books
-schedule a haircut
-feed the cat
+renew my passport
+pet the cat for me
 walk the dog
 fix my bike
 iron my shirt
@@ -26,7 +26,7 @@ post this on Instagram
 reply to my last email
 delete my browser history
 update my phone
-back up my photos to the cloud
+mail a birthday card to my aunt
 find my lost keys
 charge my phone
 lower the car windows
@@ -36,4 +36,4 @@ start recording a voice memo
 take a screenshot
 tell me my bank balance
 cancel my gym membership
-unsubscribe me from this newsletter
+mark this email as spam

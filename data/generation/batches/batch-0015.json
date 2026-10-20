@@ -4,13 +4,11 @@
  "seed": 15,
  "schemas": {
   "add": "<tool> add : Add two numbers <arg> a : float <arg> b : float",
-  "add_plant": "<tool> add_plant : Create a new plant <arg> title : str <arg> water_every ? : int 1..14",
   "add_playbook": "<tool> add_playbook : Add a playbook <arg> name : str",
   "add_project": "<tool> add_project : Add a project <arg> name : str",
   "adjust_electric_blanket_heat_level": "<tool> adjust_electric_blanket_heat_level : Set the electric blanket heat level <arg> heat_level : int 1..10",
   "adjust_water_heater_temperature": "<tool> adjust_water_heater_temperature : Change the temperature of the water heater <arg> level : int 40..70 : degrees",
   "book_hotel": "<tool> book_hotel : Book a hotel room <arg> city : str <arg> nights : int 1..30 <arg> guests ? : int 1..10",
-  "cancel_event": "<tool> cancel_event : Remove an event from the calendar <arg> title : str",
   "cancel_timer": "<tool> cancel_timer : Cancel a running timer <arg> label ? : str : all timers if not given",
   "change_coffee_machine_strength": "<tool> change_coffee_machine_strength : Change the strength of the coffee machine <arg> value : int 1..5",
   "change_electric_blanket_heat_level": "<tool> change_electric_blanket_heat_level : Set the electric blanket heat level <arg> value : int 1..10",
@@ -26,7 +24,6 @@
   "convert_units": "<tool> convert_units : Convert a value between units <arg> value : float <arg> from_unit : enum km | miles | kg | pounds | celsius | fahrenheit <arg> to_unit : enum km | miles | kg | pounds | celsius | fahrenheit",
   "create_document": "<tool> create_document : Create a new document <arg> title : str",
   "create_event": "<tool> create_event : Add an event to the calendar <arg> title : str <arg> day : str : as the user said it <arg> time ? : str <arg> duration ? : int 5..480 : minutes",
-  "create_invoice": "<tool> create_invoice : Create a new invoice <arg> title : str <arg> amount ? : int 10..5000",
   "create_note": "<tool> create_note : Save a note <arg> text : str <arg> folder ? : enum personal | work | ideas",
   "create_playbook": "<tool> create_playbook : Create a new playbook <arg> name : str",
   "dehumidifier_power": "<tool> dehumidifier_power : Turn the dehumidifier on or off <arg> on : bool <arg> location ? : enum bedroom | garage | basement",
@@ -71,6 +68,7 @@
   "read_list": "<tool> read_list : Read out a shopping list <arg> list ? : enum groceries | hardware | pharmacy",
   "read_messages": "<tool> read_messages : Read out recent messages <arg> contact ? : str <arg> unread_only ? : bool",
   "remove_document": "<tool> remove_document : Remove a document <arg> name : str",
+  "remove_goal": "<tool> remove_goal : Delete a goal <arg> title : str",
   "search_flights": "<tool> search_flights : Find flights between two cities <arg> origin : str <arg> destination : str <arg> date : str : as the user said it",
   "search_habits": "<tool> search_habits : Search habits <arg> keyword : str",
   "search_invoices": "<tool> search_invoices : Find invoices matching a text <arg> text : str",
@@ -87,6 +85,7 @@
   "set_heated_floor_power": "<tool> set_heated_floor_power : Turn the heated floor on or off <arg> power : bool <arg> room ? : enum garage | nursery | bedroom | bathroom | office",
   "set_humidifier_power": "<tool> set_humidifier_power : Switch the humidifier on or off <arg> power : bool <arg> location ? : enum garage | living room | basement",
   "set_massage_chair_power": "<tool> set_massage_chair_power : Switch the massage chair on or off <arg> on : bool",
+  "set_photo_frame_mode": "<tool> set_photo_frame_mode : Choose a program for the photo frame <arg> setting : enum slideshow | clock",
   "set_project_status": "<tool> set_project_status : Change the status of a project <arg> name : str <arg> state : enum active | paused | done",
   "set_projector_brightness": "<tool> set_projector_brightness : Change the brightness of the projector <arg> level : int 1..10",
   "set_timer": "<tool> set_timer : Start a countdown timer <arg> minutes : int 1..1440 <arg> label ? : str",
@@ -506,28 +505,22 @@
    "id": "batch-0015-007",
    "tools": [
     {
-     "name": "create_note",
-     "description": "Save a note",
+     "name": "set_photo_frame_mode",
+     "description": "Choose a program for the photo frame",
      "args": [
       {
-       "name": "text",
-       "type": "str"
-      },
-      {
-       "name": "folder",
+       "name": "setting",
        "type": "enum",
-       "required": false,
        "options": [
-        "personal",
-        "work",
-        "ideas"
+        "slideshow",
+        "clock"
        ]
       }
      ]
     },
     {
-     "name": "cancel_event",
-     "description": "Remove an event from the calendar",
+     "name": "remove_goal",
+     "description": "Delete a goal",
      "args": [
       {
        "name": "title",
@@ -536,70 +529,40 @@
      ]
     },
     {
-     "name": "convert_units",
-     "description": "Convert a value between units",
+     "name": "divide",
+     "description": "Divide one number by another",
      "args": [
       {
-       "name": "value",
+       "name": "a",
        "type": "float"
       },
       {
-       "name": "from_unit",
-       "type": "enum",
-       "options": [
-        "km",
-        "miles",
-        "kg",
-        "pounds",
-        "celsius",
-        "fahrenheit"
-       ]
-      },
-      {
-       "name": "to_unit",
-       "type": "enum",
-       "options": [
-        "km",
-        "miles",
-        "kg",
-        "pounds",
-        "celsius",
-        "fahrenheit"
-       ]
+       "name": "b",
+       "type": "float"
       }
      ]
     },
     {
-     "name": "add_plant",
-     "description": "Create a new plant",
+     "name": "set_baby_monitor_power",
+     "description": "Switch the baby monitor on or off",
      "args": [
       {
-       "name": "title",
-       "type": "str"
-      },
-      {
-       "name": "water_every",
-       "type": "int",
-       "required": false,
-       "min": 1,
-       "max": 14
+       "name": "enabled",
+       "type": "bool"
       }
      ]
     },
     {
-     "name": "create_invoice",
-     "description": "Create a new invoice",
+     "name": "subtract",
+     "description": "Subtract one number from another",
      "args": [
       {
-       "name": "title",
-       "type": "str"
+       "name": "a",
+       "type": "float"
       },
       {
-       "name": "amount",
-       "type": "int",
-       "required": false,
-       "min": 10,
-       "max": 5000
+       "name": "b",
+       "type": "float"
       }
      ]
     }
@@ -607,27 +570,14 @@
    "intent": "call",
    "calls": [
     {
-     "tool": "create_note",
+     "tool": "divide",
      "args": {
-      "text": "the wifi password is on the router"
-     }
-    },
-    {
-     "tool": "cancel_event",
-     "args": {
-      "title": "yoga class"
-     }
-    },
-    {
-     "tool": "convert_units",
-     "args": {
-      "to_unit": "kg",
-      "value": 38.0,
-      "from_unit": "miles"
+      "a": 32.0,
+      "b": 54.0
      }
     }
    ],
-   "meaning": "take a note: the wifi password is on the router, and also cancel yoga class and how many kg is 38 miles",
+   "meaning": "what's 32 divided by 54",
    "missing": [],
    "implied": []
   },
@@ -937,6 +887,17 @@
    "id": "batch-0015-012",
    "tools": [
     {
+     "name": "get_flight_status",
+     "description": "Check whether a flight is on time",
+     "args": [
+      {
+       "name": "flight",
+       "type": "str",
+       "description": "flight number"
+      }
+     ]
+    },
+    {
      "name": "convert_units",
      "description": "Convert a value between units",
      "args": [
@@ -974,15 +935,21 @@
    "intent": "call",
    "calls": [
     {
+     "tool": "get_flight_status",
+     "args": {
+      "flight": "LH 400"
+     }
+    },
+    {
      "tool": "convert_units",
      "args": {
-      "to_unit": "celsius",
-      "value": 12.0,
-      "from_unit": "celsius"
+      "value": 0.5,
+      "from_unit": "celsius",
+      "to_unit": "fahrenheit"
      }
     }
    ],
-   "meaning": "how many celsius is 12 celsius",
+   "meaning": "status of flight LH 400, and also convert 0.5 celsius to fahrenheit",
    "missing": [],
    "implied": []
   },

@@ -11,7 +11,7 @@ cancel that, I changed my mind
 how are you today
 what's your name
 are you a robot
-tell me a joke
+you always make me laugh
 you're doing great
 that was helpful
 ok
@@ -57,8 +57,8 @@ I'm going to bed now
 I'm home
 I'm leaving for work
 just thinking out loud
-remind me what you are
+so you're some kind of assistant, right
 do you dream
-what's the meaning of life
+life is good today
 I hate Mondays
 happy birthday to me

@@ -1,5 +1,6 @@
 import json
 from pathlib import Path
+from typing import Any
 
 import pytest
 
@@ -20,6 +21,11 @@ def sources():
     return Sources.load(ROOT / "data/tools", ROOT / "data/generation")
 
 
+def rephrased(scenario: dict[str, Any]) -> str:
+    """The scenario's meaning, changed just enough not to be a copy; small talk for NONE."""
+    return f"so {scenario['meaning']}" if scenario["meaning"] else "hello there"
+
+
 def test_batch_and_check(sources):
     batch = make_batch(sources, "batch-0001", 20, "val", seed=1)
     assert batch == make_batch(sources, "batch-0001", 20, "val", seed=1)
@@ -29,10 +35,8 @@ def test_batch_and_check(sources):
     )  # self-contained
     assert all(t["name"] in batch["schemas"] for s in batch["scenarios"] for t in s["tools"])
 
-    # Writing the template meaning back always passes; a changed value doesn't.
-    written = [
-        {"id": s["id"], "utterance": s["meaning"] or "hello there"} for s in batch["scenarios"]
-    ]
+    # A rephrased template meaning always passes; a changed value doesn't.
+    written = [{"id": s["id"], "utterance": rephrased(s)} for s in batch["scenarios"]]
     examples, rejects = check_written(batch, written, sources.library)
     assert len(examples) == 20 and rejects == []
     call = next(
@@ -63,7 +67,7 @@ def test_build(tmp_path, sources):
     batch = make_batch(sources, next_batch_name(gen / "batches"), 10, "val", seed=3)
     assert batch["batch"] == "batch-0001"
     (gen / "batches/batch-0001.json").write_text(json.dumps(batch))
-    lines = [{"id": s["id"], "utterance": s["meaning"] or "good night"} for s in batch["scenarios"]]
+    lines = [{"id": s["id"], "utterance": rephrased(s)} for s in batch["scenarios"]]
     lines.append({"id": "batch-0001-999", "utterance": "unknown id"})
     (gen / "written/batch-0001.jsonl").write_text("\n".join(json.dumps(x) for x in lines))
 
@@ -94,3 +98,30 @@ def test_batch_ask_share(sources):
     assert 35 <= asks <= 65 and all(
         s["missing"] for s in batch["scenarios"] if s["intent"] == "ask"
     )
+
+
+def test_check_rejects_a_copied_meaning(sources: Sources) -> None:
+    batch = make_batch(sources, "batch-0004", 20, "val", seed=5)
+    call = next(s for s in batch["scenarios"] if s["intent"] == "call")
+    copied = [{"id": call["id"], "utterance": call["meaning"].upper() + "!"}]
+    _, rejects = check_written(batch, copied, sources.library)
+    assert [errors for _, errors in rejects] == [["the utterance copies the meaning; rephrase it"]]
+
+
+def test_check_rejects_a_conversion_no_one_asks_for(sources: Sources) -> None:
+    tool = sources.library["convert_currency"]
+    scenario = {
+        "id": "batch-0005-000",
+        "tools": [tool.to_dict()],
+        "intent": "call",
+        "calls": [
+            {
+                "tool": tool.name,
+                "args": {"amount": 70, "from_currency": "USD", "to_currency": "USD"},
+            }
+        ],
+        "meaning": "how much is 70 USD in USD",
+    }
+    line = {"id": scenario["id"], "utterance": "what's 70 USD worth in USD"}
+    _, rejects = check_written({"scenarios": [scenario]}, [line], sources.library)
+    assert len(rejects) == 1 and "no one asks for" in rejects[0][1][-1]

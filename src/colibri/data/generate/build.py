@@ -11,6 +11,7 @@ from colibri import defaults
 from colibri.config import ModelConfig
 from colibri.data.generate.library import ToolSpec, load_specs
 from colibri.data.generate.sampler import INTENT_MIX, Sample, ToolBank, sample
+from colibri.data.generate.templates import sensible
 from colibri.data.generate.toolgen import generated_specs
 from colibri.data.generate.validate import check_example, normalize
 from colibri.data.jsonl import read_jsonl, read_lines, write_jsonl
@@ -148,6 +149,19 @@ def next_batch_name(batches_dir: str | Path) -> str:
     return f"batch-{max(numbers, default=0) + 1:04d}"
 
 
+def _scenario_errors(utterance: str, scenario: dict[str, Any]) -> list[str]:
+    """Problems ``check_example`` can't see: a copied ``meaning``, and calls that ``sensible``
+    refuses (scenarios sampled before it existed)."""
+    errors = []
+    meaning = scenario.get("meaning")
+    if meaning and normalize(utterance) == normalize(meaning):
+        errors.append("the utterance copies the meaning; rephrase it")
+    for call in scenario.get("calls", ()):
+        if not sensible(call.get("args", {})):
+            errors.append(f"call to {call['tool']} is a conversion no one asks for; re-sample it")
+    return errors
+
+
 def check_written(
     batch: dict[str, Any], written: list[dict[str, Any]], library: dict[str, Tool]
 ) -> tuple[list[dict[str, Any]], list[Reject]]:
@@ -168,7 +182,7 @@ def check_written(
             rejects.append((line, [str(e)]))
             continue
         implied = {tuple(x) for x in scenario.get("implied", ())}
-        if errors := check_example(ex, implied):
+        if errors := check_example(ex, implied) + _scenario_errors(ex.utterance, scenario):
             rejects.append((line, errors))
         else:
             examples.append({**ex.to_json(inline=True), "source": "chat"})
