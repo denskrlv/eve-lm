@@ -8,10 +8,12 @@ EXTERNAL_DIR = "data/external"
 TASK_DIR = "data/task"
 BIN_DIR = "data/bin"
 TOKENIZER_FILE = "artifacts/tokenizer/eve-8k.json"
-PRETRAIN_RUN = "artifacts/runs/pretrain-small"
-PRETRAINED_MODEL = f"{PRETRAIN_RUN}/model.pt"
-FINETUNE_RUN = "artifacts/runs/questions"
-FINETUNED_MODEL = "artifacts/runs/questions-full/model.pt"
+CONFIG_DIR = "configs"  # named run configs: configs/<command>/<name>.toml
+RUNS_DIR = "artifacts/runs"
+PRETRAIN_RUN = f"{RUNS_DIR}/pretrain"  # where a run without --config or --out writes
+FINETUNE_RUN = f"{RUNS_DIR}/questions"
+PRETRAINED_MODEL = f"{RUNS_DIR}/ab-dropout0-rope-qk/model.pt"  # the best ones so far
+FINETUNED_MODEL = f"{RUNS_DIR}/questions-full-v3/model.pt"
 
 # Defaults shared by the command line and the library.
 TOKENIZER_WEIGHT = 50  # how many times tool schemas and commands count in tokenizer training

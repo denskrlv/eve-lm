@@ -1,6 +1,6 @@
 from collections import Counter
 from collections.abc import Callable, Sequence
-from dataclasses import dataclass, replace
+from dataclasses import dataclass, field, replace
 from pathlib import Path
 from typing import Any
 
@@ -34,6 +34,7 @@ COLUMNS = (
 )  # the eval table; see score
 HIGHLIGHTS = ((r"→ [^|]*", "bold"), (r"\| gold .*", "dim"))  # describe's answers and gold
 SCORED = {"val": "val", "heldout": "held-out"}  # on_eval's score groups and their labels
+VAL_SEED = 1  # val's tool shuffle: unlike train's (seed 0), and the same at every eval
 
 
 def _losses(questions: Questions, batch: dict[str, torch.Tensor]) -> dict[str, torch.Tensor]:
@@ -119,36 +120,77 @@ def question_metrics(model: Eve, batch: dict[str, torch.Tensor]) -> dict[str, to
     }
 
 
+@dataclass(frozen=True)
+class Outcome:
+    """One example's gold and answered intent, and whether its slots were right."""
+
+    gold: str
+    said: str
+    has_slots: bool  # the example has slot labels (an ASK with an unclear tool has none)
+    tools_ok: bool  # every slot right: the right tools in order, then STOP
+
+
+@dataclass
+class Tally:
+    """Answers counted over a whole set: how many examples of each intent there are (``seen``)
+    and how many got it (``right``), the same for ``tools`` and ``exact``, and which intent
+    each gold intent was answered with (``answered[gold, said]``)."""
+
+    seen: Counter[str] = field(default_factory=Counter)
+    right: Counter[str] = field(default_factory=Counter)
+    answered: Counter[tuple[str, str]] = field(default_factory=Counter)
+
+    def add(self, outcome: Outcome) -> None:
+        """Count one example."""
+        gold, intent_ok, has_slots = outcome.gold, outcome.gold == outcome.said, outcome.has_slots
+        self.seen[gold] += 1
+        self.right[gold] += intent_ok
+        self.answered[gold, outcome.said] += 1
+        self.seen["tools"] += has_slots
+        self.right["tools"] += has_slots and outcome.tools_ok
+        self.right["exact"] += intent_ok and (outcome.tools_ok or not has_slots)
+
+    def scores(self) -> dict[str, float]:
+        """The recall per intent and its mean, ``tools_acc`` and ``exact_acc`` (see ``score``)."""
+        recalls = {f"recall_{i}": self.right[i] / self.seen[i] for i in INTENTS if self.seen[i]}
+        total = sum(self.seen[i] for i in INTENTS)
+        return {
+            "macro_recall": sum(recalls.values()) / len(recalls),
+            **recalls,
+            "tools_acc": self.right["tools"] / max(1, self.seen["tools"]),
+            "exact_acc": self.right["exact"] / total,
+        }
+
+
 @torch.no_grad()
+def outcomes(model: Eve, batches: Sequence[dict[str, torch.Tensor]]) -> list[Outcome]:
+    """The heads' answers for every example of ``batches``, in order, checked against gold."""
+    out = []
+    with eval_mode(model) as device:
+        for batch in batches:
+            batch = to_device(batch, device)
+            graded = _grade(ask(model, batch), batch)
+            columns = (batch["intent"], graded.intent, graded.has_slots, graded.tools_right)
+            for gold, said, has_slots, tools_ok in zip(*(c.tolist() for c in columns), strict=True):
+                out.append(Outcome(INTENTS[gold], INTENTS[said], has_slots, tools_ok))
+    return out
+
+
+def tally(answers: Sequence[Outcome]) -> Tally:
+    """``answers`` counted in one ``Tally``."""
+    out = Tally()
+    for outcome in answers:
+        out.add(outcome)
+    return out
+
+
 def score(model: Eve, batches: Sequence[dict[str, torch.Tensor]]) -> dict[str, float]:
     """Accuracy counted over all of ``batches`` at once, not averaged per batch, so rare
     classes count right. A recall per intent says how often its examples get that answer:
     val is 84% CALL, so answering CALL every time already gets 84% intent accuracy, but a
     recall of 0 for ASK, UNSUPPORTED and NONE. ``macro_recall`` is the mean of the recalls.
     """
-    seen: Counter[str] = Counter()
-    right: Counter[str] = Counter()
-    with eval_mode(model) as device:
-        for batch in batches:
-            batch = to_device(batch, device)
-            graded = _grade(ask(model, batch), batch)
-            columns = (graded.intent_right, graded.has_slots, graded.tools_right)
-            for gold, intent_ok, has_slots, tools_ok in zip(
-                batch["intent"].tolist(), *(c.tolist() for c in columns), strict=True
-            ):
-                seen[INTENTS[gold]] += 1
-                right[INTENTS[gold]] += intent_ok
-                seen["tools"] += has_slots
-                right["tools"] += has_slots and tools_ok
-                right["exact"] += intent_ok and (tools_ok or not has_slots)
-    recalls = {f"recall_{i}": right[i] / seen[i] for i in INTENTS if seen[i]}
-    total = sum(seen[i] for i in INTENTS)
-    return {
-        "macro_recall": sum(recalls.values()) / len(recalls),
-        **recalls,
-        "tools_acc": right["tools"] / max(1, seen["tools"]),
-        "exact_acc": right["exact"] / total,
-    }
+    return tally(outcomes(model, batches)).scores()
 
 
 def score_line(scores: dict[str, float]) -> str:
@@ -289,7 +331,9 @@ def _start_model(
     return model, BPETokenizer.load(tokenizer_path)
 
 
-def _batches(data: TaskDataset, collate: TaskCollator, size: int) -> list[dict[str, torch.Tensor]]:
+def in_batches(
+    data: TaskDataset, collate: TaskCollator, size: int
+) -> list[dict[str, torch.Tensor]]:
     """All of ``data`` in order, in batches of ``size`` (the last one may be smaller)."""
     return [
         collate([data[j] for j in range(i, min(i + size, len(data)))])
@@ -307,8 +351,8 @@ def _eval_report(
     """``on_eval`` for fine-tuning: the answers for the first val example of each intent, and
     the val and held-out-tool scores."""
     scored = {
-        "val": _batches(val_data, collate, batch_size),
-        "heldout": _batches(heldout, collate, batch_size),
+        "val": in_batches(val_data, collate, batch_size),
+        "heldout": in_batches(heldout, collate, batch_size),
     }
     shown = _shown(val_examples)
 
@@ -326,7 +370,7 @@ def _task_data(
     """The train set, the val examples and set, and the held-out-tool set of ``task_dir``."""
     train_data = TaskDataset(load_examples(task_dir / "train.jsonl", library), tokenizer, cfg)
     val_examples = load_examples(task_dir / "val.jsonl", library)
-    val_data = TaskDataset(val_examples, tokenizer, cfg, seed=1)  # tools shuffled, always alike
+    val_data = TaskDataset(val_examples, tokenizer, cfg, seed=VAL_SEED)
     heldout = TaskDataset(
         load_examples(task_dir / "heldout-templates.jsonl", library), tokenizer, cfg
     )

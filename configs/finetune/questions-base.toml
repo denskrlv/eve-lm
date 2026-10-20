@@ -1,0 +1,4 @@
+# The v3 recipe on top of the base-900m pretraining run.
+init = "artifacts/runs/base-900m/model.pt"
+epochs = 2.0
+lr = 3e-4

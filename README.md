@@ -76,11 +76,15 @@ How chat-written requests are made: `data/generation/README.md`.
 
 ## Pretraining (M4)
 
-T5 span corruption over `data/bin/train.bin`: one pass over 250M tokens is ~13.7k steps, about 2.6 h on an M3 Pro.
+T5 span corruption over `data/bin/train.bin`: one pass over 250M tokens is ~13.7k steps, about 2.6 h on an M3 Pro (eager; `--compile` is ~2x faster).
+
+Training recipes are named configs in `configs/<command>/<name>.toml`. Their keys are the command's flags (`qk-norm = true`), they become the defaults, and flags on the command line still win. The run writes to `artifacts/runs/<name>` unless the config or `--out` says otherwise.
 
 ```bash
-uv run eve pretrain                      # -> artifacts/runs/pretrain-small/{metrics.jsonl,last.pt,model.pt}
-uv run eve pretrain --resume             # continue from last.pt after an interruption
+uv run eve pretrain --config small-250m  # -> artifacts/runs/small-250m/{metrics.jsonl,last.pt,model.pt}
+uv run eve pretrain --config base-900m   # ~32M parameters on 850M tokens (data/bin-900m)
+uv run eve pretrain --config base-900m --resume          # continue from last.pt after an interruption
+uv run eve pretrain --config base-900m --lr 2e-3 --stop-after 2000 --out artifacts/runs/ab-lr2e-3
 ```
 
 Each eval logs the val loss and fill-in-the-blank samples (`The capital of France is [Paris].`). `val_content` is the loss on the words inside the holes only (sentinels and `<eos>` left out), the number to watch. Fine-tuning starts from `model.pt` with `load_pretrained` (M5).
@@ -96,15 +100,27 @@ Training runs on Apple Silicon (MPS). Inference targets a Raspberry Pi 5 running
 
 ## Question heads (M7)
 
-Fine-tune the Jev heads (intent, and the ordered "what is call #i?" slots) from the pretrained checkpoint, as book ch. 6 does: first only the question block with the body frozen, then everything.
+Fine-tune the Jev heads (intent, and the ordered "what is call #i?" slots) from the pretrained checkpoint. Book ch. 6 trains only the question block with the body frozen first, then everything. Since v3, one full fine-tune straight from the pretrained model does as well:
 
 ```bash
+uv run eve finetune --config questions-small     # v3 recipe from the small pretrained model
+uv run eve finetune --config questions-base      # the same from base-900m
 uv run eve finetune --init artifacts/runs/ab-dropout0-rope-qk/model.pt --freeze --out artifacts/runs/questions-frozen
 uv run eve finetune --init artifacts/runs/questions-frozen/model.pt --out artifacts/runs/questions-full
 uv run eve finetune --scratch small --out artifacts/runs/questions-scratch   # E1: what pretraining buys
 ```
 
 Each eval logs val loss and accuracy per question (`tools_acc` = right tools in the right order, `exact_acc` = that and the right intent), prints what the heads answer for one val example per intent, and the accuracy on tools from the held-out domains. Val is mostly MASSIVE, where 84% of examples are CALL, so `intent_acc` starts near 84% by always answering CALL.
+
+Score a finished model on whole task files: recall per intent and their mean (macro), `tools` and `exact` as the evals log them, and a table of which intent each gold intent got. By default it scores val, the held-out-tool templates and MASSIVE test; val and held-out come out as the run's last eval logged them.
+
+```bash
+uv run eve evaluate artifacts/runs/questions-full-v3                  # a run directory or a model.pt
+uv run eve evaluate artifacts/runs/questions-full-v3 --sets heldout-templates --by-tool
+uv run eve evaluate artifacts/runs/questions-full-v3 --sets probe-candidates --json
+```
+
+`--by-tool` adds a row per tool in the gold calls (CALLs, and ASKs that name the tool), worst exact accuracy first, with which intents its examples got. An example with calls to two tools counts for both.
 
 Ask a fine-tuned model about your own requests (tool names from `data/tools/*.json`, or `--schema file.json` for your own schemas):
 
