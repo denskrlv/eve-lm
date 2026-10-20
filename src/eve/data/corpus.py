@@ -9,10 +9,10 @@ from typing import Any
 
 import numpy as np
 import pyarrow.parquet as pq
-from tqdm import tqdm
 
 from eve import defaults
 from eve.data.schema import load_library
+from eve.progress import Bar
 from eve.tokenizer.bpe import EOS, BPETokenizer
 
 
@@ -100,7 +100,7 @@ def _encode_splits(
     Returns the tokens written to each."""
     counts = {"val": 0, "train": 0}
     chunks = _chunks(iter_documents(paths), docs_per_chunk)
-    bar = tqdm(total=val_tokens + train_tokens, unit="tok", unit_scale=True, desc="encoding")
+    bar = Bar(val_tokens + train_tokens, "encoding", "tokens")
     with (
         Pool(workers, initializer=_init_worker, initargs=(str(tokenizer_path),)) as pool,
         open(out_dir / "val.bin", "wb") as val_file,

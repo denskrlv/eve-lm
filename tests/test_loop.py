@@ -6,6 +6,7 @@ import numpy as np
 import pytest
 import torch
 
+from eve.cli import setup_logging
 from eve.config import preset
 from eve.data.pretrain import SpanCorruptionDataset
 from eve.data.render import collate_pretrain
@@ -13,7 +14,7 @@ from eve.model.checkpoint import load_checkpoint, save_checkpoint
 from eve.model.eve import Eve
 from eve.tokenizer.bpe import BYTE0, BPETokenizer
 from eve.train.config import TrainConfig
-from eve.train.loop import batch_indices, lr_at, param_groups, train
+from eve.train.loop import Column, Report, batch_indices, lr_at, param_groups, train
 from eve.train.pretrain import span_loss
 
 CFG = preset("tiny", dropout=0.1)  # dropout on, so resuming must restore the RNG too
@@ -180,8 +181,40 @@ def test_compile_runs_the_losses_through_the_compiled_model(tokenizer, tmp_path,
     model = Eve(CFG)
     train(
         model, loss_fn, corpus(), corpus(seed=1), collate_pretrain, small_run(compile=True),
-        tmp_path, tokenizer, CPU, on_eval=on_eval,
+        tmp_path, tokenizer, CPU, report=Report(on_eval=on_eval),
     )  # fmt: skip
     assert seen == {"loss": {"Wrapped"}, "on_eval": {"Eve"}}
     ckpt = load_checkpoint(tmp_path / "model.pt")  # saved from the plain model: no prefixes
     assert ckpt.model.state_dict().keys() == model.state_dict().keys()
+
+
+def test_column_reads_val_metrics_and_on_eval_groups():
+    results = {"val_lm": 3.21, "heldout": {"macro_recall": 0.5}}
+    assert Column("val loss", "val_lm").cell(results).plain == "3.2100"
+    assert Column("macro", "heldout.macro_recall").cell(results).plain == "50.0%"
+    assert Column("macro", "val.macro_recall").cell(results).plain == "–"  # no val group
+
+
+def test_columns_are_green_when_better_and_red_when_worse():
+    loss, acc = Column("val loss", "val_lm"), Column("acc", "val_content_acc")
+    before, after = {"val_lm": 3.0, "val_content_acc": 0.2}, {"val_lm": 2.5, "val_content_acc": 0.1}
+    assert str(loss.cell(after, before).style) == "green"  # the loss went down
+    assert str(acc.cell(after, before).style) == "red"  # the accuracy went down
+    assert str(loss.cell(after).style) == ""  # the first eval has nothing to compare with
+
+
+def test_evals_print_table_rows_and_samples_only_at_the_end(tokenizer, tmp_path, capsys):
+    def on_eval(m):
+        return {"samples": ["a filled-in sentence"]}
+
+    setup_logging()  # the end summary is logged, as main() sets it up
+    report = Report((Column("val loss", "val_lm"),), on_eval, lambda r: [("best", "ok")])
+    run(tmp_path, tokenizer, report=report)
+    out = capsys.readouterr().out
+    assert out.count("a filled-in sentence") == 1  # 3 evals, shown once
+    assert out.index("best") < out.index("samples") < out.index("a filled-in sentence")
+    lines = out.splitlines()
+    assert lines[0].split() == ["step", "time", "train", "loss", "val", "loss"]
+    rows = [line for line in lines if line.startswith("  ") and line.split()[0].isdigit()]
+    assert [row.split()[0] for row in rows] == ["0", "3", "6"]
+    assert rows[0].split()[2] == "–"  # no training loss before the first step
