@@ -21,6 +21,7 @@ from eve.train.finetune import (
     question_metrics,
     score,
     score_line,
+    summary,
 )
 
 CFG = preset("tiny")
@@ -220,4 +221,6 @@ def test_score_counts_recall_per_intent(batch):
     wrong = score(Oracle(batch, wrong_intent=True), [batch, batch])  # counts add up
     assert wrong["macro_recall"] == 0.0 and wrong["exact_acc"] == 0.0
     assert wrong["tools_acc"] == 1.0
-    assert "macro recall 0.0% (call 0% · ask 0%" in score_line("val", wrong)
+    assert "macro recall 0.0% (call 0% · ask 0%" in score_line(wrong)
+    lines = summary({"val": wrong, "heldout": wrong, "samples": []})
+    assert [label for label, _ in lines] == ["val", "held-out"]

@@ -13,7 +13,7 @@ from eve.model.eve import Eve
 from eve.runtime import eval_mode, seed_everything
 from eve.tokenizer.bpe import BYTE0, DEC, EOS, BPETokenizer, is_sentinel
 from eve.train.config import TrainConfig
-from eve.train.loop import train
+from eve.train.loop import Column, Report, train
 
 SAMPLES = (
     "The capital of France is <x0>.",
@@ -23,6 +23,12 @@ SAMPLES = (
     "Students who <x0> their homework every day usually <x1> better grades.",
     "Turn off the <x0> in the kitchen when you leave the room.",
 )
+COLUMNS = (
+    Column("val loss", "val_lm"),
+    Column("content loss", "val_content"),
+    Column("content acc", "val_content_acc"),
+)  # the eval table; see span_metrics
+HIGHLIGHTS = ((r"\[[^\]]*\]", "bold cyan"),)  # fill_in's [filled-in spans]
 
 
 def span_loss(model: Eve, batch: dict[str, torch.Tensor]) -> dict[str, torch.Tensor]:
@@ -76,14 +82,13 @@ def fill_in(
     tokenizer: BPETokenizer,
     text: str,
     max_new: int = defaults.MAX_NEW_TOKENS,
-    marks: tuple[str, str] = ("[", "]"),
 ) -> str:
     """Fill the ``<x0>``, ``<x1>``… holes of ``text`` by greedy decoding (book ch. 5.1.1's
     ``generate_text_simple``, but the decoder also reads the encoder).
 
     The decoder writes ``<x0> span <x1> span … <eos>``, the same format as the pretraining
-    targets. Returns ``text`` with each hole replaced by ``[its span]`` (``marks`` sets the
-    brackets; a terminal can pass color codes instead).
+    targets. Returns ``text`` with each hole replaced by ``[its span]``, or ``[?]`` if the
+    model didn't fill it.
     """
     with eval_mode(model) as device:
         enc = torch.tensor([prompt_ids(tokenizer, text)], device=device)
@@ -103,9 +108,9 @@ def fill_in(
         if token in spans:
             span = tokenizer.decode(spans[token])
             space = " " if span.startswith(" ") else ""  # " Paris" -> " [Paris]"
-            out.append(space + marks[0] + span.removeprefix(space) + marks[1])
+            out.append(f"{space}[{span.removeprefix(space)}]")
         elif is_sentinel(token):
-            out.append(" " + marks[0] + "?" + marks[1])  # a hole the model didn't fill
+            out.append(" [?]")  # a hole the model didn't fill
         else:
             out.append(tokenizer.decode([token]))
     return "".join(out)
@@ -124,7 +129,8 @@ def pretrain(
     samples: tuple[str, ...] = SAMPLES,
 ) -> dict[str, float]:
     """Box 4: span-corruption pretraining of the whole encoder-decoder on ``data_dir``'s
-    ``train.bin``, evaluated on ``val.bin`` with fill-in-the-blank samples at each eval.
+    ``train.bin``, evaluated on ``val.bin``. Each eval logs fill-in-the-blank samples; the
+    last eval's are shown when the run ends.
 
     The input length is the model's ``max_encoder_len``, so every encoder position that
     fine-tuning uses has been trained (learned positions only learn where they are used).
@@ -152,7 +158,7 @@ def pretrain(
         out_dir,
         tokenizer,
         device,
-        on_eval=on_eval,
+        report=Report(COLUMNS, on_eval, highlights=HIGHLIGHTS),
         eval_fn=span_metrics,
         resume=resume,
         stop_after=stop_after,

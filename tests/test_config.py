@@ -56,6 +56,12 @@ def test_info_command(capsys):
     assert "small" in out and "base" in out
 
 
+def test_model_command_counts_parameters_per_part(capsys):
+    main(["model", "--preset", "tiny"])
+    out = capsys.readouterr().out
+    assert "embeddings" in out and "total" in out and "MB (fp32)" in out
+
+
 def with_dropout() -> torch.nn.Module:
     """A small module with parameters (``eval_mode`` reads the device from them) and dropout."""
     return torch.nn.Sequential(torch.nn.Linear(2, 2), torch.nn.Dropout(0.5))

@@ -11,8 +11,8 @@ dependencies = [
     "numpy>=2.5.4",
     "pyarrow>=26.0.0",
     "regex>=2026.9.29",
+    "rich>=15.0.0",
     "torch>=2.14.1",
-    "tqdm>=4.70.1",
 ]
 
 [project.scripts]
@@ -28,7 +28,6 @@ dev = [
     "pytest>=9.1.1",
     "ruff>=0.17.0",
     "types-regex>=2026.9.29.20261017",
-    "types-tqdm>=4.70.0.20260906",
 ]
 
 [tool.ruff]

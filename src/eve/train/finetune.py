@@ -22,9 +22,18 @@ from eve.model.eve import Eve, Questions, ask
 from eve.runtime import eval_mode, seed_everything, to_device
 from eve.tokenizer.bpe import BPETokenizer
 from eve.train.config import TrainConfig
-from eve.train.loop import train
+from eve.train.loop import Column, Report, train
 
 TASK = "questions"  # meta["task"] of the checkpoints this run writes
+COLUMNS = (
+    Column("val loss", "val_loss"),
+    Column("val macro", "val.macro_recall"),
+    Column("val exact", "val.exact_acc"),
+    Column("held-out macro", "heldout.macro_recall"),
+    Column("held-out exact", "heldout.exact_acc"),
+)  # the eval table; see score
+HIGHLIGHTS = ((r"→ [^|]*", "bold"), (r"\| gold .*", "dim"))  # describe's answers and gold
+SCORED = {"val": "val", "heldout": "held-out"}  # on_eval's score groups and their labels
 
 
 def _losses(questions: Questions, batch: dict[str, torch.Tensor]) -> dict[str, torch.Tensor]:
@@ -84,7 +93,8 @@ def _grade(questions: Questions, batch: dict[str, torch.Tensor]) -> _Graded:
 
 
 def question_metrics(model: Eve, batch: dict[str, torch.Tensor]) -> dict[str, torch.Tensor]:
-    """The val metrics (box 6): both losses plus what they mean for answers.
+    """The val metrics (box 6): both losses and their sum ``loss``, plus what they mean for
+    answers.
 
     - ``intent_acc``: the most likely intent is the right one (book ch. 6.6's accuracy).
     - ``slot_acc``: the share of labelled slots answered right, STOPs included.
@@ -95,8 +105,10 @@ def question_metrics(model: Eve, batch: dict[str, torch.Tensor]) -> dict[str, to
     """
     questions = ask(model, batch)
     graded = _grade(questions, batch)
+    losses = _losses(questions, batch)
     return {
-        **_losses(questions, batch),
+        **losses,
+        "loss": losses["intent"] + losses["slots"],
         "intent_acc": _mean(graded.intent_right),
         "slot_acc": _mean((graded.slots == batch["slots"])[graded.labelled]),
         "tools_acc": _mean(graded.tools_right[graded.has_slots]),
@@ -139,15 +151,20 @@ def score(model: Eve, batches: Sequence[dict[str, torch.Tensor]]) -> dict[str, f
     }
 
 
-def score_line(name: str, scores: dict[str, float]) -> str:
-    """``held-out · macro recall 52% (call 90% · ask 10% · …) · tools 51% · exact 40%``"""
+def score_line(scores: dict[str, float]) -> str:
+    """``macro recall 52.0% (call 90% · ask 10% · …) · tools 51.0% · exact 40.0%``"""
     recalls = " · ".join(
         f"{k.removeprefix('recall_')} {v:.0%}" for k, v in scores.items() if k.startswith("recall_")
     )
     return (
-        f"{name} · macro recall {scores['macro_recall']:.1%} ({recalls}) · "
+        f"macro recall {scores['macro_recall']:.1%} ({recalls}) · "
         f"tools {scores['tools_acc']:.1%} · exact {scores['exact_acc']:.1%}"
     )
+
+
+def summary(results: dict[str, Any]) -> list[tuple[str, str]]:
+    """The run's last scores, one labelled line per scored set, for the end of a run."""
+    return [(label, score_line(results[key])) for key, label in SCORED.items() if key in results]
 
 
 def freeze_body(model: Eve) -> int:
@@ -287,21 +304,17 @@ def _eval_report(
     collate: TaskCollator,
     batch_size: int,
 ) -> Callable[[Eve], dict[str, Any]]:
-    """``on_eval`` for fine-tuning: the answers for the first val example of each intent, then
+    """``on_eval`` for fine-tuning: the answers for the first val example of each intent, and
     the val and held-out-tool scores."""
     scored = {
-        "val": ("val", _batches(val_data, collate, batch_size)),
-        "heldout": ("held-out tools", _batches(heldout, collate, batch_size)),
+        "val": _batches(val_data, collate, batch_size),
+        "heldout": _batches(heldout, collate, batch_size),
     }
     shown = _shown(val_examples)
 
     def on_eval(model: Eve) -> dict[str, Any]:
-        lines = describe(model, val_examples, val_data, shown)
-        out: dict[str, Any] = {"samples": lines}
-        for key, (label, data) in scored.items():
-            if data:
-                out[key] = score(model, data)
-                lines.append(score_line(label, out[key]))
+        out: dict[str, Any] = {"samples": describe(model, val_examples, val_data, shown)}
+        out |= {key: score(model, data) for key, data in scored.items() if data}
         return out
 
     return on_eval
@@ -365,7 +378,7 @@ def finetune(
         out_dir,
         tokenizer,
         device,
-        on_eval=on_eval,
+        report=Report(COLUMNS, on_eval, summary, HIGHLIGHTS),
         eval_fn=question_metrics,
         resume=resume,
         stop_after=stop_after,

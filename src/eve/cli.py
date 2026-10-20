@@ -9,14 +9,29 @@ from pathlib import Path
 from typing import TYPE_CHECKING, Any
 
 import torch
+from rich.text import Text
 
 from eve import defaults
 from eve.config import PRESETS, STOP, ModelConfig
-from eve.progress import format_metric, style
+from eve.progress import (
+    console,
+    format_duration,
+    format_metric,
+    higher_is_better,
+    panel,
+    rows,
+    success,
+    table,
+    tree,
+    warn,
+)
 from eve.runtime import pick_device
 from eve.train.config import DTYPES, TrainConfig
 
 if TYPE_CHECKING:
+    from rich.panel import Panel
+    from rich.table import Table
+
     from eve.data.schema import Tool
     from eve.infer.predict import Answers
     from eve.tokenizer.bpe import BPETokenizer
@@ -28,7 +43,9 @@ ALL_VAL_BATCHES = 10_000  # finetune evaluates on all of val: it is small
 FINETUNE_WARMUP = 200
 
 INTENTS_SHOWN, TOOLS_SHOWN = 4, 3  # answers eve ask shows for the intent and per call
+SURE, UNSURE = 0.8, 0.5  # eve ask colors a top answer green from SURE, yellow from UNSURE
 Sample = str | list[str]  # a text, or a tool schema as its parts
+PIECE_COLORS = ("cyan", "magenta")  # tokenizer stats alternates them between token pieces
 
 type Subcommands = argparse._SubParsersAction[argparse.ArgumentParser]
 
@@ -71,13 +88,19 @@ def _parquet_files(pattern: str) -> list[str]:
 
 def info(_: argparse.Namespace) -> None:
     """Print the torch version, the device, and each preset's size."""
-    print(f"torch {torch.__version__}, device: {pick_device()}")
-    print(f"{'preset':<8}{'d_model':>9}{'heads':>7}{'enc':>5}{'dec':>5}{'q':>4}{'params':>10}")
+    console.print(rows([("torch", torch.__version__), ("device", str(pick_device()))]))
+    console.print()
+    presets = table("preset", "d_model", "heads", "encoder", "decoder", "questions", "params")
+    presets.columns[0].style = "bold cyan"
     for name, cfg in PRESETS.items():
-        print(
-            f"{name:<8}{cfg.d_model:>9}{cfg.n_heads:>7}{cfg.n_encoder_layers:>5}"
-            f"{cfg.n_decoder_layers:>5}{cfg.n_question_layers:>4}{cfg.approx_params() / 1e6:>9.1f}M"
+        sizes = (cfg.d_model, cfg.n_heads, cfg.n_encoder_layers, cfg.n_decoder_layers)
+        presets.add_row(
+            name,
+            *(str(size) for size in sizes),
+            str(cfg.n_question_layers),
+            f"{cfg.approx_params() / 1e6:.1f}M",
         )
+    console.print(presets)
 
 
 def model(args: argparse.Namespace) -> None:
@@ -87,11 +110,15 @@ def model(args: argparse.Namespace) -> None:
 
     names = [args.preset] if args.preset else list(PRESETS)
     counts = {name: Eve(preset(name)).parameter_counts() for name in names}
-    print(f"{'':<12}" + "".join(f"{name:>12}" for name in names))
+    parts = table("", *names, first_style="dim")
     for part in counts[names[0]]:
-        print(f"{part:<12}" + "".join(f"{counts[n][part]:>12,}" for n in names))
+        if part == "total":
+            parts.add_section()
+        cells = [f"{counts[n][part]:,}" for n in names]
+        parts.add_row(part, *cells, style="bold" if part == "total" else "")
     # float32: 4 bytes per parameter. The LM head adds nothing: it reuses the token embeddings.
-    print(f"{'MB (fp32)':<12}" + "".join(f"{counts[n]['total'] * 4 / 2**20:>12.1f}" for n in names))
+    parts.add_row("MB (fp32)", *(f"{counts[n]['total'] * 4 / 2**20:.1f}" for n in names))
+    console.print(parts)
 
 
 def tokenizer_train(args: argparse.Namespace) -> None:
@@ -107,7 +134,8 @@ def tokenizer_train(args: argparse.Namespace) -> None:
         progress=True,
     )
     tokenizer.save(args.out)
-    print(f"{tokenizer.vocab_size} tokens in {time.time() - start:.0f}s -> {args.out}")
+    took = format_duration(time.time() - start)
+    success(f"{tokenizer.vocab_size:,} tokens learned in {took}", args.out)
 
 
 def _encode_sample(tokenizer: "BPETokenizer", sample: Sample) -> list[int]:
@@ -118,12 +146,20 @@ def _encode_sample(tokenizer: "BPETokenizer", sample: Sample) -> list[int]:
 
 def _print_tokens_per_word(tokenizer: "BPETokenizer", samples: dict[str, Sequence[Sample]]) -> None:
     """A table of words and tokens per word for each kind of sample, then the vocab size."""
-    print(f"{'':<22}{'words':>9}{'tokens/word':>13}")
+    out = table("", "words", "tokens/word")
     for name, texts in samples.items():
         words = sum(len(" ".join(t if isinstance(t, list) else [t]).split()) for t in texts)
         n_tokens = sum(len(_encode_sample(tokenizer, t)) for t in texts)
-        print(f"{name:<22}{words:>9,}{n_tokens / words:>13.2f}")
-    print(f"vocabulary: {tokenizer.vocab_size:,}")
+        out.add_row(name, f"{words:,}", f"{n_tokens / words:.2f}")
+    console.print(out)
+    console.print(rows([("vocabulary", f"{tokenizer.vocab_size:,}")]))
+
+
+def _pieces(pieces: list[str]) -> Text:
+    """Token pieces in alternating colors, split by dim bars, so each token stands out."""
+    return Text(" | ", style="dim").join(
+        Text(piece, style=PIECE_COLORS[i % len(PIECE_COLORS)]) for i, piece in enumerate(pieces)
+    )
 
 
 def tokenizer_stats(args: argparse.Namespace) -> None:
@@ -149,7 +185,8 @@ def tokenizer_stats(args: argparse.Namespace) -> None:
     _print_tokens_per_word(tokenizer, samples)
     examples: list[Sample] = [commands[1], schemas[0]]
     for text in examples:
-        print("\n" + " | ".join(tokenizer.pieces(_encode_sample(tokenizer, text))))
+        console.print()
+        console.print(_pieces(tokenizer.pieces(_encode_sample(tokenizer, text))))
 
 
 def corpus(args: argparse.Namespace) -> None:
@@ -164,7 +201,7 @@ def corpus(args: argparse.Namespace) -> None:
         val_tokens=_count(args.val_tokens),
         workers=args.workers,
     )
-    print(f"train {meta['train_tokens']:,} and val {meta['val_tokens']:,} tokens -> {args.out}")
+    success(f"train {meta['train_tokens']:,} and val {meta['val_tokens']:,} tokens", args.out)
 
 
 def _train_config(args: argparse.Namespace, steps: int, lr: float, **extra: Any) -> TrainConfig:
@@ -183,9 +220,43 @@ def _train_config(args: argparse.Namespace, steps: int, lr: float, **extra: Any)
     )
 
 
-def _stop_note(args: argparse.Namespace) -> str:
-    """The end of a run's banner: where ``--stop-after`` ends it, if given."""
-    return f" · stopping at step {args.stop_after:,}" if args.stop_after else ""
+def _human(count: float) -> str:
+    """250_000_000 -> '250M', 2_300_000 -> '2.3M', 900 -> '900'."""
+    for scale, suffix in ((10**9, "B"), (10**6, "M"), (10**3, "k")):
+        if count >= scale:
+            return f"{count / scale:.3g}{suffix}"
+    return str(round(count))
+
+
+def _schedule(args: argparse.Namespace, lr: float, steps: int) -> str:
+    """The panel row both training runs share: steps, batch size, lr and warmup."""
+    return f"{steps:,} steps × {args.batch_size} · lr {lr:g} · warmup {min(args.warmup, steps):,}"
+
+
+def _run_rows(args: argparse.Namespace, device: torch.device) -> list[tuple[str, str]]:
+    """The panel rows both training runs share: where it runs and where it writes."""
+    hardware = [str(device), args.dtype] + (["compiled"] if getattr(args, "compile", False) else [])
+    run = [args.out, f"eval every {args.eval_every:,}"]
+    run += [f"stop at {args.stop_after:,}"] if args.stop_after else []
+    run += ["resume"] if args.resume else []
+    return [("device", " · ".join(hardware)), ("output", " · ".join(run))]
+
+
+def _pretrain_panel(
+    args: argparse.Namespace, cfg: ModelConfig, device: torch.device, steps: int
+) -> "Panel":
+    """What ``pretrain`` is about to do: the model, data, schedule, device and output."""
+    from eve.data.pretrain import raw_length
+
+    options = [name for name in ("rope", "qk_norm") if getattr(cfg, name)]
+    model = [args.preset, f"{cfg.approx_params() / 1e6:.1f}M params", *options]
+    tokens = steps * args.batch_size * raw_length(cfg.max_encoder_len)
+    items = [
+        ("model", " · ".join([*model, f"dropout {cfg.dropout:g}"])),
+        ("data", f"{args.data} · {_human(tokens)} tokens in windows of {cfg.max_encoder_len}"),
+        ("schedule", _schedule(args, args.lr, steps)),
+    ]
+    return panel("eve pretrain", items + _run_rows(args, device))
 
 
 def pretrain(args: argparse.Namespace) -> None:
@@ -201,14 +272,7 @@ def pretrain(args: argparse.Namespace) -> None:
     steps = args.steps or steps_for(_count(args.tokens), args.batch_size, cfg.max_encoder_len)
     train_cfg = _train_config(args, steps, args.lr, compile=args.compile)
     device = pick_device(args.device)
-    print(
-        f"{style('pretrain', '1')} {args.preset} · {cfg.approx_params() / 1e6:.1f}M params · "
-        f"{device} · {args.dtype} · lr {args.lr:g} · dropout {cfg.dropout:g} · "
-        + "".join(f"{name} · " for name in ("rope", "qk_norm") if getattr(cfg, name))
-        + ("compiled · " if args.compile else "")
-        + f"{steps:,} steps × {args.batch_size} windows of {cfg.max_encoder_len} tokens"
-        + _stop_note(args)
-    )
+    console.print(_pretrain_panel(args, cfg, device, steps))
     run(
         cfg,
         train_cfg,
@@ -221,18 +285,19 @@ def pretrain(args: argparse.Namespace) -> None:
     )
 
 
-def _finetune_banner(
+def _finetune_panel(
     args: argparse.Namespace, device: torch.device, lr: float, steps: int, n_train: int
-) -> str:
-    """The line ``finetune`` prints before it starts: where from, how, and for how long."""
-
-    start = args.init or f"{args.scratch} from scratch"
-    return (
-        f"{style('finetune', '1')} questions · from {start} · {device} · lr {lr:g} · "
-        + ("body frozen · " if args.freeze else "")
-        + f"{steps:,} steps × {args.batch_size} ({steps * args.batch_size / n_train:.1f} epochs)"
-        + _stop_note(args)
-    )
+) -> "Panel":
+    """What ``finetune`` is about to do: where from, on what, how long, and where to."""
+    start = [args.init or f"{args.scratch} preset, random weights"]
+    start += ["body frozen"] if args.freeze else []
+    epochs = steps * args.batch_size / n_train
+    items = [
+        ("start", " · ".join(start)),
+        ("task", f"{args.task} · {n_train:,} train examples"),
+        ("schedule", f"{_schedule(args, lr, steps)} · {epochs:.1f} epochs"),
+    ]
+    return panel("eve finetune", items + _run_rows(args, device))
 
 
 def finetune(args: argparse.Namespace) -> None:
@@ -247,7 +312,7 @@ def finetune(args: argparse.Namespace) -> None:
     lr = args.lr or (FROZEN_LR if args.freeze else FULL_LR)
     train_cfg = _train_config(args, steps, lr, eval_batches=ALL_VAL_BATCHES)
     device = pick_device(args.device)
-    print(_finetune_banner(args, device, lr, steps, n_train))
+    console.print(_finetune_panel(args, device, lr, steps, n_train))
     run(
         train_cfg,
         args.task,
@@ -287,56 +352,56 @@ def _read_runs(run_dirs: list[str]) -> Runs:
     return runs
 
 
-def _print_settings(runs: Runs, width: int) -> None:
-    """One row per setting in ``SETTINGS``, one column per run."""
+def _metric_cells(metric: str, values: list[float | None]) -> list[Text]:
+    """One step's values of ``metric``, as in the training log; the best run's in bold green
+    when more than one run has a value, a missing one blank."""
+    present = [v for v in values if v is not None]
+    pick = max if higher_is_better(metric) else min
+    best = pick(present) if len(present) > 1 else None
+    return [
+        Text("") if v is None else Text(format_metric(metric, v), style="bold green" * (v == best))
+        for v in values
+    ]
+
+
+def _compare_table(runs: Runs, metrics: list[str]) -> "Table":
+    """Settings rows, then a section per metric with one row per eval step any run logged; one
+    column per run."""
+    out = table("", *runs, first_style="dim")
     for label, get in SETTINGS:
-        print(f"{label:<14}" + "".join(f"{get(s)!s:>{width}}" for s, _ in runs.values()))
-
-
-def _cell(value: float | None, metric: str) -> str:
-    """A metric value as compare shows it: as in the training log, blank if missing."""
-    return "" if value is None else format_metric(metric, value)
-
-
-def _print_metric_tables(runs: Runs, metrics: list[str], width: int) -> None:
-    """For each metric, one row per eval step that any run logged, one column per run."""
+        out.add_row(label, *(str(get(start)) for start, _ in runs.values()))
     steps = sorted({step for _, vals in runs.values() for step in vals})
     for metric in metrics:
-        print(f"\n{metric}")
+        out.add_section()
+        out.add_row(Text(metric, style="bold cyan"))
         for step in steps:
-            cells = [_cell(vals.get(step, {}).get(metric), metric) for _, vals in runs.values()]
-            print(f"  step {step:<8,}" + "".join(f"{c:>{width}}" for c in cells))
+            values = [vals.get(step, {}).get(metric) for _, vals in runs.values()]
+            out.add_row(f"step {step:,}", *_metric_cells(metric, values))
+    return out
 
 
 def compare(args: argparse.Namespace) -> None:
     """Learn (M4): val metrics of several runs side by side, one row per eval step."""
-    runs = _read_runs(args.runs)
-    width = max(12, *(len(name) for name in runs)) + 2
-    print(f"{'':<14}" + "".join(f"{name:>{width}}" for name in runs))
-    _print_settings(runs, width)
-    _print_metric_tables(runs, args.metric, width)
-
-
-def _print_row(label: str, value: str) -> None:
-    """``  label      value``, the label dimmed in a terminal."""
-    print(f"  {style(f'{label:<11}', '2', stream=sys.stdout)}{value}")
+    console.print(_compare_table(_read_runs(args.runs), args.metric))
 
 
 def _print_fill_report(
     model_path: str, meta: dict[str, Any], device: torch.device, filled: list[str]
 ) -> None:
     """Which checkpoint filled the holes and how far it was trained, then each filled text."""
+    from eve.train.pretrain import HIGHLIGHTS
+
     trained = f"{meta['step']:,} steps" if "step" in meta else "?"
     if "val_lm" in meta:
         trained += f" · val loss {meta['val_lm']:.3f}"
-    print()
-    _print_row("checkpoint", model_path)
-    _print_row("trained", trained)
-    _print_row("device", str(device))
-    print()
-    for i, line in enumerate(filled, 1):
-        print(f"  {style(f'{i:>2}', '2', stream=sys.stdout)}  {line}")
-    print()
+    about = [("checkpoint", model_path), ("trained", trained), ("device", str(device))]
+    console.print(panel("eve fill", about))
+    texts = [Text(line) for line in filled]
+    for text in texts:
+        for pattern, style in HIGHLIGHTS:
+            text.highlight_regex(pattern, style)
+    console.print(rows([(str(i), text) for i, text in enumerate(texts, 1)], indent=2))
+    console.print()
 
 
 def fill(args: argparse.Namespace) -> None:
@@ -355,7 +420,7 @@ def fill(args: argparse.Namespace) -> None:
         filled = []
         for text in texts:
             bar.set_stats("decoding")
-            filled.append(fill_in(ckpt.model, ckpt.tokenizer, text, args.max_new, progress.marks()))
+            filled.append(fill_in(ckpt.model, ckpt.tokenizer, text, args.max_new))
             bar.update()
 
     _print_fill_report(str(args.model), ckpt.meta, device, filled)
@@ -375,20 +440,27 @@ def _tools(args: argparse.Namespace) -> list["Tool"]:
         tools += [library[name] for name in names]
     for path in args.schema or []:
         data = json.loads(Path(path).read_text())
-        rows = data["tools"] if isinstance(data, dict) else data  # a data/tools file, or a list
+        schemas = data["tools"] if isinstance(data, dict) else data  # a data/tools file, or a list
         tools += [
-            Tool.from_dict({k: v for k, v in t.items() if k not in GENERATION_KEYS}) for t in rows
+            Tool.from_dict({k: v for k, v in t.items() if k not in GENERATION_KEYS})
+            for t in schemas
         ]
     if not tools:
         raise SystemExit("give the tools with --tools a,b,c and/or --schema FILE")
     return tools
 
 
-def _ranked(probs: dict[str, float], count: int) -> str:
-    """The ``count`` most likely answers with their probabilities, the first in bold."""
+def _confidence(prob: float) -> str:
+    """The color of an answer this likely: green when sure, yellow when unsure, red below."""
+    return "green" if prob >= SURE else "yellow" if prob >= UNSURE else "red"
+
+
+def _ranked(probs: dict[str, float], count: int) -> Text:
+    """The ``count`` most likely answers with their probabilities: the first in bold, colored
+    by how likely it is, the others dimmed."""
     top = sorted(probs.items(), key=lambda kv: -kv[1])[:count]
-    return " · ".join(
-        (style(f"{k} {p:.0%}", "1", stream=sys.stdout) if i == 0 else f"{k} {p:.0%}")
+    return Text(" · ", style="dim").join(
+        Text(f"{k} {p:.0%}", style=f"bold {_confidence(p)}" if i == 0 else "dim")
         for i, (k, p) in enumerate(top)
     )
 
@@ -399,24 +471,22 @@ def _print_answers(text: str, answers: "Answers", as_json: bool) -> None:
     if as_json:
         print(json.dumps({"utterance": text, **answers.to_json()}))
         return
-    intent_label = f"{'intent':<8}"
-    print(
-        f"  {style(intent_label, '2', stream=sys.stdout)} {_ranked(answers.intent, INTENTS_SHOWN)}"
-    )
+    items = [("intent", _ranked(answers.intent, INTENTS_SHOWN))]
     for i, slot in enumerate(answers.slots, 1):
-        slot_label = f"{f'call {i}':<8}"
-        print(f"  {style(slot_label, '2', stream=sys.stdout)} {_ranked(slot, TOOLS_SHOWN)}")
+        items.append((f"call {i}", _ranked(slot, TOOLS_SHOWN)))
         if max(slot, key=slot.__getitem__) == STOP:
             break
+    console.print(rows(items, indent=2))
+    console.print()
 
 
 def _ask_interactively(show: Callable[[str], None]) -> None:
     """Read requests from the terminal and show the answers, until an empty line or Ctrl-D."""
     while True:
         try:
-            text = input("> ").strip()
+            text = console.input(Text("› ", style="bold cyan")).strip()
         except (EOFError, KeyboardInterrupt):
-            print()
+            console.print()
             break
         if not text:
             break
@@ -438,11 +508,12 @@ def ask(args: argparse.Namespace) -> None:
     if args.text:
         for text in args.text:
             if not args.json:
-                print(text)
+                console.print(Text(text, style="bold"))
             show(text)
         return
     names = ", ".join(t.name for t in tools)
-    print(f"{args.model} · tools: {names}\ntype a request (empty line or Ctrl-D to quit)")
+    console.print(panel("eve ask", [("model", args.model), ("tools", names)]))
+    console.print(Text("type a request · empty line or Ctrl-D to quit\n", style="dim"))
     _ask_interactively(show)
 
 
@@ -454,7 +525,7 @@ def data_build(args: argparse.Namespace) -> None:
 
     tokenizer = BPETokenizer.load(args.tokenizer) if Path(args.tokenizer).exists() else None
     if tokenizer is None:
-        print(f"no tokenizer at {args.tokenizer}: not checking example lengths")
+        warn(f"no tokenizer at {args.tokenizer}: not checking example lengths")
     report = build(
         args.out,
         args.templates,
@@ -463,10 +534,22 @@ def data_build(args: argparse.Namespace) -> None:
         tokenizer,
         preset("small"),
     )
-    for name, stats in report["splits"].items():
-        print(f"{name:<18} {stats['examples']:>7,}  {stats['intent']}")
-    print(f"rejected chat lines: {report['rejected_chat_lines']} (see `eve data check`)")
-    print(f"report -> {args.out}/report.json")
+    console.print(_splits_table(report["splits"]))
+    if rejected := report["rejected_chat_lines"]:
+        warn(f"{rejected} chat-written lines rejected (see `eve data check`)")
+    success("built", Path(args.out) / "report.json")
+
+
+def _splits_table(splits: dict[str, dict[str, Any]]) -> "Table":
+    """Examples per split, in total and per intent."""
+    from eve.config import INTENTS
+
+    out = table("split", "examples", *INTENTS)
+    out.columns[0].style = "bold cyan"
+    for name, stats in splits.items():
+        intents = [f"{stats['intent'].get(intent, 0):,}" for intent in INTENTS]
+        out.add_row(name, f"{stats['examples']:,}", *intents)
+    return out
 
 
 def data_external(args: argparse.Namespace) -> None:
@@ -474,9 +557,11 @@ def data_external(args: argparse.Namespace) -> None:
     from eve.data.generate.external import convert_external
 
     report = convert_external(args.raw, args.out, args.seed)
-    print(json.dumps(report, indent=2))
     if not report:
-        print(f"nothing found in {args.raw}/xlam or {args.raw}/massive")
+        warn(f"nothing found in {args.raw}/xlam or {args.raw}/massive")
+        return
+    console.print(tree("external data", report))
+    success("converted", Path(args.out) / "report.json")
 
 
 def data_batch(args: argparse.Namespace) -> None:
@@ -491,7 +576,7 @@ def data_batch(args: argparse.Namespace) -> None:
         sources = Sources.load(generation_dir=args.dir)
         batch = make_batch(sources, name, args.n, args.split, seed, args.ask)
         (batches / f"{name}.json").write_text(json.dumps(batch, indent=1, ensure_ascii=False))
-        print(f"{batches / name}.json: {args.n} {args.split} scenarios")
+        success(f"{args.n} {args.split} scenarios", batches / f"{name}.json")
 
 
 def data_check(args: argparse.Namespace) -> None:
@@ -504,11 +589,23 @@ def data_check(args: argparse.Namespace) -> None:
     written = read_jsonl(written_path) if written_path.exists() else []
     examples, rejects = check_written(batch, written, Sources.load(generation_dir=args.dir).library)
     missing = {s["id"] for s in batch["scenarios"]} - {line.get("id") for line in written}
-    for line, errors in rejects:
-        print(f"{line.get('id')}: {line.get('utterance')!r}\n    " + "\n    ".join(errors))
-    print(f"{len(examples)} ok, {len(rejects)} rejected, {len(missing)} scenarios not written")
+    if rejects:
+        console.print(_rejects_table(rejects))
+    counts = f"{len(examples)} ok · {len(rejects)} rejected · {len(missing)} scenarios not written"
     if rejects or missing:
+        console.print(Text(f"✗ {counts}", style="bold red"))
         raise SystemExit(1)
+    success(counts)
+
+
+def _rejects_table(rejects: list[tuple[dict[str, Any], list[str]]]) -> "Table":
+    """One row per rejected line: its id, its utterance and why it was rejected."""
+    out = table("id", "utterance", "errors", first_style="dim")
+    for column in out.columns[1:]:  # text, not numbers: left-aligned and wrapped
+        column.justify, column.no_wrap = "left", False
+    for line, errors in rejects:
+        out.add_row(str(line.get("id")), str(line.get("utterance")), Text("\n".join(errors), "red"))
+    return out
 
 
 def _add_schedule_args(

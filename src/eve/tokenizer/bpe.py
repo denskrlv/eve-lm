@@ -6,9 +6,9 @@ from pathlib import Path
 from typing import Any
 
 import regex
-from tqdm import tqdm
 
 from eve.config import ModelConfig
+from eve.progress import Bar
 
 N_SENTINELS = 32
 N_BYTES = 256  # one base token per byte value
@@ -97,7 +97,7 @@ def _learn_merges(
     where: dict[Pair, set[int]],
     n_merges: int,
     min_count: int,
-    bar: tqdm,  # type: ignore[type-arg]
+    bar: Bar,
 ) -> list[Pair]:
     """Step 3: merge the most frequent pair, repeatedly, and return the merges in order.
 
@@ -206,7 +206,7 @@ class BPETokenizer:
         words = [[BYTE0 + b for b in piece.encode("utf-8")] for piece in piece_counts]
         freqs = list(piece_counts.values())
         pair_counts, where = _pair_index(words, freqs)  # step 2
-        bar = tqdm(total=n_merges, desc="BPE merges", disable=not progress)
+        bar = Bar(n_merges, "BPE merges", "merges", disable=None if progress else True)
         merges = _learn_merges(words, freqs, pair_counts, where, n_merges, min_count, bar)
         bar.close()
         return cls(merges)

@@ -10,6 +10,7 @@ from typing import Any, Protocol, cast
 
 import numpy as np
 import torch
+from rich.text import Text
 from torch import nn
 
 from eve import progress
@@ -40,6 +41,56 @@ class Items(Protocol):
     def __len__(self) -> int: ...
 
     def __getitem__(self, index: int, /) -> Any: ...
+
+
+@dataclass(frozen=True)
+class Column:
+    """A column of the eval table: its label and where its value is in an eval's results.
+
+    ``key`` is a val metric (``val_lm``) or ``group.name`` inside a dict that ``on_eval``
+    returned (``heldout.macro_recall``).
+    """
+
+    label: str
+    key: str
+
+    def value(self, results: dict[str, Any]) -> float | None:
+        """This column's value in ``results``, or None if they don't have it."""
+        value: Any = results
+        for part in self.key.split("."):
+            value = value.get(part) if isinstance(value, dict) else None
+        return None if value is None else float(value)
+
+    def cell(self, results: dict[str, Any], before: dict[str, Any] | None = None) -> Text:
+        """The value formatted like the training log ("–" if missing): green if it got better
+        since the eval ``before``, red if it got worse."""
+        value = self.value(results)
+        if value is None:
+            return Text("–", style="dim")
+        text = progress.format_metric(self.key.rsplit(".", 1)[-1], value)
+        old = self.value(before or {})
+        if old is None or old == value:
+            return Text(text)
+        better = (value > old) == progress.higher_is_better(self.key)
+        return Text(text, style="green" if better else "red")
+
+
+@dataclass(frozen=True)
+class Report:
+    """What a run shows besides its progress bar.
+
+    - ``columns``: the eval table's columns after step, time and train loss; a row per eval.
+    - ``on_eval``: runs on the eager model at each eval. What it returns is logged (kind
+      "samples"), the columns can read it, and its ``samples`` lines are shown at the end.
+    - ``summary``: labelled lines shown at the end, made from the last eval's results.
+    - ``highlights``: (regex, rich style) pairs that color parts of the sample lines, e.g. the
+      filled-in spans.
+    """
+
+    columns: Sequence[Column] = ()
+    on_eval: Callable[[Eve], dict[str, Any]] | None = None
+    summary: Callable[[dict[str, Any]], list[tuple[str, str]]] | None = None
+    highlights: Sequence[tuple[str, str]] = ()
 
 
 def lr_at(step: int, cfg: TrainConfig) -> float:
@@ -162,7 +213,7 @@ class _Window:
 
 
 class _Evaluator:
-    """Runs the evals of one training run, logs them and keeps the latest val metrics."""
+    """Runs the evals of one training run, logs them and keeps the latest results."""
 
     def __init__(
         self,
@@ -178,36 +229,24 @@ class _Evaluator:
         self.val_batches, self.device, self.autocast = val_batches, device, autocast
         self.on_eval = on_eval
         self.last_val: dict[str, float] = {}
+        self.extras: dict[str, Any] = {}  # what on_eval returned at the last eval
+        self.before: dict[str, Any] = {}  # the results of the eval before the last one
 
-    def run(self, step: int, log: MetricsLog, bar: progress.Bar) -> None:
-        """Evaluate, log the metrics and ``on_eval``'s samples, and print both."""
-        before = dict(self.last_val)
-        self.last_val.clear()
-        self.last_val.update(
-            evaluate(self.runner, self.eval_fn, self.val_batches, self.device, self.autocast)
+    def run(self, step: int, log: MetricsLog) -> None:
+        """Evaluate, then log the val metrics and what ``on_eval`` returns."""
+        self.before = self.results
+        self.last_val = evaluate(
+            self.runner, self.eval_fn, self.val_batches, self.device, self.autocast
         )
         log.write({"kind": "val", "step": step, **self.last_val})
-        bar.write(
-            f"{progress.style('eval', '1', '35')} step {step:,} · "
-            + _changes(self.last_val, before)
-        )
         if self.on_eval is not None:
-            samples = self.on_eval(self.model)  # the eager model: generation changes shape
-            log.write({"kind": "samples", "step": step, **samples})
-            for line in samples.get("samples", []):
-                bar.write(progress.style(f"    {line}", "2"))
+            self.extras = self.on_eval(self.model)  # the eager model: generation changes shape
+            log.write({"kind": "samples", "step": step, **self.extras})
 
-
-def _changes(values: dict[str, float], before: dict[str, float]) -> str:
-    """``val_lm 3.2100 (-0.0412) · …``: each metric and how it moved since the last eval."""
-    parts = []
-    for name, value in values.items():
-        change = ""
-        if name in before:
-            sign = "+" if value >= before[name] else "-"
-            change = f" ({sign}{progress.format_metric(name, abs(value - before[name]))})"
-        parts.append(f"{name} {progress.style(progress.format_metric(name, value), '1')}{change}")
-    return " · ".join(parts)
+    @property
+    def results(self) -> dict[str, Any]:
+        """The last eval's val metrics and ``on_eval`` results together."""
+        return {**self.last_val, **self.extras}
 
 
 def _autocast(device: torch.device, dtype_name: str) -> Autocast:
@@ -283,10 +322,12 @@ def _report_train(
     grad_norm: torch.Tensor,
     log: MetricsLog,
     bar: progress.Bar,
-) -> None:
-    """Log the mean losses and speed since the last report, and show them on the bar."""
+) -> float:
+    """Log the mean losses and speed since the last report, and show them on the bar.
+    Returns the mean total loss, the number that is trained on."""
     elapsed = time.time() - window.start
     means = {k: (v / window.steps).item() for k, v in window.losses.items()}
+    loss = sum(means.values())
     tok_s = window.tokens / elapsed
     log.write(
         {
@@ -299,14 +340,16 @@ def _report_train(
             **means,
         }
     )
-    stats = [f"{k} {v:.4f}" for k, v in means.items()]
-    stats += [f"lr {lr:.1e}", f"{tok_s / 1e3:.1f}k tok/s"]
+    stats = [f"loss {loss:.4f}", f"lr {lr:.1e}", f"{tok_s / 1e3:.1f}k tok/s"]
     if bar.disable:  # not a terminal: plain lines for the log file
         eta = (end - step) * elapsed / window.steps
         logger.info(
-            f"step {step:>6}/{end} | " + " | ".join(stats) + f" | eta {_format_duration(eta)}"
+            f"step {step:>6}/{end} | "
+            + " | ".join(stats)
+            + f" | eta {progress.format_duration(eta)}"
         )
     bar.set_stats(*stats)
+    return loss
 
 
 def _start_step(
@@ -350,6 +393,28 @@ class _Run:
     log: MetricsLog
     bar: progress.Bar
     evaluator: _Evaluator
+    report: Report
+    train_loss: float | None = None  # the mean of the last logged window
+    start: float = field(default_factory=time.time)
+
+    @property
+    def table(self) -> progress.Table:
+        """The eval table: step, time, train loss, then the report's columns."""
+        labels = ["step", "time", "train loss", *(c.label for c in self.report.columns)]
+        return progress.Table(labels)
+
+
+def _eval(run: _Run, step: int) -> None:
+    """Evaluate and print the eval's row of the table."""
+    run.evaluator.run(step, run.log)
+    results, before = run.evaluator.results, run.evaluator.before
+    train_loss = "–" if run.train_loss is None else f"{run.train_loss:.4f}"
+    cells = [
+        Text(f"{step:,}", style="bold"),
+        Text(progress.format_duration(time.time() - run.start), style="dim"),
+        Text(train_loss, style="dim" if run.train_loss is None else ""),
+    ]
+    run.bar.write(run.table.row(cells + [c.cell(results, before) for c in run.report.columns]))
 
 
 def _after_step(
@@ -357,11 +422,11 @@ def _after_step(
 ) -> _Window:
     """Log, evaluate and save when ``step`` is due; returns the stats window to go on with."""
     if step % run.cfg.log_every == 0 or step == run.end:
-        _report_train(window, step, run.end, lr, grad_norm, run.log, run.bar)
+        run.train_loss = _report_train(window, step, run.end, lr, grad_norm, run.log, run.bar)
         window = _Window()
     paused = time.time()
     if step % run.cfg.eval_every == 0 or step == run.cfg.steps:
-        run.evaluator.run(step, run.log, run.bar)
+        _eval(run, step)
     if step % run.cfg.save_every == 0 or step == run.end:
         _save_last(run, step)
     window.start += time.time() - paused  # eval and saving don't count towards tok/s
@@ -378,7 +443,7 @@ def train(
     out_dir: str | Path,
     tokenizer: BPETokenizer,
     device: str | torch.device,
-    on_eval: Callable[[Eve], dict[str, Any]] | None = None,
+    report: Report | None = None,
     eval_fn: LossFn | None = None,
     resume: bool = False,
     stop_after: int | None = None,
@@ -392,12 +457,14 @@ def train(
 
     ``out_dir`` gets:
     - ``metrics.jsonl``: one JSON line per log (``kind`` "train"), eval ("val") and sample
-      set ("samples", whatever ``on_eval`` returns);
+      set ("samples", whatever ``report.on_eval`` returns);
     - ``last.pt``: model + optimizer + step + RNG states, written every ``save_every`` steps;
     - ``model.pt``: the final weights without the optimizer, for ``load_pretrained`` (box 7).
 
     Evals run ``eval_fn`` (default: ``loss_fn``) on the val batches. It may return extra
     metrics (e.g. an accuracy) that are logged with a ``val_`` prefix but never trained on.
+    Each eval prints one row of a table (``report.columns``); samples and the ``report.summary``
+    lines are shown once, when the run ends.
 
     ``meta`` (plain values) is added to both checkpoints' meta, e.g. what kind of run made them.
     A dataset with a ``set_epoch`` method (``TaskDataset``) is told the epoch of each batch, so
@@ -415,13 +482,14 @@ def train(
     runner, optimizer, autocast = _prepare(model, cfg, device)
     step = _start_step(model, optimizer, out_dir, cfg, resume)
     end = cfg.steps if stop_after is None else min(stop_after, cfg.steps)
+    report = report or Report()
     val_batches = _val_batches(val_data, collate, cfg)
     evaluator = _Evaluator(
-        runner, model, eval_fn or loss_fn, val_batches, device, autocast, on_eval
+        runner, model, eval_fn or loss_fn, val_batches, device, autocast, report.on_eval
     )
     bar = progress.bar(end, out_dir.name, "steps", initial=step)  # to where this run stops
     log = MetricsLog(out_dir / "metrics.jsonl")
-    run = _Run(cfg, end, out_dir, model, tokenizer, optimizer, meta, log, bar, evaluator)
+    run = _Run(cfg, end, out_dir, model, tokenizer, optimizer, meta, log, bar, evaluator, report)
     _start_log(run, step)
 
     step = _run_steps(run, runner, loss_fn, train_data, collate, device, autocast, step)
@@ -431,8 +499,9 @@ def train(
 
 
 def _start_log(run: _Run, step: int) -> None:
-    """A new run (``step`` 0) starts an empty log with its configs and a first eval; a resumed
-    run keeps the log ``_resume`` trimmed."""
+    """Print the eval table's header. A new run (``step`` 0) also starts an empty log with its
+    configs and a first eval; a resumed run keeps the log ``_resume`` trimmed."""
+    run.bar.write(run.table.header())
     if step != 0:
         return
     run.log.clear()
@@ -443,7 +512,7 @@ def _start_log(run: _Run, step: int) -> None:
             "model_config": run.model.cfg.to_dict(),
         }
     )
-    run.evaluator.run(step, run.log, run.bar)  # at step 0 the loss should be about ln(vocab_size)
+    _eval(run, step)  # at step 0 the loss should be about ln(vocab_size)
 
 
 def _run_steps(
@@ -486,14 +555,33 @@ def _save_last(run: _Run, step: int) -> None:
 
 
 def _finish(run: _Run, step: int) -> None:
-    """Save ``model.pt`` if the run reached its last step, else say how to continue."""
+    """Save ``model.pt`` if the run reached its last step, else say how to continue. Then show
+    the summary and samples of the last eval."""
+    took = progress.format_duration(time.time() - run.start)
     if step == run.cfg.steps:
         info = {**(run.meta or {}), "step": step, **run.evaluator.last_val}
         save_checkpoint(run.out_dir / "model.pt", run.model, run.tokenizer, info)
-        logger.info(f"{progress.style('done', '1', '32')} {run.out_dir / 'model.pt'}")
+        progress.console.print()
+        progress.success(f"done in {took}", run.out_dir / "model.pt")
     else:
-        stopped = progress.style("stopped", "1", "33")
-        logger.info(f"{stopped} at step {step:,}; continue with --resume")
+        progress.console.print()
+        progress.warn(f"stopped at step {step:,} after {took} · continue with --resume")
+    if items := _summary(run.report, run.evaluator.results):
+        progress.console.print()
+        progress.console.print(progress.rows(items, indent=2))  # under the table
+        progress.console.print()
+
+
+def _summary(report: Report, results: dict[str, Any]) -> list[tuple[str, str | Text]]:
+    """The labelled lines shown at the end: the report's summary, then the samples with the
+    report's highlights."""
+    items: list[tuple[str, str | Text]] = list(report.summary(results) if report.summary else [])
+    for i, line in enumerate(results.get("samples", [])):
+        text = Text(line)
+        for pattern, style in report.highlights:
+            text.highlight_regex(pattern, style)
+        items.append(("samples" if i == 0 else "", text))
+    return items
 
 
 def _resume(
@@ -524,11 +612,5 @@ def _resume(
     lines = path.read_text().splitlines() if path.exists() else []
     kept = [ln for ln in lines if json.loads(ln).get("step", 0) <= step]
     path.write_text("".join(ln + "\n" for ln in kept))
-    logger.info(f"resumed {out_dir} at step {step}")
+    logger.info(f"resumed {out_dir} at step {step:,}")
     return step
-
-
-def _format_duration(seconds: float) -> str:
-    minutes, secs = divmod(int(seconds), 60)
-    hours, minutes = divmod(minutes, 60)
-    return f"{hours}h{minutes:02d}m" if hours else f"{minutes}m{secs:02d}s"
