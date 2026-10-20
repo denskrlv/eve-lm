@@ -33,10 +33,12 @@ class ToolSpec:
 
     @property
     def name(self) -> str:
+        """The tool's name."""
         return self.tool.name
 
     @property
     def domain(self) -> str:
+        """The tool's domain."""
         return self.tool.domain
 
 
@@ -45,16 +47,16 @@ def load_specs(directory: str | Path) -> list[ToolSpec]:
     specs = []
     for path in sorted(Path(directory).glob("*.json")):
         data = json.loads(path.read_text())
-        for t in data["tools"]:
+        for raw_tool in data["tools"]:
             tool = Tool.from_dict(
-                {k: v for k, v in t.items() if k not in GENERATION_KEYS}, data["domain"]
+                {k: v for k, v in raw_tool.items() if k not in GENERATION_KEYS}, data["domain"]
             )
             specs.append(
                 ToolSpec(
                     tool,
-                    tuple(t.get("templates", ())),
-                    {k: tuple(v) for k, v in t.get("values", {}).items()},
-                    overlaps=tuple(t.get("overlaps", ())),
+                    tuple(raw_tool.get("templates", ())),
+                    {k: tuple(v) for k, v in raw_tool.get("values", {}).items()},
+                    overlaps=tuple(raw_tool.get("overlaps", ())),
                 )
             )
     names = [s.name for s in specs]

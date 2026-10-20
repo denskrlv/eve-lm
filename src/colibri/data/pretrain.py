@@ -1,7 +1,12 @@
 import numpy as np
 from torch.utils.data import Dataset
 
-from colibri.tokenizer.bpe import DEC, EOS, N_SENTINELS, SENTINEL0, sentinel
+from colibri.config import ModelConfig
+from colibri.tokenizer.bpe import DEC, EOS, N_SENTINELS, is_sentinel, sentinel
+
+INPUT_LEN = ModelConfig().max_encoder_len  # pretraining fills the whole encoder
+NOISE_DENSITY = 0.15  # share of a window's tokens that are corrupted
+MEAN_SPAN = 3.0  # mean length of a corrupted span
 
 
 def span_counts(length: int, noise_density: float, mean_span: float) -> tuple[int, int]:
@@ -11,7 +16,9 @@ def span_counts(length: int, noise_density: float, mean_span: float) -> tuple[in
     return n_noise, n_spans
 
 
-def raw_length(input_len: int, noise_density: float = 0.15, mean_span: float = 3.0) -> int:
+def raw_length(
+    input_len: int, noise_density: float = NOISE_DENSITY, mean_span: float = MEAN_SPAN
+) -> int:
     """The window length whose corrupted version is exactly ``input_len`` tokens long."""
     length = input_len
     while True:
@@ -63,22 +70,29 @@ def corrupt(tokens: np.ndarray, mask: np.ndarray) -> tuple[list[int], list[int]]
     return inputs, targets
 
 
-def uncorrupt(inputs: list[int], targets: list[int]) -> list[int]:
-    """Put the spans from ``targets`` back into ``inputs``. The inverse of ``corrupt``."""
+def spans_by_sentinel(targets: list[int]) -> dict[int, list[int]]:
+    """``<x0> span <x1> span … <eos>`` -> each sentinel's span. Tokens before the first
+    sentinel, and ``<eos>``, belong to no span."""
     spans: dict[int, list[int]] = {}
     current: list[int] = []
     for token in targets:
-        if SENTINEL0 <= token < SENTINEL0 + N_SENTINELS:
+        if is_sentinel(token):
             current = spans.setdefault(token, [])
         elif token != EOS:
             current.append(token)
+    return spans
+
+
+def uncorrupt(inputs: list[int], targets: list[int]) -> list[int]:
+    """Put the spans from ``targets`` back into ``inputs``. The inverse of ``corrupt``."""
+    spans = spans_by_sentinel(targets)
     out: list[int] = []
     for token in inputs:
         out.extend(spans.get(token, [token]))
     return out
 
 
-class SpanCorruptionDataset(Dataset):
+class SpanCorruptionDataset(Dataset[dict[str, list[int]]]):
     """Non-overlapping windows over the token stream, each corrupted with its own fixed seed.
 
     Item i is always the same sample (seeded by ``(seed, i)``), so runs can be repeated and
@@ -89,9 +103,9 @@ class SpanCorruptionDataset(Dataset):
     def __init__(
         self,
         tokens: np.ndarray,
-        input_len: int = 512,
-        noise_density: float = 0.15,
-        mean_span: float = 3.0,
+        input_len: int = INPUT_LEN,
+        noise_density: float = NOISE_DENSITY,
+        mean_span: float = MEAN_SPAN,
         seed: int = 0,
     ):
         self.tokens = tokens

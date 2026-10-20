@@ -1,4 +1,4 @@
-from collections.abc import Sequence
+from collections.abc import Callable, Sequence
 from dataclasses import dataclass
 from typing import Any
 
@@ -7,7 +7,8 @@ import torch
 from torch.utils.data import Dataset
 
 from colibri.config import INTENTS, ModelConfig
-from colibri.data.schema import ASK_VALUE, MAX_ARGS, SchemaError, Tool
+from colibri.data.draw import shuffled
+from colibri.data.schema import ASK_VALUE, MAX_ARGS, Arg, SchemaError, Tool
 from colibri.tokenizer.bpe import (
     ABSENT,
     ARG,
@@ -32,6 +33,8 @@ DECODER_BUCKETS = (64, 128, 256)
 
 @dataclass(frozen=True)
 class Call:
+    """One tool call: the tool's name and its argument values."""
+
     tool: str
     args: dict[str, Any]
 
@@ -66,22 +69,25 @@ class TaskExample:
                 raise SchemaError(f"call to {call.tool}: {'; '.join(errors)}")
 
     @classmethod
-    def from_json(cls, d: dict, library: dict[str, Tool] | None = None) -> "TaskExample":
+    def from_json(
+        cls, data: dict[str, Any], library: dict[str, Tool] | None = None
+    ) -> "TaskExample":
         """``{"utterance", "tools", "intent", "calls": [{"tool", "args"}]}``.
 
         A tool is a name looked up in ``library``, or a whole schema (a dict, as in
         ``Tool.to_dict``) for tools from outside the library, like external datasets.
         """
         return cls(
-            utterance=d["utterance"],
+            utterance=data["utterance"],
             tools=tuple(
-                Tool.from_dict(t) if isinstance(t, dict) else library[t] for t in d["tools"]
+                Tool.from_dict(t) if isinstance(t, dict) else _named(t, library)
+                for t in data["tools"]
             ),
-            intent=d["intent"],
-            calls=tuple(Call(c["tool"], dict(c.get("args", {}))) for c in d.get("calls", ())),
+            intent=data["intent"],
+            calls=tuple(Call(c["tool"], dict(c.get("args", {}))) for c in data.get("calls", ())),
         )
 
-    def to_json(self, inline: bool = False) -> dict:
+    def to_json(self, inline: bool = False) -> dict[str, Any]:
         """With ``inline``, tools are written as whole schemas instead of names."""
         return {
             "utterance": self.utterance,
@@ -91,8 +97,16 @@ class TaskExample:
         }
 
 
+def _named(name: str, library: dict[str, Tool] | None) -> Tool:
+    if library is None:
+        raise TypeError(f"tool {name!r} is a name, but no library was given to look it up")
+    return library[name]
+
+
 @dataclass
 class Rendered:
+    """A tokenized example with its labels, ready for a collator."""
+
     enc_ids: list[int]
     tool_pos: list[int]  # position of each <tool> marker, in prompt order
     arg_pos: list[list[int]]  # position of each <arg> marker, per tool
@@ -103,24 +117,15 @@ class Rendered:
     tool_names: list[str]  # prompt order, for debugging
 
 
-def render(
-    example: TaskExample,
-    tokenizer: BPETokenizer,
-    cfg: ModelConfig,
-    rng: np.random.Generator | None = None,
-) -> Rendered:
-    """Tokenize an example and build its labels. With ``rng``, the tools are shuffled first."""
-    tools = list(example.tools)
-    if rng is not None:
-        tools = [tools[i] for i in rng.permutation(len(tools))]
-    if len(tools) > cfg.max_tools:
-        raise ValueError(f"{len(tools)} tools, but the model takes at most {cfg.max_tools}")
-    if len(example.calls) > cfg.n_slots:
-        raise ValueError(f"{len(example.calls)} calls, but the model has {cfg.n_slots} slots")
+def _encoder(
+    utterance: str, tools: Sequence[Tool], tokenizer: BPETokenizer, cfg: ModelConfig
+) -> tuple[list[int], list[int], list[list[int]]]:
+    """Encoder ids, the position of each ``<tool>`` marker, and each tool's ``<arg>`` positions.
 
-    # Encoder. User text never gets special tokens. Every piece of text starts with a space,
-    # so a word is the same token in the utterance, the schema and a decoder value.
-    enc = [BOS, UTT, *tokenizer.encode(" " + example.utterance), TOOLS]
+    User text never gets special tokens. Every piece of text starts with a space, so a word is
+    the same token in the utterance, the schema and a decoder value.
+    """
+    enc = [BOS, UTT, *tokenizer.encode(" " + utterance), TOOLS]
     tool_pos, arg_pos = [], []
     for tool in tools:
         ids = [i for part in tool.render_parts() for i in tokenizer.encode(part, specials=True)]
@@ -131,17 +136,32 @@ def render(
     enc.append(EOS)
     if len(enc) > cfg.max_encoder_len:
         raise ValueError(f"encoder input is {len(enc)} tokens, max {cfg.max_encoder_len}")
+    return enc, tool_pos, arg_pos
 
-    # Question labels (M7).
-    stop = cfg.max_tools
+
+def _slot_labels(example: TaskExample, tools: Sequence[Tool], cfg: ModelConfig) -> list[int]:
+    """Question labels (M7): per slot, the index of its call's tool in the prompt, then STOP."""
     if example.intent == "ask" and not example.calls:
-        slots = [IGNORE] * cfg.n_slots  # the tool itself is unclear: no slot loss
-    else:
-        index = {t.name: k for k, t in enumerate(tools)}
-        slots = [index[c.tool] for c in example.calls]
-        slots += [stop] * (cfg.n_slots - len(slots))
+        return [IGNORE] * cfg.n_slots  # the tool itself is unclear: no slot loss
+    index = {t.name: k for k, t in enumerate(tools)}
+    slots = [index[c.tool] for c in example.calls]
+    return slots + [cfg.max_tools] * (cfg.n_slots - len(slots))  # max_tools = STOP
 
-    # Decoder (M8): structure copied from the schema (no loss), values predicted (loss).
+
+def _value_ids(arg: Arg, call: Call, intent: str, tokenizer: BPETokenizer) -> list[int]:
+    """What the decoder writes for one argument: <absent>, <ask>, or the value then <end>."""
+    if arg.name not in call.args:
+        return [ABSENT]
+    if call.args[arg.name] == ASK_VALUE and intent == "ask" and arg.required:
+        return [ASK]
+    return [*tokenizer.encode(" " + arg.format(call.args[arg.name])), END]
+
+
+def _decoder(
+    example: TaskExample, tools: Sequence[Tool], tokenizer: BPETokenizer, cfg: ModelConfig
+) -> tuple[list[int], list[int]]:
+    """Decoder input and labels (M8): structure copied from the schema (no loss), values
+    predicted (loss)."""
     seq, loss = [DEC], [False]
 
     def add(ids: Sequence[int], predicted: bool) -> None:
@@ -154,12 +174,7 @@ def render(
         add([CALL, *tokenizer.encode(" " + tool.name)], False)
         for arg in tool.args:
             add([ARG, *tokenizer.encode(" " + arg.name), VAL], False)
-            if arg.name not in call.args:
-                add([ABSENT], True)
-            elif call.args[arg.name] == ASK_VALUE and example.intent == "ask" and arg.required:
-                add([ASK], True)
-            else:
-                add([*tokenizer.encode(" " + arg.format(call.args[arg.name])), END], True)
+            add(_value_ids(arg, call, example.intent, tokenizer), True)
     add([EOS], False)
     dec_ids = seq[:-1]
     dec_labels = [
@@ -167,7 +182,26 @@ def render(
     ]
     if len(dec_ids) > cfg.max_decoder_len:
         raise ValueError(f"decoder input is {len(dec_ids)} tokens, max {cfg.max_decoder_len}")
+    return dec_ids, dec_labels
 
+
+def render(
+    example: TaskExample,
+    tokenizer: BPETokenizer,
+    cfg: ModelConfig,
+    rng: np.random.Generator | None = None,
+) -> Rendered:
+    """Tokenize an example and build its labels. With ``rng``, the tools are shuffled first."""
+    tools = list(example.tools)
+    if rng is not None:
+        tools = shuffled(rng, tools)
+    if len(tools) > cfg.max_tools:
+        raise ValueError(f"{len(tools)} tools, but the model takes at most {cfg.max_tools}")
+    if len(example.calls) > cfg.n_slots:
+        raise ValueError(f"{len(example.calls)} calls, but the model has {cfg.n_slots} slots")
+    enc, tool_pos, arg_pos = _encoder(example.utterance, tools, tokenizer, cfg)
+    slots = _slot_labels(example, tools, cfg)
+    dec_ids, dec_labels = _decoder(example, tools, tokenizer, cfg)
     return Rendered(
         enc_ids=enc,
         tool_pos=tool_pos,
@@ -180,7 +214,7 @@ def render(
     )
 
 
-class TaskDataset(Dataset):
+class TaskDataset(Dataset[Rendered]):
     """Renders examples on the fly, with the tool order shuffled differently each epoch.
 
     Call ``set_epoch(e)`` before each epoch (with ``num_workers > 0``, before creating the
@@ -203,6 +237,7 @@ class TaskDataset(Dataset):
         self.epoch = 0
 
     def set_epoch(self, epoch: int) -> None:
+        """Set the epoch, which reseeds each example's tool shuffle."""
         self.epoch = epoch
 
     def __len__(self) -> int:
@@ -225,13 +260,16 @@ def bucket(length: int, buckets: Sequence[int]) -> int:
 
 
 def pad(seqs: Sequence[Sequence[int]], length: int, value: int) -> torch.Tensor:
+    """Pad ``seqs`` with ``value`` into one (len(seqs), length) tensor."""
     out = torch.full((len(seqs), length), value, dtype=torch.long)
-    for i, s in enumerate(seqs):
-        out[i, : len(s)] = torch.as_tensor(s, dtype=torch.long)
+    for i, seq in enumerate(seqs):
+        out[i, : len(seq)] = torch.as_tensor(seq, dtype=torch.long)
     return out
 
 
-def _sequences(batch: Sequence[Any], get) -> dict[str, torch.Tensor]:
+def _sequences(
+    batch: Sequence[Any], get: Callable[[Any, str], list[int]]
+) -> dict[str, torch.Tensor]:
     """Pad the encoder and decoder sequences of a batch to their buckets."""
     enc = [get(b, "enc_ids") for b in batch]
     dec = [get(b, "dec_ids") for b in batch]
@@ -249,6 +287,7 @@ def _sequences(batch: Sequence[Any], get) -> dict[str, torch.Tensor]:
 
 
 def collate_pretrain(batch: Sequence[dict[str, list[int]]]) -> dict[str, torch.Tensor]:
+    """Pad span-corruption samples into a batch."""
     return _sequences(batch, lambda b, k: b[k])
 
 
@@ -261,23 +300,23 @@ class TaskCollator:
 
     def __call__(self, batch: Sequence[Rendered]) -> dict[str, torch.Tensor]:
         out = _sequences(batch, getattr)
-        n, t = len(batch), self.max_tools
-        tool_pos = torch.zeros(n, t, dtype=torch.long)
-        tool_mask = torch.zeros(n, t, dtype=torch.bool)
-        arg_pos = torch.zeros(n, t, MAX_ARGS, dtype=torch.long)
-        arg_mask = torch.zeros(n, t, MAX_ARGS, dtype=torch.bool)
-        for i, r in enumerate(batch):
-            tool_pos[i, : len(r.tool_pos)] = torch.tensor(r.tool_pos)
-            tool_mask[i, : len(r.tool_pos)] = True
-            for k, positions in enumerate(r.arg_pos):
-                arg_pos[i, k, : len(positions)] = torch.tensor(positions, dtype=torch.long)
-                arg_mask[i, k, : len(positions)] = True
+        n_examples, n_tools = len(batch), self.max_tools
+        tool_pos = torch.zeros(n_examples, n_tools, dtype=torch.long)
+        tool_mask = torch.zeros(n_examples, n_tools, dtype=torch.bool)
+        arg_pos = torch.zeros(n_examples, n_tools, MAX_ARGS, dtype=torch.long)
+        arg_mask = torch.zeros(n_examples, n_tools, MAX_ARGS, dtype=torch.bool)
+        for i, item in enumerate(batch):
+            tool_pos[i, : len(item.tool_pos)] = torch.tensor(item.tool_pos)
+            tool_mask[i, : len(item.tool_pos)] = True
+            for tool_index, positions in enumerate(item.arg_pos):
+                arg_pos[i, tool_index, : len(positions)] = torch.tensor(positions, dtype=torch.long)
+                arg_mask[i, tool_index, : len(positions)] = True
         out |= {
             "tool_pos": tool_pos,
             "tool_mask": tool_mask,
             "arg_pos": arg_pos,
             "arg_mask": arg_mask,
-            "intent": torch.tensor([r.intent for r in batch]),
-            "slots": torch.tensor([r.slots for r in batch]),
+            "intent": torch.tensor([item.intent for item in batch]),
+            "slots": torch.tensor([item.slots for item in batch]),
         }
         return out

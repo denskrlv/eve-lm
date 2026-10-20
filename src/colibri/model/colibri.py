@@ -8,6 +8,8 @@ from colibri.model.attention import MultiHeadAttention
 from colibri.model.blocks import DecoderBlock, EncoderBlock, LayerNorm
 from colibri.model.embeddings import Embeddings
 
+INIT_STD = 0.02  # GPT-2's initialization: small normal weights
+
 
 @dataclass
 class Questions:
@@ -19,6 +21,8 @@ class Questions:
 
 @dataclass
 class Output:
+    """What a forward pass returns: question logits and/or next-token logits."""
+
     questions: Questions | None  # None without tool positions (pretraining)
     lm: torch.Tensor | None  # (B, n_dec, vocab_size) next-token logits; None without dec_ids
 
@@ -40,7 +44,7 @@ class QuestionBlock(nn.Module):
 
     def __init__(self, cfg: ModelConfig):
         super().__init__()
-        self.queries = nn.Parameter(torch.randn(1 + cfg.n_slots, cfg.d_model) * 0.02)
+        self.queries = nn.Parameter(torch.randn(1 + cfg.n_slots, cfg.d_model) * INIT_STD)
         self.layers = nn.ModuleList(
             DecoderBlock(cfg, causal=False) for _ in range(cfg.n_question_layers)
         )
@@ -48,7 +52,7 @@ class QuestionBlock(nn.Module):
         self.intent_head = nn.Linear(cfg.d_model, cfg.n_intents)
         self.W_q = nn.Linear(cfg.d_model, cfg.pointer_dim, bias=False)
         self.W_k = nn.Linear(cfg.d_model, cfg.pointer_dim, bias=False)
-        self.stop_key = nn.Parameter(torch.randn(cfg.pointer_dim) * 0.02)
+        self.stop_key = nn.Parameter(torch.randn(cfg.pointer_dim) * INIT_STD)
 
     def forward(
         self,
@@ -107,7 +111,7 @@ class Colibri(nn.Module):
         """GPT-2's initialization: small normal weights (std 0.02), zero biases. PyTorch's
         default N(0, 1) embeddings would give the tied LM head logits with std ≈ √d ≈ 16."""
         if isinstance(module, nn.Linear | nn.Embedding):
-            nn.init.normal_(module.weight, std=0.02)
+            nn.init.normal_(module.weight, std=INIT_STD)
         if isinstance(module, nn.Linear) and module.bias is not None:
             nn.init.zeros_(module.bias)
 
@@ -116,7 +120,8 @@ class Colibri(nn.Module):
         x = self.embeddings.encoder(enc_ids)
         for block in self.encoder:
             x = block(x, enc_mask)
-        return self.encoder_norm(x)
+        memory: torch.Tensor = self.encoder_norm(x)
+        return memory
 
     def ask_questions(
         self,
@@ -125,7 +130,9 @@ class Colibri(nn.Module):
         tool_pos: torch.Tensor,
         tool_mask: torch.Tensor,
     ) -> Questions:
-        return self.questions(memory, enc_mask, tool_pos, tool_mask)
+        """Answer the fixed questions from encoder ``memory`` and the ``<tool>`` positions."""
+        answers: Questions = self.questions(memory, enc_mask, tool_pos, tool_mask)
+        return answers
 
     def decode(
         self,
@@ -140,7 +147,8 @@ class Colibri(nn.Module):
         x = self.embeddings.decoder(dec_ids)
         for block in self.decoder:
             x = block(x, memory, mask=dec_mask, memory_mask=enc_mask)
-        return self.lm_head(self.decoder_norm(x))
+        logits: torch.Tensor = self.lm_head(self.decoder_norm(x))
+        return logits
 
     def forward(
         self,
@@ -155,6 +163,7 @@ class Colibri(nn.Module):
         memory = self.encode(enc_ids, enc_mask)
         questions = lm = None
         if tool_pos is not None:
+            assert tool_mask is not None, "tool_pos comes with tool_mask"
             questions = self.ask_questions(memory, enc_mask, tool_pos, tool_mask)
         if dec_ids is not None:
             lm = self.decode(dec_ids, memory, enc_mask, dec_mask)
@@ -180,3 +189,9 @@ class Colibri(nn.Module):
             "questions": count(self.questions),
             "total": count(self),
         }
+
+
+def ask(model: Colibri, batch: dict[str, torch.Tensor]) -> Questions:
+    """Encoder + question block only: the decoder isn't needed for the questions."""
+    memory = model.encode(batch["enc_ids"], batch["enc_mask"])
+    return model.ask_questions(memory, batch["enc_mask"], batch["tool_pos"], batch["tool_mask"])

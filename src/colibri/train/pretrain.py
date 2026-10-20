@@ -1,16 +1,19 @@
 from pathlib import Path
+from typing import Any
 
 import torch
 import torch.nn.functional as F
 
+from colibri import defaults
 from colibri.config import ModelConfig
 from colibri.data.corpus import load_tokens
-from colibri.data.pretrain import SpanCorruptionDataset, raw_length
+from colibri.data.pretrain import INPUT_LEN, SpanCorruptionDataset, raw_length, spans_by_sentinel
 from colibri.data.render import IGNORE, collate_pretrain
 from colibri.model.colibri import Colibri
-from colibri.runtime import seed_everything
-from colibri.tokenizer.bpe import BYTE0, DEC, EOS, N_SENTINELS, SENTINEL0, BPETokenizer
-from colibri.train.loop import TrainConfig, train
+from colibri.runtime import eval_mode, seed_everything
+from colibri.tokenizer.bpe import BYTE0, DEC, EOS, BPETokenizer, is_sentinel
+from colibri.train.config import TrainConfig
+from colibri.train.loop import train
 
 SAMPLES = (
     "The capital of France is <x0>.",
@@ -30,10 +33,6 @@ def span_loss(model: Colibri, batch: dict[str, torch.Tensor]) -> dict[str, torch
     return {"lm": F.cross_entropy(logits, batch["dec_labels"].flatten(), ignore_index=IGNORE)}
 
 
-def _is_sentinel(token: int) -> bool:
-    return SENTINEL0 <= token < SENTINEL0 + N_SENTINELS
-
-
 def prompt_ids(tokenizer: BPETokenizer, text: str) -> list[int]:
     """``text`` with ``<x0>``… holes -> encoder ids shaped like a pretraining input.
 
@@ -45,7 +44,7 @@ def prompt_ids(tokenizer: BPETokenizer, text: str) -> list[int]:
     return [
         t
         for i, t in enumerate(ids)
-        if not (i + 1 < len(ids) and _is_sentinel(ids[i + 1]) and tokenizer.decode([t]).isspace())
+        if not (i + 1 < len(ids) and is_sentinel(ids[i + 1]) and tokenizer.decode([t]).isspace())
     ]
 
 
@@ -76,7 +75,7 @@ def fill_in(
     model: Colibri,
     tokenizer: BPETokenizer,
     text: str,
-    max_new: int = 24,
+    max_new: int = defaults.MAX_NEW_TOKENS,
     marks: tuple[str, str] = ("[", "]"),
 ) -> str:
     """Fill the ``<x0>``, ``<x1>``… holes of ``text`` by greedy decoding (book ch. 5.1.1's
@@ -86,35 +85,26 @@ def fill_in(
     targets. Returns ``text`` with each hole replaced by ``[its span]`` (``marks`` sets the
     brackets; a terminal can pass color codes instead).
     """
-    was_training = model.training
-    model.eval()
-    device = next(model.parameters()).device
-    enc = torch.tensor([prompt_ids(tokenizer, text)], device=device)
-    memory = model.encode(enc, torch.ones_like(enc, dtype=torch.bool))
-    dec = [DEC]
-    for _ in range(max_new):
-        ids = torch.tensor([dec], device=device)
-        logits = model.decode(ids, memory, torch.ones_like(enc, dtype=torch.bool))
-        nxt = int(logits[0, -1].argmax())
-        if nxt == EOS:
-            break
-        dec.append(nxt)
-    model.train(was_training)
+    with eval_mode(model) as device:
+        enc = torch.tensor([prompt_ids(tokenizer, text)], device=device)
+        memory = model.encode(enc, torch.ones_like(enc, dtype=torch.bool))
+        dec = [DEC]
+        for _ in range(max_new):
+            ids = torch.tensor([dec], device=device)
+            logits = model.decode(ids, memory, torch.ones_like(enc, dtype=torch.bool))
+            next_id = int(logits[0, -1].argmax())
+            if next_id == EOS:
+                break
+            dec.append(next_id)
 
-    spans: dict[int, list[int]] = {}
-    current = None
-    for token in dec[1:]:
-        if _is_sentinel(token):
-            current = spans.setdefault(token, [])
-        elif current is not None:
-            current.append(token)
+    spans = spans_by_sentinel(dec[1:])
     out = []
     for token in enc[0].tolist():
         if token in spans:
             span = tokenizer.decode(spans[token])
             space = " " if span.startswith(" ") else ""  # " Paris" -> " [Paris]"
             out.append(space + marks[0] + span.removeprefix(space) + marks[1])
-        elif _is_sentinel(token):
+        elif is_sentinel(token):
             out.append(" " + marks[0] + "?" + marks[1])  # a hole the model didn't fill
         else:
             out.append(tokenizer.decode([token]))
@@ -149,8 +139,8 @@ def pretrain(
     )
     val_data = SpanCorruptionDataset(load_tokens(data_dir / "val.bin"), cfg.max_encoder_len)
 
-    def on_eval(m: Colibri) -> dict:
-        return {"samples": [fill_in(m, tokenizer, text) for text in samples]}
+    def on_eval(model: Colibri) -> dict[str, Any]:
+        return {"samples": [fill_in(model, tokenizer, text) for text in samples]}
 
     return train(
         model,
@@ -169,6 +159,6 @@ def pretrain(
     )
 
 
-def steps_for(tokens: int, batch_size: int, input_len: int = 512) -> int:
+def steps_for(tokens: int, batch_size: int, input_len: int = INPUT_LEN) -> int:
     """Optimizer steps to read ``tokens`` corpus tokens once."""
     return tokens // (batch_size * raw_length(input_len))

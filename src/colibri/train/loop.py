@@ -1,25 +1,29 @@
 import json
+import logging
 import math
 import time
 from collections.abc import Callable, Sequence
-from contextlib import nullcontext
-from dataclasses import asdict, dataclass
+from contextlib import AbstractContextManager, nullcontext
+from dataclasses import dataclass, field
 from pathlib import Path
-from typing import Any
+from typing import Any, Protocol, cast
 
 import numpy as np
 import torch
 from torch import nn
-from torch.utils.data import Dataset
 
 from colibri import progress
 from colibri.model.checkpoint import load_checkpoint, save_checkpoint
 from colibri.model.colibri import Colibri
+from colibri.runtime import eval_mode, to_device
 from colibri.tokenizer.bpe import BPETokenizer
+from colibri.train.config import DTYPES, TrainConfig
+
+logger = logging.getLogger(__name__)
 
 LossFn = Callable[[Colibri, dict[str, torch.Tensor]], dict[str, torch.Tensor]]
 Collate = Callable[[Sequence[Any]], dict[str, torch.Tensor]]
-DTYPES = {"float32": None, "bfloat16": torch.bfloat16}
+Autocast = Callable[[], AbstractContextManager[Any]]
 RUN_FIELDS = (
     "eval_every",
     "eval_batches",
@@ -29,31 +33,13 @@ RUN_FIELDS = (
 )  # may change on resume
 
 
-@dataclass(frozen=True)
-class TrainConfig:
-    steps: int
-    batch_size: int = 32
-    lr: float = 1e-3  # peak learning rate, reached at the end of warmup
-    min_lr_ratio: float = 0.1  # cosine decay ends at lr * min_lr_ratio
-    warmup_steps: int = 500
-    weight_decay: float = 0.1
-    beta1: float = 0.9
-    beta2: float = 0.95
-    grad_clip: float = 1.0
-    dtype: str = "float32"  # "bfloat16" runs the forward pass under autocast
-    seed: int = 0  # batch order; the model's init is seeded by the caller
-    eval_every: int = 500
-    eval_batches: int = 40  # the first eval_batches * batch_size val items, always the same
-    save_every: int = 500
-    log_every: int = 20
-    compile: bool = False  # torch.compile the training and eval forward passes (see train)
+class Items(Protocol):
+    """A map-style dataset: a length and an item per index (``TaskDataset``,
+    ``SpanCorruptionDataset``)."""
 
-    def __post_init__(self) -> None:
-        if self.dtype not in DTYPES:
-            raise ValueError(f"dtype must be one of {sorted(DTYPES)}, got {self.dtype!r}")
+    def __len__(self) -> int: ...
 
-    def to_dict(self) -> dict:
-        return asdict(self)
+    def __getitem__(self, index: int, /) -> Any: ...
 
 
 def lr_at(step: int, cfg: TrainConfig) -> float:
@@ -70,7 +56,7 @@ def lr_at(step: int, cfg: TrainConfig) -> float:
     return min_lr + (cfg.lr - min_lr) * 0.5 * (1 + math.cos(math.pi * min(progress, 1.0)))
 
 
-def param_groups(model: nn.Module, weight_decay: float) -> list[dict]:
+def param_groups(model: nn.Module, weight_decay: float) -> list[dict[str, Any]]:
     """Weight decay only on the weight matrices of linear layers.
 
     Decay pulls every weight a little towards 0 each step. That makes sense for matrices,
@@ -85,9 +71,10 @@ def param_groups(model: nn.Module, weight_decay: float) -> list[dict]:
         for m in model.modules()
         if isinstance(m, nn.Linear) and id(m.weight) not in embeddings
     }
-    decay, no_decay = [], []
-    for p in model.parameters():  # each tensor once, even the tied one
-        (decay if id(p) in matrices else no_decay).append(p)
+    decay: list[nn.Parameter] = []
+    no_decay: list[nn.Parameter] = []
+    for param in model.parameters():  # each tensor once, even the tied one
+        (decay if id(param) in matrices else no_decay).append(param)
     return [
         {"params": decay, "weight_decay": weight_decay},
         {"params": no_decay, "weight_decay": 0.0},
@@ -106,8 +93,8 @@ def batch_indices(step: int, n_items: int, cfg: TrainConfig) -> np.ndarray:
     return order[i * cfg.batch_size : (i + 1) * cfg.batch_size]
 
 
-def _rng_state() -> dict:
-    state = {"torch": torch.get_rng_state()}
+def _rng_state() -> dict[str, Any]:
+    state: dict[str, Any] = {"torch": torch.get_rng_state()}
     if torch.backends.mps.is_available():
         state["mps"] = torch.mps.get_rng_state()
     if torch.cuda.is_available():
@@ -115,7 +102,7 @@ def _rng_state() -> dict:
     return state
 
 
-def _set_rng_state(state: dict) -> None:
+def _set_rng_state(state: dict[str, Any]) -> None:
     torch.set_rng_state(state["torch"])
     if "mps" in state and torch.backends.mps.is_available():
         torch.mps.set_rng_state(state["mps"])
@@ -123,41 +110,279 @@ def _set_rng_state(state: dict) -> None:
         torch.cuda.set_rng_state_all(state["cuda"])
 
 
-def _to(batch: dict[str, torch.Tensor], device: torch.device) -> dict[str, torch.Tensor]:
-    return {k: v.to(device, non_blocking=True) for k, v in batch.items()}
-
-
 @torch.no_grad()
 def evaluate(
-    model: Colibri, loss_fn: LossFn, batches: Sequence[dict], device: torch.device, autocast
+    model: Colibri,
+    loss_fn: LossFn,
+    batches: Sequence[dict[str, Any]],
+    device: torch.device,
+    autocast: Autocast,
 ) -> dict[str, float]:
     """Mean of each loss over the val batches, with dropout off (book ch. 5.1.3)."""
-    model.eval()
     totals: dict[str, torch.Tensor] = {}
-    for batch in batches:
-        with autocast():
-            losses = loss_fn(model, _to(batch, device))
-        for name, loss in losses.items():
-            totals[name] = totals.get(name, 0.0) + loss.float()
-    model.train()
+    with eval_mode(model):
+        for batch in batches:  # kept alive by the caller, so the copy may run in the background
+            with autocast():
+                losses = loss_fn(model, to_device(batch, device, non_blocking=True))
+            for name, loss in losses.items():
+                totals[name] = totals.get(name, 0.0) + loss.float()
     return {f"val_{name}": (total / len(batches)).item() for name, total in totals.items()}
+
+
+class MetricsLog:
+    """``metrics.jsonl``: one JSON record per line, appended as the run goes."""
+
+    def __init__(self, path: Path) -> None:
+        self.path = path
+
+    def clear(self) -> None:
+        """Start an empty log (a new run)."""
+        self.path.write_text("")
+
+    def write(self, record: dict[str, Any]) -> None:
+        """Append one record."""
+        with self.path.open("a") as f:
+            f.write(json.dumps(record) + "\n")
+
+
+@dataclass
+class _Window:
+    """Training stats since the last log line."""
+
+    losses: dict[str, torch.Tensor] = field(default_factory=dict)
+    tokens: int = 0
+    steps: int = 0
+    start: float = field(default_factory=time.time)
+
+    def add(self, losses: dict[str, torch.Tensor]) -> None:
+        # Summed as tensors: calling .item() every step would make the CPU wait for the GPU.
+        for name, value in losses.items():
+            self.losses[name] = self.losses.get(name, 0.0) + value.detach().float()
+        self.steps += 1
+
+
+class _Evaluator:
+    """Runs the evals of one training run, logs them and keeps the latest val metrics."""
+
+    def __init__(
+        self,
+        runner: Colibri,
+        model: Colibri,
+        eval_fn: LossFn,
+        val_batches: Sequence[dict[str, torch.Tensor]],
+        device: torch.device,
+        autocast: Autocast,
+        on_eval: Callable[[Colibri], dict[str, Any]] | None,
+    ) -> None:
+        self.runner, self.model, self.eval_fn = runner, model, eval_fn
+        self.val_batches, self.device, self.autocast = val_batches, device, autocast
+        self.on_eval = on_eval
+        self.last_val: dict[str, float] = {}
+
+    def run(self, step: int, log: MetricsLog, bar: progress.Bar) -> None:
+        """Evaluate, log the metrics and ``on_eval``'s samples, and print both."""
+        before = dict(self.last_val)
+        self.last_val.clear()
+        self.last_val.update(
+            evaluate(self.runner, self.eval_fn, self.val_batches, self.device, self.autocast)
+        )
+        log.write({"kind": "val", "step": step, **self.last_val})
+        bar.write(
+            f"{progress.style('eval', '1', '35')} step {step:,} · "
+            + _changes(self.last_val, before)
+        )
+        if self.on_eval is not None:
+            samples = self.on_eval(self.model)  # the eager model: generation changes shape
+            log.write({"kind": "samples", "step": step, **samples})
+            for line in samples.get("samples", []):
+                bar.write(progress.style(f"    {line}", "2"))
+
+
+def _changes(values: dict[str, float], before: dict[str, float]) -> str:
+    """``val_lm 3.2100 (-0.0412) · …``: each metric and how it moved since the last eval."""
+    parts = []
+    for name, value in values.items():
+        change = ""
+        if name in before:
+            sign = "+" if value >= before[name] else "-"
+            change = f" ({sign}{progress.format_metric(name, abs(value - before[name]))})"
+        parts.append(f"{name} {progress.style(progress.format_metric(name, value), '1')}{change}")
+    return " · ".join(parts)
+
+
+def _autocast(device: torch.device, dtype_name: str) -> Autocast:
+    dtype = DTYPES[dtype_name]
+    if dtype is None:
+        return nullcontext
+    return lambda: torch.autocast(device.type, dtype=dtype)
+
+
+def _optimizer(model: Colibri, cfg: TrainConfig, device: torch.device) -> torch.optim.AdamW:
+    return torch.optim.AdamW(
+        param_groups(model, cfg.weight_decay),
+        lr=cfg.lr,
+        betas=(cfg.beta1, cfg.beta2),
+        fused=device.type in ("cuda", "mps"),
+    )
+
+
+def _val_batches(
+    val_data: Items, collate: Collate, cfg: TrainConfig
+) -> list[dict[str, torch.Tensor]]:
+    """The first ``eval_batches`` whole batches of ``val_data``: the same ones at every eval."""
+    size = cfg.batch_size
+    batches = [
+        collate([val_data[j] for j in range(i * size, (i + 1) * size)])
+        for i in range(min(cfg.eval_batches, len(val_data) // size))
+    ]
+    if not batches:
+        raise ValueError(f"val data has {len(val_data)} items, less than one batch")
+    return batches
+
+
+def _train_batch(
+    train_data: Items, collate: Collate, cfg: TrainConfig, step: int
+) -> dict[str, torch.Tensor]:
+    """Batch ``step``, after telling a dataset with ``set_epoch`` which epoch it is in."""
+    idx = batch_indices(step, len(train_data), cfg)
+    if hasattr(train_data, "set_epoch"):
+        train_data.set_epoch(step // (len(train_data) // cfg.batch_size))
+    return collate([train_data[int(j)] for j in idx])
+
+
+def _train_step(
+    runner: Colibri,
+    model: Colibri,
+    loss_fn: LossFn,
+    optimizer: torch.optim.Optimizer,
+    batch: dict[str, torch.Tensor],
+    lr: float,
+    cfg: TrainConfig,
+    device: torch.device,
+    autocast: Autocast,
+) -> tuple[dict[str, torch.Tensor], torch.Tensor]:
+    """One optimizer step at learning rate ``lr``. Returns the losses and the gradient norm
+    before clipping."""
+    for group in optimizer.param_groups:
+        group["lr"] = lr
+    with autocast():
+        losses = loss_fn(runner, to_device(batch, device, non_blocking=True))  # train keeps batch
+    loss = cast(torch.Tensor, sum(losses.values()))
+    optimizer.zero_grad(set_to_none=True)
+    loss.backward()
+    grad_norm = nn.utils.clip_grad_norm_(model.parameters(), cfg.grad_clip)
+    optimizer.step()
+    return losses, grad_norm
+
+
+def _report_train(
+    window: _Window,
+    step: int,
+    end: int,
+    lr: float,
+    grad_norm: torch.Tensor,
+    log: MetricsLog,
+    bar: progress.Bar,
+) -> None:
+    """Log the mean losses and speed since the last report, and show them on the bar."""
+    elapsed = time.time() - window.start
+    means = {k: (v / window.steps).item() for k, v in window.losses.items()}
+    tok_s = window.tokens / elapsed
+    log.write(
+        {
+            "kind": "train",
+            "step": step,
+            "lr": lr,
+            "grad_norm": grad_norm.item(),
+            "tok_s": tok_s,
+            "s_per_step": elapsed / window.steps,
+            **means,
+        }
+    )
+    stats = [f"{k} {v:.4f}" for k, v in means.items()]
+    stats += [f"lr {lr:.1e}", f"{tok_s / 1e3:.1f}k tok/s"]
+    if bar.disable:  # not a terminal: plain lines for the log file
+        eta = (end - step) * elapsed / window.steps
+        logger.info(
+            f"step {step:>6}/{end} | " + " | ".join(stats) + f" | eta {_format_duration(eta)}"
+        )
+    bar.set_stats(*stats)
+
+
+def _start_step(
+    model: Colibri,
+    optimizer: torch.optim.Optimizer,
+    out_dir: Path,
+    cfg: TrainConfig,
+    resume: bool,
+) -> int:
+    """The step to start at: 0, or where ``last.pt`` left off when resuming."""
+    if resume and (out_dir / "last.pt").exists():
+        return _resume(model, optimizer, out_dir, cfg)
+    if resume:
+        logger.info(f"nothing to resume in {out_dir}: starting a new run")
+    return 0
+
+
+def _prepare(
+    model: Colibri, cfg: TrainConfig, device: torch.device
+) -> tuple[Colibri, torch.optim.Optimizer, Autocast]:
+    """The model to run forward passes with, the optimizer, and the autocast context."""
+    # torch.compile traces the forward pass once and fuses its many small operations (each
+    # LayerNorm, GELU and RMSNorm here is 5-10 of them) into a few kernels: about 2x faster on
+    # MPS, same losses. The first step takes ~20 s to compile. ``model`` itself stays eager for
+    # ``on_eval``, whose generation changes shape every token, and for saving.
+    runner = cast(Colibri, torch.compile(model)) if cfg.compile else model
+    return runner, _optimizer(model, cfg, device), _autocast(device, cfg.dtype)
+
+
+@dataclass
+class _Run:
+    """What one run's periodic logs, evals and saves need."""
+
+    cfg: TrainConfig
+    end: int  # the step this run stops at
+    out_dir: Path
+    model: Colibri
+    tokenizer: BPETokenizer
+    optimizer: torch.optim.Optimizer
+    meta: dict[str, Any] | None
+    log: MetricsLog
+    bar: progress.Bar
+    evaluator: _Evaluator
+
+
+def _after_step(
+    run: _Run, step: int, lr: float, grad_norm: torch.Tensor, window: _Window
+) -> _Window:
+    """Log, evaluate and save when ``step`` is due; returns the stats window to go on with."""
+    if step % run.cfg.log_every == 0 or step == run.end:
+        _report_train(window, step, run.end, lr, grad_norm, run.log, run.bar)
+        window = _Window()
+    paused = time.time()
+    if step % run.cfg.eval_every == 0 or step == run.cfg.steps:
+        run.evaluator.run(step, run.log, run.bar)
+    if step % run.cfg.save_every == 0 or step == run.end:
+        _save_last(run, step)
+    window.start += time.time() - paused  # eval and saving don't count towards tok/s
+    return window
 
 
 def train(
     model: Colibri,
     loss_fn: LossFn,
-    train_data: Dataset,
-    val_data: Dataset,
+    train_data: Items,
+    val_data: Items,
     collate: Collate,
     cfg: TrainConfig,
     out_dir: str | Path,
     tokenizer: BPETokenizer,
     device: str | torch.device,
-    on_eval: Callable[[Colibri], dict] | None = None,
+    on_eval: Callable[[Colibri], dict[str, Any]] | None = None,
     eval_fn: LossFn | None = None,
     resume: bool = False,
     stop_after: int | None = None,
-    meta: dict | None = None,
+    meta: dict[str, Any] | None = None,
 ) -> dict[str, float]:
     """The training loop for pretraining and fine-tuning (book ch. 5.2 ``train_model_simple``
     plus App. D's warmup, cosine decay and gradient clipping).
@@ -186,135 +411,89 @@ def train(
     """
     out_dir, device = Path(out_dir), torch.device(device)
     out_dir.mkdir(parents=True, exist_ok=True)
-    metrics_path = out_dir / "metrics.jsonl"
     model.to(device).train()
-    # torch.compile traces the forward pass once and fuses its many small operations (each
-    # LayerNorm, GELU and RMSNorm here is 5-10 of them) into a few kernels: about 2x faster on
-    # MPS, same losses. The first step takes ~20 s to compile. ``model`` itself stays eager for
-    # ``on_eval``, whose generation changes shape every token, and for saving.
-    runner = torch.compile(model) if cfg.compile else model
-    optimizer = torch.optim.AdamW(
-        param_groups(model, cfg.weight_decay),
-        lr=cfg.lr,
-        betas=(cfg.beta1, cfg.beta2),
-        fused=device.type in ("cuda", "mps"),
-    )
-    dtype = DTYPES[cfg.dtype]
-    autocast = (lambda: torch.autocast(device.type, dtype=dtype)) if dtype else nullcontext
-
-    step = 0
-    if resume and (out_dir / "last.pt").exists():
-        step = _resume(model, optimizer, out_dir, cfg, device)
-    elif resume:
-        print(f"nothing to resume in {out_dir}: starting a new run")
-    if step == 0:
-        metrics_path.write_text("")
-
-    def log(record: dict) -> None:
-        with metrics_path.open("a") as f:
-            f.write(json.dumps(record) + "\n")
-
-    def save() -> None:
-        state = {"step": step, "optimizer": optimizer.state_dict(), "rng": _rng_state()}
-        info = {**(meta or {}), "step": step, "train_config": cfg.to_dict(), **last_val}
-        save_checkpoint(out_dir / "last.pt", model, tokenizer, info, state)
-
-    val_batches = [
-        collate([val_data[j] for j in range(i * cfg.batch_size, (i + 1) * cfg.batch_size)])
-        for i in range(min(cfg.eval_batches, len(val_data) // cfg.batch_size))
-    ]
-    if not val_batches:
-        raise ValueError(f"val data has {len(val_data)} items, less than one batch")
-
+    runner, optimizer, autocast = _prepare(model, cfg, device)
+    step = _start_step(model, optimizer, out_dir, cfg, resume)
     end = cfg.steps if stop_after is None else min(stop_after, cfg.steps)
+    val_batches = _val_batches(val_data, collate, cfg)
+    evaluator = _Evaluator(
+        runner, model, eval_fn or loss_fn, val_batches, device, autocast, on_eval
+    )
     bar = progress.bar(end, out_dir.name, "steps", initial=step)  # to where this run stops
+    log = MetricsLog(out_dir / "metrics.jsonl")
+    run = _Run(cfg, end, out_dir, model, tokenizer, optimizer, meta, log, bar, evaluator)
+    _start_log(run, step)
 
-    def run_eval() -> None:
-        before = dict(last_val)
-        last_val.clear()
-        last_val.update(evaluate(runner, eval_fn or loss_fn, val_batches, device, autocast))
-        log({"kind": "val", "step": step, **last_val})
-        parts = []
-        for k, v in last_val.items():
-            change = ""
-            if k in before:
-                change = f" ({'+' if v >= before[k] else '-'}{_fmt(k, abs(v - before[k]))})"
-            parts.append(f"{k} {progress.style(_fmt(k, v), '1')}{change}")
-        bar.write(f"{progress.style('eval', '1', '35')} step {step:,} · " + " · ".join(parts))
-        if on_eval is not None:
-            samples = on_eval(model)
-            log({"kind": "samples", "step": step, **samples})
-            for line in samples.get("samples", []):
-                bar.write(progress.style(f"    {line}", "2"))
-
-    last_val: dict[str, float] = {}
-    if step == 0:
-        log({"kind": "start", "train_config": cfg.to_dict(), "model_config": model.cfg.to_dict()})
-        run_eval()  # at step 0 the loss should be about ln(vocab_size): nothing learned yet
-
-    window = {"loss": {}, "tokens": 0, "start": time.time(), "steps": 0}
-    while step < end:
-        idx = batch_indices(step, len(train_data), cfg)
-        if hasattr(train_data, "set_epoch"):
-            train_data.set_epoch(step // (len(train_data) // cfg.batch_size))
-        batch = collate([train_data[int(j)] for j in idx])
-        window["tokens"] += int(batch["enc_mask"].sum() + batch["dec_mask"].sum())
-
-        lr = lr_at(step, cfg)
-        for group in optimizer.param_groups:
-            group["lr"] = lr
-        with autocast():
-            losses = loss_fn(runner, _to(batch, device))
-        loss = sum(losses.values())
-        optimizer.zero_grad(set_to_none=True)
-        loss.backward()
-        grad_norm = nn.utils.clip_grad_norm_(model.parameters(), cfg.grad_clip)
-        optimizer.step()
-        step += 1
-
-        # Summed as tensors: calling .item() every step would make the CPU wait for the GPU.
-        for name, value in losses.items():
-            window["loss"][name] = window["loss"].get(name, 0.0) + value.detach().float()
-        window["steps"] += 1
-        bar.update()
-
-        if step % cfg.log_every == 0 or step == end:
-            elapsed = time.time() - window["start"]
-            means = {k: (v / window["steps"]).item() for k, v in window["loss"].items()}
-            tok_s = window["tokens"] / elapsed
-            log(
-                {
-                    "kind": "train",
-                    "step": step,
-                    "lr": lr,
-                    "grad_norm": grad_norm.item(),
-                    "tok_s": tok_s,
-                    "s_per_step": elapsed / window["steps"],
-                    **means,
-                }
-            )
-            stats = [f"{k} {v:.4f}" for k, v in means.items()]
-            stats += [f"lr {lr:.1e}", f"{tok_s / 1e3:.1f}k tok/s"]
-            if bar.disable:  # not a terminal: plain lines for the log file
-                eta = (end - step) * elapsed / window["steps"]
-                print(f"step {step:>6}/{end} | " + " | ".join(stats) + f" | eta {_hms(eta)}")
-            bar.set_stats(*stats)
-            window = {"loss": {}, "tokens": 0, "start": time.time(), "steps": 0}
-        paused = time.time()
-        if step % cfg.eval_every == 0 or step == cfg.steps:
-            run_eval()
-        if step % cfg.save_every == 0 or step == end:
-            save()
-        window["start"] += time.time() - paused  # eval and saving don't count towards tok/s
-
+    step = _run_steps(run, runner, loss_fn, train_data, collate, device, autocast, step)
     bar.close()
-    if step == cfg.steps:
-        info = {**(meta or {}), "step": step, **last_val}
-        save_checkpoint(out_dir / "model.pt", model, tokenizer, info)
-        print(f"{progress.style('done', '1', '32')} {out_dir / 'model.pt'}")
+    _finish(run, step)
+    return evaluator.last_val
+
+
+def _start_log(run: _Run, step: int) -> None:
+    """A new run (``step`` 0) starts an empty log with its configs and a first eval; a resumed
+    run keeps the log ``_resume`` trimmed."""
+    if step != 0:
+        return
+    run.log.clear()
+    run.log.write(
+        {
+            "kind": "start",
+            "train_config": run.cfg.to_dict(),
+            "model_config": run.model.cfg.to_dict(),
+        }
+    )
+    run.evaluator.run(step, run.log, run.bar)  # at step 0 the loss should be about ln(vocab_size)
+
+
+def _run_steps(
+    run: _Run,
+    runner: Colibri,
+    loss_fn: LossFn,
+    train_data: Items,
+    collate: Collate,
+    device: torch.device,
+    autocast: Autocast,
+    step: int,
+) -> int:
+    """Train from ``step`` to ``run.end``, logging, evaluating and saving on the way. Returns
+    the step reached."""
+    window = _Window()
+    while step < run.end:
+        batch = _train_batch(train_data, collate, run.cfg, step)
+        window.tokens += int(batch["enc_mask"].sum() + batch["dec_mask"].sum())
+        lr = lr_at(step, run.cfg)
+        losses, grad_norm = _train_step(
+            runner, run.model, loss_fn, run.optimizer, batch, lr, run.cfg, device, autocast
+        )
+        step += 1
+        window.add(losses)
+        run.bar.update()
+        window = _after_step(run, step, lr, grad_norm, window)
+    return step
+
+
+def _save_last(run: _Run, step: int) -> None:
+    """``last.pt``: everything ``_resume`` needs to continue exactly where the run is now."""
+    state = {"step": step, "optimizer": run.optimizer.state_dict(), "rng": _rng_state()}
+    info = {
+        **(run.meta or {}),
+        "step": step,
+        "train_config": run.cfg.to_dict(),
+        **run.evaluator.last_val,
+    }
+    save_checkpoint(run.out_dir / "last.pt", run.model, run.tokenizer, info, state)
+
+
+def _finish(run: _Run, step: int) -> None:
+    """Save ``model.pt`` if the run reached its last step, else say how to continue."""
+    if step == run.cfg.steps:
+        info = {**(run.meta or {}), "step": step, **run.evaluator.last_val}
+        save_checkpoint(run.out_dir / "model.pt", run.model, run.tokenizer, info)
+        logger.info(f"{progress.style('done', '1', '32')} {run.out_dir / 'model.pt'}")
     else:
-        print(f"{progress.style('stopped', '1', '33')} at step {step:,}; continue with --resume")
-    return last_val
+        stopped = progress.style("stopped", "1", "33")
+        logger.info(f"{stopped} at step {step:,}; continue with --resume")
 
 
 def _resume(
@@ -322,8 +501,8 @@ def _resume(
     optimizer: torch.optim.Optimizer,
     out_dir: Path,
     cfg: TrainConfig,
-    device: torch.device,
 ) -> int:
+    """Restore the model, optimizer and RNG states from ``last.pt`` and return its step."""
     ckpt = load_checkpoint(out_dir / "last.pt")
     if ckpt.model.cfg != model.cfg:
         raise ValueError(f"{out_dir}/last.pt has a different model config")
@@ -333,25 +512,23 @@ def _resume(
             f"can't resume with a different {', '.join(changed)}: "
             + ", ".join(f"{k} was {saved.get(k)!r}" for k in changed)
         )
+    if ckpt.train_state is None:
+        raise ValueError(f"{out_dir}/last.pt has no optimizer and RNG state to resume from")
     model.load_state_dict(ckpt.model.state_dict())
     optimizer.load_state_dict(ckpt.train_state["optimizer"])  # moves its state to the device
     _set_rng_state(ckpt.train_state["rng"])
-    step = ckpt.train_state["step"]
+    step: int = ckpt.train_state["step"]
 
     # Drop metrics logged after the checkpoint: those steps run again now.
     path = out_dir / "metrics.jsonl"
     lines = path.read_text().splitlines() if path.exists() else []
     kept = [ln for ln in lines if json.loads(ln).get("step", 0) <= step]
     path.write_text("".join(ln + "\n" for ln in kept))
-    print(f"resumed {out_dir} at step {step}")
+    logger.info(f"resumed {out_dir} at step {step}")
     return step
 
 
-def _fmt(name: str, value: float) -> str:
-    return f"{value:.1%}" if name.endswith(("acc", "rate")) else f"{value:.4f}"
-
-
-def _hms(seconds: float) -> str:
-    m, s = divmod(int(seconds), 60)
-    h, m = divmod(m, 60)
-    return f"{h}h{m:02d}m" if h else f"{m}m{s:02d}s"
+def _format_duration(seconds: float) -> str:
+    minutes, secs = divmod(int(seconds), 60)
+    hours, minutes = divmod(minutes, 60)
+    return f"{hours}h{minutes:02d}m" if hours else f"{minutes}m{secs:02d}s"

@@ -7,9 +7,10 @@ from colibri.data.pretrain import (
     noise_mask,
     raw_length,
     span_counts,
+    spans_by_sentinel,
     uncorrupt,
 )
-from colibri.tokenizer.bpe import BYTE0, DEC, EOS, N_SENTINELS, SENTINEL0, sentinel
+from colibri.tokenizer.bpe import BYTE0, DEC, EOS, N_SENTINELS, SENTINEL0, is_sentinel, sentinel
 
 
 def test_window_corrupts_to_exactly_the_input_length():
@@ -66,3 +67,14 @@ def test_input_plus_target_rebuild_the_text(tokenizer):
     assert any(SENTINEL0 <= t < SENTINEL0 + N_SENTINELS for t in item["enc_ids"])
     original = tokenizer.decode(tokens[: ds.window].tolist())
     assert tokenizer.decode(uncorrupt(item["enc_ids"], item["dec_labels"])) == original
+
+
+def test_spans_by_sentinel_skips_eos_and_tokens_before_the_first_sentinel() -> None:
+    stray, first, second, third = BYTE0 + 1, BYTE0 + 2, BYTE0 + 3, BYTE0 + 4
+    targets = [stray, sentinel(0), first, second, sentinel(1), third, EOS]
+    assert spans_by_sentinel(targets) == {sentinel(0): [first, second], sentinel(1): [third]}
+
+
+def test_is_sentinel_covers_exactly_the_sentinel_ids() -> None:
+    assert all(is_sentinel(sentinel(i)) for i in range(N_SENTINELS))
+    assert not is_sentinel(SENTINEL0 - 1) and not is_sentinel(SENTINEL0 + N_SENTINELS)

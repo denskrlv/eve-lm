@@ -1,16 +1,15 @@
 from collections.abc import Sequence
 from dataclasses import dataclass
+from typing import Any
 
 import torch
 
-from colibri.config import INTENTS
+from colibri.config import INTENTS, STOP
 from colibri.data.render import TaskCollator, TaskExample, render
 from colibri.data.schema import Tool
-from colibri.model.colibri import Colibri
+from colibri.model.colibri import Colibri, ask
+from colibri.runtime import eval_mode, to_device
 from colibri.tokenizer.bpe import BPETokenizer
-from colibri.train.finetune import ask
-
-STOP = "STOP"
 
 
 @dataclass
@@ -25,13 +24,14 @@ class Answers:
         """The most likely tool of each slot, up to the first STOP."""
         out = []
         for slot in self.slots:
-            best = max(slot, key=slot.get)
+            best = max(slot, key=slot.__getitem__)
             if best == STOP:
                 break
             out.append(best)
         return out
 
-    def to_json(self) -> dict:
+    def to_json(self) -> dict[str, Any]:
+        """The answers as plain values, with the most likely calls."""
         return {"intent": self.intent, "calls": self.calls, "slots": self.slots}
 
 
@@ -44,17 +44,13 @@ def answer_questions(
     The tools stay in the given order. The example's intent is a placeholder: render needs one
     to build the labels, which aren't used here.
     """
-    was_training = model.training
-    model.eval()
-    device = next(model.parameters()).device
     rendered = render(TaskExample(utterance, tuple(tools), "none"), tokenizer, model.cfg)
-    batch = {k: v.to(device) for k, v in TaskCollator(model.cfg)([rendered]).items()}
-    q = ask(model, batch)
-    model.train(was_training)
+    with eval_mode(model) as device:
+        questions = ask(model, to_device(TaskCollator(model.cfg)([rendered]), device))
 
     names = [t.name for t in tools]
-    intent = q.intent[0].softmax(-1).tolist()
-    slots = q.slots[0].softmax(-1)[:, [*range(len(names)), model.cfg.max_tools]].tolist()
+    intent = questions.intent[0].softmax(-1).tolist()
+    slots = questions.slots[0].softmax(-1)[:, [*range(len(names)), model.cfg.max_tools]].tolist()
     return Answers(
         intent=dict(zip(INTENTS, intent, strict=True)),
         slots=[dict(zip([*names, STOP], s, strict=True)) for s in slots],

@@ -43,11 +43,11 @@ def test_unsupported_never_offers_a_tool_that_could_serve_it(bank, sources):
         assert "search_web" not in names  # it could serve anything
 
 
-def test_distractors_are_mostly_similar(bank):
+def test_distractors_are_mostly_similar(bank: ToolBank) -> None:
     rng = np.random.default_rng(0)
-    g = bank.index["set_lights"]
-    sims = [bank.sim[g, d] for _ in range(200) for d in bank.distractors([g], 4, rng)]
-    random = bank.sim[g][np.arange(len(bank.specs)) != g].mean()
+    gold = bank.index["set_lights"]
+    sims = [bank.similarity[gold, d] for _ in range(200) for d in bank.distractors([gold], 4, rng)]
+    random = bank.similarity[gold][np.arange(len(bank.specs)) != gold].mean()
     assert np.mean(sims) > 3 * random
 
 

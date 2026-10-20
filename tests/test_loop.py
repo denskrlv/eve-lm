@@ -1,5 +1,6 @@
 import json
 import math
+from pathlib import Path
 
 import numpy as np
 import pytest
@@ -8,10 +9,11 @@ import torch
 from colibri.config import preset
 from colibri.data.pretrain import SpanCorruptionDataset
 from colibri.data.render import collate_pretrain
-from colibri.model.checkpoint import load_checkpoint
+from colibri.model.checkpoint import load_checkpoint, save_checkpoint
 from colibri.model.colibri import Colibri
-from colibri.tokenizer.bpe import BYTE0
-from colibri.train.loop import TrainConfig, batch_indices, lr_at, param_groups, train
+from colibri.tokenizer.bpe import BYTE0, BPETokenizer
+from colibri.train.config import TrainConfig
+from colibri.train.loop import batch_indices, lr_at, param_groups, train
 from colibri.train.pretrain import span_loss
 
 CFG = preset("tiny", dropout=0.1)  # dropout on, so resuming must restore the RNG too
@@ -119,6 +121,16 @@ def test_resume_refuses_a_different_schedule(tokenizer, tmp_path):
     with pytest.raises(ValueError, match="lr"):
         run(tmp_path, tokenizer, small_run(lr=5e-4), resume=True)
     run(tmp_path, tokenizer, small_run(log_every=2), resume=True)  # logging may change
+
+
+def test_resume_refuses_a_checkpoint_without_train_state(
+    tokenizer: BPETokenizer, tmp_path: Path
+) -> None:
+    run(tmp_path, tokenizer, stop_after=3)
+    ckpt = load_checkpoint(tmp_path / "last.pt")
+    save_checkpoint(tmp_path / "last.pt", ckpt.model, ckpt.tokenizer, ckpt.meta)  # weights only
+    with pytest.raises(ValueError, match="no optimizer and RNG state"):
+        run(tmp_path, tokenizer, resume=True)
 
 
 def test_last_checkpoint_holds_the_train_state(tokenizer, tmp_path):

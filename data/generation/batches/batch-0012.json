@@ -23,7 +23,6 @@
   "change_lawn_mower_cutting_height": "<tool> change_lawn_mower_cutting_height : Change the cutting height of the lawn mower <arg> level : int 20..60 : millimeters",
   "change_massage_chair_mode": "<tool> change_massage_chair_mode : Choose a program for the massage chair <arg> setting : enum relax | deep tissue | stretch",
   "change_printer_mode": "<tool> change_printer_mode : Set the printer mode <arg> mode : enum color | black and white | draft",
-  "check_parking_availability": "<tool> check_parking_availability : Check the parking availability <arg> garage : str",
   "convert_currency": "<tool> convert_currency : Convert an amount of money to another currency <arg> amount : float 0.. <arg> from_currency : enum USD | EUR | GBP | JPY <arg> to_currency : enum USD | EUR | GBP | JPY",
   "convert_units": "<tool> convert_units : Convert a value between units <arg> value : float <arg> from_unit : enum km | miles | kg | pounds | celsius | fahrenheit <arg> to_unit : enum km | miles | kg | pounds | celsius | fahrenheit",
   "create_bookmark": "<tool> create_bookmark : Create a new bookmark <arg> name : str",
@@ -43,6 +42,7 @@
   "fan_mode": "<tool> fan_mode : Choose a program for the fan <arg> program : enum normal | sleep | turbo <arg> room ? : enum office | kitchen | garage | nursery | living room",
   "fan_set_speed": "<tool> fan_set_speed : Set the fan speed <arg> speed : int 1..5 <arg> room ? : enum living room | office | bedroom | basement | bathroom : all rooms if not given",
   "fetch_horoscope": "<tool> fetch_horoscope : Get the horoscope <arg> sign : str",
+  "fetch_wait_time": "<tool> fetch_wait_time : Get the wait time <arg> restaurant : str",
   "find_deck": "<tool> find_deck : Find decks matching a text <arg> query : str",
   "find_habit": "<tool> find_habit : Find habits matching a text <arg> keyword : str",
   "find_issue": "<tool> find_issue : Search issues <arg> text : str",
@@ -57,7 +57,6 @@
   "heated_floor_set_warmth": "<tool> heated_floor_set_warmth : Set the heated floor warmth <arg> level : int 1..5 <arg> room : enum bathroom | office | bedroom | kitchen",
   "humidifier_power": "<tool> humidifier_power : Switch the humidifier on or off <arg> on : bool <arg> location : enum basement | bedroom | bathroom | kitchen | living room",
   "list_events": "<tool> list_events : Read out the events on the calendar <arg> day ? : enum today | tomorrow | this week",
-  "lock_car": "<tool> lock_car : Lock or unlock the car <arg> locked : bool",
   "lock_door": "<tool> lock_door : Lock or unlock a door <arg> door : enum front | back | garage <arg> locked : bool",
   "lookup_document": "<tool> lookup_document : Search documents <arg> text : str",
   "mark_invoice": "<tool> mark_invoice : Change the status of a invoice <arg> name : str <arg> state : enum paid | unpaid | overdue",
@@ -104,6 +103,7 @@
   "subtract": "<tool> subtract : Subtract one number from another <arg> a : float <arg> b : float",
   "switch_printer": "<tool> switch_printer : Switch the printer on or off <arg> power : bool",
   "switch_washing_machine": "<tool> switch_washing_machine : Switch the washing machine on or off <arg> turn_on : bool",
+  "switch_wine_fridge": "<tool> switch_wine_fridge : Turn the wine fridge on or off <arg> turn_on : bool",
   "toggle_dryer": "<tool> toggle_dryer : Turn the dryer on or off <arg> enabled : bool",
   "toggle_rice_cooker": "<tool> toggle_rice_cooker : Switch the rice cooker on or off <arg> enabled : bool",
   "toggle_washing_machine": "<tool> toggle_washing_machine : Switch the washing machine on or off <arg> on : bool",
@@ -111,6 +111,7 @@
   "update_invoice_status": "<tool> update_invoice_status : Change the status of a invoice <arg> name : str <arg> state : enum paid | unpaid | overdue",
   "update_issue_status": "<tool> update_issue_status : Change the status of a issue <arg> title : str <arg> status : enum open | closed",
   "update_project_status": "<tool> update_project_status : Change the status of a project <arg> title : str <arg> state : enum active | paused | done",
+  "washing_machine_mode": "<tool> washing_machine_mode : Set the washing machine mode <arg> program : enum cotton | delicates | quick wash",
   "washing_machine_set_temperature": "<tool> washing_machine_set_temperature : Set the washing machine temperature <arg> temperature : int 20..90 : degrees"
  },
  "scenarios": [
@@ -1931,60 +1932,46 @@
    "id": "batch-0012-028",
    "tools": [
     {
-     "name": "remove_recipe",
-     "description": "Delete a recipe",
+     "name": "book_hotel",
+     "description": "Book a hotel room",
      "args": [
       {
-       "name": "name",
+       "name": "city",
+       "type": "str"
+      },
+      {
+       "name": "nights",
+       "type": "int",
+       "min": 1,
+       "max": 30
+      },
+      {
+       "name": "guests",
+       "type": "int",
+       "required": false,
+       "min": 1,
+       "max": 10
+      }
+     ]
+    },
+    {
+     "name": "fetch_wait_time",
+     "description": "Get the wait time",
+     "args": [
+      {
+       "name": "restaurant",
        "type": "str"
       }
      ]
     },
     {
-     "name": "convert_units",
-     "description": "Convert a value between units",
+     "name": "get_flight_status",
+     "description": "Check whether a flight is on time",
      "args": [
       {
-       "name": "value",
-       "type": "float"
-      },
-      {
-       "name": "from_unit",
-       "type": "enum",
-       "options": [
-        "km",
-        "miles",
-        "kg",
-        "pounds",
-        "celsius",
-        "fahrenheit"
-       ]
-      },
-      {
-       "name": "to_unit",
-       "type": "enum",
-       "options": [
-        "km",
-        "miles",
-        "kg",
-        "pounds",
-        "celsius",
-        "fahrenheit"
-       ]
-      }
-     ]
-    },
-    {
-     "name": "divide",
-     "description": "Divide one number by another",
-     "args": [
-      {
-       "name": "a",
-       "type": "float"
-      },
-      {
-       "name": "b",
-       "type": "float"
+       "name": "flight",
+       "type": "str",
+       "description": "flight number"
       }
      ]
     }
@@ -1992,15 +1979,13 @@
    "intent": "call",
    "calls": [
     {
-     "tool": "convert_units",
+     "tool": "get_flight_status",
      "args": {
-      "to_unit": "km",
-      "value": 99.0,
-      "from_unit": "celsius"
+      "flight": "BA 117"
      }
     }
    ],
-   "meaning": "how many km is 99 celsius",
+   "meaning": "is BA 117 on time",
    "missing": [],
    "implied": []
   },
@@ -2159,92 +2144,34 @@
    "id": "batch-0012-031",
    "tools": [
     {
-     "name": "convert_currency",
-     "description": "Convert an amount of money to another currency",
+     "name": "switch_wine_fridge",
+     "description": "Turn the wine fridge on or off",
      "args": [
       {
-       "name": "amount",
-       "type": "float",
-       "min": 0
-      },
-      {
-       "name": "from_currency",
-       "type": "enum",
-       "options": [
-        "USD",
-        "EUR",
-        "GBP",
-        "JPY"
-       ]
-      },
-      {
-       "name": "to_currency",
-       "type": "enum",
-       "options": [
-        "USD",
-        "EUR",
-        "GBP",
-        "JPY"
-       ]
-      }
-     ]
-    },
-    {
-     "name": "subtract",
-     "description": "Subtract one number from another",
-     "args": [
-      {
-       "name": "a",
-       "type": "float"
-      },
-      {
-       "name": "b",
-       "type": "float"
-      }
-     ]
-    },
-    {
-     "name": "add",
-     "description": "Add two numbers",
-     "args": [
-      {
-       "name": "a",
-       "type": "float"
-      },
-      {
-       "name": "b",
-       "type": "float"
-      }
-     ]
-    },
-    {
-     "name": "lock_car",
-     "description": "Lock or unlock the car",
-     "args": [
-      {
-       "name": "locked",
+       "name": "turn_on",
        "type": "bool"
       }
      ]
     },
     {
-     "name": "divide",
-     "description": "Divide one number by another",
+     "name": "washing_machine_mode",
+     "description": "Set the washing machine mode",
      "args": [
       {
-       "name": "a",
-       "type": "float"
-      },
-      {
-       "name": "b",
-       "type": "float"
+       "name": "program",
+       "type": "enum",
+       "options": [
+        "cotton",
+        "delicates",
+        "quick wash"
+       ]
       }
      ]
     }
    ],
    "intent": "unsupported",
    "calls": [],
-   "meaning": "how many miles is 23 miles",
+   "meaning": "how much is 60 JPY in EUR",
    "missing": [],
    "implied": []
   },
@@ -2510,76 +2437,8 @@
    "id": "batch-0012-035",
    "tools": [
     {
-     "name": "find_issue",
-     "description": "Search issues",
-     "args": [
-      {
-       "name": "text",
-       "type": "str"
-      }
-     ]
-    },
-    {
-     "name": "check_parking_availability",
-     "description": "Check the parking availability",
-     "args": [
-      {
-       "name": "garage",
-       "type": "str"
-      }
-     ]
-    },
-    {
-     "name": "convert_units",
-     "description": "Convert a value between units",
-     "args": [
-      {
-       "name": "value",
-       "type": "float"
-      },
-      {
-       "name": "from_unit",
-       "type": "enum",
-       "options": [
-        "km",
-        "miles",
-        "kg",
-        "pounds",
-        "celsius",
-        "fahrenheit"
-       ]
-      },
-      {
-       "name": "to_unit",
-       "type": "enum",
-       "options": [
-        "km",
-        "miles",
-        "kg",
-        "pounds",
-        "celsius",
-        "fahrenheit"
-       ]
-      }
-     ]
-    },
-    {
      "name": "add",
      "description": "Add two numbers",
-     "args": [
-      {
-       "name": "a",
-       "type": "float"
-      },
-      {
-       "name": "b",
-       "type": "float"
-      }
-     ]
-    },
-    {
-     "name": "multiply",
-     "description": "Multiply two numbers",
      "args": [
       {
        "name": "a",
@@ -2595,15 +2454,14 @@
    "intent": "call",
    "calls": [
     {
-     "tool": "convert_units",
+     "tool": "add",
      "args": {
-      "to_unit": "pounds",
-      "value": 2.0,
-      "from_unit": "fahrenheit"
+      "a": 83.0,
+      "b": 18.0
      }
     }
    ],
-   "meaning": "how many pounds is 2 fahrenheit",
+   "meaning": "add 83 and 18",
    "missing": [],
    "implied": []
   },

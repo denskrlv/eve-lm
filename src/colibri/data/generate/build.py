@@ -1,49 +1,48 @@
 import json
 from collections import Counter
-from collections.abc import Iterable, Sequence
+from collections.abc import Sequence
 from dataclasses import dataclass
 from pathlib import Path
+from typing import Any
 
 import numpy as np
 
+from colibri import defaults
 from colibri.config import ModelConfig
 from colibri.data.generate.library import ToolSpec, load_specs
-from colibri.data.generate.sampler import INTENT_MIX, ToolBank, sample
+from colibri.data.generate.sampler import INTENT_MIX, Sample, ToolBank, sample
+from colibri.data.generate.templates import sensible
 from colibri.data.generate.toolgen import generated_specs
 from colibri.data.generate.validate import check_example, normalize
+from colibri.data.jsonl import read_jsonl, read_lines, write_jsonl
 from colibri.data.render import TaskExample, render
 from colibri.data.schema import SchemaError, Tool
 from colibri.tokenizer.bpe import BPETokenizer
 
 CHAT_SPLITS = ("train", "val", "probe")
-
-
-def read_lines(path: str | Path) -> list[str]:
-    """Non-empty lines that aren't # comments."""
-    lines = Path(path).read_text().splitlines()
-    return [line.strip() for line in lines if line.strip() and not line.startswith("#")]
-
-
-def read_jsonl(path: str | Path) -> list[dict]:
-    return [json.loads(line) for line in Path(path).read_text().splitlines() if line.strip()]
-
-
-def write_jsonl(path: str | Path, rows: Iterable[dict]) -> None:
-    Path(path).parent.mkdir(parents=True, exist_ok=True)
-    with open(path, "w") as f:
-        for row in rows:
-            f.write(json.dumps(row, ensure_ascii=False) + "\n")
+Reject = tuple[dict[str, Any], list[str]]  # a written line and why it was rejected
+TEMPLATE_TRIES = 3  # samples drawn per template example wanted (repeats are skipped)
+PROBE_HELDOUT_SHARE = 0.5  # probe scenarios whose correct tool is from a held-out domain
 
 
 @dataclass
 class Sources:
+    """What examples are drawn from: training and held-out tools, and request lists."""
+
     train: list[ToolSpec]  # hand-written training domains + generated tools
     heldout: list[ToolSpec]  # never trained on
     chitchat: list[str]
     unsupported: list[str]
 
     @classmethod
-    def load(cls, tools_dir="data/tools", generation_dir="data/generation", seed=0) -> "Sources":
+    def load(
+        cls,
+        tools_dir: str | Path = defaults.TOOLS_DIR,
+        generation_dir: str | Path = defaults.GENERATION_DIR,
+        seed: int = 0,
+    ) -> "Sources":
+        """The hand-written and generated tools, held-out tools, and line lists for NONE and
+        UNSUPPORTED requests."""
         tools_dir, generation_dir = Path(tools_dir), Path(generation_dir)
         return cls(
             load_specs(tools_dir) + generated_specs(seed),
@@ -54,9 +53,11 @@ class Sources:
 
     @property
     def library(self) -> dict[str, Tool]:
+        """Every known tool by name, training and held-out."""
         return {s.name: s.tool for s in self.train + self.heldout}
 
     def source_of(self, name: str) -> str:
+        """Where a tool comes from: "hand", "generated", "heldout" or "older generated"."""
         if any(s.name == name for s in self.heldout):
             return "heldout"
         if name not in self.library:
@@ -66,20 +67,23 @@ class Sources:
 
 def template_examples(
     bank: ToolBank,
-    n: int,
+    count: int,
     rng: np.random.Generator,
     sources: Sources,
     pool: Sequence[int] | None = None,
-) -> list[dict]:
-    """``n`` template examples with valid labels; exact repeats are skipped."""
-    rows, seen = [], set()
-    for _ in range(n * 3):
-        if len(rows) == n:
+) -> list[dict[str, Any]]:
+    """``count`` template examples with valid labels; exact repeats are skipped."""
+    rows: list[dict[str, Any]] = []
+    seen: set[tuple[str, tuple[str, ...], str]] = set()
+    for _ in range(count * TEMPLATE_TRIES):
+        if len(rows) == count:
             break
-        s = sample(bank, rng, pool=pool, chitchat=sources.chitchat, unsupported=sources.unsupported)
-        ex = s.example
+        drawn = sample(
+            bank, rng, pool=pool, chitchat=sources.chitchat, unsupported=sources.unsupported
+        )
+        ex = drawn.example
         key = (normalize(ex.utterance), tuple(sorted(t.name for t in ex.tools)), ex.intent)
-        if key in seen or check_example(ex, s.implied):
+        if key in seen or check_example(ex, drawn.implied):
             continue
         seen.add(key)
         rows.append({**ex.to_json(), "source": "template"})
@@ -89,9 +93,31 @@ def template_examples(
 # ---- chat-written examples ------------------------------------------------------------------
 
 
+def _intent_mix(ask: float | None) -> dict[str, float]:
+    """``INTENT_MIX``, or with ASK at ``ask`` and the other intents scaled to share the rest."""
+    mix = dict(INTENT_MIX)
+    if ask is not None:
+        rest = 1 - mix.pop("ask")
+        mix = {k: v / rest * (1 - ask) for k, v in mix.items()} | {"ask": ask}
+    return mix
+
+
+def _scenario(drawn: Sample, scenario_id: str) -> dict[str, Any]:
+    """A drawn example as a scenario for chat writers: everything but the utterance."""
+    row = drawn.example.to_json(inline=True)  # whole schemas: valid even if tools change
+    del row["utterance"]
+    return {
+        "id": scenario_id,
+        **row,
+        "meaning": drawn.meaning,
+        "missing": drawn.missing,
+        "implied": sorted(drawn.implied),
+    }
+
+
 def make_batch(
-    sources: Sources, name: str, n: int, split: str, seed: int, ask: float | None = None
-) -> dict:
+    sources: Sources, name: str, count: int, split: str, seed: int, ask: float | None = None
+) -> dict[str, Any]:
     """Scenarios for a chat to write requests for (see data/generation/README.md).
 
     ``probe`` batches take the correct tool from the held-out domains half of the time.
@@ -102,43 +128,47 @@ def make_batch(
     rng = np.random.default_rng(seed)
     specs = sources.train + (sources.heldout if split == "probe" else [])
     bank = ToolBank(specs)
-    heldout = [bank.index[s.name] for s in sources.heldout] if split == "probe" else None
-    mix = dict(INTENT_MIX)
-    if ask is not None:
-        rest = 1 - mix.pop("ask")
-        mix = {k: v / rest * (1 - ask) for k, v in mix.items()} | {"ask": ask}
+    heldout = [bank.index[spec.name] for spec in sources.heldout] if split == "probe" else None
+    mix = _intent_mix(ask)
     scenarios = []
-    for i in range(n):
-        pool = heldout if heldout and rng.random() < 0.5 else None
+    for i in range(count):
+        pool = heldout if heldout and rng.random() < PROBE_HELDOUT_SHARE else None
         intent = str(rng.choice(list(mix), p=list(mix.values())))
-        s = sample(
+        drawn = sample(
             bank, rng, intent, pool, chitchat=sources.chitchat, unsupported=sources.unsupported
         )
-        row = s.example.to_json(inline=True)  # whole schemas: the batch stays valid if tools change
-        del row["utterance"]
-        scenarios.append(
-            {
-                "id": f"{name}-{i:03d}",
-                **row,
-                "meaning": s.meaning,
-                "missing": s.missing,
-                "implied": sorted(s.implied),
-            }
-        )
-    used = {t["name"]: Tool.from_dict(t) for s in scenarios for t in s["tools"]}
+        scenarios.append(_scenario(drawn, f"{name}-{i:03d}"))
+    used = {t["name"]: Tool.from_dict(t) for scenario in scenarios for t in scenario["tools"]}
     schemas = {name: used[name].render() for name in sorted(used)}
     return {"batch": name, "split": split, "seed": seed, "schemas": schemas, "scenarios": scenarios}
 
 
 def next_batch_name(batches_dir: str | Path) -> str:
+    """The next unused ``batch-NNNN`` name in ``batches_dir``."""
     numbers = [int(p.stem.split("-")[1]) for p in Path(batches_dir).glob("batch-*.json")]
     return f"batch-{max(numbers, default=0) + 1:04d}"
 
 
-def check_written(batch: dict, written: list[dict], library: dict[str, Tool]) -> tuple[list, list]:
+def _scenario_errors(utterance: str, scenario: dict[str, Any]) -> list[str]:
+    """Problems ``check_example`` can't see: a copied ``meaning``, and calls that ``sensible``
+    refuses (scenarios sampled before it existed)."""
+    errors = []
+    meaning = scenario.get("meaning")
+    if meaning and normalize(utterance) == normalize(meaning):
+        errors.append("the utterance copies the meaning; rephrase it")
+    for call in scenario.get("calls", ()):
+        if not sensible(call.get("args", {})):
+            errors.append(f"call to {call['tool']} is a conversion no one asks for; re-sample it")
+    return errors
+
+
+def check_written(
+    batch: dict[str, Any], written: list[dict[str, Any]], library: dict[str, Tool]
+) -> tuple[list[dict[str, Any]], list[Reject]]:
     """Join written utterances to their scenarios. Returns (examples, rejects)."""
     scenarios = {s["id"]: s for s in batch["scenarios"]}
-    examples, rejects = [], []
+    examples: list[dict[str, Any]] = []
+    rejects: list[Reject] = []
     for line in written:
         scenario = scenarios.get(line.get("id"))
         if scenario is None:
@@ -152,18 +182,20 @@ def check_written(batch: dict, written: list[dict], library: dict[str, Tool]) ->
             rejects.append((line, [str(e)]))
             continue
         implied = {tuple(x) for x in scenario.get("implied", ())}
-        if errors := check_example(ex, implied):
+        if errors := check_example(ex, implied) + _scenario_errors(ex.utterance, scenario):
             rejects.append((line, errors))
         else:
             examples.append({**ex.to_json(inline=True), "source": "chat"})
     return examples, rejects
 
 
-def chat_examples(sources: Sources, generation_dir="data/generation") -> tuple[dict, list]:
+def chat_examples(
+    sources: Sources, generation_dir: str | Path = defaults.GENERATION_DIR
+) -> tuple[dict[str, list[dict[str, Any]]], list[tuple[str, dict[str, Any], list[str]]]]:
     """All written batches, by split, and everything that failed validation."""
     generation_dir = Path(generation_dir)
-    by_split: dict[str, list[dict]] = {s: [] for s in CHAT_SPLITS}
-    rejects = []
+    by_split: dict[str, list[dict[str, Any]]] = {s: [] for s in CHAT_SPLITS}
+    rejects: list[tuple[str, dict[str, Any], list[str]]] = []
     for path in sorted((generation_dir / "batches").glob("batch-*.json")):
         written = generation_dir / "written" / f"{path.stem}.jsonl"
         if not written.exists():
@@ -178,7 +210,7 @@ def chat_examples(sources: Sources, generation_dir="data/generation") -> tuple[d
 # ---- the whole dataset ----------------------------------------------------------------------
 
 
-def _stats(rows: list[dict], sources: Sources) -> dict:
+def _stats(rows: list[dict[str, Any]], sources: Sources) -> dict[str, Any]:
     return {
         "examples": len(rows),
         "intent": dict(Counter(r["intent"] for r in rows)),
@@ -197,17 +229,88 @@ def _stats(rows: list[dict], sources: Sources) -> dict:
     }
 
 
+Splits = dict[str, list[dict[str, Any]]]
+# (keep, drop): an utterance in ``keep`` is removed from ``drop``, so test and val stay unseen.
+DEDUP_ORDER = (
+    ("probe-candidates", "val"),
+    ("probe-candidates", "train"),
+    ("massive-test", "val"),
+    ("massive-test", "train"),
+    ("val", "train"),
+)
+
+
+def _external(external_dir: Path, name: str) -> list[dict[str, Any]]:
+    """A converted external dataset (``colibri data external``), or nothing if absent."""
+    path = external_dir / f"{name}.jsonl"
+    return read_jsonl(path) if path.exists() else []
+
+
+def _assemble(
+    sources: Sources,
+    chat: Splits,
+    rng: np.random.Generator,
+    n_templates: int,
+    n_heldout: int,
+    external_dir: Path,
+) -> Splits:
+    """Every split from its sources (see ``build``)."""
+    train_bank = ToolBank(sources.train)
+    all_bank = ToolBank(sources.train + sources.heldout)
+    heldout_pool = [all_bank.index[s.name] for s in sources.heldout]
+    return {
+        "train": template_examples(train_bank, n_templates, rng, sources)
+        + chat["train"]
+        + _external(external_dir, "xlam")
+        + _external(external_dir, "massive-train"),
+        "val": chat["val"] + _external(external_dir, "massive-dev"),
+        "probe-candidates": chat["probe"],
+        "heldout-templates": template_examples(all_bank, n_heldout, rng, sources, heldout_pool),
+        "massive-test": _external(external_dir, "massive-test"),
+    }
+
+
+def _remove_duplicates(splits: Splits) -> Counter[str]:
+    """Remove utterances that also appear in an earlier split (``DEDUP_ORDER``), in place.
+    Returns how many were removed from where."""
+    removed: Counter[str] = Counter()
+    for keep, drop in DEDUP_ORDER:
+        seen = {normalize(r["utterance"]) for r in splits[keep]}
+        before = len(splits[drop])
+        splits[drop] = [r for r in splits[drop] if normalize(r["utterance"]) not in seen]
+        removed[f"{drop} (in {keep})"] += before - len(splits[drop])
+    return removed
+
+
+def _drop_too_long(
+    splits: Splits, library: dict[str, Tool], tokenizer: BPETokenizer, cfg: ModelConfig
+) -> Counter[str]:
+    """Remove examples too long for the model's encoder or decoder, in place. Returns how many
+    were removed per split."""
+    too_long: Counter[str] = Counter()
+    for name, rows in splits.items():
+        fits = []
+        for row in rows:
+            try:
+                render(TaskExample.from_json(row, library), tokenizer, cfg)
+                fits.append(row)
+            except ValueError:
+                too_long[name] += 1
+        splits[name] = fits
+    return too_long
+
+
 def build(
-    out_dir: str | Path = "data/task",
-    n_templates: int = 80_000,
-    n_heldout: int = 2_000,
+    out_dir: str | Path = defaults.TASK_DIR,
+    n_templates: int = defaults.TEMPLATE_EXAMPLES,
+    n_heldout: int = defaults.HELDOUT_EXAMPLES,
     seed: int = 0,
     tokenizer: BPETokenizer | None = None,
     cfg: ModelConfig | None = None,
-    tools_dir="data/tools",
-    generation_dir="data/generation",
-    external_dir="data/external",
-) -> dict:
+    tools_dir: str | Path = defaults.TOOLS_DIR,
+    generation_dir: str | Path = defaults.GENERATION_DIR,
+    external_dir: str | Path = defaults.EXTERNAL_DIR,
+) -> dict[str, Any]:
     """Write the task splits as .jsonl files and return a report.
 
     - train: template examples + chat-written train batches + xLAM + MASSIVE train
@@ -222,51 +325,12 @@ def build(
     """
     sources = Sources.load(tools_dir, generation_dir)
     rng = np.random.default_rng(seed)
-    train_bank = ToolBank(sources.train)
-    all_bank = ToolBank(sources.train + sources.heldout)
-    heldout_pool = [all_bank.index[s.name] for s in sources.heldout]
-
     chat, rejects = chat_examples(sources, generation_dir)
-
-    def external(name: str) -> list[dict]:
-        path = Path(external_dir) / f"{name}.jsonl"
-        return read_jsonl(path) if path.exists() else []
-
-    splits = {
-        "train": template_examples(train_bank, n_templates, rng, sources)
-        + chat["train"]
-        + external("xlam")
-        + external("massive-train"),
-        "val": chat["val"] + external("massive-dev"),
-        "probe-candidates": chat["probe"],
-        "heldout-templates": template_examples(all_bank, n_heldout, rng, sources, heldout_pool),
-        "massive-test": external("massive-test"),
-    }
-
-    removed = Counter()
-    for keep, drop in [
-        ("probe-candidates", "val"),
-        ("probe-candidates", "train"),
-        ("massive-test", "val"),
-        ("massive-test", "train"),
-        ("val", "train"),
-    ]:
-        seen = {normalize(r["utterance"]) for r in splits[keep]}
-        before = len(splits[drop])
-        splits[drop] = [r for r in splits[drop] if normalize(r["utterance"]) not in seen]
-        removed[f"{drop} (in {keep})"] += before - len(splits[drop])
-
-    too_long = Counter()
+    splits = _assemble(sources, chat, rng, n_templates, n_heldout, Path(external_dir))
+    removed = _remove_duplicates(splits)
+    too_long: Counter[str] = Counter()
     if tokenizer is not None and cfg is not None:
-        for name, rows in splits.items():
-            fits = []
-            for r in rows:
-                try:
-                    render(TaskExample.from_json(r, sources.library), tokenizer, cfg)
-                    fits.append(r)
-                except ValueError:
-                    too_long[name] += 1
-            splits[name] = fits
+        too_long = _drop_too_long(splits, sources.library, tokenizer, cfg)
 
     out_dir = Path(out_dir)
     for name, rows in splits.items():

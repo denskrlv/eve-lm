@@ -5,6 +5,7 @@ from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any
 
+from colibri import defaults
 from colibri.tokenizer.bpe import SPECIAL_TOKENS
 
 ARG_TYPES = ("str", "int", "float", "bool", "enum")
@@ -15,7 +16,7 @@ _NAME = re.compile(r"[a-z][a-z0-9]*(?:_[a-z0-9]+)*")  # snake_case
 
 
 class SchemaError(ValueError):
-    pass
+    """A tool schema, call or example that breaks the rules."""
 
 
 def _check_text(what: str, text: str) -> None:
@@ -30,13 +31,15 @@ def _check_name(what: str, name: str) -> None:
         raise SchemaError(f"{what} must be snake_case, got {name!r}")
 
 
-def _number(x: float) -> str:
+def _number(value: float) -> str:
     """16 -> "16", 21.5 -> "21.5" (never "16.0" or "2e+01")."""
-    return str(int(x)) if float(x).is_integer() else repr(float(x))
+    return str(int(value)) if float(value).is_integer() else repr(float(value))
 
 
 @dataclass(frozen=True)
 class Arg:
+    """One argument of a tool: its type, whether it is required, its options or range."""
+
     name: str
     type: str
     required: bool = True
@@ -71,24 +74,27 @@ class Arg:
             raise SchemaError(f"argument {self.name}: only int and float have a range")
 
     @classmethod
-    def from_dict(cls, d: dict) -> "Arg":
-        unknown = set(d) - {"name", "type", "required", "options", "min", "max", "description"}
+    def from_dict(cls, data: dict[str, Any]) -> "Arg":
+        """An argument from its JSON form, as in ``data/tools``."""
+        unknown = set(data) - {"name", "type", "required", "options", "min", "max", "description"}
         if unknown:
-            raise SchemaError(f"argument {d.get('name')!r}: unknown keys {sorted(unknown)}")
-        return cls(**{**d, "options": tuple(d.get("options", ()))})
+            raise SchemaError(f"argument {data.get('name')!r}: unknown keys {sorted(unknown)}")
+        return cls(**{**data, "options": tuple(data.get("options", ()))})
 
-    def to_dict(self) -> dict:
-        d: dict[str, Any] = {"name": self.name, "type": self.type}
+    def to_dict(self) -> dict[str, Any]:
+        """The JSON form, without the fields that have their default."""
+        out: dict[str, Any] = {"name": self.name, "type": self.type}
         if not self.required:
-            d["required"] = False
+            out["required"] = False
         if self.options:
-            d["options"] = list(self.options)
+            out["options"] = list(self.options)
         for key in ("min", "max", "description"):
             if getattr(self, key) not in (None, ""):
-                d[key] = getattr(self, key)
-        return d
+                out[key] = getattr(self, key)
+        return out
 
     def render(self) -> str:
+        """The argument as the encoder reads it: ``<arg> name ? : type : note``."""
         spec = self.type
         if self.type == "enum":
             spec += " " + " | ".join(self.options)
@@ -131,11 +137,14 @@ class Arg:
             return "true" if value else "false"
         if self.type in ("int", "float"):
             return _number(value)
-        return value
+        text: str = value  # str and enum values are already text
+        return text
 
 
 @dataclass(frozen=True)
 class Tool:
+    """A tool the model can call: its name, description and arguments."""
+
     name: str
     description: str
     args: tuple[Arg, ...] = ()
@@ -153,14 +162,16 @@ class Tool:
             raise SchemaError(f"tool {self.name}: more than {MAX_ARGS} arguments")
 
     @classmethod
-    def from_dict(cls, d: dict, domain: str = "") -> "Tool":
-        unknown = set(d) - {"name", "description", "args"}
+    def from_dict(cls, data: dict[str, Any], domain: str = "") -> "Tool":
+        """A tool from its JSON form, as in ``data/tools``."""
+        unknown = set(data) - {"name", "description", "args"}
         if unknown:
-            raise SchemaError(f"tool {d.get('name')!r}: unknown keys {sorted(unknown)}")
-        args = tuple(Arg.from_dict(a) for a in d.get("args", ()))
-        return cls(d["name"], d["description"], args, domain)
+            raise SchemaError(f"tool {data.get('name')!r}: unknown keys {sorted(unknown)}")
+        args = tuple(Arg.from_dict(a) for a in data.get("args", ()))
+        return cls(data["name"], data["description"], args, domain)
 
-    def to_dict(self) -> dict:
+    def to_dict(self) -> dict[str, Any]:
+        """The JSON form."""
         return {
             "name": self.name,
             "description": self.description,
@@ -176,12 +187,14 @@ class Tool:
         return [f"<tool> {self.name} : {self.description}"] + [a.render() for a in self.args]
 
     def render(self) -> str:
+        """The whole schema as one string (see ``render_parts``)."""
         return " ".join(self.render_parts())
 
     def arg(self, name: str) -> Arg:
-        for a in self.args:
-            if a.name == name:
-                return a
+        """The argument called ``name``."""
+        for arg in self.args:
+            if arg.name == name:
+                return arg
         raise KeyError(f"tool {self.name} has no argument {name!r}")
 
     def check_call(self, values: dict[str, Any], allow_ask: bool = False) -> list[str]:
@@ -189,14 +202,16 @@ class Tool:
 
         With ``allow_ask``, a required argument may be ``"?"``: the user must be asked for it.
         """
-        errors = [f"unknown argument {k!r}" for k in values if k not in {a.name for a in self.args}]
-        for a in self.args:
-            if a.name not in values:
-                if a.required:
-                    errors.append(f"missing required argument {a.name!r}")
-            elif allow_ask and a.required and values[a.name] == ASK_VALUE:
+        errors = [
+            f"unknown argument {k!r}" for k in values if k not in {arg.name for arg in self.args}
+        ]
+        for arg in self.args:
+            if arg.name not in values:
+                if arg.required:
+                    errors.append(f"missing required argument {arg.name!r}")
+            elif allow_ask and arg.required and values[arg.name] == ASK_VALUE:
                 continue
-            elif (error := a.check(values[a.name])) is not None:
+            elif (error := arg.check(values[arg.name])) is not None:
                 errors.append(error)
         return errors
 
@@ -213,7 +228,7 @@ def load_tools(path: str | Path) -> list[Tool]:
     ]
 
 
-def load_library(directory: str | Path = "data/tools") -> dict[str, Tool]:
+def load_library(directory: str | Path = defaults.TOOLS_DIR) -> dict[str, Tool]:
     """All tools in ``directory/*.json`` by name. Tool names are unique across files."""
     library: dict[str, Tool] = {}
     for path in sorted(Path(directory).glob("*.json")):

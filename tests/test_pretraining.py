@@ -9,7 +9,7 @@ from colibri.data.render import collate_pretrain
 from colibri.model.checkpoint import load_pretrained
 from colibri.model.colibri import Colibri
 from colibri.tokenizer.bpe import BYTE0, DEC, EOS, sentinel
-from colibri.train.loop import TrainConfig
+from colibri.train.config import TrainConfig
 from colibri.train.pretrain import (
     SAMPLES,
     fill_in,

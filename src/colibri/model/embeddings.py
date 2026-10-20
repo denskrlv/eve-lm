@@ -26,7 +26,8 @@ class Embeddings(nn.Module):
         x = self.tok(ids)
         if pos is not None:
             x = x + pos(torch.arange(n, device=ids.device))  # (B, n, d) + (n, d) broadcasts
-        return self.drop(x)
+        out: torch.Tensor = self.drop(x)
+        return out
 
     def encoder(self, ids: torch.Tensor) -> torch.Tensor:
         """(B, n) token ids -> (B, n, d) encoder input vectors."""

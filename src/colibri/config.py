@@ -1,10 +1,14 @@
 from dataclasses import asdict, dataclass, replace
+from typing import Any
 
 INTENTS = ("call", "ask", "unsupported", "none")
+STOP = "STOP"  # the slot answer after the last call
 
 
 @dataclass(frozen=True)
 class ModelConfig:
+    """Sizes and options of a Colibri model; ``PRESETS`` holds the named ones."""
+
     # Box 1: tokens and positions
     vocab_size: int = 8192
     max_encoder_len: int = 512  # utterance + up to 5 tool schemas
@@ -37,16 +41,20 @@ class ModelConfig:
 
     @property
     def head_dim(self) -> int:
+        """Width of each attention head: ``d_model / n_heads``."""
         return self.d_model // self.n_heads
 
     @property
     def n_intents(self) -> int:
+        """Number of intent answers (``INTENTS``)."""
         return len(INTENTS)
 
-    def to_dict(self) -> dict:
+    def to_dict(self) -> dict[str, Any]:
+        """The config as plain values, for checkpoints and logs."""
         return asdict(self)
 
     def approx_params(self) -> int:
+        """The parameter count, from the config alone."""
         d, ffn = self.d_model, self.ffn_mult * self.d_model
         attention = 4 * d * d + 4 * d  # W_q, W_k, W_v, W_out with biases
         if self.qk_norm:
@@ -98,7 +106,7 @@ PRESETS: dict[str, ModelConfig] = {
 }
 
 
-def preset(name: str, **overrides) -> ModelConfig:
+def preset(name: str, **overrides: Any) -> ModelConfig:
     """Return a preset, optionally with some fields changed: ``preset("small", dropout=0.0)``."""
     if name not in PRESETS:
         raise KeyError(f"unknown preset {name!r}; choose from {sorted(PRESETS)}")

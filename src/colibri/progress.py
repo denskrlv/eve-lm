@@ -1,5 +1,6 @@
 import os
 import sys
+from typing import Any, TextIO
 
 from tqdm import tqdm
 
@@ -9,31 +10,33 @@ BAR_FORMAT = (
 )
 
 
-class Bar(tqdm):
+class Bar(tqdm):  # type: ignore[type-arg]  # tqdm is generic only in its stubs
     """tqdm with a ``stats`` field: tqdm's own ``postfix`` always starts with ", "."""
 
     stats = ""
 
     @property
-    def format_dict(self) -> dict:
-        return super().format_dict | {"stats": self.stats}
+    def format_dict(self) -> dict[str, Any]:
+        """tqdm's fields plus ``stats``."""
+        return {**super().format_dict, "stats": self.stats}
 
     def set_stats(self, *parts: str) -> None:
+        """Show ``parts`` after the bar, joined by " · "."""
         self.stats = "· " + " · ".join(parts) if parts else ""
         self.refresh()
 
 
-def color(stream=sys.stderr) -> bool:
+def color(stream: TextIO = sys.stderr) -> bool:
     """ANSI colors only in a real terminal, and never with NO_COLOR set (no-color.org)."""
     return stream.isatty() and "NO_COLOR" not in os.environ
 
 
-def style(text: str, *codes: str, stream=sys.stderr) -> str:
+def style(text: str, *codes: str, stream: TextIO = sys.stderr) -> str:
     """``style("done", "1", "32")`` -> bold green "done" in a terminal, plain text otherwise."""
     return f"\033[{';'.join(codes)}m{text}\033[0m" if codes and color(stream) else text
 
 
-def marks(stream=sys.stdout) -> tuple[str, str]:
+def marks(stream: TextIO = sys.stdout) -> tuple[str, str]:
     """How filled-in spans are marked: [brackets], bold cyan in a terminal (an empty fill
     still shows as ``[]``)."""
     return ("\033[1;36m[", "]\033[0m") if color(stream) else ("[", "]")
@@ -53,3 +56,8 @@ def bar(total: int, desc: str, unit: str, initial: int = 0, leave: bool = True) 
         disable=None,
         colour="cyan",
     )
+
+
+def format_metric(name: str, value: float) -> str:
+    """Accuracies and rates as percentages (``97.5%``), losses with four decimals."""
+    return f"{value:.1%}" if name.endswith(("acc", "rate")) else f"{value:.4f}"
