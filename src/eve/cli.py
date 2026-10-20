@@ -4,6 +4,7 @@ import json
 import logging
 import sys
 import time
+import tomllib
 from collections.abc import Callable, Sequence
 from pathlib import Path
 from typing import TYPE_CHECKING, Any
@@ -12,7 +13,7 @@ import torch
 from rich.text import Text
 
 from eve import defaults
-from eve.config import PRESETS, STOP, ModelConfig
+from eve.config import INTENTS, PRESETS, STOP, ModelConfig
 from eve.progress import (
     console,
     format_duration,
@@ -25,6 +26,7 @@ from eve.progress import (
     tree,
     warn,
 )
+from eve.run_configs import apply_config, available, config_path, read_config
 from eve.runtime import pick_device
 from eve.train.config import DTYPES, TrainConfig
 
@@ -33,6 +35,7 @@ if TYPE_CHECKING:
     from rich.table import Table
 
     from eve.data.schema import Tool
+    from eve.evaluate import SetResult
     from eve.infer.predict import Answers
     from eve.tokenizer.bpe import BPETokenizer
 
@@ -44,6 +47,12 @@ FINETUNE_WARMUP = 200
 
 INTENTS_SHOWN, TOOLS_SHOWN = 4, 3  # answers eve ask shows for the intent and per call
 SURE, UNSURE = 0.8, 0.5  # eve ask colors a top answer green from SURE, yellow from UNSURE
+SCORE_COLUMNS = (  # eve evaluate's table: (label, key in the scores)
+    ("macro", "macro_recall"),
+    *((intent[:5], f"recall_{intent}") for intent in INTENTS),  # "unsupported" -> "unsup"
+    ("tools", "tools_acc"),
+    ("exact", "exact_acc"),
+)
 Sample = str | list[str]  # a text, or a tool schema as its parts
 PIECE_COLORS = ("cyan", "magenta")  # tokenizer stats alternates them between token pieces
 
@@ -239,7 +248,8 @@ def _run_rows(args: argparse.Namespace, device: torch.device) -> list[tuple[str,
     run = [args.out, f"eval every {args.eval_every:,}"]
     run += [f"stop at {args.stop_after:,}"] if args.stop_after else []
     run += ["resume"] if args.resume else []
-    return [("device", " · ".join(hardware)), ("output", " · ".join(run))]
+    config = [("config", args.config)] if args.config else []
+    return [*config, ("device", " · ".join(hardware)), ("output", " · ".join(run))]
 
 
 def _pretrain_panel(
@@ -307,6 +317,8 @@ def finetune(args: argparse.Namespace) -> None:
     from eve.data.jsonl import read_jsonl
     from eve.train.finetune import finetune as run
 
+    if (args.init is None) == (args.scratch is None):
+        raise SystemExit("give one of --init or --scratch (on the command line or in --config)")
     n_train = len(read_jsonl(Path(args.task) / "train.jsonl"))
     steps = args.steps or round(args.epochs * n_train / args.batch_size)
     lr = args.lr or (FROZEN_LR if args.freeze else FULL_LR)
@@ -517,6 +529,108 @@ def ask(args: argparse.Namespace) -> None:
     _ask_interactively(show)
 
 
+def _evaluate_panel(
+    args: argparse.Namespace, meta: dict[str, Any], device: torch.device
+) -> "Panel":
+    """Which model is scored, how it was trained, and on what."""
+    from eve.evaluate import model_file
+
+    trained = [f"{meta['step']:,} steps" if "step" in meta else "? steps", f"from {meta['init']}"]
+    trained += ["body frozen"] if meta.get("frozen") else []
+    items = [
+        ("model", str(model_file(args.model))),
+        ("trained", " ".join(trained)),
+        ("task", f"{args.task} · {', '.join(args.sets)}"),
+        ("device", str(device)),
+    ]
+    return panel("eve evaluate", items)
+
+
+def _score_cell(scores: dict[str, float], key: str) -> str:
+    """A recall per intent as ``96%``, the summary scores as ``53.3%``, as in the training log.
+    Blank when the set has no examples of that intent."""
+    if key not in scores:
+        return ""
+    return f"{scores[key]:.0%}" if key.startswith("recall_") else f"{scores[key]:.1%}"
+
+
+def _scores_table(results: dict[str, "SetResult"]) -> "Table":
+    """One row per scored set: its size, the recall per intent and their mean, tools and exact.
+    A set without examples of an intent has a blank recall for it."""
+    out = table("set", "n", *(label for label, _ in SCORE_COLUMNS), first_style="bold")
+    for name, result in results.items():
+        cells = [_score_cell(result.scores, key) for _, key in SCORE_COLUMNS]
+        out.add_row(name, f"{result.examples:,}", *cells)
+    return out
+
+
+def _confusion_table(name: str, result: "SetResult") -> "Table":
+    """A row per gold intent the set has, a column per intent answered; right answers green."""
+    out = table(f"{name}: gold \\ answered", *INTENTS, first_style="dim")
+    for gold, said in result.confusion.items():
+        if sum(said.values()):
+            styles = ("bold green" if s == gold else "dim" * (not n) for s, n in said.items())
+            out.add_row(
+                gold,
+                *(Text(f"{n:,}", style) for n, style in zip(said.values(), styles, strict=True)),
+            )
+    return out
+
+
+def _answered(counts: dict[str, int]) -> Text:
+    """``call 12 · unsup 3``: how often each intent was answered, most often first."""
+    ranked = sorted(((n, intent) for intent, n in counts.items() if n), reverse=True)
+    return Text(" · ").join(Text(f"{intent[:5]} {n:,}") for n, intent in ranked)
+
+
+def _tools_table(name: str, result: "SetResult") -> "Table":
+    """A row per gold tool, worst exact accuracy first, with what its examples were answered."""
+    out = table("gold tool", "n", "intent", "tools", "exact", "answered")
+    out.title, out.title_justify, out.title_style = f"{name} by tool", "left", "bold"
+    out.columns[-1].justify, out.columns[-1].no_wrap = "left", False
+    for tool in result.by_tool:
+        accuracies = (tool.intent_acc, tool.tools_acc, tool.exact_acc)
+        cells = [f"{tool.examples:,}", *(f"{a:.0%}" for a in accuracies)]
+        out.add_row(tool.tool, *cells, _answered(tool.answered))
+    return out
+
+
+def _print_evaluation(results: dict[str, "SetResult"], as_json: bool, by_tool: bool) -> None:
+    """The scores table and a confusion table per set (and a per-tool table with ``by_tool``),
+    or all of it as one JSON object."""
+    if as_json:
+        print(json.dumps({name: result.to_json(by_tool) for name, result in results.items()}))
+        return
+    console.print(_scores_table(results))
+    for name, result in results.items():
+        console.print(_confusion_table(name, result))
+        if by_tool:
+            console.print(_tools_table(name, result))
+
+
+def evaluate(args: argparse.Namespace) -> None:
+    """Score a fine-tuned model on whole task files: recall per intent, tools and exact."""
+    from eve import progress
+    from eve.data.generate.build import Sources
+    from eve.evaluate import evaluate_set, load_questions_model, task_files
+
+    device = pick_device(args.device)
+    try:
+        paths = task_files(args.task, args.sets)
+        ckpt = load_questions_model(args.model, device)
+    except (FileNotFoundError, ValueError) as error:
+        raise SystemExit(str(error)) from error
+    if not args.json:
+        console.print(_evaluate_panel(args, ckpt.meta, device))
+    library, results = Sources.load().library, {}
+    with progress.bar(len(paths), "evaluate", "sets", leave=False) as bar:
+        for name, path in paths.items():
+            bar.set_stats(name)
+            results[name] = evaluate_set(ckpt, path, library, args.batch_size)
+            bar.update()
+    _print_evaluation(results, args.json, args.by_tool)
+
+
 def data_build(args: argparse.Namespace) -> None:
     """Build the task splits and print how many examples each has."""
     from eve.config import preset
@@ -618,6 +732,22 @@ def _add_schedule_args(
     parser.add_argument("--dtype", choices=DTYPE_CHOICES, default=TRAIN_DEFAULTS.dtype)
 
 
+def _add_switch(parser: argparse.ArgumentParser, flag: str, help_: str) -> None:
+    """An off-by-default ``--flag``, with a ``--no-flag`` to turn off what a config turned on."""
+    parser.add_argument(flag, action=argparse.BooleanOptionalAction, default=False, help=help_)
+
+
+def _add_config_arg(parser: argparse.ArgumentParser, command: str) -> None:
+    """``--config NAME``: the options in ``configs/<command>/NAME.toml`` become the defaults."""
+    names = ", ".join(available(command)) or "none yet"
+    parser.add_argument(
+        "--config",
+        default=None,
+        help=f"a configs/{command}/*.toml name or path ({names}); flags still win",
+    )
+    parser.set_defaults(parser=parser)
+
+
 def _add_run_args(parser: argparse.ArgumentParser) -> None:
     """Seed, eval/log cadence, device, resuming and stopping: shared by both training runs."""
     parser.add_argument("--seed", type=int, default=TRAIN_DEFAULTS.seed)
@@ -679,6 +809,7 @@ def _add_corpus_command(commands: Subcommands) -> None:
 def _add_pretrain_command(commands: Subcommands) -> None:
     parser = commands.add_parser("pretrain", help="span-corruption pretraining (M4)")
     parser.set_defaults(run=pretrain)
+    _add_config_arg(parser, "pretrain")
     parser.add_argument("--preset", choices=sorted(PRESETS), default="small")
     parser.add_argument("--data", default=defaults.BIN_DIR)
     parser.add_argument("--tokenizer", default=defaults.TOKENIZER_FILE)
@@ -689,19 +820,20 @@ def _add_pretrain_command(commands: Subcommands) -> None:
         parser, lr=TRAIN_DEFAULTS.lr, lr_help=None, warmup=TRAIN_DEFAULTS.warmup_steps
     )
     parser.add_argument("--dropout", type=float, default=None, help="default: the preset's (0.1)")
-    parser.add_argument("--rope", action="store_true", help="rotary positions, no position tables")
-    parser.add_argument("--compile", action="store_true", help="torch.compile: ~2x faster on MPS")
-    parser.add_argument("--qk-norm", action="store_true", help="RMS-normalize queries and keys")
+    _add_switch(parser, "--rope", "rotary positions, no position tables")
+    _add_switch(parser, "--qk-norm", "RMS-normalize queries and keys")
+    _add_switch(parser, "--compile", "torch.compile: ~2x faster on MPS")
     _add_run_args(parser)
 
 
 def _add_finetune_command(commands: Subcommands) -> None:
     parser = commands.add_parser("finetune", help="fine-tune the question heads (M7)")
     parser.set_defaults(run=finetune)
-    start = parser.add_mutually_exclusive_group(required=True)
+    _add_config_arg(parser, "finetune")
+    start = parser.add_mutually_exclusive_group()  # one is required; finetune checks
     start.add_argument("--init", help="a pretraining checkpoint or an earlier finetune's model.pt")
     start.add_argument("--scratch", choices=sorted(PRESETS), help="random init (experiment E1)")
-    parser.add_argument("--freeze", action="store_true", help="train only the question block (E2)")
+    _add_switch(parser, "--freeze", "train only the question block (E2)")
     parser.add_argument("--task", default=defaults.TASK_DIR)
     parser.add_argument("--tokenizer", default=defaults.TOKENIZER_FILE, help="for --scratch")
     parser.add_argument("--out", default=defaults.FINETUNE_RUN)
@@ -729,6 +861,7 @@ def _add_inspect_commands(commands: Subcommands) -> None:
     parser.add_argument("--json", action="store_true", help="one JSON line per request")
     parser.add_argument("--device", default=None)
 
+    _add_evaluate_command(commands)
     parser = commands.add_parser("compare", help="val metrics of training runs side by side (M4)")
     parser.set_defaults(run=compare)
     parser.add_argument("runs", nargs="+", help="run directories, e.g. artifacts/runs/ab-*")
@@ -741,6 +874,24 @@ def _add_inspect_commands(commands: Subcommands) -> None:
     parser.add_argument(
         "--max-new", type=int, default=defaults.MAX_NEW_TOKENS, help="most tokens to write"
     )
+    parser.add_argument("--device", default=None)
+
+
+def _add_evaluate_command(commands: Subcommands) -> None:
+    from eve.evaluate import SETS
+
+    parser = commands.add_parser("evaluate", help="score a fine-tuned model on whole task files")
+    parser.set_defaults(run=evaluate)
+    parser.add_argument(
+        "model", nargs="?", default=defaults.FINETUNED_MODEL, help="a model.pt or a run directory"
+    )
+    parser.add_argument("--task", default=defaults.TASK_DIR)
+    parser.add_argument(
+        "--sets", nargs="+", default=list(SETS), help="task file names, e.g. probe-candidates"
+    )
+    parser.add_argument("--batch-size", type=int, default=TRAIN_DEFAULTS.batch_size)
+    parser.add_argument("--by-tool", action="store_true", help="also a row per gold tool")
+    parser.add_argument("--json", action="store_true", help="the results as one JSON object")
     parser.add_argument("--device", default=None)
 
 
@@ -800,8 +951,26 @@ def build_parser() -> argparse.ArgumentParser:
     return parser
 
 
+def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
+    """The command line's options; with ``--config``, the config file fills in the defaults.
+
+    The command line is parsed twice: once to find the config, and again after the config's
+    values became the subcommand's defaults, so a flag given on the command line still wins.
+    """
+    parser = build_parser()
+    args = parser.parse_args(argv)
+    if getattr(args, "config", None) is None:
+        return args
+    try:
+        options = read_config(config_path(args.command, args.config))
+    except (FileNotFoundError, tomllib.TOMLDecodeError) as error:
+        raise SystemExit(f"{args.config}: {error}") from error
+    apply_config(args.parser, options)
+    return parser.parse_args(argv)
+
+
 def main(argv: list[str] | None = None) -> None:
     """Parse the command line and run the chosen subcommand."""
-    args = build_parser().parse_args(argv)
+    args = parse_args(argv)
     setup_logging()
     args.run(args)
