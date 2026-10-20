@@ -4,7 +4,7 @@ import math
 import time
 from collections.abc import Callable, Sequence
 from contextlib import AbstractContextManager, nullcontext
-from dataclasses import asdict, dataclass, field
+from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any, Protocol, cast
 
@@ -15,15 +15,15 @@ from torch import nn
 from colibri import progress
 from colibri.model.checkpoint import load_checkpoint, save_checkpoint
 from colibri.model.colibri import Colibri
-from colibri.runtime import to_device
+from colibri.runtime import eval_mode, to_device
 from colibri.tokenizer.bpe import BPETokenizer
+from colibri.train.config import DTYPES, TrainConfig
 
 logger = logging.getLogger(__name__)
 
 LossFn = Callable[[Colibri, dict[str, torch.Tensor]], dict[str, torch.Tensor]]
 Collate = Callable[[Sequence[Any]], dict[str, torch.Tensor]]
 Autocast = Callable[[], AbstractContextManager[Any]]
-DTYPES = {"float32": None, "bfloat16": torch.bfloat16}
 RUN_FIELDS = (
     "eval_every",
     "eval_batches",
@@ -40,36 +40,6 @@ class Items(Protocol):
     def __len__(self) -> int: ...
 
     def __getitem__(self, index: int, /) -> Any: ...
-
-
-@dataclass(frozen=True)
-class TrainConfig:
-    """Optimizer, schedule and run settings for ``train``."""
-
-    steps: int
-    batch_size: int = 32
-    lr: float = 1e-3  # peak learning rate, reached at the end of warmup
-    min_lr_ratio: float = 0.1  # cosine decay ends at lr * min_lr_ratio
-    warmup_steps: int = 500
-    weight_decay: float = 0.1
-    beta1: float = 0.9
-    beta2: float = 0.95
-    grad_clip: float = 1.0
-    dtype: str = "float32"  # "bfloat16" runs the forward pass under autocast
-    seed: int = 0  # batch order; the model's init is seeded by the caller
-    eval_every: int = 500
-    eval_batches: int = 40  # the first eval_batches * batch_size val items, always the same
-    save_every: int = 500
-    log_every: int = 20
-    compile: bool = False  # torch.compile the training and eval forward passes (see train)
-
-    def __post_init__(self) -> None:
-        if self.dtype not in DTYPES:
-            raise ValueError(f"dtype must be one of {sorted(DTYPES)}, got {self.dtype!r}")
-
-    def to_dict(self) -> dict[str, Any]:
-        """The config as plain values, for checkpoints and logs."""
-        return asdict(self)
 
 
 def lr_at(step: int, cfg: TrainConfig) -> float:
@@ -149,14 +119,13 @@ def evaluate(
     autocast: Autocast,
 ) -> dict[str, float]:
     """Mean of each loss over the val batches, with dropout off (book ch. 5.1.3)."""
-    model.eval()
     totals: dict[str, torch.Tensor] = {}
-    for batch in batches:
-        with autocast():
-            losses = loss_fn(model, to_device(batch, device))
-        for name, loss in losses.items():
-            totals[name] = totals.get(name, 0.0) + loss.float()
-    model.train()
+    with eval_mode(model):
+        for batch in batches:  # kept alive by the caller, so the copy may run in the background
+            with autocast():
+                losses = loss_fn(model, to_device(batch, device, non_blocking=True))
+            for name, loss in losses.items():
+                totals[name] = totals.get(name, 0.0) + loss.float()
     return {f"val_{name}": (total / len(batches)).item() for name, total in totals.items()}
 
 
@@ -236,8 +205,8 @@ def _changes(values: dict[str, float], before: dict[str, float]) -> str:
         change = ""
         if name in before:
             sign = "+" if value >= before[name] else "-"
-            change = f" ({sign}{_format_metric(name, abs(value - before[name]))})"
-        parts.append(f"{name} {progress.style(_format_metric(name, value), '1')}{change}")
+            change = f" ({sign}{progress.format_metric(name, abs(value - before[name]))})"
+        parts.append(f"{name} {progress.style(progress.format_metric(name, value), '1')}{change}")
     return " · ".join(parts)
 
 
@@ -297,7 +266,7 @@ def _train_step(
     for group in optimizer.param_groups:
         group["lr"] = lr
     with autocast():
-        losses = loss_fn(runner, to_device(batch, device))
+        losses = loss_fn(runner, to_device(batch, device, non_blocking=True))  # train keeps batch
     loss = cast(torch.Tensor, sum(losses.values()))
     optimizer.zero_grad(set_to_none=True)
     loss.backward()
@@ -394,10 +363,7 @@ def _after_step(
     if step % run.cfg.eval_every == 0 or step == run.cfg.steps:
         run.evaluator.run(step, run.log, run.bar)
     if step % run.cfg.save_every == 0 or step == run.end:
-        last_val = run.evaluator.last_val
-        _save_last(
-            run.out_dir, run.model, run.tokenizer, run.optimizer, step, run.cfg, run.meta, last_val
-        )
+        _save_last(run, step)
     window.start += time.time() - paused  # eval and saving don't count towards tok/s
     return window
 
@@ -445,74 +411,86 @@ def train(
     """
     out_dir, device = Path(out_dir), torch.device(device)
     out_dir.mkdir(parents=True, exist_ok=True)
-    log = MetricsLog(out_dir / "metrics.jsonl")
     model.to(device).train()
     runner, optimizer, autocast = _prepare(model, cfg, device)
-
     step = _start_step(model, optimizer, out_dir, cfg, resume)
-    if step == 0:
-        log.clear()
-    val_batches = _val_batches(val_data, collate, cfg)
     end = cfg.steps if stop_after is None else min(stop_after, cfg.steps)
-    bar = progress.bar(end, out_dir.name, "steps", initial=step)  # to where this run stops
+    val_batches = _val_batches(val_data, collate, cfg)
     evaluator = _Evaluator(
         runner, model, eval_fn or loss_fn, val_batches, device, autocast, on_eval
     )
-    if step == 0:
-        log.write(
-            {"kind": "start", "train_config": cfg.to_dict(), "model_config": model.cfg.to_dict()}
-        )
-        evaluator.run(step, log, bar)  # at step 0 the loss should be about ln(vocab_size)
-
+    bar = progress.bar(end, out_dir.name, "steps", initial=step)  # to where this run stops
+    log = MetricsLog(out_dir / "metrics.jsonl")
     run = _Run(cfg, end, out_dir, model, tokenizer, optimizer, meta, log, bar, evaluator)
-    window = _Window()
-    while step < end:
-        batch = _train_batch(train_data, collate, cfg, step)
-        window.tokens += int(batch["enc_mask"].sum() + batch["dec_mask"].sum())
-        lr = lr_at(step, cfg)
-        losses, grad_norm = _train_step(
-            runner, model, loss_fn, optimizer, batch, lr, cfg, device, autocast
-        )
-        step += 1
-        window.add(losses)
-        bar.update()
-        window = _after_step(run, step, lr, grad_norm, window)
+    _start_log(run, step)
 
+    step = _run_steps(run, runner, loss_fn, train_data, collate, device, autocast, step)
     bar.close()
-    _finish(out_dir, model, tokenizer, step, cfg, meta, evaluator.last_val)
+    _finish(run, step)
     return evaluator.last_val
 
 
-def _save_last(
-    out_dir: Path,
-    model: Colibri,
-    tokenizer: BPETokenizer,
-    optimizer: torch.optim.Optimizer,
+def _start_log(run: _Run, step: int) -> None:
+    """A new run (``step`` 0) starts an empty log with its configs and a first eval; a resumed
+    run keeps the log ``_resume`` trimmed."""
+    if step != 0:
+        return
+    run.log.clear()
+    run.log.write(
+        {
+            "kind": "start",
+            "train_config": run.cfg.to_dict(),
+            "model_config": run.model.cfg.to_dict(),
+        }
+    )
+    run.evaluator.run(step, run.log, run.bar)  # at step 0 the loss should be about ln(vocab_size)
+
+
+def _run_steps(
+    run: _Run,
+    runner: Colibri,
+    loss_fn: LossFn,
+    train_data: Items,
+    collate: Collate,
+    device: torch.device,
+    autocast: Autocast,
     step: int,
-    cfg: TrainConfig,
-    meta: dict[str, Any] | None,
-    last_val: dict[str, float],
-) -> None:
+) -> int:
+    """Train from ``step`` to ``run.end``, logging, evaluating and saving on the way. Returns
+    the step reached."""
+    window = _Window()
+    while step < run.end:
+        batch = _train_batch(train_data, collate, run.cfg, step)
+        window.tokens += int(batch["enc_mask"].sum() + batch["dec_mask"].sum())
+        lr = lr_at(step, run.cfg)
+        losses, grad_norm = _train_step(
+            runner, run.model, loss_fn, run.optimizer, batch, lr, run.cfg, device, autocast
+        )
+        step += 1
+        window.add(losses)
+        run.bar.update()
+        window = _after_step(run, step, lr, grad_norm, window)
+    return step
+
+
+def _save_last(run: _Run, step: int) -> None:
     """``last.pt``: everything ``_resume`` needs to continue exactly where the run is now."""
-    state = {"step": step, "optimizer": optimizer.state_dict(), "rng": _rng_state()}
-    info = {**(meta or {}), "step": step, "train_config": cfg.to_dict(), **last_val}
-    save_checkpoint(out_dir / "last.pt", model, tokenizer, info, state)
+    state = {"step": step, "optimizer": run.optimizer.state_dict(), "rng": _rng_state()}
+    info = {
+        **(run.meta or {}),
+        "step": step,
+        "train_config": run.cfg.to_dict(),
+        **run.evaluator.last_val,
+    }
+    save_checkpoint(run.out_dir / "last.pt", run.model, run.tokenizer, info, state)
 
 
-def _finish(
-    out_dir: Path,
-    model: Colibri,
-    tokenizer: BPETokenizer,
-    step: int,
-    cfg: TrainConfig,
-    meta: dict[str, Any] | None,
-    last_val: dict[str, float],
-) -> None:
+def _finish(run: _Run, step: int) -> None:
     """Save ``model.pt`` if the run reached its last step, else say how to continue."""
-    if step == cfg.steps:
-        info = {**(meta or {}), "step": step, **last_val}
-        save_checkpoint(out_dir / "model.pt", model, tokenizer, info)
-        logger.info(f"{progress.style('done', '1', '32')} {out_dir / 'model.pt'}")
+    if step == run.cfg.steps:
+        info = {**(run.meta or {}), "step": step, **run.evaluator.last_val}
+        save_checkpoint(run.out_dir / "model.pt", run.model, run.tokenizer, info)
+        logger.info(f"{progress.style('done', '1', '32')} {run.out_dir / 'model.pt'}")
     else:
         stopped = progress.style("stopped", "1", "33")
         logger.info(f"{stopped} at step {step:,}; continue with --resume")
@@ -548,10 +526,6 @@ def _resume(
     path.write_text("".join(ln + "\n" for ln in kept))
     logger.info(f"resumed {out_dir} at step {step}")
     return step
-
-
-def _format_metric(name: str, value: float) -> str:
-    return f"{value:.1%}" if name.endswith(("acc", "rate")) else f"{value:.4f}"
 
 
 def _format_duration(seconds: float) -> str:

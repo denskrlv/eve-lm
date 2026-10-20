@@ -56,3 +56,8 @@ def bar(total: int, desc: str, unit: str, initial: int = 0, leave: bool = True) 
         disable=None,
         colour="cyan",
     )
+
+
+def format_metric(name: str, value: float) -> str:
+    """Accuracies and rates as percentages (``97.5%``), losses with four decimals."""
+    return f"{value:.1%}" if name.endswith(("acc", "rate")) else f"{value:.4f}"

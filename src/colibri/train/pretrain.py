@@ -12,7 +12,8 @@ from colibri.data.render import IGNORE, collate_pretrain
 from colibri.model.colibri import Colibri
 from colibri.runtime import eval_mode, seed_everything
 from colibri.tokenizer.bpe import BYTE0, DEC, EOS, BPETokenizer, is_sentinel
-from colibri.train.loop import TrainConfig, train
+from colibri.train.config import TrainConfig
+from colibri.train.loop import train
 
 SAMPLES = (
     "The capital of France is <x0>.",

@@ -7,9 +7,9 @@ STOP = "STOP"  # the slot answer after the last call
 
 @dataclass(frozen=True)
 class ModelConfig:
-    # Box 1: tokens and positions
     """Sizes and options of a Colibri model; ``PRESETS`` holds the named ones."""
 
+    # Box 1: tokens and positions
     vocab_size: int = 8192
     max_encoder_len: int = 512  # utterance + up to 5 tool schemas
     max_decoder_len: int = 256  # argument values of up to 5 calls

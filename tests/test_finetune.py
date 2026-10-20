@@ -8,6 +8,7 @@ from colibri.config import INTENTS, preset
 from colibri.data.render import IGNORE, Call, TaskCollator, TaskDataset, TaskExample, render
 from colibri.model.checkpoint import load_checkpoint, save_checkpoint
 from colibri.model.colibri import Colibri, Questions
+from colibri.train.config import TrainConfig
 from colibri.train.finetune import (
     describe,
     finetune,
@@ -18,7 +19,6 @@ from colibri.train.finetune import (
     score,
     score_line,
 )
-from colibri.train.loop import TrainConfig
 
 CFG = preset("tiny")
 

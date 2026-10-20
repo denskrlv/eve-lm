@@ -38,6 +38,12 @@ def eval_mode(model: nn.Module) -> Iterator[torch.device]:
         model.train(was_training)
 
 
-def to_device(batch: dict[str, torch.Tensor], device: torch.device) -> dict[str, torch.Tensor]:
-    """Every tensor of a batch on ``device``."""
-    return {k: v.to(device, non_blocking=True) for k, v in batch.items()}
+def to_device(
+    batch: dict[str, torch.Tensor], device: torch.device, non_blocking: bool = False
+) -> dict[str, torch.Tensor]:
+    """Every tensor of a batch on ``device``.
+
+    ``non_blocking`` lets the copy run in the background. Only pass it when the caller keeps
+    the CPU batch alive until the copy is used: on MPS the copy may still read it.
+    """
+    return {k: v.to(device, non_blocking=non_blocking) for k, v in batch.items()}

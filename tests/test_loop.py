@@ -11,7 +11,8 @@ from colibri.data.render import collate_pretrain
 from colibri.model.checkpoint import load_checkpoint
 from colibri.model.colibri import Colibri
 from colibri.tokenizer.bpe import BYTE0
-from colibri.train.loop import TrainConfig, batch_indices, lr_at, param_groups, train
+from colibri.train.config import TrainConfig
+from colibri.train.loop import batch_indices, lr_at, param_groups, train
 from colibri.train.pretrain import span_loss
 
 CFG = preset("tiny", dropout=0.1)  # dropout on, so resuming must restore the RNG too

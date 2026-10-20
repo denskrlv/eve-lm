@@ -6,8 +6,8 @@ from typing import Any
 
 def read_lines(path: str | Path) -> list[str]:
     """Non-empty lines that aren't # comments."""
-    lines = Path(path).read_text().splitlines()
-    return [line.strip() for line in lines if line.strip() and not line.startswith("#")]
+    lines = (line.strip() for line in Path(path).read_text().splitlines())
+    return [line for line in lines if line and not line.startswith("#")]
 
 
 def read_jsonl(path: str | Path) -> list[dict[str, Any]]:

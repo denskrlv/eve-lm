@@ -12,9 +12,9 @@ import torch
 
 from colibri import defaults
 from colibri.config import PRESETS, STOP, ModelConfig
-from colibri.progress import style
+from colibri.progress import format_metric, style
 from colibri.runtime import pick_device
-from colibri.train.loop import DTYPES, TrainConfig
+from colibri.train.config import DTYPES, TrainConfig
 
 if TYPE_CHECKING:
     from colibri.data.schema import Tool
@@ -294,10 +294,8 @@ def _print_settings(runs: Runs, width: int) -> None:
 
 
 def _cell(value: float | None, metric: str) -> str:
-    """A metric value as compare shows it: a percentage for accuracies, blank if missing."""
-    if value is None:
-        return ""
-    return f"{value:.1%}" if metric.endswith("acc") else f"{value:.4f}"
+    """A metric value as compare shows it: as in the training log, blank if missing."""
+    return "" if value is None else format_metric(metric, value)
 
 
 def _print_metric_tables(runs: Runs, metrics: list[str], width: int) -> None:
@@ -459,8 +457,8 @@ def data_build(args: argparse.Namespace) -> None:
         print(f"no tokenizer at {args.tokenizer}: not checking example lengths")
     report = build(
         args.out,
-        _count(args.templates),
-        _count(args.heldout),
+        args.templates,
+        args.heldout,
         args.seed,
         tokenizer,
         preset("small"),
@@ -613,7 +611,10 @@ def _add_finetune_command(commands: Subcommands) -> None:
     parser.add_argument("--epochs", type=float, default=2.0, help="sets --steps")
     parser.add_argument("--steps", type=int, default=None, help="default: from --epochs")
     _add_schedule_args(
-        parser, lr=None, lr_help="default: 1e-3 frozen, else 3e-4", warmup=FINETUNE_WARMUP
+        parser,
+        lr=None,
+        lr_help=f"default: {FROZEN_LR:g} frozen, else {FULL_LR:g}",
+        warmup=FINETUNE_WARMUP,
     )
     parser.add_argument("--dropout", type=float, default=None, help="default: the checkpoint's")
     _add_run_args(parser)
@@ -646,16 +647,30 @@ def _add_inspect_commands(commands: Subcommands) -> None:
     parser.add_argument("--device", default=None)
 
 
-def _add_data_commands(commands: Subcommands) -> None:
-    data = commands.add_parser("data", help="build the task dataset (M6)")
-    data_commands = data.add_subparsers(dest="data_command", required=True)
+def _add_data_build_command(data_commands: Subcommands) -> None:
     parser = data_commands.add_parser("build", help="templates + chat-written -> data/task/*.jsonl")
     parser.set_defaults(run=data_build)
     parser.add_argument("--out", default=defaults.TASK_DIR)
-    parser.add_argument("--templates", default="80k", help="template examples for train")
-    parser.add_argument("--heldout", default="2k", help="template examples with held-out tools")
+    parser.add_argument(
+        "--templates",
+        type=_count,
+        default=defaults.TEMPLATE_EXAMPLES,
+        help="template examples for train",
+    )
+    parser.add_argument(
+        "--heldout",
+        type=_count,
+        default=defaults.HELDOUT_EXAMPLES,
+        help="template examples with held-out tools",
+    )
     parser.add_argument("--seed", type=int, default=0)
     parser.add_argument("--tokenizer", default=defaults.TOKENIZER_FILE)
+
+
+def _add_data_commands(commands: Subcommands) -> None:
+    data = commands.add_parser("data", help="build the task dataset (M6)")
+    data_commands = data.add_subparsers(dest="data_command", required=True)
+    _add_data_build_command(data_commands)
     parser = data_commands.add_parser("external", help="convert xLAM and MASSIVE -> data/external")
     parser.set_defaults(run=data_external)
     parser.add_argument("--raw", default=defaults.RAW_DIR)

@@ -21,7 +21,8 @@ from colibri.model.checkpoint import (
 from colibri.model.colibri import Colibri, Questions, ask
 from colibri.runtime import eval_mode, seed_everything, to_device
 from colibri.tokenizer.bpe import BPETokenizer
-from colibri.train.loop import TrainConfig, train
+from colibri.train.config import TrainConfig
+from colibri.train.loop import train
 
 TASK = "questions"  # meta["task"] of the checkpoints this run writes
 
