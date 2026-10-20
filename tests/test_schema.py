@@ -2,7 +2,7 @@ import json
 
 import pytest
 
-from colibri.data.schema import Arg, SchemaError, Tool, load_library, load_tools
+from eve.data.schema import Arg, SchemaError, Tool, load_library, load_tools
 
 
 def test_library_loads(library):

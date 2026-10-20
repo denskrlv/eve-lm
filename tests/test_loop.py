@@ -6,15 +6,15 @@ import numpy as np
 import pytest
 import torch
 
-from colibri.config import preset
-from colibri.data.pretrain import SpanCorruptionDataset
-from colibri.data.render import collate_pretrain
-from colibri.model.checkpoint import load_checkpoint, save_checkpoint
-from colibri.model.colibri import Colibri
-from colibri.tokenizer.bpe import BYTE0, BPETokenizer
-from colibri.train.config import TrainConfig
-from colibri.train.loop import batch_indices, lr_at, param_groups, train
-from colibri.train.pretrain import span_loss
+from eve.config import preset
+from eve.data.pretrain import SpanCorruptionDataset
+from eve.data.render import collate_pretrain
+from eve.model.checkpoint import load_checkpoint, save_checkpoint
+from eve.model.eve import Eve
+from eve.tokenizer.bpe import BYTE0, BPETokenizer
+from eve.train.config import TrainConfig
+from eve.train.loop import batch_indices, lr_at, param_groups, train
+from eve.train.pretrain import span_loss
 
 CFG = preset("tiny", dropout=0.1)  # dropout on, so resuming must restore the RNG too
 CPU = torch.device("cpu")
@@ -33,7 +33,7 @@ def small_run(**overrides) -> TrainConfig:
 
 def run(out, tokenizer, cfg=None, train_data=None, **kwargs) -> list[dict]:
     torch.manual_seed(0)
-    model = Colibri(CFG)
+    model = Eve(CFG)
     train(
         model,
         span_loss,
@@ -65,7 +65,7 @@ def test_lr_warms_up_then_decays_to_the_floor():
 
 
 def test_weight_decay_only_on_linear_weights():
-    model = Colibri(CFG)
+    model = Eve(CFG)
     decay, no_decay = (g["params"] for g in param_groups(model, 0.1))
     names = {id(p): n for n, p in model.named_parameters()}
     assert len(decay) + len(no_decay) == len(list(model.parameters()))
@@ -154,7 +154,7 @@ def test_datasets_are_told_the_epoch(tokenizer, tmp_path):
 
 
 def test_compile_runs_the_losses_through_the_compiled_model(tokenizer, tmp_path, monkeypatch):
-    import colibri.train.loop as loop
+    import eve.train.loop as loop
 
     seen = {"loss": set(), "on_eval": set()}
 
@@ -177,11 +177,11 @@ def test_compile_runs_the_losses_through_the_compiled_model(tokenizer, tmp_path,
         return {}
 
     torch.manual_seed(0)
-    model = Colibri(CFG)
+    model = Eve(CFG)
     train(
         model, loss_fn, corpus(), corpus(seed=1), collate_pretrain, small_run(compile=True),
         tmp_path, tokenizer, CPU, on_eval=on_eval,
     )  # fmt: skip
-    assert seen == {"loss": {"Wrapped"}, "on_eval": {"Colibri"}}
+    assert seen == {"loss": {"Wrapped"}, "on_eval": {"Eve"}}
     ckpt = load_checkpoint(tmp_path / "model.pt")  # saved from the plain model: no prefixes
     assert ckpt.model.state_dict().keys() == model.state_dict().keys()

@@ -4,13 +4,13 @@ import numpy as np
 import pytest
 import torch
 
-from colibri.config import preset
-from colibri.data.render import collate_pretrain
-from colibri.model.checkpoint import load_pretrained
-from colibri.model.colibri import Colibri
-from colibri.tokenizer.bpe import BYTE0, DEC, EOS, sentinel
-from colibri.train.config import TrainConfig
-from colibri.train.pretrain import (
+from eve.config import preset
+from eve.data.render import collate_pretrain
+from eve.model.checkpoint import load_pretrained
+from eve.model.eve import Eve
+from eve.tokenizer.bpe import BYTE0, DEC, EOS, sentinel
+from eve.train.config import TrainConfig
+from eve.train.pretrain import (
     SAMPLES,
     fill_in,
     pretrain,
@@ -23,7 +23,7 @@ from colibri.train.pretrain import (
 
 def test_fill_in_keeps_the_text_and_fills_each_hole(tokenizer):
     torch.manual_seed(0)
-    model = Colibri(preset("tiny")).train()
+    model = Eve(preset("tiny")).train()
     out = fill_in(model, tokenizer, "Students who <x0> their homework <x1> better.", max_new=8)
     assert out.startswith("Students who") and out.endswith("] better.")
     assert out.count("[") == 2 and "] their homework" in out
@@ -37,7 +37,7 @@ def test_prompt_drops_the_lone_space_before_a_hole(tokenizer):
 
 def test_content_metrics_skip_sentinels_and_eos():
     torch.manual_seed(0)
-    model = Colibri(preset("tiny")).eval()
+    model = Eve(preset("tiny")).eval()
 
     def item(enc, target):
         return {"enc_ids": enc, "dec_ids": [DEC, *target], "dec_labels": [*target, EOS]}

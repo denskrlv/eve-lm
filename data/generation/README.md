@@ -1,6 +1,6 @@
-# Writing requests for Colibri
+# Writing requests for Eve
 
-You are helping build training data for Colibri, a tiny model that reads a user's request plus 1–5 tool
+You are helping build training data for Eve, a tiny model that reads a user's request plus 1–5 tool
 schemas and decides what to do. Code has already decided the **answer** for each scenario. Your job is to
 write the **request**: what a real person would say or type.
 
@@ -12,7 +12,7 @@ write the **request**: what a real person would say or type.
    ```json
    {"id": "batch-0003-000", "utterance": "kill the kitchen lights"}
    ```
-4. Check your work: `uv run colibri data check <batch>`. Fix every rejected line and run it again
+4. Check your work: `uv run eve data check <batch>`. Fix every rejected line and run it again
    until it reports 0 rejected and 0 not written.
 
 Work only on the batch you were given. Don't edit the batch file or any other file.
@@ -75,9 +75,9 @@ These requests are the model's only window onto real users, so make them unlike 
 ## Running a batch with Claude Code
 
 ```bash
-uv run colibri data batch --split train          # or val / probe; prints the new batch name
+uv run eve data batch --split train          # or val / probe; prints the new batch name
 claude -p "Follow data/generation/README.md for batch batch-0003."
-uv run colibri data check batch-0003
+uv run eve data check batch-0003
 ```
 
 `val` and `probe` batches matter most: they measure the model and fit its calibration, so they must be

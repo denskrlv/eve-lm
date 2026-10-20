@@ -3,10 +3,10 @@ from pathlib import Path
 import numpy as np
 import pytest
 
-from colibri.data.generate.build import Sources
-from colibri.data.generate.sampler import ToolBank, sample
-from colibri.data.generate.validate import check_example
-from colibri.data.render import IGNORE, render
+from eve.data.generate.build import Sources
+from eve.data.generate.sampler import ToolBank, sample
+from eve.data.generate.validate import check_example
+from eve.data.render import IGNORE, render
 
 ROOT = Path(__file__).parents[1]
 
@@ -99,7 +99,7 @@ def test_conversions_are_sensible(sources):
 
 
 def test_samples_render(bank, tokenizer):
-    from colibri.config import preset
+    from eve.config import preset
 
     rng = np.random.default_rng(0)
     for _ in range(50):
@@ -108,7 +108,7 @@ def test_samples_render(bank, tokenizer):
 
 
 def test_fan_out_examples(bank):
-    from colibri.data.generate.templates import MAX_CALLS
+    from eve.data.generate.templates import MAX_CALLS
 
     rng = np.random.default_rng(0)
     fanned = []

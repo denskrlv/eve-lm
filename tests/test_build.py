@@ -4,14 +4,14 @@ from typing import Any
 
 import pytest
 
-from colibri.data.generate.build import (
+from eve.data.generate.build import (
     Sources,
     build,
     check_written,
     make_batch,
     next_batch_name,
 )
-from colibri.data.jsonl import read_jsonl
+from eve.data.jsonl import read_jsonl
 
 ROOT = Path(__file__).parents[1]
 

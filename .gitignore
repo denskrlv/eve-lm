@@ -219,7 +219,7 @@ __marimo__/
 # Streamlit
 .streamlit/secrets.toml
 
-# Colibri: large or generated files
+# Eve: large or generated files
 artifacts/
 data/raw/
 data/bin*/

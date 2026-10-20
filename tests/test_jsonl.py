@@ -1,6 +1,6 @@
 from pathlib import Path
 
-from colibri.data.jsonl import read_lines
+from eve.data.jsonl import read_lines
 
 
 def test_read_lines_skips_blank_lines_and_comments_even_indented(tmp_path: Path) -> None:

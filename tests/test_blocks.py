@@ -3,8 +3,8 @@ import torch
 import torch.nn.functional as F
 from torch import nn
 
-from colibri.config import preset
-from colibri.model.blocks import GELU, DecoderBlock, EncoderBlock, FeedForward, LayerNorm
+from eve.config import preset
+from eve.model.blocks import GELU, DecoderBlock, EncoderBlock, FeedForward, LayerNorm
 
 CFG = preset("tiny")
 D = CFG.d_model

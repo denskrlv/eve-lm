@@ -5,14 +5,14 @@ import pytest
 import torch
 import torch.nn.functional as F
 
-from colibri.config import INTENTS, preset
-from colibri.data.render import IGNORE, Call, TaskCollator, TaskDataset, TaskExample, render
-from colibri.data.schema import Tool
-from colibri.model.checkpoint import load_checkpoint, save_checkpoint
-from colibri.model.colibri import Colibri, Questions
-from colibri.tokenizer.bpe import BPETokenizer
-from colibri.train.config import TrainConfig
-from colibri.train.finetune import (
+from eve.config import INTENTS, preset
+from eve.data.render import IGNORE, Call, TaskCollator, TaskDataset, TaskExample, render
+from eve.data.schema import Tool
+from eve.model.checkpoint import load_checkpoint, save_checkpoint
+from eve.model.eve import Eve, Questions
+from eve.tokenizer.bpe import BPETokenizer
+from eve.train.config import TrainConfig
+from eve.train.finetune import (
     describe,
     finetune,
     freeze_body,
@@ -56,9 +56,9 @@ def examples(library) -> list[TaskExample]:
     ]
 
 
-def make(cfg=CFG, seed=0) -> Colibri:
+def make(cfg=CFG, seed=0) -> Eve:
     torch.manual_seed(seed)
-    return Colibri(cfg).eval()
+    return Eve(cfg).eval()
 
 
 @pytest.fixture
@@ -66,7 +66,7 @@ def batch(library, tokenizer):
     return TaskCollator(CFG)([render(e, tokenizer, CFG) for e in examples(library)])
 
 
-class Oracle(Colibri):
+class Oracle(Eve):
     """Answers every question with the gold label (or a fixed wrong one), to test the metrics."""
 
     def __init__(self, batch, wrong_intent=False):
@@ -155,7 +155,7 @@ def write_task(path, library) -> None:
 
 def test_finetune_frozen_then_full(library, tokenizer, tmp_path):
     torch.manual_seed(0)
-    pretrained = Colibri(CFG)
+    pretrained = Eve(CFG)
     save_checkpoint(tmp_path / "pre.pt", pretrained, tokenizer, {"step": 1})
     write_task(tmp_path / "task", library)
     train_cfg = TrainConfig(steps=4, batch_size=3, warmup_steps=1, eval_every=2, log_every=1)

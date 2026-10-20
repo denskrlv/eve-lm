@@ -5,14 +5,14 @@ import numpy as np
 import pyarrow as pa
 import pyarrow.parquet as pq
 
-from colibri.data.corpus import (
+from eve.data.corpus import (
     encode_corpus,
     iter_documents,
     load_tokens,
     take_bytes,
     tokenizer_texts,
 )
-from colibri.tokenizer.bpe import EOS
+from eve.tokenizer.bpe import EOS
 
 ROOT = Path(__file__).parents[1]
 

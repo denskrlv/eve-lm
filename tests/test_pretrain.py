@@ -1,7 +1,7 @@
 import numpy as np
 import pytest
 
-from colibri.data.pretrain import (
+from eve.data.pretrain import (
     SpanCorruptionDataset,
     corrupt,
     noise_mask,
@@ -10,7 +10,7 @@ from colibri.data.pretrain import (
     spans_by_sentinel,
     uncorrupt,
 )
-from colibri.tokenizer.bpe import BYTE0, DEC, EOS, N_SENTINELS, SENTINEL0, is_sentinel, sentinel
+from eve.tokenizer.bpe import BYTE0, DEC, EOS, N_SENTINELS, SENTINEL0, is_sentinel, sentinel
 
 
 def test_window_corrupts_to_exactly_the_input_length():
