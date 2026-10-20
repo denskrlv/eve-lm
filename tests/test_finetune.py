@@ -1,4 +1,5 @@
 import json
+from pathlib import Path
 
 import pytest
 import torch
@@ -6,8 +7,10 @@ import torch.nn.functional as F
 
 from colibri.config import INTENTS, preset
 from colibri.data.render import IGNORE, Call, TaskCollator, TaskDataset, TaskExample, render
+from colibri.data.schema import Tool
 from colibri.model.checkpoint import load_checkpoint, save_checkpoint
 from colibri.model.colibri import Colibri, Questions
+from colibri.tokenizer.bpe import BPETokenizer
 from colibri.train.config import TrainConfig
 from colibri.train.finetune import (
     describe,
@@ -128,6 +131,19 @@ def test_describe_shows_answers_and_gold(library, tokenizer):
     assert lines[0].endswith("| gold call · set_lights")
     assert lines[1].endswith("| gold ask")  # tool unclear: no gold tools
     assert lines[2].endswith("| gold none")
+
+
+def test_describe_copies_its_batch_blocking(
+    library: dict[str, Tool], tokenizer: BPETokenizer, copy_flags: list[bool]
+) -> None:
+    exs = examples(library)
+    describe(make(), exs, TaskDataset(exs, tokenizer, CFG), [0, 3])
+    assert copy_flags and not any(copy_flags)
+
+
+def test_scratch_needs_a_tokenizer_path(library: dict[str, Tool], tmp_path: Path) -> None:
+    with pytest.raises(ValueError, match="scratch needs tokenizer_path"):
+        finetune(TrainConfig(steps=1), tmp_path, tmp_path / "out", "cpu", library, scratch=CFG)
 
 
 def write_task(path, library) -> None:

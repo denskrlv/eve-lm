@@ -1,6 +1,10 @@
+import logging
+from collections.abc import Iterator
 from pathlib import Path
+from typing import Any
 
 import pytest
+import torch
 
 from colibri.data.schema import load_library
 from colibri.tokenizer.bpe import BPETokenizer
@@ -16,6 +20,18 @@ to lock the front door before you go to sleep. The weather tomorrow will be sunn
 """
 
 
+@pytest.fixture(autouse=True)
+def restore_colibri_logger() -> Iterator[None]:
+    """Undo ``setup_logging`` (called by ``main`` too) after each test, so no test sees another
+    test's handler, level or ``propagate=False`` (which would hide records from caplog)."""
+    logger = logging.getLogger("colibri")
+    handlers, level, propagate = list(logger.handlers), logger.level, logger.propagate
+    yield
+    logger.handlers = handlers
+    logger.setLevel(level)
+    logger.propagate = propagate
+
+
 @pytest.fixture(scope="session")
 def library():
     return load_library(ROOT / "data" / "tools")
@@ -25,3 +41,17 @@ def library():
 def tokenizer(library):
     texts = [(TEXT, 5)] + [(" " + t.render(), 5) for t in library.values()]
     return BPETokenizer.train(texts, vocab_size=600)
+
+
+@pytest.fixture
+def copy_flags(monkeypatch: pytest.MonkeyPatch) -> list[bool]:
+    """The ``non_blocking`` flag of every ``Tensor.to`` call made during the test."""
+    flags: list[bool] = []
+    original = torch.Tensor.to
+
+    def spy(self: torch.Tensor, *args: Any, **kwargs: Any) -> torch.Tensor:
+        flags.append(bool(kwargs.get("non_blocking", False)))
+        return original(self, *args, **kwargs)
+
+    monkeypatch.setattr(torch.Tensor, "to", spy)
+    return flags

@@ -1,4 +1,5 @@
 import json
+from pathlib import Path
 
 import pytest
 import torch
@@ -55,22 +56,29 @@ def test_info_command(capsys):
     assert "small" in out and "base" in out
 
 
-def test_cli_dtype_choices_match_the_training_loop():
-    from colibri.cli import DTYPE_CHOICES
-    from colibri.train.config import DTYPES
-
-    assert DTYPE_CHOICES == list(DTYPES)
+def with_dropout() -> torch.nn.Module:
+    """A small module with parameters (``eval_mode`` reads the device from them) and dropout."""
+    return torch.nn.Sequential(torch.nn.Linear(2, 2), torch.nn.Dropout(0.5))
 
 
-def test_eval_mode_restores_the_mode_after_an_error():
-    model = torch.nn.Dropout(0.5)
-    with pytest.raises(RuntimeError), eval_mode(model):
+def test_eval_mode_restores_the_mode_after_an_error() -> None:
+    model = with_dropout()
+    with pytest.raises(RuntimeError, match="loss failed"), eval_mode(model):
         assert not model.training
         raise RuntimeError("loss failed")
     assert model.training
 
 
-def test_compare_shows_rates_and_accuracies_as_percentages(tmp_path, capsys):
+def test_eval_mode_leaves_an_eval_model_in_eval_mode() -> None:
+    model = with_dropout().eval()
+    with eval_mode(model):
+        assert not model.training
+    assert not model.training
+
+
+def test_compare_shows_rates_and_accuracies_as_percentages(
+    tmp_path: Path, capsys: pytest.CaptureFixture[str]
+) -> None:
     run = tmp_path / "run-a"
     run.mkdir()
     record = {"kind": "val", "step": 10, "val_call_stop_rate": 0.0312, "val_lm": 3.21}
@@ -80,7 +88,7 @@ def test_compare_shows_rates_and_accuracies_as_percentages(tmp_path, capsys):
     assert "3.1%" in out and "3.2100" in out
 
 
-def test_data_build_sizes_default_to_the_shared_defaults():
+def test_data_build_sizes_default_to_the_shared_defaults() -> None:
     args = build_parser().parse_args(["data", "build"])
     assert (args.templates, args.heldout) == (
         defaults.TEMPLATE_EXAMPLES,

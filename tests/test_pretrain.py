@@ -69,12 +69,12 @@ def test_input_plus_target_rebuild_the_text(tokenizer):
     assert tokenizer.decode(uncorrupt(item["enc_ids"], item["dec_labels"])) == original
 
 
-def test_spans_by_sentinel_skips_eos_and_tokens_before_the_first_sentinel():
-    a, b, c = BYTE0 + 1, BYTE0 + 2, BYTE0 + 3
-    targets = [c, sentinel(0), a, b, sentinel(1), c, EOS]
-    assert spans_by_sentinel(targets) == {sentinel(0): [a, b], sentinel(1): [c]}
+def test_spans_by_sentinel_skips_eos_and_tokens_before_the_first_sentinel() -> None:
+    stray, first, second, third = BYTE0 + 1, BYTE0 + 2, BYTE0 + 3, BYTE0 + 4
+    targets = [stray, sentinel(0), first, second, sentinel(1), third, EOS]
+    assert spans_by_sentinel(targets) == {sentinel(0): [first, second], sentinel(1): [third]}
 
 
-def test_is_sentinel_covers_exactly_the_sentinel_ids():
+def test_is_sentinel_covers_exactly_the_sentinel_ids() -> None:
     assert all(is_sentinel(sentinel(i)) for i in range(N_SENTINELS))
     assert not is_sentinel(SENTINEL0 - 1) and not is_sentinel(SENTINEL0 + N_SENTINELS)

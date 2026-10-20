@@ -174,3 +174,9 @@ def test_no_lone_space_before_markers(library, tokenizer):
     r = render(example(library), tokenizer, CFG)
     for p in [*r.tool_pos[1:], *(p for args in r.arg_pos for p in args)]:
         assert tokenizer.decode([r.enc_ids[p - 1]]) != " "
+
+
+def test_tool_names_need_a_library_to_look_them_up() -> None:
+    row = {"utterance": "lights off", "tools": ["set_lights"], "intent": "none"}
+    with pytest.raises(TypeError, match="no library was given"):
+        TaskExample.from_json(row)

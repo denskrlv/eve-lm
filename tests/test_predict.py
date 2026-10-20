@@ -2,8 +2,10 @@ import pytest
 import torch
 
 from colibri.config import INTENTS, preset
+from colibri.data.schema import Tool
 from colibri.infer.predict import STOP, Answers, answer_questions
 from colibri.model.colibri import Colibri
+from colibri.tokenizer.bpe import BPETokenizer
 
 
 def test_answers_are_distributions_over_the_prompts_tools(library, tokenizer):
@@ -26,3 +28,13 @@ def test_calls_stop_at_the_first_stop():
         slots=[{"a": 0.9, STOP: 0.1}, {"a": 0.2, STOP: 0.8}, {"a": 0.9, STOP: 0.1}],
     )
     assert a.calls == ["a"]
+
+
+def test_answers_copy_the_batch_blocking(
+    library: dict[str, Tool], tokenizer: BPETokenizer, copy_flags: list[bool]
+) -> None:
+    """The collated batch is freed right after the copy: a non-blocking copy could still be
+    reading it on MPS."""
+    model = Colibri(preset("tiny"))
+    answer_questions(model, tokenizer, "turn off the lights", [library["set_lights"]])
+    assert copy_flags and not any(copy_flags)
