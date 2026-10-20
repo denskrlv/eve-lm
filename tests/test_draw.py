@@ -1,6 +1,6 @@
 import numpy as np
 
-from colibri.data.draw import pick, shuffled
+from eve.data.draw import pick, shuffled
 
 
 def test_pick_draws_like_indexing_with_integers() -> None:

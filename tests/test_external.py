@@ -2,7 +2,7 @@ import json
 
 import numpy as np
 
-from colibri.data.generate.external import (
+from eve.data.generate.external import (
     HELD_OUT,
     MASSIVE_TOOLS,
     convert_massive,
@@ -12,7 +12,7 @@ from colibri.data.generate.external import (
     unsupported_variant,
     xlam_tool,
 )
-from colibri.data.render import TaskExample
+from eve.data.render import TaskExample
 
 WEATHER = {
     "name": "getWeatherForecast",

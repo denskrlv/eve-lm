@@ -6,8 +6,8 @@ from typing import Any
 import pytest
 import torch
 
-from colibri.data.schema import load_library
-from colibri.tokenizer.bpe import BPETokenizer
+from eve.data.schema import load_library
+from eve.tokenizer.bpe import BPETokenizer
 
 ROOT = Path(__file__).parents[1]
 
@@ -21,10 +21,10 @@ to lock the front door before you go to sleep. The weather tomorrow will be sunn
 
 
 @pytest.fixture(autouse=True)
-def restore_colibri_logger() -> Iterator[None]:
+def restore_eve_logger() -> Iterator[None]:
     """Undo ``setup_logging`` (called by ``main`` too) after each test, so no test sees another
     test's handler, level or ``propagate=False`` (which would hide records from caplog)."""
-    logger = logging.getLogger("colibri")
+    logger = logging.getLogger("eve")
     handlers, level, propagate = list(logger.handlers), logger.level, logger.propagate
     yield
     logger.handlers = handlers

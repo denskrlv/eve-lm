@@ -2,7 +2,7 @@ import pytest
 import torch
 from torch import nn
 
-from colibri.model.attention import MultiHeadAttention, apply_rope, rope_angles
+from eve.model.attention import MultiHeadAttention, apply_rope, rope_angles
 
 D, H = 32, 4
 

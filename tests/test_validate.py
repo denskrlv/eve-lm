@@ -1,6 +1,6 @@
-from colibri.data.generate.validate import check_example, mentions, normalize, value_forms
-from colibri.data.render import Call, TaskExample
-from colibri.data.schema import Arg, Tool
+from eve.data.generate.validate import check_example, mentions, normalize, value_forms
+from eve.data.render import Call, TaskExample
+from eve.data.schema import Arg, Tool
 
 TIMER = Tool(
     "set_timer",

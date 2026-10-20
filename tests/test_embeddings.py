@@ -1,8 +1,8 @@
 import pytest
 import torch
 
-from colibri.config import preset
-from colibri.model.embeddings import Embeddings
+from eve.config import preset
+from eve.model.embeddings import Embeddings
 
 
 def test_shapes_and_positions():

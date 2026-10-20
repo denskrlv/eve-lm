@@ -4,10 +4,10 @@ from pathlib import Path
 import pytest
 import torch
 
-from colibri import defaults
-from colibri.cli import build_parser, main
-from colibri.config import INTENTS, PRESETS, ModelConfig, preset
-from colibri.runtime import eval_mode, pick_device, seed_everything
+from eve import defaults
+from eve.cli import build_parser, main
+from eve.config import INTENTS, PRESETS, ModelConfig, preset
+from eve.runtime import eval_mode, pick_device, seed_everything
 
 
 def test_presets_are_valid():

@@ -1,7 +1,7 @@
 import numpy as np
 import pytest
 
-from colibri.data.generate.templates import (
+from eve.data.generate.templates import (
     MAX_CALLS,
     check_template,
     fill,
@@ -9,7 +9,7 @@ from colibri.data.generate.templates import (
     parse,
     tidy,
 )
-from colibri.data.schema import Arg, Tool
+from eve.data.schema import Arg, Tool
 
 LIGHTS = Tool(
     "set_lights",

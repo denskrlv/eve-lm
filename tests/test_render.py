@@ -1,8 +1,8 @@
 import numpy as np
 import pytest
 
-from colibri.config import INTENTS, preset
-from colibri.data.render import (
+from eve.config import INTENTS, preset
+from eve.data.render import (
     ENCODER_BUCKETS,
     IGNORE,
     Call,
@@ -13,8 +13,8 @@ from colibri.data.render import (
     collate_pretrain,
     render,
 )
-from colibri.data.schema import MAX_ARGS, SchemaError
-from colibri.tokenizer.bpe import ARG, BOS, DEC, EOS, PAD, TOOL, TOOLS, UTT
+from eve.data.schema import MAX_ARGS, SchemaError
+from eve.tokenizer.bpe import ARG, BOS, DEC, EOS, PAD, TOOL, TOOLS, UTT
 
 CFG = preset("tiny")
 STOP = CFG.max_tools

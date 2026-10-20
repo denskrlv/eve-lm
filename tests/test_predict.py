@@ -1,16 +1,16 @@
 import pytest
 import torch
 
-from colibri.config import INTENTS, preset
-from colibri.data.schema import Tool
-from colibri.infer.predict import STOP, Answers, answer_questions
-from colibri.model.colibri import Colibri
-from colibri.tokenizer.bpe import BPETokenizer
+from eve.config import INTENTS, preset
+from eve.data.schema import Tool
+from eve.infer.predict import STOP, Answers, answer_questions
+from eve.model.eve import Eve
+from eve.tokenizer.bpe import BPETokenizer
 
 
 def test_answers_are_distributions_over_the_prompts_tools(library, tokenizer):
     torch.manual_seed(0)
-    model = Colibri(preset("tiny")).train()
+    model = Eve(preset("tiny")).train()
     tools = [library["set_lights"], library["play_music"]]
     a = answer_questions(model, tokenizer, "turn off the kitchen lights", tools)
     assert list(a.intent) == list(INTENTS)
@@ -35,6 +35,6 @@ def test_answers_copy_the_batch_blocking(
 ) -> None:
     """The collated batch is freed right after the copy: a non-blocking copy could still be
     reading it on MPS."""
-    model = Colibri(preset("tiny"))
+    model = Eve(preset("tiny"))
     answer_questions(model, tokenizer, "turn off the lights", [library["set_lights"]])
     assert copy_flags and not any(copy_flags)

@@ -2,7 +2,7 @@ import random
 
 import pytest
 
-from colibri.tokenizer.bpe import (
+from eve.tokenizer.bpe import (
     BYTE0,
     SPECIAL_IDS,
     SPECIAL_TOKENS,

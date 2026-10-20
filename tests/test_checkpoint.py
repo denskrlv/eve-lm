@@ -3,11 +3,11 @@ import pytest
 import torch
 import torch.nn.functional as F
 
-from colibri.config import preset
-from colibri.data.pretrain import SpanCorruptionDataset
-from colibri.data.render import IGNORE, collate_pretrain
-from colibri.model.checkpoint import load_checkpoint, load_pretrained, save_checkpoint
-from colibri.model.colibri import Colibri
+from eve.config import preset
+from eve.data.pretrain import SpanCorruptionDataset
+from eve.data.render import IGNORE, collate_pretrain
+from eve.model.checkpoint import load_checkpoint, load_pretrained, save_checkpoint
+from eve.model.eve import Eve
 
 CFG = preset("tiny")
 TEXT = "Turn the kitchen lights off when you leave, and set the thermostat to 20 degrees. "
@@ -20,12 +20,12 @@ def batch(tokenizer):
     return collate_pretrain([data[i] for i in range(4)])
 
 
-def lm_loss(model: Colibri, batch) -> torch.Tensor:
+def lm_loss(model: Eve, batch) -> torch.Tensor:
     out = model(batch["enc_ids"], batch["enc_mask"], batch["dec_ids"], batch["dec_mask"])
     return F.cross_entropy(out.lm.flatten(0, 1), batch["dec_labels"].flatten(), ignore_index=IGNORE)
 
 
-def val_loss(model: Colibri, batch) -> float:
+def val_loss(model: Eve, batch) -> float:
     model.eval()
     with torch.no_grad():
         return lm_loss(model, batch).item()
@@ -35,7 +35,7 @@ def val_loss(model: Colibri, batch) -> float:
 def pretrained(tokenizer, batch, tmp_path_factory):
     """A tiny model trained a few steps, so its weights differ from any fresh init."""
     torch.manual_seed(0)
-    model = Colibri(CFG)
+    model = Eve(CFG)
     opt = torch.optim.AdamW(model.parameters(), lr=3e-3)
     for _ in range(5):
         opt.zero_grad()
@@ -120,11 +120,11 @@ def test_load_pretrained_refuses_leftover_weights(pretrained, tmp_path):
 
 def test_rejects_files_that_are_not_checkpoints(tmp_path):
     torch.save({"weights": torch.zeros(3)}, tmp_path / "other.pt")
-    with pytest.raises(ValueError, match="not a Colibri checkpoint"):
+    with pytest.raises(ValueError, match="not an Eve checkpoint"):
         load_checkpoint(tmp_path / "other.pt")
 
 
 def test_save_refuses_a_tokenizer_bigger_than_the_vocab(tokenizer, tmp_path):
-    model = Colibri(preset("tiny", vocab_size=100))
+    model = Eve(preset("tiny", vocab_size=100))
     with pytest.raises(ValueError, match="tokenizer"):
         save_checkpoint(tmp_path / "x.pt", model, tokenizer)

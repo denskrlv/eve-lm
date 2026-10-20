@@ -1,8 +1,8 @@
 from collections import Counter
 from pathlib import Path
 
-from colibri.data.generate.library import load_specs
-from colibri.data.generate.toolgen import generated_specs
+from eve.data.generate.library import load_specs
+from eve.data.generate.toolgen import generated_specs
 
 ROOT = Path(__file__).parents[1]
 
