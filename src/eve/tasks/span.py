@@ -1,16 +1,20 @@
 """The span-corruption task (box 4): the pretraining loss, val metrics and fill-in samples."""
 
+from collections.abc import Sequence
+from typing import Any
+
 import torch
 import torch.nn.functional as F
 
 from eve import defaults
+from eve.components import DataModule
 from eve.data.pretrain import spans_by_sentinel
 from eve.data.render import IGNORE
 from eve.model.eve import Eve
 from eve.registry import register
 from eve.runtime import eval_mode
 from eve.tokenizer.bpe import BYTE0, DEC, EOS, BPETokenizer, is_sentinel
-from eve.train.loop import Column
+from eve.train.loop import Column, Report
 
 SAMPLES = (
     "The capital of France is <x0>.",
@@ -113,3 +117,17 @@ def fill_in(
         else:
             out.append(tokenizer.decode([token]))
     return "".join(out)
+
+
+@register("report", "span_samples")
+def span_samples(
+    data: DataModule, tokenizer: BPETokenizer, batch_size: int, samples: Sequence[str] = SAMPLES
+) -> Report:
+    """The pretraining report: at each eval, ``fill_in`` for each of ``samples``, shown at the
+    end with the filled-in spans highlighted; the eval table's ``COLUMNS``."""
+    del data, batch_size  # the samples are typed text, not val items
+
+    def on_eval(model: Eve) -> dict[str, Any]:
+        return {"samples": [fill_in(model, tokenizer, text) for text in samples]}
+
+    return Report(COLUMNS, on_eval, highlights=HIGHLIGHTS)

@@ -14,12 +14,15 @@ question keys, so only the span loss and metrics fit it.
 """
 
 from collections.abc import Callable, Sequence
-from typing import Any, Protocol
+from typing import TYPE_CHECKING, Any, Protocol
 
 import torch
 from torch import nn
 
 from eve.train.config import TrainConfig
+
+if TYPE_CHECKING:
+    from eve.train.loop import Report
 
 Batch = dict[str, torch.Tensor]
 LossFn = Callable[[Any, Batch], dict[str, torch.Tensor]]
@@ -72,6 +75,13 @@ class ConfiguredModel(Protocol):
     def from_config(cls, config: dict[str, Any]) -> nn.Module:
         """A new model (random weights) of the architecture ``config`` describes."""
         ...
+
+
+class ReportBuilder(Protocol):
+    """Kind "report": what a run shows and logs besides its losses (``loop.Report``): the eval
+    table's columns, an ``on_eval`` hook (samples, whole-set scores) and the end summary."""
+
+    def __call__(self, data: DataModule, tokenizer: Any, batch_size: int) -> "Report": ...
 
 
 class OptimizerFactory(Protocol):

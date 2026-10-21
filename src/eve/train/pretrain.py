@@ -1,5 +1,4 @@
 from pathlib import Path
-from typing import Any
 
 import torch
 
@@ -8,10 +7,10 @@ from eve.data.modules import span_corruption
 from eve.data.pretrain import INPUT_LEN, raw_length
 from eve.model.eve import Eve
 from eve.runtime import seed_everything
-from eve.tasks.span import COLUMNS, HIGHLIGHTS, SAMPLES, fill_in, span_loss, span_metrics
+from eve.tasks.span import SAMPLES, span_loss, span_metrics, span_samples
 from eve.tokenizer.bpe import BPETokenizer
 from eve.train.config import TrainConfig
-from eve.train.loop import Report, train
+from eve.train.loop import train
 
 
 def pretrain(
@@ -40,9 +39,6 @@ def pretrain(
     model.set_sdpa(sdpa)
     data = span_corruption(tokenizer, cfg, train_cfg.seed, path=str(data_dir))
 
-    def on_eval(model: Eve) -> dict[str, Any]:
-        return {"samples": [fill_in(model, tokenizer, text) for text in samples]}
-
     return train(
         model,
         span_loss,
@@ -51,7 +47,7 @@ def pretrain(
         out_dir,
         tokenizer,
         device,
-        report=Report(COLUMNS, on_eval, highlights=HIGHLIGHTS),
+        report=span_samples(data, tokenizer, train_cfg.batch_size, samples),
         eval_fn=span_metrics,
         resume=resume,
         stop_after=stop_after,

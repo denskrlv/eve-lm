@@ -17,19 +17,16 @@ from eve.model.checkpoint import (
 from eve.model.eve import Eve
 from eve.runtime import seed_everything
 from eve.tasks.questions import (
-    COLUMNS,
-    HIGHLIGHTS,
     TASK,
-    eval_report,
     joint_loss,
     joint_metrics,
     question_loss,
     question_metrics,
-    summary,
+    task_scores,
 )
 from eve.tokenizer.bpe import BPETokenizer
 from eve.train.config import TrainConfig
-from eve.train.loop import Report, train
+from eve.train.loop import train
 
 
 def freeze_body(model: Eve) -> int:
@@ -119,9 +116,6 @@ def finetune(
     cfg = model.cfg
     data = task(tokenizer, cfg, train_cfg.seed, path=str(task_dir), library=library)
     joint = not freeze
-    on_eval = eval_report(
-        data.val_examples, data.val, data.heldout, data.collator, train_cfg.batch_size, joint
-    )
     meta = {
         "task": TASK,
         "frozen": freeze,
@@ -137,7 +131,7 @@ def finetune(
         out_dir,
         tokenizer,
         device,
-        report=Report(COLUMNS, on_eval, summary, HIGHLIGHTS),
+        report=task_scores(data, tokenizer, train_cfg.batch_size, values=joint),
         eval_fn=joint_metrics if joint else question_metrics,
         resume=resume,
         stop_after=stop_after,

@@ -2,20 +2,22 @@
 report of fine-tuning the question heads and the decoder's argument values."""
 
 from collections import Counter
-from collections.abc import Callable, Sequence
+from collections.abc import Sequence
 from dataclasses import dataclass, field
 from typing import Any
 
 import torch
 import torch.nn.functional as F
 
+from eve.components import DataModule
 from eve.config import INTENTS, STOP
-from eve.data.modules import in_batches
+from eve.data.modules import TaskData, in_batches
 from eve.data.render import IGNORE, Rendered, TaskCollator, TaskDataset, TaskExample
 from eve.model.eve import Eve, Output, Questions, ask
 from eve.registry import register
 from eve.runtime import eval_mode, to_device
-from eve.train.loop import Column
+from eve.tokenizer.bpe import BPETokenizer
+from eve.train.loop import Column, Report
 
 TASK = "questions"  # meta["task"] of the checkpoints this run writes
 COLUMNS = (
@@ -406,25 +408,25 @@ def _shown(examples: Sequence[TaskExample]) -> list[int]:
     return [first[intent] for intent in INTENTS if intent in first]
 
 
-def eval_report(
-    val_examples: Sequence[TaskExample],
-    val_data: TaskDataset,
-    heldout: TaskDataset,
-    collate: TaskCollator,
-    batch_size: int,
-    values: bool,
-) -> Callable[[Eve], dict[str, Any]]:
-    """``on_eval`` for fine-tuning: the answers for the first val example of each intent, and
-    the val and held-out-tool scores, with the decoder's values if ``values``."""
+@register("report", "task_scores")
+def task_scores(
+    data: DataModule, tokenizer: BPETokenizer, batch_size: int, values: bool = True
+) -> Report:
+    """The fine-tuning report: at each eval, the answers for the first val example of each
+    intent, and the val and held-out-tool scores (``score``), with the decoder's values if
+    ``values``; the eval table's ``COLUMNS``, and the last scores at the end. Needs task data."""
+    del tokenizer  # the examples are rendered already
+    if not isinstance(data, TaskData):
+        raise TypeError(f"the task_scores report needs task data, got {type(data).__name__}")
     scored = {
-        "val": in_batches(val_data, collate, batch_size),
-        "heldout": in_batches(heldout, collate, batch_size),
+        "val": in_batches(data.val, data.collator, batch_size),
+        "heldout": in_batches(data.heldout, data.collator, batch_size),
     }
-    shown = _shown(val_examples)
+    shown = _shown(data.val_examples)
 
     def on_eval(model: Eve) -> dict[str, Any]:
-        out: dict[str, Any] = {"samples": describe(model, val_examples, val_data, shown)}
-        out |= {key: score(model, data, values) for key, data in scored.items() if data}
+        out: dict[str, Any] = {"samples": describe(model, data.val_examples, data.val, shown)}
+        out |= {key: score(model, batches, values) for key, batches in scored.items() if batches}
         return out
 
-    return on_eval
+    return Report(COLUMNS, on_eval, summary, HIGHLIGHTS)
