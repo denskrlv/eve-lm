@@ -1,19 +1,12 @@
-from dataclasses import replace
 from pathlib import Path
-from typing import Any
+from typing import Any, cast
 
 import torch
 
 from eve.config import ModelConfig
 from eve.data.modules import task
 from eve.data.schema import Tool
-from eve.model.checkpoint import (
-    FRESH,
-    QUESTION_FIELDS,
-    Checkpoint,
-    load_checkpoint,
-    load_pretrained,
-)
+from eve.model.build import start_model
 from eve.model.eve import Eve
 from eve.runtime import seed_everything
 from eve.tasks.questions import (
@@ -24,61 +17,8 @@ from eve.tasks.questions import (
     question_metrics,
     task_scores,
 )
-from eve.tokenizer.bpe import BPETokenizer
 from eve.train.config import TrainConfig
 from eve.train.loop import train
-
-
-def freeze_body(model: Eve) -> int:
-    """Stage 1 of ch. 6.5: train only the new head and keep the pretrained weights fixed.
-
-    Here the "head" is the whole question block (``questions.*``): its learned queries, its
-    two blocks and both heads. The embeddings, encoder and decoder get ``requires_grad=False``,
-    so backprop stops at the encoder output and AdamW leaves them alone. Returns the number of
-    parameters that still train.
-    """
-    for name, param in model.named_parameters():
-        param.requires_grad = name.startswith(FRESH)
-    return sum(param.numel() for param in model.parameters() if param.requires_grad)
-
-
-def load_init(path: str | Path, device: str | torch.device = "cpu", **overrides: Any) -> Checkpoint:
-    """The model to fine-tune, from either kind of checkpoint:
-
-    - a pretraining checkpoint (box 7): ``load_pretrained``, so the question block starts new;
-    - a checkpoint of an earlier question run (``meta["task"] == "questions"``), e.g. stage 1
-      with the body frozen: everything is loaded, the trained question block too.
-
-    ``overrides`` may change the question block's config, as in ``load_pretrained``; for an
-    earlier question run only ``dropout`` (other changes would leave weights without a home).
-    """
-    if bad := set(overrides) - QUESTION_FIELDS:
-        raise ValueError(f"can't change {sorted(bad)} of a pretrained body")
-    ckpt = load_checkpoint(path)
-    if ckpt.meta.get("task") != TASK:
-        return load_pretrained(path, device, **overrides)
-    model = Eve(replace(ckpt.model.cfg, **overrides))
-    model.load_state_dict(ckpt.model.state_dict())
-    ckpt.model = model.to(device)
-    return ckpt
-
-
-def _start_model(
-    init: str | Path | None,
-    scratch: ModelConfig | None,
-    tokenizer_path: str | Path | None,
-    overrides: dict[str, Any],
-) -> tuple[Eve, BPETokenizer]:
-    """The model to fine-tune and its tokenizer: from the ``init`` checkpoint, or a random model
-    with the ``scratch`` config and the tokenizer at ``tokenizer_path``."""
-    if init is not None:
-        ckpt = load_init(init, **overrides)
-        return ckpt.model, ckpt.tokenizer
-    assert scratch is not None  # finetune checks: exactly one of init and scratch
-    if tokenizer_path is None:
-        raise ValueError("scratch needs tokenizer_path")
-    model = Eve(replace(scratch, **overrides))
-    return model, BPETokenizer.load(tokenizer_path)
 
 
 def finetune(
@@ -109,10 +49,15 @@ def finetune(
         raise ValueError("give either init (a checkpoint) or scratch (a config)")
     task_dir = Path(task_dir)
     seed_everything(train_cfg.seed)  # the new question block's initialization
-    model, tokenizer = _start_model(init, scratch, tokenizer_path, overrides or {})
-    trainable = freeze_body(model) if freeze else sum(p.numel() for p in model.parameters())
-    model.set_sdpa(sdpa)
-
+    started = start_model(
+        init=init,
+        config=None if scratch is None else scratch.to_dict(),
+        tokenizer=tokenizer_path,
+        freeze=freeze,
+        sdpa=sdpa,
+        **(overrides or {}),
+    )
+    model, tokenizer = cast(Eve, started.model), started.tokenizer
     cfg = model.cfg
     data = task(tokenizer, cfg, train_cfg.seed, path=str(task_dir), library=library)
     joint = not freeze
@@ -120,7 +65,7 @@ def finetune(
         "task": TASK,
         "frozen": freeze,
         "joint": joint,  # the decoder was trained to write argument values too
-        "trainable": trainable,
+        "trainable": started.trainable,
         "init": str(init or "scratch"),
     }
     return train(

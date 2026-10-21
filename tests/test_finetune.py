@@ -8,6 +8,7 @@ import torch.nn.functional as F
 from eve.config import INTENTS, preset
 from eve.data.render import IGNORE, Call, TaskCollator, TaskDataset, TaskExample, render
 from eve.data.schema import Tool
+from eve.model.build import freeze_body, load_init
 from eve.model.checkpoint import load_checkpoint, save_checkpoint
 from eve.model.eve import Eve, Questions
 from eve.tasks.questions import (
@@ -25,7 +26,7 @@ from eve.tasks.questions import (
 )
 from eve.tokenizer.bpe import BPETokenizer
 from eve.train.config import TrainConfig
-from eve.train.finetune import finetune, freeze_body, load_init
+from eve.train.finetune import finetune
 
 CFG = preset("tiny")
 

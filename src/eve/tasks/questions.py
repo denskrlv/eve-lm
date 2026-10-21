@@ -13,13 +13,14 @@ from eve.components import DataModule
 from eve.config import INTENTS, STOP
 from eve.data.modules import TaskData, in_batches
 from eve.data.render import IGNORE, Rendered, TaskCollator, TaskDataset, TaskExample
+from eve.model.build import QUESTIONS_TASK
 from eve.model.eve import Eve, Output, Questions, ask
 from eve.registry import register
 from eve.runtime import eval_mode, to_device
 from eve.tokenizer.bpe import BPETokenizer
 from eve.train.loop import Column, Report
 
-TASK = "questions"  # meta["task"] of the checkpoints this run writes
+TASK = QUESTIONS_TASK  # meta["task"] of the checkpoints this run writes
 COLUMNS = (
     Column("val loss", "val_loss"),
     Column("val macro", "val.macro_recall"),

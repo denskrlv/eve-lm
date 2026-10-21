@@ -1,14 +1,15 @@
 from pathlib import Path
+from typing import cast
 
 import torch
 
 from eve.config import ModelConfig
 from eve.data.modules import span_corruption
 from eve.data.pretrain import INPUT_LEN, raw_length
+from eve.model.build import start_model
 from eve.model.eve import Eve
 from eve.runtime import seed_everything
 from eve.tasks.span import SAMPLES, span_loss, span_metrics, span_samples
-from eve.tokenizer.bpe import BPETokenizer
 from eve.train.config import TrainConfig
 from eve.train.loop import train
 
@@ -33,10 +34,9 @@ def pretrain(
     fine-tuning uses has been trained (learned positions only learn where they are used).
     """
     data_dir = Path(data_dir)
-    tokenizer = BPETokenizer.load(tokenizer_path)
     seed_everything(train_cfg.seed)
-    model = Eve(cfg)
-    model.set_sdpa(sdpa)
+    started = start_model(config=cfg.to_dict(), tokenizer=tokenizer_path, sdpa=sdpa)
+    model, tokenizer = cast(Eve, started.model), started.tokenizer
     data = span_corruption(tokenizer, cfg, train_cfg.seed, path=str(data_dir))
 
     return train(

@@ -4,7 +4,9 @@ from pathlib import Path
 from typing import Any
 
 import torch
+from torch import nn
 
+from eve import registry
 from eve.config import ModelConfig
 from eve.model.eve import Eve
 from eve.tokenizer.bpe import BPETokenizer
@@ -28,15 +30,16 @@ class Checkpoint:
 
 def save_checkpoint(
     path: str | Path,
-    model: Eve,
+    model: nn.Module,
     tokenizer: BPETokenizer,
     meta: dict[str, Any] | None = None,
     train_state: dict[str, Any] | None = None,
 ) -> None:
-    """Save everything needed to rebuild the model: ``{format, config, state_dict, tokenizer,
-    meta}``. The book (ch. 5.4) saves only ``model.state_dict()`` and rebuilds the model from
-    a config it keeps in code; storing the config and tokenizer too means a checkpoint file
-    can't be paired with the wrong ones.
+    """Save everything needed to rebuild the model: ``{format, model, config, state_dict,
+    tokenizer, meta}``, where ``model`` is the architecture's registered name. The book
+    (ch. 5.4) saves only ``model.state_dict()`` and rebuilds the model from a config it keeps
+    in code; storing the architecture, config and tokenizer too means a checkpoint file can't
+    be paired with the wrong ones, and loads without knowing the code path that made it.
 
     ``meta`` is for things like the step, tokens seen and val loss. Keep it to plain Python
     values (numbers, strings, lists, dicts): files are loaded with ``weights_only=True``,
@@ -46,13 +49,15 @@ def save_checkpoint(
     The file is written to a temporary name and then renamed, so a crash during a save never
     leaves a half-written checkpoint behind.
     """
-    if tokenizer.vocab_size > model.cfg.vocab_size:
+    cfg = getattr(model, "cfg")  # noqa: B009 (nn.Module's __getattr__ hides it from mypy)
+    if tokenizer.vocab_size > cfg.vocab_size:
         raise ValueError(
-            f"tokenizer has {tokenizer.vocab_size} tokens, model only {model.cfg.vocab_size}"
+            f"tokenizer has {tokenizer.vocab_size} tokens, model only {cfg.vocab_size}"
         )
     data = {
         "format": FORMAT,
-        "config": model.cfg.to_dict(),
+        "model": _architecture(model),
+        "config": cfg.to_dict(),
         "state_dict": model.state_dict(),  # the tied LM head is saved as a shared tensor
         "tokenizer": tokenizer.to_dict(),
         "meta": meta or {},
@@ -66,6 +71,17 @@ def save_checkpoint(
     os.replace(tmp, path)
 
 
+def _architecture(model: nn.Module) -> str:
+    """The registered name of ``model``'s class, or of the nearest registered base class (a
+    test's subclass of ``Eve`` saves as "eve")."""
+    for cls in type(model).__mro__:
+        try:
+            return registry.name_of("model", cls)
+        except KeyError:
+            continue
+    raise KeyError(f"{type(model).__name__} is not a registered model")
+
+
 def _read(path: str | Path) -> dict[str, Any]:
     data = torch.load(path, map_location="cpu", weights_only=True)
     if not isinstance(data, dict) or data.get("format") != FORMAT:
@@ -77,7 +93,8 @@ def load_checkpoint(path: str | Path, device: str | torch.device = "cpu") -> Che
     """Rebuild the exact model that was saved (strict: every key must match). For resuming a
     run and for inference. The model comes back in train mode, like a new ``Eve``."""
     data = _read(path)
-    model = Eve(ModelConfig(**data["config"]))
+    architecture = registry.get("model", data.get("model", "eve"))  # older files: all Eve
+    model: Eve = architecture.from_config(data["config"])  # typed Eve: what every reader uses
     model.load_state_dict(data["state_dict"])
     tokenizer = BPETokenizer.from_dict(data["tokenizer"])
     return Checkpoint(model.to(device), tokenizer, data["meta"], data.get("train_state"))
