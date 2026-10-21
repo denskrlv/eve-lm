@@ -13,7 +13,7 @@ RUNS_DIR = "artifacts/runs"
 PRETRAIN_RUN = f"{RUNS_DIR}/pretrain"  # where a run without --config or --out writes
 FINETUNE_RUN = f"{RUNS_DIR}/questions"
 PRETRAINED_MODEL = f"{RUNS_DIR}/ab-dropout0-rope-qk/model.pt"  # the best ones so far
-FINETUNED_MODEL = f"{RUNS_DIR}/questions-full-v3/model.pt"
+FINETUNED_MODEL = f"{RUNS_DIR}/joint-base/model.pt"
 
 # Defaults shared by the command line and the library.
 TOKENIZER_WEIGHT = 50  # how many times tool schemas and commands count in tokenizer training
