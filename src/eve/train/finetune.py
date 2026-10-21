@@ -5,8 +5,7 @@ from typing import Any
 import torch
 
 from eve.config import ModelConfig
-from eve.data.jsonl import read_jsonl
-from eve.data.render import TaskCollator, TaskDataset, TaskExample
+from eve.data.modules import task
 from eve.data.schema import Tool
 from eve.model.checkpoint import (
     FRESH,
@@ -21,7 +20,6 @@ from eve.tasks.questions import (
     COLUMNS,
     HIGHLIGHTS,
     TASK,
-    VAL_SEED,
     eval_report,
     joint_loss,
     joint_metrics,
@@ -68,11 +66,6 @@ def load_init(path: str | Path, device: str | torch.device = "cpu", **overrides:
     return ckpt
 
 
-def load_examples(path: str | Path, library: dict[str, Tool]) -> list[TaskExample]:
-    """The examples of a task .jsonl file, with tools looked up in ``library``."""
-    return [TaskExample.from_json(row, library) for row in read_jsonl(path)]
-
-
 def _start_model(
     init: str | Path | None,
     scratch: ModelConfig | None,
@@ -89,19 +82,6 @@ def _start_model(
         raise ValueError("scratch needs tokenizer_path")
     model = Eve(replace(scratch, **overrides))
     return model, BPETokenizer.load(tokenizer_path)
-
-
-def _task_data(
-    task_dir: Path, library: dict[str, Tool], tokenizer: BPETokenizer, cfg: ModelConfig
-) -> tuple[TaskDataset, list[TaskExample], TaskDataset, TaskDataset]:
-    """The train set, the val examples and set, and the held-out-tool set of ``task_dir``."""
-    train_data = TaskDataset(load_examples(task_dir / "train.jsonl", library), tokenizer, cfg)
-    val_examples = load_examples(task_dir / "val.jsonl", library)
-    val_data = TaskDataset(val_examples, tokenizer, cfg, seed=VAL_SEED)
-    heldout = TaskDataset(
-        load_examples(task_dir / "heldout-templates.jsonl", library), tokenizer, cfg
-    )
-    return train_data, val_examples, val_data, heldout
 
 
 def finetune(
@@ -137,10 +117,11 @@ def finetune(
     model.set_sdpa(sdpa)
 
     cfg = model.cfg
-    train_data, val_examples, val_data, heldout = _task_data(task_dir, library, tokenizer, cfg)
-    collate = TaskCollator(cfg)
+    data = task(tokenizer, cfg, train_cfg.seed, path=str(task_dir), library=library)
     joint = not freeze
-    on_eval = eval_report(val_examples, val_data, heldout, collate, train_cfg.batch_size, joint)
+    on_eval = eval_report(
+        data.val_examples, data.val, data.heldout, data.collator, train_cfg.batch_size, joint
+    )
     meta = {
         "task": TASK,
         "frozen": freeze,
@@ -151,9 +132,7 @@ def finetune(
     return train(
         model,
         joint_loss if joint else question_loss,
-        train_data,
-        val_data,
-        collate,
+        data,
         train_cfg,
         out_dir,
         tokenizer,

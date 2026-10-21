@@ -4,9 +4,8 @@ from typing import Any
 import torch
 
 from eve.config import ModelConfig
-from eve.data.corpus import load_tokens
-from eve.data.pretrain import INPUT_LEN, SpanCorruptionDataset, raw_length
-from eve.data.render import collate_pretrain
+from eve.data.modules import span_corruption
+from eve.data.pretrain import INPUT_LEN, raw_length
 from eve.model.eve import Eve
 from eve.runtime import seed_everything
 from eve.tasks.span import COLUMNS, HIGHLIGHTS, SAMPLES, fill_in, span_loss, span_metrics
@@ -39,10 +38,7 @@ def pretrain(
     seed_everything(train_cfg.seed)
     model = Eve(cfg)
     model.set_sdpa(sdpa)
-    train_data = SpanCorruptionDataset(
-        load_tokens(data_dir / "train.bin"), cfg.max_encoder_len, seed=train_cfg.seed
-    )
-    val_data = SpanCorruptionDataset(load_tokens(data_dir / "val.bin"), cfg.max_encoder_len)
+    data = span_corruption(tokenizer, cfg, train_cfg.seed, path=str(data_dir))
 
     def on_eval(model: Eve) -> dict[str, Any]:
         return {"samples": [fill_in(model, tokenizer, text) for text in samples]}
@@ -50,9 +46,7 @@ def pretrain(
     return train(
         model,
         span_loss,
-        train_data,
-        val_data,
-        collate_pretrain,
+        data,
         train_cfg,
         out_dir,
         tokenizer,

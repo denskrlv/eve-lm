@@ -16,7 +16,10 @@ from typing import Any
 KINDS = (
     "data", "model", "loss", "metrics", "report", "optimizer", "schedule", "callback", "trainer"
 )  # fmt: skip
-BUILTIN = ("eve.train.optim",)  # the modules that register the built-in components
+BUILTIN = (
+    "eve.data.modules",
+    "eve.train.optim",
+)  # the modules that register the built-in components
 DISCOVERED = "eve.tasks"  # every module in this package is imported too: drop a file in it
 
 _components: dict[str, dict[str, Any]] = {kind: {} for kind in KINDS}

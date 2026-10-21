@@ -42,8 +42,15 @@ class Items(Protocol):
 class DataModule(Protocol):
     """Kind "data": the train and val sets and how to batch them."""
 
-    train: Items
-    val: Items
+    @property
+    def train(self) -> Items:
+        """The training items; batch ``step`` is a seeded shuffle (``loop.batch_indices``)."""
+        ...
+
+    @property
+    def val(self) -> Items:
+        """The val items; evals use its first ``eval_batches`` whole batches."""
+        ...
 
     def collate(self, items: Sequence[Any]) -> Batch:
         """Items of ``train`` or ``val`` -> one batch (see the module docstring for its keys)."""

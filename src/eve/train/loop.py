@@ -5,7 +5,7 @@ from collections.abc import Callable, Sequence
 from contextlib import AbstractContextManager, nullcontext
 from dataclasses import dataclass, field
 from pathlib import Path
-from typing import Any, Protocol, cast
+from typing import Any, cast
 
 import numpy as np
 import torch
@@ -13,7 +13,7 @@ from rich.text import Text
 from torch import nn
 
 from eve import progress
-from eve.components import OptimizerFactory, Schedule
+from eve.components import DataModule, OptimizerFactory, Schedule
 from eve.model.checkpoint import load_checkpoint, save_checkpoint
 from eve.model.eve import Eve
 from eve.runtime import eval_mode, to_device
@@ -24,7 +24,6 @@ from eve.train.optim import adamw, lr_at
 logger = logging.getLogger(__name__)
 
 LossFn = Callable[[Eve, dict[str, torch.Tensor]], dict[str, torch.Tensor]]
-Collate = Callable[[Sequence[Any]], dict[str, torch.Tensor]]
 Autocast = Callable[[], AbstractContextManager[Any]]
 RUN_FIELDS = (
     "eval_every",
@@ -33,15 +32,6 @@ RUN_FIELDS = (
     "log_every",
     "compile",
 )  # may change on resume
-
-
-class Items(Protocol):
-    """A map-style dataset: a length and an item per index (``TaskDataset``,
-    ``SpanCorruptionDataset``)."""
-
-    def __len__(self) -> int: ...
-
-    def __getitem__(self, index: int, /) -> Any: ...
 
 
 @dataclass(frozen=True)
@@ -218,28 +208,25 @@ def _autocast(device: torch.device, dtype_name: str) -> Autocast:
     return lambda: torch.autocast(device.type, dtype=dtype)
 
 
-def _val_batches(
-    val_data: Items, collate: Collate, cfg: TrainConfig
-) -> list[dict[str, torch.Tensor]]:
-    """The first ``eval_batches`` whole batches of ``val_data``: the same ones at every eval."""
-    size = cfg.batch_size
+def _val_batches(data: DataModule, cfg: TrainConfig) -> list[dict[str, torch.Tensor]]:
+    """The first ``eval_batches`` whole batches of val: the same ones at every eval."""
+    size, val = cfg.batch_size, data.val
     batches = [
-        collate([val_data[j] for j in range(i * size, (i + 1) * size)])
-        for i in range(min(cfg.eval_batches, len(val_data) // size))
+        data.collate([val[j] for j in range(i * size, (i + 1) * size)])
+        for i in range(min(cfg.eval_batches, len(val) // size))
     ]
     if not batches:
-        raise ValueError(f"val data has {len(val_data)} items, less than one batch")
+        raise ValueError(f"val data has {len(val)} items, less than one batch")
     return batches
 
 
-def _train_batch(
-    train_data: Items, collate: Collate, cfg: TrainConfig, step: int
-) -> dict[str, torch.Tensor]:
-    """Batch ``step``, after telling a dataset with ``set_epoch`` which epoch it is in."""
+def _train_batch(data: DataModule, cfg: TrainConfig, step: int) -> dict[str, torch.Tensor]:
+    """Batch ``step``, after telling a train set with ``set_epoch`` which epoch it is in."""
+    train_data = data.train
     idx = batch_indices(step, len(train_data), cfg)
     if hasattr(train_data, "set_epoch"):
         train_data.set_epoch(step // (len(train_data) // cfg.batch_size))
-    return collate([train_data[int(j)] for j in idx])
+    return data.collate([train_data[int(j)] for j in idx])
 
 
 def _train_step(
@@ -390,9 +377,7 @@ def _after_step(
 def train(
     model: Eve,
     loss_fn: LossFn,
-    train_data: Items,
-    val_data: Items,
-    collate: Collate,
+    data: DataModule,
     cfg: TrainConfig,
     out_dir: str | Path,
     tokenizer: BPETokenizer,
@@ -440,7 +425,7 @@ def train(
     step = _start_step(model, opt, out_dir, cfg, resume)
     end = cfg.steps if stop_after is None else min(stop_after, cfg.steps)
     report = report or Report()
-    val_batches = _val_batches(val_data, collate, cfg)
+    val_batches = _val_batches(data, cfg)
     evaluator = _Evaluator(
         runner, model, eval_fn or loss_fn, val_batches, device, autocast, report.on_eval
     )
@@ -451,7 +436,7 @@ def train(
     )
     _start_log(run, step)
 
-    step = _run_steps(run, runner, loss_fn, train_data, collate, device, autocast, step)
+    step = _run_steps(run, runner, loss_fn, data, device, autocast, step)
     bar.close()
     _finish(run, step)
     return evaluator.last_val
@@ -478,8 +463,7 @@ def _run_steps(
     run: _Run,
     runner: Eve,
     loss_fn: LossFn,
-    train_data: Items,
-    collate: Collate,
+    data: DataModule,
     device: torch.device,
     autocast: Autocast,
     step: int,
@@ -488,8 +472,8 @@ def _run_steps(
     the step reached."""
     window = _Window()
     while step < run.end:
-        batch = _train_batch(train_data, collate, run.cfg, step)
-        window.tokens += int(batch["enc_mask"].sum() + batch["dec_mask"].sum())
+        batch = _train_batch(data, run.cfg, step)
+        window.tokens += data.batch_tokens(batch)
         lr = run.schedule(step, run.cfg)
         losses, grad_norm = _train_step(
             runner, run.model, loss_fn, run.optimizer, batch, lr, run.cfg, device, autocast

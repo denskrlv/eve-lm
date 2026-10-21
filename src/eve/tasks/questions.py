@@ -10,6 +10,7 @@ import torch
 import torch.nn.functional as F
 
 from eve.config import INTENTS, STOP
+from eve.data.modules import in_batches
 from eve.data.render import IGNORE, Rendered, TaskCollator, TaskDataset, TaskExample
 from eve.model.eve import Eve, Output, Questions, ask
 from eve.registry import register
@@ -28,7 +29,6 @@ COLUMNS = (
 )  # the eval table; see score
 HIGHLIGHTS = ((r"→ [^|]*", "bold"), (r"\| gold .*", "dim"))  # describe's answers and gold
 SCORED = {"val": "val", "heldout": "held-out"}  # on_eval's score groups and their labels
-VAL_SEED = 1  # val's tool shuffle: unlike train's (seed 0), and the same at every eval
 
 
 def _losses(questions: Questions, batch: dict[str, torch.Tensor]) -> dict[str, torch.Tensor]:
@@ -404,16 +404,6 @@ def _shown(examples: Sequence[TaskExample]) -> list[int]:
     for i, example in enumerate(examples):
         first.setdefault(example.intent, i)
     return [first[intent] for intent in INTENTS if intent in first]
-
-
-def in_batches(
-    data: TaskDataset, collate: TaskCollator, size: int
-) -> list[dict[str, torch.Tensor]]:
-    """All of ``data`` in order, in batches of ``size`` (the last one may be smaller)."""
-    return [
-        collate([data[j] for j in range(i, min(i + size, len(data)))])
-        for i in range(0, len(data), size)
-    ]
 
 
 def eval_report(
