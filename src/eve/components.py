@@ -22,7 +22,7 @@ from torch import nn
 from eve.train.config import TrainConfig
 
 if TYPE_CHECKING:
-    from eve.train.loop import Report
+    from eve.train.loop import Report, Run
 
 Batch = dict[str, torch.Tensor]
 LossFn = Callable[[Any, Batch], dict[str, torch.Tensor]]
@@ -96,3 +96,21 @@ class Schedule(Protocol):
     """Kind "schedule": the learning rate of optimizer step ``step`` (0-based)."""
 
     def __call__(self, step: int, cfg: TrainConfig) -> float: ...
+
+
+class Callback(Protocol):
+    """Kind "callback": runs at the start, after every step and at the end of a run. The
+    trainer calls them in config order, ``on_end`` in reverse order; time spent in
+    ``on_start`` and ``on_step`` is left out of the logged speed (``Run.paused``)."""
+
+    def on_start(self, run: "Run", step: int) -> None:
+        """Before the first step; ``step`` is 0, or where a resumed run goes on from."""
+        ...
+
+    def on_step(self, run: "Run", step: int) -> None:
+        """After optimizer step ``step`` (1-based); ``run.last`` holds its stats."""
+        ...
+
+    def on_end(self, run: "Run", step: int) -> None:
+        """After the last step this run made."""
+        ...
