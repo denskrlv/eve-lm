@@ -29,6 +29,7 @@ from pathlib import Path
 from typing import Any
 
 from eve import defaults, registry
+from eve.model.build import start_model
 from eve.runtime import pick_device, seed_everything
 from eve.train.config import TrainConfig
 
@@ -207,8 +208,6 @@ def run(experiment: Experiment, **data_args: Any) -> dict[str, float]:
     Order, which the RNG depends on: seed, start the model (random weights come from the
     seeded RNG), then the data, the report and the rest.
     """
-    from eve.model.build import start_model  # the model and trainer modules import this one
-
     c, params = experiment.components, experiment.params
     train_cfg = experiment.train
     seed = train_cfg.seed
