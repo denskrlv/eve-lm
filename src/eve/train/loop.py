@@ -1,6 +1,5 @@
 import json
 import logging
-import math
 import time
 from collections.abc import Callable, Sequence
 from contextlib import AbstractContextManager, nullcontext
@@ -14,11 +13,13 @@ from rich.text import Text
 from torch import nn
 
 from eve import progress
+from eve.components import OptimizerFactory, Schedule
 from eve.model.checkpoint import load_checkpoint, save_checkpoint
 from eve.model.eve import Eve
 from eve.runtime import eval_mode, to_device
 from eve.tokenizer.bpe import BPETokenizer
 from eve.train.config import DTYPES, TrainConfig
+from eve.train.optim import adamw, lr_at
 
 logger = logging.getLogger(__name__)
 
@@ -91,45 +92,6 @@ class Report:
     on_eval: Callable[[Eve], dict[str, Any]] | None = None
     summary: Callable[[dict[str, Any]], list[tuple[str, str]]] | None = None
     highlights: Sequence[tuple[str, str]] = ()
-
-
-def lr_at(step: int, cfg: TrainConfig) -> float:
-    """Book App. D: linear warmup to ``lr``, then cosine decay to ``lr * min_lr_ratio``.
-
-    Warmup: early gradients come from random weights and are large and noisy, and Adam's
-    running averages are still empty, so big steps would throw the weights around. Cosine:
-    large steps while the loss falls fast, small careful ones at the end.
-    """
-    if step < cfg.warmup_steps:
-        return cfg.lr * (step + 1) / cfg.warmup_steps
-    min_lr = cfg.lr * cfg.min_lr_ratio
-    progress = (step - cfg.warmup_steps) / max(1, cfg.steps - cfg.warmup_steps)
-    return min_lr + (cfg.lr - min_lr) * 0.5 * (1 + math.cos(math.pi * min(progress, 1.0)))
-
-
-def param_groups(model: nn.Module, weight_decay: float) -> list[dict[str, Any]]:
-    """Weight decay only on the weight matrices of linear layers.
-
-    Decay pulls every weight a little towards 0 each step. That makes sense for matrices,
-    where it keeps any one connection from growing huge. It doesn't for LayerNorm's scale
-    (pulling it to 0 would switch features off), for biases, or for embeddings: a rare token's
-    row gets few gradient updates, so decay would shrink it towards 0 between them. The tied LM
-    head is the token embedding, so it is not decayed either.
-    """
-    embeddings = {id(m.weight) for m in model.modules() if isinstance(m, nn.Embedding)}
-    matrices = {
-        id(m.weight)
-        for m in model.modules()
-        if isinstance(m, nn.Linear) and id(m.weight) not in embeddings
-    }
-    decay: list[nn.Parameter] = []
-    no_decay: list[nn.Parameter] = []
-    for param in model.parameters():  # each tensor once, even the tied one
-        (decay if id(param) in matrices else no_decay).append(param)
-    return [
-        {"params": decay, "weight_decay": weight_decay},
-        {"params": no_decay, "weight_decay": 0.0},
-    ]
 
 
 def batch_indices(step: int, n_items: int, cfg: TrainConfig) -> np.ndarray:
@@ -256,15 +218,6 @@ def _autocast(device: torch.device, dtype_name: str) -> Autocast:
     return lambda: torch.autocast(device.type, dtype=dtype)
 
 
-def _optimizer(model: Eve, cfg: TrainConfig, device: torch.device) -> torch.optim.AdamW:
-    return torch.optim.AdamW(
-        param_groups(model, cfg.weight_decay),
-        lr=cfg.lr,
-        betas=(cfg.beta1, cfg.beta2),
-        fused=device.type in ("cuda", "mps"),
-    )
-
-
 def _val_batches(
     val_data: Items, collate: Collate, cfg: TrainConfig
 ) -> list[dict[str, torch.Tensor]]:
@@ -368,7 +321,7 @@ def _start_step(
 
 
 def _prepare(
-    model: Eve, cfg: TrainConfig, device: torch.device
+    model: Eve, cfg: TrainConfig, device: torch.device, optimizer: OptimizerFactory
 ) -> tuple[Eve, torch.optim.Optimizer, Autocast]:
     """The model to run forward passes with, the optimizer, and the autocast context."""
     # torch.compile traces the forward pass once and fuses its many small operations (each
@@ -376,7 +329,7 @@ def _prepare(
     # MPS, same losses. The first step takes ~20 s to compile. ``model`` itself stays eager for
     # ``on_eval``, whose generation changes shape every token, and for saving.
     runner = cast(Eve, torch.compile(model)) if cfg.compile else model
-    return runner, _optimizer(model, cfg, device), _autocast(device, cfg.dtype)
+    return runner, optimizer(model, cfg, device), _autocast(device, cfg.dtype)
 
 
 @dataclass
@@ -394,6 +347,7 @@ class _Run:
     bar: progress.Bar
     evaluator: _Evaluator
     report: Report
+    schedule: Schedule
     train_loss: float | None = None  # the mean of the last logged window
     start: float = field(default_factory=time.time)
 
@@ -448,12 +402,15 @@ def train(
     resume: bool = False,
     stop_after: int | None = None,
     meta: dict[str, Any] | None = None,
+    optimizer: OptimizerFactory = adamw,
+    schedule: Schedule = lr_at,
 ) -> dict[str, float]:
     """The training loop for pretraining and fine-tuning (book ch. 5.2 ``train_model_simple``
     plus App. D's warmup, cosine decay and gradient clipping).
 
     Each step: a batch -> ``loss_fn`` gives named losses -> their sum is backpropagated ->
-    gradients are clipped to norm ``grad_clip`` -> AdamW step at ``lr_at(step)``.
+    gradients are clipped to norm ``grad_clip`` -> ``optimizer`` step at ``schedule(step)``
+    (default: AdamW, warmup then cosine decay; see ``eve.train.optim``).
 
     ``out_dir`` gets:
     - ``metrics.jsonl``: one JSON line per log (``kind`` "train"), eval ("val") and sample
@@ -479,8 +436,8 @@ def train(
     out_dir, device = Path(out_dir), torch.device(device)
     out_dir.mkdir(parents=True, exist_ok=True)
     model.to(device).train()
-    runner, optimizer, autocast = _prepare(model, cfg, device)
-    step = _start_step(model, optimizer, out_dir, cfg, resume)
+    runner, opt, autocast = _prepare(model, cfg, device, optimizer)
+    step = _start_step(model, opt, out_dir, cfg, resume)
     end = cfg.steps if stop_after is None else min(stop_after, cfg.steps)
     report = report or Report()
     val_batches = _val_batches(val_data, collate, cfg)
@@ -489,7 +446,9 @@ def train(
     )
     bar = progress.bar(end, out_dir.name, "steps", initial=step)  # to where this run stops
     log = MetricsLog(out_dir / "metrics.jsonl")
-    run = _Run(cfg, end, out_dir, model, tokenizer, optimizer, meta, log, bar, evaluator, report)
+    run = _Run(
+        cfg, end, out_dir, model, tokenizer, opt, meta, log, bar, evaluator, report, schedule
+    )
     _start_log(run, step)
 
     step = _run_steps(run, runner, loss_fn, train_data, collate, device, autocast, step)
@@ -531,7 +490,7 @@ def _run_steps(
     while step < run.end:
         batch = _train_batch(train_data, collate, run.cfg, step)
         window.tokens += int(batch["enc_mask"].sum() + batch["dec_mask"].sum())
-        lr = lr_at(step, run.cfg)
+        lr = run.schedule(step, run.cfg)
         losses, grad_norm = _train_step(
             runner, run.model, loss_fn, run.optimizer, batch, lr, run.cfg, device, autocast
         )

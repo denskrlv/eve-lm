@@ -1,8 +1,9 @@
 """Swappable components by kind and name: ``@register("loss", "joint")``, then a config's
 ``loss = "joint"`` picks it (see ``eve.experiment``).
 
-Function kinds (``FUNCTIONS``) register the function itself: ``build`` binds a config's params
-to it. The other kinds register a builder (a function or class) that ``build`` calls with them.
+A component is a function or class. ``build`` binds a config's params to it as keywords; the
+caller passes what only exists at run time (the model, a batch, the tokenizer...) when it calls
+the result. Each kind's call signature is in ``eve.components``.
 """
 
 import importlib
@@ -15,8 +16,7 @@ from typing import Any
 KINDS = (
     "data", "model", "loss", "metrics", "report", "optimizer", "schedule", "callback", "trainer"
 )  # fmt: skip
-FUNCTIONS = frozenset({"loss", "metrics", "schedule"})  # built by binding params, not calling
-BUILTIN: tuple[str, ...] = ()  # the modules that register the built-in components
+BUILTIN = ("eve.train.optim",)  # the modules that register the built-in components
 DISCOVERED = "eve.tasks"  # every module in this package is imported too: drop a file in it
 
 _components: dict[str, dict[str, Any]] = {kind: {} for kind in KINDS}
@@ -66,12 +66,9 @@ def get(kind: str, name: str) -> Any:
 
 
 def build(kind: str, name: str, **params: Any) -> Any:
-    """The ``kind`` component ``name`` made from a config's ``params``: a function kind with the
-    params bound (itself if there are none), any other kind its builder called with them."""
+    """The ``kind`` component ``name`` with a config's ``params`` bound (itself without any)."""
     component = get(kind, name)
-    if kind in FUNCTIONS:
-        return partial(component, **params) if params else component
-    return component(**params)
+    return partial(component, **params) if params else component
 
 
 def names(kind: str) -> list[str]:

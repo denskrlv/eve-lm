@@ -10,7 +10,7 @@ def clean(monkeypatch):
     monkeypatch.setattr(registry, "_loaded", True)
 
 
-def test_function_kinds_get_their_params_bound(clean):
+def test_build_binds_the_params(clean):
     @registry.register("loss", "scaled")
     def scaled(model, batch, scale=1.0):
         return {"loss": batch * scale}
@@ -19,13 +19,13 @@ def test_function_kinds_get_their_params_bound(clean):
     assert registry.build("loss", "scaled", scale=3.0)(None, 2.0) == {"loss": 6.0}
 
 
-def test_other_kinds_are_called_with_their_params(clean):
+def test_a_class_is_bound_too(clean):
     @registry.register("optimizer", "fake")
     class Fake:
-        def __init__(self, lr=0.1):
-            self.lr = lr
+        def __init__(self, model, lr=0.1):
+            self.model, self.lr = model, lr
 
-    assert registry.build("optimizer", "fake", lr=0.5).lr == 0.5
+    assert registry.build("optimizer", "fake", lr=0.5)("model").lr == 0.5
     assert registry.names("optimizer") == ["fake"]
     assert registry.name_of("optimizer", Fake) == "fake"
 
