@@ -10,16 +10,16 @@ from eve.config import INTENTS
 from eve.data.render import TaskCollator, TaskDataset, TaskExample
 from eve.data.schema import Tool
 from eve.model.checkpoint import Checkpoint, load_checkpoint
-from eve.train.finetune import (
+from eve.tasks.questions import (
     TASK,
     VAL_SEED,
     Outcome,
     Tally,
     in_batches,
-    load_examples,
     outcomes,
     tally,
 )
+from eve.train.finetune import load_examples
 
 SETS = ("val", "heldout-templates", "massive-test")  # the task files scored by default
 SEEDS = {"val": VAL_SEED}  # tool-shuffle seeds that differ from TaskDataset's default

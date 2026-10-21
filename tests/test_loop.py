@@ -12,11 +12,11 @@ from eve.data.pretrain import SpanCorruptionDataset
 from eve.data.render import collate_pretrain
 from eve.model.checkpoint import load_checkpoint, save_checkpoint
 from eve.model.eve import Eve
+from eve.tasks.span import span_loss
 from eve.tokenizer.bpe import BYTE0, BPETokenizer
 from eve.train.config import TrainConfig
 from eve.train.loop import Column, Report, batch_indices, train
 from eve.train.optim import lr_at, param_groups
-from eve.train.pretrain import span_loss
 
 CFG = preset("tiny", dropout=0.1)  # dropout on, so resuming must restore the RNG too
 CPU = torch.device("cpu")

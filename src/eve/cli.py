@@ -403,7 +403,7 @@ def _print_fill_report(
     model_path: str, meta: dict[str, Any], device: torch.device, filled: list[str]
 ) -> None:
     """Which checkpoint filled the holes and how far it was trained, then each filled text."""
-    from eve.train.pretrain import HIGHLIGHTS
+    from eve.tasks.span import HIGHLIGHTS
 
     trained = f"{meta['step']:,} steps" if "step" in meta else "?"
     if "val_lm" in meta:
@@ -422,7 +422,7 @@ def fill(args: argparse.Namespace) -> None:
     """Learn (M4): ask a pretrained model to fill the <x0>, <x1>… holes in a sentence."""
     from eve import progress
     from eve.model.checkpoint import load_checkpoint
-    from eve.train.pretrain import SAMPLES, fill_in
+    from eve.tasks.span import SAMPLES, fill_in
 
     texts = args.text or list(SAMPLES)
     if bad := [t for t in texts if "<x0>" not in t]:

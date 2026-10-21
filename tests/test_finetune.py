@@ -10,15 +10,10 @@ from eve.data.render import IGNORE, Call, TaskCollator, TaskDataset, TaskExample
 from eve.data.schema import Tool
 from eve.model.checkpoint import load_checkpoint, save_checkpoint
 from eve.model.eve import Eve, Questions
-from eve.tokenizer.bpe import BPETokenizer
-from eve.train.config import TrainConfig
-from eve.train.finetune import (
+from eve.tasks.questions import (
     describe,
-    finetune,
-    freeze_body,
     joint_loss,
     joint_metrics,
-    load_init,
     outcomes,
     question_loss,
     question_metrics,
@@ -28,6 +23,9 @@ from eve.train.finetune import (
     tally,
     value_hits,
 )
+from eve.tokenizer.bpe import BPETokenizer
+from eve.train.config import TrainConfig
+from eve.train.finetune import finetune, freeze_body, load_init
 
 CFG = preset("tiny")
 
