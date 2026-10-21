@@ -110,7 +110,7 @@ def test_evaluate_prints_json(
     main([*argv, "--json"])
     out = json.loads(capsys.readouterr().out.strip().splitlines()[-1])
     assert set(out) == {"val"} and out["val"]["examples"] == 3
-    assert {"macro_recall", "exact_acc"} <= set(out["val"]["scores"])
+    assert {"macro_recall", "exact_acc", "value_acc", "full_acc"} <= set(out["val"]["scores"])
     assert "by_tool" not in out["val"]
 
     main([*argv, "--json", "--by-tool"])

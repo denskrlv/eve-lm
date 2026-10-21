@@ -37,6 +37,8 @@ class ToolResult:
     tools_acc: float  # the right tools in the right order, then STOP
     exact_acc: float  # both
     answered: dict[str, int]  # intent answered -> examples
+    value_acc: float | None = None  # argument values written right; None if not scored
+    full_acc: float | None = None  # exact, and every value right
 
     @classmethod
     def from_tally(cls, tool: str, counts: Tally) -> "ToolResult":
@@ -49,6 +51,8 @@ class ToolResult:
             tools_acc=scores["tools_acc"],
             exact_acc=scores["exact_acc"],
             answered={s: sum(counts.answered[g, s] for g in INTENTS) for s in INTENTS},
+            value_acc=scores.get("value_acc"),
+            full_acc=scores.get("full_acc"),
         )
 
 
@@ -84,7 +88,9 @@ def load_questions_model(path: str | Path, device: str | torch.device = "cpu") -
 def evaluate_set(
     ckpt: Checkpoint, path: Path, library: dict[str, Tool], batch_size: int
 ) -> SetResult:
-    """Score the heads on every example of one task file, in order.
+    """Score the heads and the decoder's argument values on every example of one task file,
+    in order. A checkpoint from before the joint run (``meta["joint"]`` unset) has an untrained
+    decoder: its values are scored anyway, and show it.
 
     Each file keeps the tool shuffle fine-tuning's evals used (``SEEDS``), so a model's val
     and held-out scores here are the ones its run logged at its last eval.

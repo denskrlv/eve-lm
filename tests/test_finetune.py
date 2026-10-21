@@ -16,6 +16,8 @@ from eve.train.finetune import (
     describe,
     finetune,
     freeze_body,
+    joint_loss,
+    joint_metrics,
     load_init,
     outcomes,
     question_loss,
@@ -24,6 +26,7 @@ from eve.train.finetune import (
     score_line,
     summary,
     tally,
+    value_hits,
 )
 
 CFG = preset("tiny")
@@ -85,6 +88,26 @@ class Oracle(Eve):
         return self.answers
 
 
+class Writer(Oracle):
+    """An Oracle whose decoder also writes every value right, except the ``wrong`` positions
+    (example, decoder position)."""
+
+    def __init__(self, batch, wrong=(), **kwargs):
+        super().__init__(batch, **kwargs)
+        labels = batch["dec_labels"].clone()
+        for i, j in wrong:
+            labels[i, j] = (labels[i, j] + 1) % CFG.vocab_size
+        self.lm = F.one_hot(labels.clamp(min=0), CFG.vocab_size).float() * 10
+
+    def decode(self, *args, **kwargs) -> torch.Tensor:
+        return self.lm
+
+
+def value_positions(batch, example):
+    """The labelled decoder positions of one example of ``batch``."""
+    return (batch["dec_labels"][example] != IGNORE).nonzero().flatten().tolist()
+
+
 def test_loss_is_cross_entropy_over_labelled_answers(batch):
     model = make()
     loss = question_loss(model, batch)
@@ -101,6 +124,62 @@ def test_slot_loss_is_zero_without_slot_labels(library, tokenizer):
     b = TaskCollator(CFG)([render(e, tokenizer, CFG) for e in unclear])
     loss = question_loss(make(), b)
     assert loss["slots"].item() == 0.0 and torch.isfinite(loss["intent"])
+
+
+def test_joint_loss_adds_the_value_tokens_cross_entropy(batch):
+    model = make()
+    loss = joint_loss(model, batch)
+    assert set(loss) == {"intent", "slots", "values"}
+    torch.testing.assert_close(loss["intent"], question_loss(model, batch)["intent"])
+    out = model(batch["enc_ids"], batch["enc_mask"], batch["dec_ids"], batch["dec_mask"])
+    labels = batch["dec_labels"]
+    expected = F.cross_entropy(out.lm[labels != IGNORE], labels[labels != IGNORE])
+    torch.testing.assert_close(loss["values"], expected)
+
+
+def test_value_loss_is_zero_without_calls(library, tokenizer):
+    no_calls = [e for e in examples(library) if not e.calls]
+    b = TaskCollator(CFG)([render(e, tokenizer, CFG) for e in no_calls])
+    loss = joint_loss(make(), b)
+    assert loss["values"].item() == 0.0 and torch.isfinite(loss["intent"])
+
+
+def test_value_hits_counts_values_with_every_token_right(batch):
+    # set_lights(room=kitchen, on=false, brightness absent): 3 values
+    values, right = value_hits(Writer(batch).lm, batch["dec_labels"])
+    assert values[0] == 3 and values.tolist() == right.tolist()
+    assert values[3:].tolist() == [0, 0, 0]  # unclear ASK, UNSUPPORTED, NONE: no calls
+
+    first, *_, last = value_positions(batch, 0)
+    lm = Writer(batch, wrong=[(0, first), (0, last)]).lm  # kitchen's first token; <absent>
+    values, right = value_hits(lm, batch["dec_labels"])
+    assert values[0] == 3 and right[0] == 1
+
+
+def test_joint_metrics_score_the_values(batch):
+    perfect = joint_metrics(Writer(batch), batch)
+    assert perfect["value_acc"].item() == perfect["full_acc"].item() == 1.0
+    assert perfect["exact_acc"].item() == 1.0
+    loss = perfect["intent"] + perfect["slots"] + perfect["values"]
+    torch.testing.assert_close(perfect["loss"], loss)
+
+    one_wrong = joint_metrics(Writer(batch, wrong=[(1, value_positions(batch, 1)[0])]), batch)
+    n_values = (value_hits(Writer(batch).lm, batch["dec_labels"])[0]).sum().item()
+    assert one_wrong["value_acc"].item() == pytest.approx(1 - 1 / n_values)
+    assert one_wrong["exact_acc"].item() == 1.0
+    assert one_wrong["full_acc"].item() == pytest.approx(5 / 6)
+
+
+def test_score_counts_values_only_with_the_decoder(batch):
+    wrong = [(1, value_positions(batch, 1)[0])]
+    s = score(Writer(batch, wrong=wrong), [batch])
+    assert s["exact_acc"] == 1.0 and s["full_acc"] == pytest.approx(5 / 6)
+    assert 0.9 < s["value_acc"] < 1.0
+    assert "values" in score_line(s) and "full" in score_line(s)
+
+    questions_only = score(Writer(batch, wrong=wrong), [batch], values=False)
+    assert "value_acc" not in questions_only and "full_acc" not in questions_only
+    assert "values" not in score_line(questions_only)
 
 
 def test_metrics_of_perfect_and_wrong_answers(batch):
@@ -168,8 +247,10 @@ def test_finetune_frozen_then_full(library, tokenizer, tmp_path):
         init=tmp_path / "pre.pt", freeze=True,
     )  # fmt: skip
     assert {"val_intent", "val_slots", "val_intent_acc", "val_tools_acc"} <= set(val)
+    assert "val_values" not in val  # frozen: the decoder isn't trained or scored
     stage1 = load_checkpoint(tmp_path / "frozen" / "model.pt")
     assert stage1.meta["task"] == "questions" and stage1.meta["frozen"] is True
+    assert stage1.meta["joint"] is False
     body = {k: v for k, v in pretrained.state_dict().items() if not k.startswith("questions.")}
     for k, v in body.items():  # frozen: the body didn't move
         torch.testing.assert_close(stage1.model.state_dict()[k], v)
@@ -178,15 +259,24 @@ def test_finetune_frozen_then_full(library, tokenizer, tmp_path):
     samples = [r for r in records if r["kind"] == "samples"]
     assert [r["step"] for r in samples] == [0, 2, 4]
     assert {"macro_recall", "exact_acc"} <= set(samples[-1]["heldout"]) & set(samples[-1]["val"])
+    assert "value_acc" not in samples[-1]["val"]
 
     # Stage 2 starts from stage 1 with its trained question block, then trains everything.
     stage2 = load_init(tmp_path / "frozen" / "model.pt")
     for k, v in stage1.model.state_dict().items():
         torch.testing.assert_close(stage2.model.state_dict()[k], v)
-    finetune(
+    val = finetune(
         train_cfg, tmp_path / "task", tmp_path / "full", "cpu", library,
         init=tmp_path / "frozen" / "model.pt",
     )  # fmt: skip
+    assert {"val_values", "val_value_acc", "val_full_acc"} <= set(val)
+    assert val["val_loss"] == pytest.approx(
+        val["val_intent"] + val["val_slots"] + val["val_values"]
+    )
+    records = [json.loads(line) for line in (tmp_path / "full" / "metrics.jsonl").open()]
+    samples = [r for r in records if r["kind"] == "samples"]
+    assert {"value_acc", "full_acc"} <= set(samples[-1]["val"]) & set(samples[-1]["heldout"])
+    assert load_checkpoint(tmp_path / "full" / "model.pt").meta["joint"] is True
     full = load_checkpoint(tmp_path / "full" / "model.pt").model.state_dict()
     assert not torch.allclose(
         full["encoder.0.attn.W_query.weight"], body["encoder.0.attn.W_query.weight"]

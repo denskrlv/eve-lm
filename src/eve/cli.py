@@ -52,6 +52,8 @@ SCORE_COLUMNS = (  # eve evaluate's table: (label, key in the scores)
     *((intent[:5], f"recall_{intent}") for intent in INTENTS),  # "unsupported" -> "unsup"
     ("tools", "tools_acc"),
     ("exact", "exact_acc"),
+    ("values", "value_acc"),
+    ("full", "full_acc"),
 )
 Sample = str | list[str]  # a text, or a tool schema as its parts
 PIECE_COLORS = ("cyan", "magenta")  # tokenizer stats alternates them between token pieces
@@ -311,7 +313,7 @@ def _finetune_panel(
 
 
 def finetune(args: argparse.Namespace) -> None:
-    """Fine-tune the question heads with the command line's options."""
+    """Fine-tune the question heads and argument values with the command line's options."""
     from eve.config import preset
     from eve.data.generate.build import Sources
     from eve.data.jsonl import read_jsonl
@@ -585,12 +587,18 @@ def _answered(counts: dict[str, int]) -> Text:
 
 def _tools_table(name: str, result: "SetResult") -> "Table":
     """A row per gold tool, worst exact accuracy first, with what its examples were answered."""
-    out = table("gold tool", "n", "intent", "tools", "exact", "answered")
+    out = table("gold tool", "n", "intent", "tools", "exact", "values", "full", "answered")
     out.title, out.title_justify, out.title_style = f"{name} by tool", "left", "bold"
     out.columns[-1].justify, out.columns[-1].no_wrap = "left", False
     for tool in result.by_tool:
-        accuracies = (tool.intent_acc, tool.tools_acc, tool.exact_acc)
-        cells = [f"{tool.examples:,}", *(f"{a:.0%}" for a in accuracies)]
+        accuracies = (
+            tool.intent_acc,
+            tool.tools_acc,
+            tool.exact_acc,
+            tool.value_acc,
+            tool.full_acc,
+        )
+        cells = [f"{tool.examples:,}", *("" if a is None else f"{a:.0%}" for a in accuracies)]
         out.add_row(tool.tool, *cells, _answered(tool.answered))
     return out
 
@@ -827,7 +835,7 @@ def _add_pretrain_command(commands: Subcommands) -> None:
 
 
 def _add_finetune_command(commands: Subcommands) -> None:
-    parser = commands.add_parser("finetune", help="fine-tune the question heads (M7)")
+    parser = commands.add_parser("finetune", help="fine-tune questions and values (M7, M8)")
     parser.set_defaults(run=finetune)
     _add_config_arg(parser, "finetune")
     start = parser.add_mutually_exclusive_group()  # one is required; finetune checks
