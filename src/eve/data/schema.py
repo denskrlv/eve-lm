@@ -140,6 +140,27 @@ class Arg:
         text: str = value  # str and enum values are already text
         return text
 
+    def parse(self, text: str) -> Any:
+        """The value the decoder wrote, as this argument's type: the inverse of ``format``.
+        Raises ``SchemaError`` if it isn't a valid value (a word for an int, an option the
+        enum doesn't have, a number out of range)."""
+        text = text.strip()
+        value: Any = text
+        try:
+            if self.type == "bool":
+                if text not in ("true", "false"):
+                    raise ValueError
+                value = text == "true"
+            elif self.type == "int":
+                value = int(text)
+            elif self.type == "float":
+                value = float(text)  # check refuses nan and inf
+        except ValueError:
+            raise SchemaError(f"{self.name}: {text!r} is not a valid {self.type}") from None
+        if (error := self.check(value)) is not None:
+            raise SchemaError(error)
+        return value
+
 
 @dataclass(frozen=True)
 class Tool:

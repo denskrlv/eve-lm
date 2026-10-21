@@ -36,7 +36,7 @@ if TYPE_CHECKING:
 
     from eve.data.schema import Tool
     from eve.evaluate import SetResult
-    from eve.infer.predict import Answers
+    from eve.infer.predict import Answers, WrittenCall
     from eve.tokenizer.bpe import BPETokenizer
 
 TRAIN_DEFAULTS = TrainConfig(steps=1)  # the CLI's defaults are TrainConfig's own
@@ -501,15 +501,38 @@ def _ranked(probs: dict[str, float], count: int) -> Text:
     )
 
 
+def _values(call: "WrittenCall") -> Text:
+    """``room kitchen 98% · on false 99% · brightness –``: each argument and what the decoder
+    wrote, colored by how likely it is; ``?`` for one to ask the user for, ``✗`` if invalid."""
+    parts = []
+    for name, value in call.values.items():
+        part = Text(f"{name} ")
+        if value.kind == "absent":
+            part = Text(f"{name} –", style="dim")
+        elif value.kind == "ask":
+            part.append("?", style="bold yellow")
+        elif value.kind == "invalid":
+            part.append(f"{value.value!r} ✗", style="bold red")
+        else:
+            shown = value.value if isinstance(value.value, str) else json.dumps(value.value)
+            part.append(str(shown), style=f"bold {_confidence(value.prob)}")
+        if value.kind != "absent":
+            part.append(f" {value.prob:.0%}", style="dim")
+        parts.append(part)
+    return Text(" · ", style="dim").join(parts) if parts else Text("no arguments", style="dim")
+
+
 def _print_answers(text: str, answers: "Answers", as_json: bool) -> None:
     """The heads' answers for one request: one JSON line, or the intent and each call slot up
-    to the first one that says STOP."""
+    to the first one that says STOP, with its argument values if they were written."""
     if as_json:
         print(json.dumps({"utterance": text, **answers.to_json()}))
         return
     items = [("intent", _ranked(answers.intent, INTENTS_SHOWN))]
     for i, slot in enumerate(answers.slots, 1):
         items.append((f"call {i}", _ranked(slot, TOOLS_SHOWN)))
+        if i <= len(answers.written):
+            items.append(("", _values(answers.written[i - 1])))
         if max(slot, key=slot.__getitem__) == STOP:
             break
     console.print(rows(items, indent=2))
@@ -530,15 +553,17 @@ def _ask_interactively(show: Callable[[str], None]) -> None:
 
 
 def ask(args: argparse.Namespace) -> None:
-    """Learn (M7): what the question heads answer for a typed request, with probabilities."""
+    """Learn (M7, M8): what the question heads answer for a typed request, with probabilities,
+    and the argument values of each call, for a model from the joint run."""
     from eve.infer.predict import answer_questions
     from eve.model.checkpoint import load_checkpoint
 
     tools = _tools(args)
     ckpt = load_checkpoint(args.model, pick_device(args.device))
+    values = bool(ckpt.meta.get("joint"))  # earlier runs never trained the decoder to write them
 
     def show(text: str) -> None:
-        answers = answer_questions(ckpt.model, ckpt.tokenizer, text, tools)
+        answers = answer_questions(ckpt.model, ckpt.tokenizer, text, tools, values)
         _print_answers(text, answers, args.json)
 
     if args.text:
@@ -548,7 +573,8 @@ def ask(args: argparse.Namespace) -> None:
             show(text)
         return
     names = ", ".join(t.name for t in tools)
-    console.print(panel("eve ask", [("model", args.model), ("tools", names)]))
+    written = "written" if values else "not written: the model is not from a joint run"
+    console.print(panel("eve ask", [("model", args.model), ("tools", names), ("values", written)]))
     console.print(Text("type a request · empty line or Ctrl-D to quit\n", style="dim"))
     _ask_interactively(show)
 
@@ -899,7 +925,7 @@ def _add_run_command(commands: Subcommands) -> None:
 
 
 def _add_inspect_commands(commands: Subcommands) -> None:
-    parser = commands.add_parser("ask", help="ask the question heads about a request (M7)")
+    parser = commands.add_parser("ask", help="ask the model about a request (M7, M8)")
     parser.set_defaults(run=ask)
     parser.add_argument("text", nargs="*", help="requests; none: type them one by one")
     parser.add_argument("--tools", help="tool names from data/tools: set_lights,set_thermostat")
