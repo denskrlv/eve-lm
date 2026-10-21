@@ -1,3 +1,4 @@
+import hashlib
 import json
 import math
 import re
@@ -210,6 +211,11 @@ class Tool:
     def render(self) -> str:
         """The whole schema as one string (see ``render_parts``)."""
         return " ".join(self.render_parts())
+
+    def fingerprint(self) -> str:
+        """A short hash of the schema as the model reads it (``render``): two tools have the
+        same fingerprint only if their name, description and arguments all match."""
+        return hashlib.sha1(self.render().encode()).hexdigest()[:16]
 
     def arg(self, name: str) -> Arg:
         """The argument called ``name``."""

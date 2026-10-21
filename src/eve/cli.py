@@ -554,16 +554,20 @@ def _ask_interactively(show: Callable[[str], None]) -> None:
 
 def ask(args: argparse.Namespace) -> None:
     """Learn (M7, M8): what the question heads answer for a typed request, with probabilities,
-    and the argument values of each call, for a model from the joint run."""
-    from eve.infer.predict import answer_questions
+    and the argument values of each call, for a model from the joint run. The probabilities
+    use the checkpoint's temperatures if ``eve calibrate --save`` wrote them (M9): the
+    familiar-tool ones if the model trained on every tool given, else the new-tool ones."""
+    from eve.infer.predict import Calibrations, answer_questions
     from eve.model.checkpoint import load_checkpoint
 
     tools = _tools(args)
     ckpt = load_checkpoint(args.model, pick_device(args.device))
     values = bool(ckpt.meta.get("joint"))  # earlier runs never trained the decoder to write them
+    calibrations = Calibrations.from_meta(ckpt.meta)
+    calibration = calibrations.for_tools(tools)
 
     def show(text: str) -> None:
-        answers = answer_questions(ckpt.model, ckpt.tokenizer, text, tools, values)
+        answers = answer_questions(ckpt.model, ckpt.tokenizer, text, tools, values, calibration)
         _print_answers(text, answers, args.json)
 
     if args.text:
@@ -574,7 +578,11 @@ def ask(args: argparse.Namespace) -> None:
         return
     names = ", ".join(t.name for t in tools)
     written = "written" if values else "not written: the model is not from a joint run"
-    console.print(panel("eve ask", [("model", args.model), ("tools", names), ("values", written)]))
+    regime = "familiar" if calibrations.is_familiar(tools) else "new"
+    fitted = ckpt.meta.get("calibrated_on", {}).get(regime)
+    probs = f"calibrated for {regime} tools" if fitted else "as trained: see eve calibrate"
+    items = [("model", args.model), ("tools", names), ("values", written), ("probs", probs)]
+    console.print(panel("eve ask", items))
     console.print(Text("type a request · empty line or Ctrl-D to quit\n", style="dim"))
     _ask_interactively(show)
 
@@ -685,6 +693,103 @@ def evaluate(args: argparse.Namespace) -> None:
             results[name] = evaluate_set(ckpt, path, library, args.batch_size)
             bar.update()
     _print_evaluation(results, args.json, args.by_tool)
+
+
+def _calibration_table(
+    name: str, counts: dict[str, int], before: dict[str, Any], after: dict[str, Any]
+) -> "Table":
+    """A row per answer: how many, their accuracy, and the mean confidence and expected
+    calibration error before and after (``eve.calibrate.Reliability``)."""
+    out = table(name, "n", "accuracy", "confidence", "", "ECE", "", first_style="bold")
+    out.title = f"{counts['familiar']:,} familiar · {counts['new']:,} new"
+    out.title_justify, out.title_style = "left", "dim"
+    for head, old in before.items():
+        new = after[head]
+        out.add_row(
+            head,
+            f"{old.n:,}",
+            f"{old.accuracy:.1%}",
+            Text(f"{old.mean_confidence:.1%} →", style="dim"),
+            f"{new.mean_confidence:.1%}",
+            Text(f"{old.ece():.3f} →", style="dim"),
+            Text(f"{new.ece():.3f}", style="bold green" if new.ece() < old.ece() else "bold red"),
+        )
+    return out
+
+
+def calibrate(args: argparse.Namespace) -> None:
+    """Fit temperatures for familiar and for new tools (M9) and show how calibrated the
+    probabilities are before and after on each set; ``--save`` writes them into the model."""
+    from eve import progress
+    from eve.calibrate import (
+        HEADS,
+        REGIMES,
+        fit,
+        known_tools,
+        load_set,
+        reliability,
+        save_calibration,
+    )
+    from eve.data.generate.build import Sources
+    from eve.evaluate import load_questions_model, model_file, task_files
+    from eve.infer.predict import Calibrations
+
+    device = pick_device(args.device)
+    fit_on = {"familiar": args.fit_familiar, "new": args.fit_new}
+    sets = list(dict.fromkeys([*fit_on.values(), *args.sets]))  # the fit sets first, once
+    try:
+        paths = task_files(args.task, [*sets, "train"])
+        ckpt = load_questions_model(args.model, device)
+    except (FileNotFoundError, ValueError) as error:
+        raise SystemExit(str(error)) from error
+    if not ckpt.meta.get("joint"):
+        raise SystemExit(f"{args.model} is not from a joint run: its decoder writes no values")
+    library = Sources.load().library
+    with progress.bar(len(REGIMES) + len(sets), "calibrate", "passes", leave=False) as bar:
+        bar.set_stats("reading the training tools")
+        known = Calibrations(known=known_tools(paths["train"], library))
+        tasks = {
+            name: load_set(ckpt, paths[name], library, args.batch_size, known) for name in sets
+        }
+        fitted = {}
+        for regime, name in fit_on.items():
+            bar.set_stats(f"fitting {regime} on {name}")
+            fitted[regime] = fit(ckpt.model, tasks[name].batches, tasks[name].only(regime))
+            bar.update()
+        cal = Calibrations(fitted["familiar"], fitted["new"], known.known)
+        results = {}
+        for name in sets:
+            bar.set_stats(name)
+            results[name] = reliability(ckpt.model, tasks[name], [known, cal])
+            bar.update()
+    if args.save:
+        save_calibration(model_file(args.model), cal, fit_on)
+
+    if args.json:
+        sets_json = {
+            name: {
+                "examples": tasks[name].counts(),
+                **{h: {"before": old[h].to_json(), "after": new[h].to_json()} for h in HEADS},
+            }
+            for name, (old, new) in results.items()
+        }
+        temperatures = {"familiar": cal.familiar.to_dict(), "new": cal.new.to_dict()}
+        out = {"calibration": temperatures, "fitted_on": fit_on, "sets": sets_json}
+        print(json.dumps(out))
+        return
+    items: list[tuple[str, str | Text]] = [("model", str(args.model))]
+    for regime in REGIMES:
+        temps = getattr(cal, regime)
+        line = " · ".join(f"{head} {getattr(temps, head):.2f}" for head in HEADS)
+        items.append((regime, f"{line}   fitted on {fit_on[regime]}"))
+    items.append(("known tools", f"{len(cal.known):,} schemas in {paths['train']}"))
+    console.print(panel("eve calibrate", items))
+    for name, (old, new) in results.items():
+        console.print(_calibration_table(name, tasks[name].counts(), old, new))
+    if args.save:
+        success("temperatures saved", model_file(args.model))
+    else:
+        console.print(Text("not saved: add --save to write them into the model", style="dim"))
 
 
 def data_build(args: argparse.Namespace) -> None:
@@ -937,6 +1042,7 @@ def _add_inspect_commands(commands: Subcommands) -> None:
     parser.add_argument("--device", default=None)
 
     _add_evaluate_command(commands)
+    _add_calibrate_command(commands)
     parser = commands.add_parser("compare", help="val metrics of training runs side by side (M4)")
     parser.set_defaults(run=compare)
     parser.add_argument("runs", nargs="+", help="run directories, e.g. artifacts/runs/ab-*")
@@ -966,6 +1072,28 @@ def _add_evaluate_command(commands: Subcommands) -> None:
     )
     parser.add_argument("--batch-size", type=int, default=TRAIN_DEFAULTS.batch_size)
     parser.add_argument("--by-tool", action="store_true", help="also a row per gold tool")
+    parser.add_argument("--json", action="store_true", help="the results as one JSON object")
+    parser.add_argument("--device", default=None)
+
+
+def _add_calibrate_command(commands: Subcommands) -> None:
+    from eve.evaluate import SETS
+
+    parser = commands.add_parser("calibrate", help="fit the probabilities' temperatures (M9)")
+    parser.set_defaults(run=calibrate)
+    parser.add_argument(
+        "model", nargs="?", default=defaults.FINETUNED_MODEL, help="a model.pt or a run directory"
+    )
+    parser.add_argument("--task", default=defaults.TASK_DIR)
+    parser.add_argument(
+        "--fit-familiar", default="val", help="task file whose familiar-tool examples fit those"
+    )
+    parser.add_argument(
+        "--fit-new", default="probe-candidates", help="task file whose new-tool examples fit those"
+    )
+    parser.add_argument("--sets", nargs="+", default=list(SETS), help="task files to check them on")
+    parser.add_argument("--save", action="store_true", help="write them into the model file")
+    parser.add_argument("--batch-size", type=int, default=TRAIN_DEFAULTS.batch_size)
     parser.add_argument("--json", action="store_true", help="the results as one JSON object")
     parser.add_argument("--device", default=None)
 
