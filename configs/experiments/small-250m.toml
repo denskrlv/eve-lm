@@ -1,0 +1,24 @@
+# The small pretraining recipe as a full experiment: what `eve pretrain --config small-250m`
+# runs. Run it with `eve run configs/experiments/small-250m.toml`.
+
+[components]
+data = "span_corruption"
+loss = "span"
+metrics = "span"
+report = "span_samples"
+
+[model]
+preset = "small"
+dropout = 0.0
+rope = true
+qk_norm = true
+
+[data]
+path = "data/bin"
+
+[train]
+steps = 13730  # 250M corpus tokens: 250M // (32 * 569 tokens per window)
+compile = true
+
+[run]
+out = "artifacts/runs/small-250m"

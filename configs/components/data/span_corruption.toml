@@ -1,0 +1,2 @@
+# Span-corruption windows of a token corpus (box 4): <path>/train.bin and val.bin from `eve corpus`.
+path = "data/bin"

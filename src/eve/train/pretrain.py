@@ -1,17 +1,49 @@
 from pathlib import Path
-from typing import cast
+from typing import Any
 
 import torch
 
 from eve.config import ModelConfig
-from eve.data.modules import span_corruption
 from eve.data.pretrain import INPUT_LEN, raw_length
-from eve.model.build import start_model
-from eve.model.eve import Eve
-from eve.runtime import seed_everything
-from eve.tasks.span import SAMPLES, span_loss, span_metrics, span_samples
+from eve.experiment import Experiment, run
+from eve.tasks.span import SAMPLES
 from eve.train.config import TrainConfig
-from eve.train.loop import train
+
+
+def pretrain_experiment(
+    model: dict[str, Any],
+    train_cfg: TrainConfig,
+    data_dir: str | Path,
+    tokenizer_path: str | Path,
+    out_dir: str | Path,
+    device: str | torch.device | None = None,
+    resume: bool = False,
+    stop_after: int | None = None,
+    sdpa: bool = True,
+    samples: tuple[str, ...] = SAMPLES,
+) -> dict[str, Any]:
+    """The experiment ``pretrain`` runs, as config sections (see ``eve.experiment``):
+    span-corruption data, loss and metrics, and fill-in samples. ``model`` is the start of
+    the ``[model]`` table: a ``config`` or a ``preset`` and overrides."""
+    report = {} if tuple(samples) == SAMPLES else {"samples": list(samples)}
+    return {
+        "components": {
+            "data": "span_corruption",
+            "loss": "span",
+            "metrics": "span",
+            "report": "span_samples",
+        },
+        "model": {**model, "tokenizer": str(tokenizer_path), "sdpa": sdpa},
+        "data": {"path": str(data_dir)},
+        "report": report,
+        "train": train_cfg.to_dict(),
+        "run": {
+            "out": str(out_dir),
+            "device": None if device is None else str(device),
+            "resume": resume,
+            "stop_after": stop_after,
+        },
+    }
 
 
 def pretrain(
@@ -33,25 +65,11 @@ def pretrain(
     The input length is the model's ``max_encoder_len``, so every encoder position that
     fine-tuning uses has been trained (learned positions only learn where they are used).
     """
-    data_dir = Path(data_dir)
-    seed_everything(train_cfg.seed)
-    started = start_model(config=cfg.to_dict(), tokenizer=tokenizer_path, sdpa=sdpa)
-    model, tokenizer = cast(Eve, started.model), started.tokenizer
-    data = span_corruption(tokenizer, cfg, train_cfg.seed, path=str(data_dir))
-
-    return train(
-        model,
-        span_loss,
-        data,
-        train_cfg,
-        out_dir,
-        tokenizer,
-        device,
-        report=span_samples(data, tokenizer, train_cfg.batch_size, samples),
-        eval_fn=span_metrics,
-        resume=resume,
-        stop_after=stop_after,
-    )
+    values = pretrain_experiment(
+        {"config": cfg.to_dict()}, train_cfg, data_dir, tokenizer_path, out_dir, device,
+        resume, stop_after, sdpa, samples,
+    )  # fmt: skip
+    return run(Experiment.from_dict(values))
 
 
 def steps_for(tokens: int, batch_size: int, input_len: int = INPUT_LEN) -> int:

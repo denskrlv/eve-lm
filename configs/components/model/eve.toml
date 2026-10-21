@@ -1,0 +1,6 @@
+# The Eve encoder-decoder. Start it from `init` (a checkpoint), or random from `preset`
+# (tiny, small, base, medium) or a full `[model.config]` table; any other key overrides a
+# ModelConfig field (dropout, rope, qk_norm, ...).
+tokenizer = "artifacts/tokenizer/eve-8k.json"  # for a random start; a checkpoint has its own
+freeze = false  # train only the question block (experiment E2)
+sdpa = true  # PyTorch's fused attention kernel

@@ -1,0 +1,2 @@
+# Linear warmup, then cosine decay (eve.train.optim). Reads lr, warmup_steps, min_lr_ratio
+# and steps from [train].

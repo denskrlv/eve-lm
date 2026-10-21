@@ -251,6 +251,7 @@ def _run_rows(args: argparse.Namespace, device: torch.device) -> list[tuple[str,
     run += [f"stop at {args.stop_after:,}"] if args.stop_after else []
     run += ["resume"] if args.resume else []
     config = [("config", args.config)] if args.config else []
+    config += [("set", " · ".join(args.set))] if args.set else []
     return [*config, ("device", " · ".join(hardware)), ("output", " · ".join(run))]
 
 
@@ -271,11 +272,21 @@ def _pretrain_panel(
     return panel("eve pretrain", items + _run_rows(args, device))
 
 
+def _run_experiment(values: dict[str, Any], sets: list[str]) -> None:
+    """Apply the ``--set`` overrides to an experiment's sections and run it."""
+    from eve.experiment import Experiment, apply_sets, run
+
+    try:
+        experiment = Experiment.from_dict(apply_sets(values, sets))
+    except (KeyError, TypeError, ValueError) as error:
+        raise SystemExit(f"bad experiment: {error}") from error
+    run(experiment)
+
+
 def pretrain(args: argparse.Namespace) -> None:
     """Run span-corruption pretraining with the command line's options."""
     from eve.config import preset
-    from eve.train.pretrain import pretrain as run
-    from eve.train.pretrain import steps_for
+    from eve.train.pretrain import pretrain_experiment, steps_for
 
     overrides = {"rope": args.rope, "qk_norm": args.qk_norm}
     if args.dropout is not None:
@@ -285,8 +296,8 @@ def pretrain(args: argparse.Namespace) -> None:
     train_cfg = _train_config(args, steps, args.lr, compile=args.compile)
     device = pick_device(args.device)
     console.print(_pretrain_panel(args, cfg, device, steps))
-    run(
-        cfg,
+    values = pretrain_experiment(
+        {"preset": args.preset, **overrides},
         train_cfg,
         args.data,
         args.tokenizer,
@@ -295,6 +306,7 @@ def pretrain(args: argparse.Namespace) -> None:
         resume=args.resume,
         stop_after=args.stop_after,
     )
+    _run_experiment(values, args.set)
 
 
 def _finetune_panel(
@@ -314,10 +326,8 @@ def _finetune_panel(
 
 def finetune(args: argparse.Namespace) -> None:
     """Fine-tune the question heads and argument values with the command line's options."""
-    from eve.config import preset
-    from eve.data.generate.build import Sources
     from eve.data.jsonl import read_jsonl
-    from eve.train.finetune import finetune as run
+    from eve.train.finetune import finetune_experiment
 
     if (args.init is None) == (args.scratch is None):
         raise SystemExit("give one of --init or --scratch (on the command line or in --config)")
@@ -327,20 +337,32 @@ def finetune(args: argparse.Namespace) -> None:
     train_cfg = _train_config(args, steps, lr, eval_batches=ALL_VAL_BATCHES)
     device = pick_device(args.device)
     console.print(_finetune_panel(args, device, lr, steps, n_train))
-    run(
+    values = finetune_experiment(
         train_cfg,
         args.task,
         args.out,
         device,
-        Sources.load().library,
         init=args.init,
-        scratch=preset(args.scratch) if args.scratch else None,
+        scratch=args.scratch,
         tokenizer_path=args.tokenizer,
         freeze=args.freeze,
         overrides={} if args.dropout is None else {"dropout": args.dropout},
         resume=args.resume,
         stop_after=args.stop_after,
     )
+    _run_experiment(values, args.set)
+
+
+def run_file(args: argparse.Namespace) -> None:
+    """Run an experiment file: any registered components, see ``eve.experiment``."""
+    from eve.experiment import read
+
+    path = Path(args.experiment)
+    if not path.is_file():
+        raise SystemExit(f"no experiment file {path}")
+    items = [("config", str(path))] + ([("set", " · ".join(args.set))] if args.set else [])
+    console.print(panel("eve run", items))
+    _run_experiment(read(path), args.set)
 
 
 Runs = dict[str, tuple[dict[str, Any], dict[int, dict[str, Any]]]]  # name -> (start, evals)
@@ -766,6 +788,18 @@ def _add_run_args(parser: argparse.ArgumentParser) -> None:
     parser.add_argument("--device", default=None)
     parser.add_argument("--resume", action="store_true", help="continue from <out>/last.pt")
     parser.add_argument("--stop-after", type=int, default=None, help="stop early at this step")
+    _add_set_arg(parser)
+
+
+def _add_set_arg(parser: argparse.ArgumentParser) -> None:
+    """``--set section.key=value``: change any experiment value, e.g. components.loss=question."""
+    parser.add_argument(
+        "--set",
+        action="append",
+        default=[],
+        metavar="SECTION.KEY=VALUE",
+        help="override an experiment value (repeatable), e.g. components.loss=question",
+    )
 
 
 def _add_model_commands(commands: Subcommands) -> None:
@@ -855,6 +889,13 @@ def _add_finetune_command(commands: Subcommands) -> None:
     )
     parser.add_argument("--dropout", type=float, default=None, help="default: the checkpoint's")
     _add_run_args(parser)
+
+
+def _add_run_command(commands: Subcommands) -> None:
+    parser = commands.add_parser("run", help="run an experiment file, e.g. a run's config.toml")
+    parser.set_defaults(run=run_file)
+    parser.add_argument("experiment", help="configs/experiments/*.toml, or <run>/config.toml")
+    _add_set_arg(parser)
 
 
 def _add_inspect_commands(commands: Subcommands) -> None:
@@ -954,6 +995,7 @@ def build_parser() -> argparse.ArgumentParser:
     _add_corpus_command(commands)
     _add_pretrain_command(commands)
     _add_finetune_command(commands)
+    _add_run_command(commands)
     _add_inspect_commands(commands)
     _add_data_commands(commands)
     return parser
