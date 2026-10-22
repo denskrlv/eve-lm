@@ -1,0 +1,102 @@
+# Domains for TinyTools prompts: "name | what it covers", and "| concept-only" for the domains
+# of the held-out tools (data/tools/heldout). Those get scenes, explanations, ways to say it and
+# dialogues, but never a tool card, so the held-out set keeps measuring tools Eve never saw.
+
+lights | lamps, ceiling lights, brightness, colours of smart bulbs
+heating | thermostats, radiators, heaters, keeping rooms warm
+cooling | air conditioning, fans, keeping rooms cool
+air quality | purifiers, humidifiers, ventilation, fresh air
+doors and locks | front doors, locks, keys, garage doors, who is at the door
+home security | cameras, alarms, motion sensors, leaving the house safe
+blinds and curtains | opening and closing blinds, curtains and shutters
+cleaning | robot vacuums, mopping, tidying, cleaning schedules
+laundry | washing machines, dryers, folding, stains
+kitchen appliances | ovens, kettles, coffee machines, dishwashers
+cooking | recipes, cooking times, steps of a dish, oven temperatures
+groceries | shopping lists, what is in the fridge, running out of things
+meal planning | what to eat this week, diets, packed lunches
+baking | bread, cakes, cookies, dough, rising and baking times
+drinks | coffee, tea, smoothies, how strong or sweet
+music | songs, artists, playlists, volume, skipping tracks
+podcasts and audiobooks | episodes, chapters, playback speed, where you left off
+television | channels, shows, streaming, subtitles, the remote
+movies | finding a film, what is on, trailers, cinema times
+radio | stations, news on the radio, tuning in
+photos | taking pictures, albums, sharing photos, screenshots
+videos | recording, watching, sharing clips
+phone calls | calling people, missed calls, voicemail, speakerphone
+text messages | writing and reading texts, group chats, replies
+email | inbox, writing emails, attachments, unread mail
+contacts | adding people, phone numbers, addresses, birthdays
+social media | posts, likes, followers, notifications
+calendar | events, meetings, free time, moving appointments
+reminders | remembering to do things at a time or place
+alarms and timers | waking up, kitchen timers, snoozing, countdowns
+clocks and time zones | what time it is here and in other places
+to-do lists | tasks, checking things off, priorities
+notes | writing down ideas, finding old notes, voice notes
+weather | forecasts, rain, temperature outside, what to wear
+news | headlines, sports results, local news, topics
+navigation | directions, routes, traffic, how long a drive takes
+public transport | buses, trains, timetables, delays, tickets
+taxis and rides | booking a ride, pickup points, arrival times
+cars | fuel, tyre pressure, warming up the car, where you parked
+parking | finding a spot, paying for parking, time left
+cycling | bike routes, rides, distance, speed
+walking and running | steps, distance, pace, routes
+fitness | workouts, exercises, sets and reps, rest days
+sleep | bedtime, waking up, naps, sleep tracking
+health | medicine, doses, symptoms, appointments with a doctor
+first aid | small injuries, burns, what to do, calling for help
+pets | feeding, walks, vet visits, pet doors, water bowls
+plants and gardening | watering, sprinklers, seeds, sunlight, weeding
+lawn care | mowing, robot mowers, sprinklers, edges
+pools and hot tubs | water temperature, pumps, cleaning, covers
+shopping | ordering things, delivery, sizes, returns
+online orders | tracking packages, delivery times, refunds
+money and budgets | spending, saving, bills, monthly budgets
+banking | balances, transfers between your own accounts, cards
+bills and payments | electricity, water, rent, due dates
+restaurants | booking tables, menus, opening hours, takeaway
+food delivery | ordering food, delivery time, tips
+school and homework | assignments, subjects, due dates, studying
+languages | translating words, learning phrases, spelling
+reading | books, chapters, bookmarks, reading time
+writing | drafting, spelling, word counts, editing
+work and meetings | joining calls, sharing screens, agendas
+printing and scanning | printers, ink, paper, scanning documents
+computers | files, folders, screens, battery, restarting
+phones and tablets | battery, brightness, do not disturb, storage
+wifi and internet | the router, passwords, slow connection, guests
+smart speakers | volume, voices, grouping speakers, what they can do
+kids and family | screen time, bedtime stories, chores, school runs
+babies | feeding times, nap times, baby monitors
+elderly care | medicine reminders, check-in calls, emergencies
+events and parties | guest lists, invitations, music, decorations
+birthdays and gifts | gift ideas, cards, remembering dates
+holidays and celebrations | decorations, plans, traditions
+games and puzzles | board games, scores, timers, rules
+sports | matches, scores, teams, training
+hobbies and crafts | painting, knitting, drawing, building models
+camping and outdoors | tents, trails, packing lists, weather in the hills
+beach and swimming | sun cream, tides, swimming, water temperature
+recycling and waste | bin days, what goes where, compost
+energy at home | electricity use, solar panels, saving power
+water at home | leaks, water use, the water heater
+maintenance and repairs | fixing things, filters, booking a repair
+moving house | packing boxes, addresses, utilities, movers
+neighbours and community | lost pets, local events, noise
+emergencies | smoke alarms, power cuts, calling for help, flooding
+accessibility | reading text aloud, bigger text, voice control
+privacy and passwords | changing passwords, who can see what, locking a phone
+appointments | booking haircuts, dentists, opening hours
+offices and errands | post office, bank visits, picking things up
+packages and mail | letters, parcels, the mailbox, signing for things
+arithmetic | adding, subtracting, multiplying and dividing numbers | concept-only
+measurements and units | lengths, weights, temperatures, converting between units | concept-only
+currency and exchange | prices in other currencies, exchange rates | concept-only
+flights | flight times, departures, delays, gates | concept-only
+hotels and trips | booking a room, nights, guests, check-in | concept-only
+dates and counting | how many days until, ages, counting things
+recipes and portions | scaling a recipe, cups and spoons, servings
+time management | breaks, focus timers, routines

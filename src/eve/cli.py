@@ -5,6 +5,7 @@ import logging
 import sys
 import time
 import tomllib
+from collections import Counter
 from collections.abc import Callable, Sequence
 from pathlib import Path
 from typing import TYPE_CHECKING, Any
@@ -200,7 +201,7 @@ def tokenizer_stats(args: argparse.Namespace) -> None:
         console.print(_pieces(tokenizer.pieces(_encode_sample(tokenizer, text))))
 
 
-def corpus(args: argparse.Namespace) -> None:
+def corpus_encode(args: argparse.Namespace) -> None:
     """Encode the pretraining corpus into train and val token files."""
     from eve.data.corpus import encode_corpus
 
@@ -213,6 +214,83 @@ def corpus(args: argparse.Namespace) -> None:
         workers=args.workers,
     )
     success(f"train {meta['train_tokens']:,} and val {meta['val_tokens']:,} tokens", args.out)
+
+
+def corpus_prompts(args: argparse.Namespace) -> None:
+    """Write the prompts of a TinyTools run: one document to write per line."""
+    from eve.data.generate.tinytools import KINDS, Lexicon, make_prompts
+    from eve.data.jsonl import write_jsonl
+
+    path = Path(args.out) / "prompts.jsonl"
+    if path.exists() and not args.force:
+        raise SystemExit(f"{path} exists; documents may already follow it (--force replaces it)")
+    specs = make_prompts(Lexicon.load(args.lexicon), args.n, args.seed)
+    write_jsonl(path, (spec.to_json() for spec in specs))
+    counts = Counter(spec.kind for spec in specs)
+    kinds = " · ".join(f"{kind} {counts[kind]:,}" for kind in KINDS)
+    domains = len({spec.domain for spec in specs})
+    success(f"{len(specs):,} prompts ({kinds}) over {domains} domains", path)
+
+
+def corpus_check(args: argparse.Namespace) -> None:
+    """Check a TinyTools run's documents against their prompts; write the accepted ones."""
+    from eve.data.generate.tinytools import (
+        Lexicon,
+        PromptSpec,
+        check_corpus,
+        write_parquet,
+    )
+    from eve.data.jsonl import read_jsonl
+    from eve.data.schema import load_library
+
+    run = Path(args.dir)  # not args.run: that is the command's function
+    prompts, documents = run / "prompts.jsonl", run / "documents.jsonl"
+    for path in (prompts, documents):
+        if not path.is_file():
+            raise SystemExit(f"no {path}; see data/tinytools/README.md")
+    specs = [PromptSpec.from_json(row) for row in read_jsonl(prompts)]
+    texts = {str(row["id"]): str(row["text"]) for row in read_jsonl(documents)}
+    lexicon = Lexicon.load(args.lexicon)
+    heldout = list(load_library(Path(args.tools) / "heldout").values())
+    report = check_corpus(specs, texts, lexicon, heldout)
+    stats = report.stats(lexicon)
+    write_parquet(report.accepted, run / "tinytools.parquet")
+    (run / "report.json").write_text(
+        json.dumps(
+            {"stats": stats, "rejected": report.rejected, "missing": report.missing}, indent=1
+        )
+    )
+    if args.json:
+        print(json.dumps(stats))
+        return
+    _print_corpus_report(stats, report.rejected, run)
+
+
+def _print_corpus_report(stats: dict[str, Any], rejected: dict[str, list[str]], run: Path) -> None:
+    """The counts, the most common reject reasons and a few rejected documents."""
+    kinds = " · ".join(f"{k} {n:,}" for k, n in stats["accepted_by_kind"].items())
+    items: list[tuple[str, str | Text]] = [
+        ("accepted", f"{stats['accepted']:,} of {stats['prompts']:,} prompts · {kinds}"),
+        ("rejected", f"{stats['rejected']:,}"),
+        ("not written", f"{stats['missing']:,}"),
+        ("words", f"{stats['words']:,} · {stats['mean_words']:.0f} per document"),
+        (
+            "covered",
+            f"{stats['vocabulary_covered']:.0%} of the words · {stats['domains_covered']} domains",
+        ),
+    ]
+    if stats["unknown"]:
+        items.append(("unknown ids", f"{stats['unknown']:,} documents match no prompt"))
+    for i, (reason, n) in enumerate(stats["reject_reasons"].items()):
+        if i == 5:
+            break
+        items.append(("reasons" if i == 0 else "", f"{n:,} × {reason}"))
+    for i, (doc_id, reasons) in enumerate(rejected.items()):
+        if i == 3:
+            break
+        items.append(("examples" if i == 0 else "", f"{doc_id}: {'; '.join(reasons)}"))
+    console.print(panel("eve corpus check", items))
+    success("accepted documents", run / "tinytools.parquet")
 
 
 def _train_config(args: argparse.Namespace, steps: int, lr: float, **extra: Any) -> TrainConfig:
@@ -969,14 +1047,35 @@ def _add_tokenizer_commands(commands: Subcommands) -> None:
 
 
 def _add_corpus_command(commands: Subcommands) -> None:
-    parser = commands.add_parser("corpus", help="encode the pretraining corpus to token ids (M1)")
-    parser.set_defaults(run=corpus)
+    group = commands.add_parser(
+        "corpus", help="the pretraining corpus: encode it, or build TinyTools"
+    )
+    corpus_commands = group.add_subparsers(dest="corpus_command", required=True)
+    parser = corpus_commands.add_parser("encode", help="encode parquet text to token ids (M1)")
+    parser.set_defaults(run=corpus_encode)
     parser.add_argument("--parquet", default=defaults.PARQUET_GLOB)
     parser.add_argument("--tokenizer", default=defaults.TOKENIZER_FILE)
     parser.add_argument("--out", default=defaults.BIN_DIR)
     parser.add_argument("--train-tokens", default="250M")
     parser.add_argument("--val-tokens", default="2M")
     parser.add_argument("--workers", type=int, default=None)
+
+    parser = corpus_commands.add_parser("prompts", help="TinyTools: prompts for a generator")
+    parser.set_defaults(run=corpus_prompts)
+    parser.add_argument("--n", type=int, default=2000, help="documents to write")
+    parser.add_argument("--seed", type=int, default=0)
+    parser.add_argument("--out", default=defaults.TINYTOOLS_RUN, help="the run directory")
+    parser.add_argument("--lexicon", default=defaults.TINYTOOLS_DIR, help="word lists and domains")
+    parser.add_argument("--force", action="store_true", help="replace an existing prompts.jsonl")
+
+    parser = corpus_commands.add_parser("check", help="TinyTools: check written documents")
+    parser.set_defaults(run=corpus_check)
+    parser.add_argument(
+        "dir", nargs="?", default=defaults.TINYTOOLS_RUN, metavar="run", help="the run directory"
+    )
+    parser.add_argument("--lexicon", default=defaults.TINYTOOLS_DIR)
+    parser.add_argument("--tools", default=defaults.TOOLS_DIR, help="for the held-out tools")
+    parser.add_argument("--json", action="store_true", help="the stats as one JSON line")
 
 
 def _add_pretrain_command(commands: Subcommands) -> None:
