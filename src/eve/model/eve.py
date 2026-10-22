@@ -1,4 +1,5 @@
 from dataclasses import dataclass
+from typing import Any
 
 import torch
 from torch import nn
@@ -7,6 +8,7 @@ from eve.config import ModelConfig
 from eve.model.attention import MultiHeadAttention
 from eve.model.blocks import DecoderBlock, EncoderBlock, LayerNorm
 from eve.model.embeddings import Embeddings
+from eve.registry import register
 
 INIT_STD = 0.02  # GPT-2's initialization: small normal weights
 
@@ -80,6 +82,7 @@ class QuestionBlock(nn.Module):
         return Questions(intent=intent, slots=slots)
 
 
+@register("model", "eve")
 class Eve(nn.Module):
     """The whole model (book ch. 4.6, `GPTModel`, turned into an encoder-decoder):
 
@@ -105,6 +108,11 @@ class Eve(nn.Module):
         self.questions = QuestionBlock(cfg)
         self.apply(self._init_weights)
         self.lm_head.weight = self.embeddings.tok.weight  # weight tying
+
+    @classmethod
+    def from_config(cls, config: dict[str, Any]) -> "Eve":
+        """A new model of the ``ModelConfig`` saved as ``config`` (``cfg.to_dict()``)."""
+        return cls(ModelConfig(**config))
 
     @staticmethod
     def _init_weights(module: nn.Module) -> None:

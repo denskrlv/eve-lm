@@ -86,3 +86,32 @@ def test_duplicate_tool_names_across_files(tmp_path):
     assert load_tools(tmp_path / "a.json")[0].domain == "a"
     with pytest.raises(SchemaError):
         load_library(tmp_path)
+
+
+def test_parse_reads_back_what_format_writes(library):
+    lights, thermostat = library["set_lights"], library["set_thermostat"]
+    for arg, value in [
+        (lights.arg("room"), "living room"),
+        (lights.arg("on"), False),
+        (lights.arg("brightness"), 30),
+        (thermostat.arg("temperature"), 21.5),
+        (thermostat.arg("temperature"), 20),
+    ]:
+        assert arg.parse(" " + arg.format(value) + " ") == value
+    assert isinstance(thermostat.arg("temperature").parse("20"), float)
+
+
+@pytest.mark.parametrize(
+    ("tool", "arg", "text"),
+    [
+        ("set_lights", "room", "garage"),  # not an option
+        ("set_lights", "on", "yes"),
+        ("set_lights", "brightness", "bright"),
+        ("set_lights", "brightness", "30.5"),  # an int
+        ("set_lights", "brightness", "130"),  # out of range
+        ("set_thermostat", "temperature", "nan"),
+    ],
+)
+def test_parse_refuses_what_is_not_a_value(library, tool, arg, text):
+    with pytest.raises(SchemaError):
+        library[tool].arg(arg).parse(text)

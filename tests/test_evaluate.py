@@ -6,13 +6,14 @@ import torch
 
 from eve.cli import main
 from eve.config import INTENTS, preset
+from eve.data.modules import VAL_SEED, in_batches, load_examples
 from eve.data.render import Call, TaskCollator, TaskDataset, TaskExample
 from eve.data.schema import Tool
 from eve.evaluate import by_tool, evaluate_set, load_questions_model, model_file, task_files
 from eve.model.checkpoint import save_checkpoint
 from eve.model.eve import Eve
+from eve.tasks.questions import TASK, Outcome, score
 from eve.tokenizer.bpe import BPETokenizer
-from eve.train.finetune import TASK, VAL_SEED, Outcome, in_batches, load_examples, score
 
 CFG = preset("tiny")
 
@@ -110,7 +111,7 @@ def test_evaluate_prints_json(
     main([*argv, "--json"])
     out = json.loads(capsys.readouterr().out.strip().splitlines()[-1])
     assert set(out) == {"val"} and out["val"]["examples"] == 3
-    assert {"macro_recall", "exact_acc"} <= set(out["val"]["scores"])
+    assert {"macro_recall", "exact_acc", "value_acc", "full_acc"} <= set(out["val"]["scores"])
     assert "by_tool" not in out["val"]
 
     main([*argv, "--json", "--by-tool"])

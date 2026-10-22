@@ -5,6 +5,7 @@ import logging
 import sys
 import time
 import tomllib
+from collections import Counter
 from collections.abc import Callable, Sequence
 from pathlib import Path
 from typing import TYPE_CHECKING, Any
@@ -36,7 +37,7 @@ if TYPE_CHECKING:
 
     from eve.data.schema import Tool
     from eve.evaluate import SetResult
-    from eve.infer.predict import Answers
+    from eve.infer.predict import Answers, WrittenCall
     from eve.tokenizer.bpe import BPETokenizer
 
 TRAIN_DEFAULTS = TrainConfig(steps=1)  # the CLI's defaults are TrainConfig's own
@@ -52,6 +53,8 @@ SCORE_COLUMNS = (  # eve evaluate's table: (label, key in the scores)
     *((intent[:5], f"recall_{intent}") for intent in INTENTS),  # "unsupported" -> "unsup"
     ("tools", "tools_acc"),
     ("exact", "exact_acc"),
+    ("values", "value_acc"),
+    ("full", "full_acc"),
 )
 Sample = str | list[str]  # a text, or a tool schema as its parts
 PIECE_COLORS = ("cyan", "magenta")  # tokenizer stats alternates them between token pieces
@@ -198,7 +201,7 @@ def tokenizer_stats(args: argparse.Namespace) -> None:
         console.print(_pieces(tokenizer.pieces(_encode_sample(tokenizer, text))))
 
 
-def corpus(args: argparse.Namespace) -> None:
+def corpus_encode(args: argparse.Namespace) -> None:
     """Encode the pretraining corpus into train and val token files."""
     from eve.data.corpus import encode_corpus
 
@@ -211,6 +214,83 @@ def corpus(args: argparse.Namespace) -> None:
         workers=args.workers,
     )
     success(f"train {meta['train_tokens']:,} and val {meta['val_tokens']:,} tokens", args.out)
+
+
+def corpus_prompts(args: argparse.Namespace) -> None:
+    """Write the prompts of a TinyTools run: one document to write per line."""
+    from eve.data.generate.tinytools import KINDS, Lexicon, make_prompts
+    from eve.data.jsonl import write_jsonl
+
+    path = Path(args.out) / "prompts.jsonl"
+    if path.exists() and not args.force:
+        raise SystemExit(f"{path} exists; documents may already follow it (--force replaces it)")
+    specs = make_prompts(Lexicon.load(args.lexicon), args.n, args.seed)
+    write_jsonl(path, (spec.to_json() for spec in specs))
+    counts = Counter(spec.kind for spec in specs)
+    kinds = " · ".join(f"{kind} {counts[kind]:,}" for kind in KINDS)
+    domains = len({spec.domain for spec in specs})
+    success(f"{len(specs):,} prompts ({kinds}) over {domains} domains", path)
+
+
+def corpus_check(args: argparse.Namespace) -> None:
+    """Check a TinyTools run's documents against their prompts; write the accepted ones."""
+    from eve.data.generate.tinytools import (
+        Lexicon,
+        PromptSpec,
+        check_corpus,
+        write_parquet,
+    )
+    from eve.data.jsonl import read_jsonl
+    from eve.data.schema import load_library
+
+    run = Path(args.dir)  # not args.run: that is the command's function
+    prompts, documents = run / "prompts.jsonl", run / "documents.jsonl"
+    for path in (prompts, documents):
+        if not path.is_file():
+            raise SystemExit(f"no {path}; see data/tinytools/README.md")
+    specs = [PromptSpec.from_json(row) for row in read_jsonl(prompts)]
+    texts = {str(row["id"]): str(row["text"]) for row in read_jsonl(documents)}
+    lexicon = Lexicon.load(args.lexicon)
+    heldout = list(load_library(Path(args.tools) / "heldout").values())
+    report = check_corpus(specs, texts, lexicon, heldout)
+    stats = report.stats(lexicon)
+    write_parquet(report.accepted, run / "tinytools.parquet")
+    (run / "report.json").write_text(
+        json.dumps(
+            {"stats": stats, "rejected": report.rejected, "missing": report.missing}, indent=1
+        )
+    )
+    if args.json:
+        print(json.dumps(stats))
+        return
+    _print_corpus_report(stats, report.rejected, run)
+
+
+def _print_corpus_report(stats: dict[str, Any], rejected: dict[str, list[str]], run: Path) -> None:
+    """The counts, the most common reject reasons and a few rejected documents."""
+    kinds = " · ".join(f"{k} {n:,}" for k, n in stats["accepted_by_kind"].items())
+    items: list[tuple[str, str | Text]] = [
+        ("accepted", f"{stats['accepted']:,} of {stats['prompts']:,} prompts · {kinds}"),
+        ("rejected", f"{stats['rejected']:,}"),
+        ("not written", f"{stats['missing']:,}"),
+        ("words", f"{stats['words']:,} · {stats['mean_words']:.0f} per document"),
+        (
+            "covered",
+            f"{stats['vocabulary_covered']:.0%} of the words · {stats['domains_covered']} domains",
+        ),
+    ]
+    if stats["unknown"]:
+        items.append(("unknown ids", f"{stats['unknown']:,} documents match no prompt"))
+    for i, (reason, n) in enumerate(stats["reject_reasons"].items()):
+        if i == 5:
+            break
+        items.append(("reasons" if i == 0 else "", f"{n:,} × {reason}"))
+    for i, (doc_id, reasons) in enumerate(rejected.items()):
+        if i == 3:
+            break
+        items.append(("examples" if i == 0 else "", f"{doc_id}: {'; '.join(reasons)}"))
+    console.print(panel("eve corpus check", items))
+    success("accepted documents", run / "tinytools.parquet")
 
 
 def _train_config(args: argparse.Namespace, steps: int, lr: float, **extra: Any) -> TrainConfig:
@@ -249,6 +329,7 @@ def _run_rows(args: argparse.Namespace, device: torch.device) -> list[tuple[str,
     run += [f"stop at {args.stop_after:,}"] if args.stop_after else []
     run += ["resume"] if args.resume else []
     config = [("config", args.config)] if args.config else []
+    config += [("set", " · ".join(args.set))] if args.set else []
     return [*config, ("device", " · ".join(hardware)), ("output", " · ".join(run))]
 
 
@@ -269,11 +350,21 @@ def _pretrain_panel(
     return panel("eve pretrain", items + _run_rows(args, device))
 
 
+def _run_experiment(values: dict[str, Any], sets: list[str]) -> None:
+    """Apply the ``--set`` overrides to an experiment's sections and run it."""
+    from eve.experiment import Experiment, apply_sets, run
+
+    try:
+        experiment = Experiment.from_dict(apply_sets(values, sets))
+    except (KeyError, TypeError, ValueError) as error:
+        raise SystemExit(f"bad experiment: {error}") from error
+    run(experiment)
+
+
 def pretrain(args: argparse.Namespace) -> None:
     """Run span-corruption pretraining with the command line's options."""
     from eve.config import preset
-    from eve.train.pretrain import pretrain as run
-    from eve.train.pretrain import steps_for
+    from eve.train.pretrain import pretrain_experiment, steps_for
 
     overrides = {"rope": args.rope, "qk_norm": args.qk_norm}
     if args.dropout is not None:
@@ -283,8 +374,8 @@ def pretrain(args: argparse.Namespace) -> None:
     train_cfg = _train_config(args, steps, args.lr, compile=args.compile)
     device = pick_device(args.device)
     console.print(_pretrain_panel(args, cfg, device, steps))
-    run(
-        cfg,
+    values = pretrain_experiment(
+        {"preset": args.preset, **overrides},
         train_cfg,
         args.data,
         args.tokenizer,
@@ -293,6 +384,7 @@ def pretrain(args: argparse.Namespace) -> None:
         resume=args.resume,
         stop_after=args.stop_after,
     )
+    _run_experiment(values, args.set)
 
 
 def _finetune_panel(
@@ -311,11 +403,9 @@ def _finetune_panel(
 
 
 def finetune(args: argparse.Namespace) -> None:
-    """Fine-tune the question heads with the command line's options."""
-    from eve.config import preset
-    from eve.data.generate.build import Sources
+    """Fine-tune the question heads and argument values with the command line's options."""
     from eve.data.jsonl import read_jsonl
-    from eve.train.finetune import finetune as run
+    from eve.train.finetune import finetune_experiment
 
     if (args.init is None) == (args.scratch is None):
         raise SystemExit("give one of --init or --scratch (on the command line or in --config)")
@@ -325,20 +415,32 @@ def finetune(args: argparse.Namespace) -> None:
     train_cfg = _train_config(args, steps, lr, eval_batches=ALL_VAL_BATCHES)
     device = pick_device(args.device)
     console.print(_finetune_panel(args, device, lr, steps, n_train))
-    run(
+    values = finetune_experiment(
         train_cfg,
         args.task,
         args.out,
         device,
-        Sources.load().library,
         init=args.init,
-        scratch=preset(args.scratch) if args.scratch else None,
+        scratch=args.scratch,
         tokenizer_path=args.tokenizer,
         freeze=args.freeze,
         overrides={} if args.dropout is None else {"dropout": args.dropout},
         resume=args.resume,
         stop_after=args.stop_after,
     )
+    _run_experiment(values, args.set)
+
+
+def run_file(args: argparse.Namespace) -> None:
+    """Run an experiment file: any registered components, see ``eve.experiment``."""
+    from eve.experiment import read
+
+    path = Path(args.experiment)
+    if not path.is_file():
+        raise SystemExit(f"no experiment file {path}")
+    items = [("config", str(path))] + ([("set", " · ".join(args.set))] if args.set else [])
+    console.print(panel("eve run", items))
+    _run_experiment(read(path), args.set)
 
 
 Runs = dict[str, tuple[dict[str, Any], dict[int, dict[str, Any]]]]  # name -> (start, evals)
@@ -401,7 +503,7 @@ def _print_fill_report(
     model_path: str, meta: dict[str, Any], device: torch.device, filled: list[str]
 ) -> None:
     """Which checkpoint filled the holes and how far it was trained, then each filled text."""
-    from eve.train.pretrain import HIGHLIGHTS
+    from eve.tasks.span import HIGHLIGHTS
 
     trained = f"{meta['step']:,} steps" if "step" in meta else "?"
     if "val_lm" in meta:
@@ -420,7 +522,7 @@ def fill(args: argparse.Namespace) -> None:
     """Learn (M4): ask a pretrained model to fill the <x0>, <x1>… holes in a sentence."""
     from eve import progress
     from eve.model.checkpoint import load_checkpoint
-    from eve.train.pretrain import SAMPLES, fill_in
+    from eve.tasks.span import SAMPLES, fill_in
 
     texts = args.text or list(SAMPLES)
     if bad := [t for t in texts if "<x0>" not in t]:
@@ -477,15 +579,38 @@ def _ranked(probs: dict[str, float], count: int) -> Text:
     )
 
 
+def _values(call: "WrittenCall") -> Text:
+    """``room kitchen 98% · on false 99% · brightness –``: each argument and what the decoder
+    wrote, colored by how likely it is; ``?`` for one to ask the user for, ``✗`` if invalid."""
+    parts = []
+    for name, value in call.values.items():
+        part = Text(f"{name} ")
+        if value.kind == "absent":
+            part = Text(f"{name} –", style="dim")
+        elif value.kind == "ask":
+            part.append("?", style="bold yellow")
+        elif value.kind == "invalid":
+            part.append(f"{value.value!r} ✗", style="bold red")
+        else:
+            shown = value.value if isinstance(value.value, str) else json.dumps(value.value)
+            part.append(str(shown), style=f"bold {_confidence(value.prob)}")
+        if value.kind != "absent":
+            part.append(f" {value.prob:.0%}", style="dim")
+        parts.append(part)
+    return Text(" · ", style="dim").join(parts) if parts else Text("no arguments", style="dim")
+
+
 def _print_answers(text: str, answers: "Answers", as_json: bool) -> None:
     """The heads' answers for one request: one JSON line, or the intent and each call slot up
-    to the first one that says STOP."""
+    to the first one that says STOP, with its argument values if they were written."""
     if as_json:
         print(json.dumps({"utterance": text, **answers.to_json()}))
         return
     items = [("intent", _ranked(answers.intent, INTENTS_SHOWN))]
     for i, slot in enumerate(answers.slots, 1):
         items.append((f"call {i}", _ranked(slot, TOOLS_SHOWN)))
+        if i <= len(answers.written):
+            items.append(("", _values(answers.written[i - 1])))
         if max(slot, key=slot.__getitem__) == STOP:
             break
     console.print(rows(items, indent=2))
@@ -506,15 +631,21 @@ def _ask_interactively(show: Callable[[str], None]) -> None:
 
 
 def ask(args: argparse.Namespace) -> None:
-    """Learn (M7): what the question heads answer for a typed request, with probabilities."""
-    from eve.infer.predict import answer_questions
+    """Learn (M7, M8): what the question heads answer for a typed request, with probabilities,
+    and the argument values of each call, for a model from the joint run. The probabilities
+    use the checkpoint's temperatures if ``eve calibrate --save`` wrote them (M9): the
+    familiar-tool ones if the model trained on every tool given, else the new-tool ones."""
+    from eve.infer.predict import Calibrations, answer_questions
     from eve.model.checkpoint import load_checkpoint
 
     tools = _tools(args)
     ckpt = load_checkpoint(args.model, pick_device(args.device))
+    values = bool(ckpt.meta.get("joint"))  # earlier runs never trained the decoder to write them
+    calibrations = Calibrations.from_meta(ckpt.meta)
+    calibration = calibrations.for_tools(tools)
 
     def show(text: str) -> None:
-        answers = answer_questions(ckpt.model, ckpt.tokenizer, text, tools)
+        answers = answer_questions(ckpt.model, ckpt.tokenizer, text, tools, values, calibration)
         _print_answers(text, answers, args.json)
 
     if args.text:
@@ -524,7 +655,12 @@ def ask(args: argparse.Namespace) -> None:
             show(text)
         return
     names = ", ".join(t.name for t in tools)
-    console.print(panel("eve ask", [("model", args.model), ("tools", names)]))
+    written = "written" if values else "not written: the model is not from a joint run"
+    regime = "familiar" if calibrations.is_familiar(tools) else "new"
+    fitted = ckpt.meta.get("calibrated_on", {}).get(regime)
+    probs = f"calibrated for {regime} tools" if fitted else "as trained: see eve calibrate"
+    items = [("model", args.model), ("tools", names), ("values", written), ("probs", probs)]
+    console.print(panel("eve ask", items))
     console.print(Text("type a request · empty line or Ctrl-D to quit\n", style="dim"))
     _ask_interactively(show)
 
@@ -585,12 +721,18 @@ def _answered(counts: dict[str, int]) -> Text:
 
 def _tools_table(name: str, result: "SetResult") -> "Table":
     """A row per gold tool, worst exact accuracy first, with what its examples were answered."""
-    out = table("gold tool", "n", "intent", "tools", "exact", "answered")
+    out = table("gold tool", "n", "intent", "tools", "exact", "values", "full", "answered")
     out.title, out.title_justify, out.title_style = f"{name} by tool", "left", "bold"
     out.columns[-1].justify, out.columns[-1].no_wrap = "left", False
     for tool in result.by_tool:
-        accuracies = (tool.intent_acc, tool.tools_acc, tool.exact_acc)
-        cells = [f"{tool.examples:,}", *(f"{a:.0%}" for a in accuracies)]
+        accuracies = (
+            tool.intent_acc,
+            tool.tools_acc,
+            tool.exact_acc,
+            tool.value_acc,
+            tool.full_acc,
+        )
+        cells = [f"{tool.examples:,}", *("" if a is None else f"{a:.0%}" for a in accuracies)]
         out.add_row(tool.tool, *cells, _answered(tool.answered))
     return out
 
@@ -629,6 +771,103 @@ def evaluate(args: argparse.Namespace) -> None:
             results[name] = evaluate_set(ckpt, path, library, args.batch_size)
             bar.update()
     _print_evaluation(results, args.json, args.by_tool)
+
+
+def _calibration_table(
+    name: str, counts: dict[str, int], before: dict[str, Any], after: dict[str, Any]
+) -> "Table":
+    """A row per answer: how many, their accuracy, and the mean confidence and expected
+    calibration error before and after (``eve.calibrate.Reliability``)."""
+    out = table(name, "n", "accuracy", "confidence", "", "ECE", "", first_style="bold")
+    out.title = f"{counts['familiar']:,} familiar · {counts['new']:,} new"
+    out.title_justify, out.title_style = "left", "dim"
+    for head, old in before.items():
+        new = after[head]
+        out.add_row(
+            head,
+            f"{old.n:,}",
+            f"{old.accuracy:.1%}",
+            Text(f"{old.mean_confidence:.1%} →", style="dim"),
+            f"{new.mean_confidence:.1%}",
+            Text(f"{old.ece():.3f} →", style="dim"),
+            Text(f"{new.ece():.3f}", style="bold green" if new.ece() < old.ece() else "bold red"),
+        )
+    return out
+
+
+def calibrate(args: argparse.Namespace) -> None:
+    """Fit temperatures for familiar and for new tools (M9) and show how calibrated the
+    probabilities are before and after on each set; ``--save`` writes them into the model."""
+    from eve import progress
+    from eve.calibrate import (
+        HEADS,
+        REGIMES,
+        fit,
+        known_tools,
+        load_set,
+        reliability,
+        save_calibration,
+    )
+    from eve.data.generate.build import Sources
+    from eve.evaluate import load_questions_model, model_file, task_files
+    from eve.infer.predict import Calibrations
+
+    device = pick_device(args.device)
+    fit_on = {"familiar": args.fit_familiar, "new": args.fit_new}
+    sets = list(dict.fromkeys([*fit_on.values(), *args.sets]))  # the fit sets first, once
+    try:
+        paths = task_files(args.task, [*sets, "train"])
+        ckpt = load_questions_model(args.model, device)
+    except (FileNotFoundError, ValueError) as error:
+        raise SystemExit(str(error)) from error
+    if not ckpt.meta.get("joint"):
+        raise SystemExit(f"{args.model} is not from a joint run: its decoder writes no values")
+    library = Sources.load().library
+    with progress.bar(len(REGIMES) + len(sets), "calibrate", "passes", leave=False) as bar:
+        bar.set_stats("reading the training tools")
+        known = Calibrations(known=known_tools(paths["train"], library))
+        tasks = {
+            name: load_set(ckpt, paths[name], library, args.batch_size, known) for name in sets
+        }
+        fitted = {}
+        for regime, name in fit_on.items():
+            bar.set_stats(f"fitting {regime} on {name}")
+            fitted[regime] = fit(ckpt.model, tasks[name].batches, tasks[name].only(regime))
+            bar.update()
+        cal = Calibrations(fitted["familiar"], fitted["new"], known.known)
+        results = {}
+        for name in sets:
+            bar.set_stats(name)
+            results[name] = reliability(ckpt.model, tasks[name], [known, cal])
+            bar.update()
+    if args.save:
+        save_calibration(model_file(args.model), cal, fit_on)
+
+    if args.json:
+        sets_json = {
+            name: {
+                "examples": tasks[name].counts(),
+                **{h: {"before": old[h].to_json(), "after": new[h].to_json()} for h in HEADS},
+            }
+            for name, (old, new) in results.items()
+        }
+        temperatures = {"familiar": cal.familiar.to_dict(), "new": cal.new.to_dict()}
+        out = {"calibration": temperatures, "fitted_on": fit_on, "sets": sets_json}
+        print(json.dumps(out))
+        return
+    items: list[tuple[str, str | Text]] = [("model", str(args.model))]
+    for regime in REGIMES:
+        temps = getattr(cal, regime)
+        line = " · ".join(f"{head} {getattr(temps, head):.2f}" for head in HEADS)
+        items.append((regime, f"{line}   fitted on {fit_on[regime]}"))
+    items.append(("known tools", f"{len(cal.known):,} schemas in {paths['train']}"))
+    console.print(panel("eve calibrate", items))
+    for name, (old, new) in results.items():
+        console.print(_calibration_table(name, tasks[name].counts(), old, new))
+    if args.save:
+        success("temperatures saved", model_file(args.model))
+    else:
+        console.print(Text("not saved: add --save to write them into the model", style="dim"))
 
 
 def data_build(args: argparse.Namespace) -> None:
@@ -758,6 +997,18 @@ def _add_run_args(parser: argparse.ArgumentParser) -> None:
     parser.add_argument("--device", default=None)
     parser.add_argument("--resume", action="store_true", help="continue from <out>/last.pt")
     parser.add_argument("--stop-after", type=int, default=None, help="stop early at this step")
+    _add_set_arg(parser)
+
+
+def _add_set_arg(parser: argparse.ArgumentParser) -> None:
+    """``--set section.key=value``: change any experiment value, e.g. components.loss=question."""
+    parser.add_argument(
+        "--set",
+        action="append",
+        default=[],
+        metavar="SECTION.KEY=VALUE",
+        help="override an experiment value (repeatable), e.g. components.loss=question",
+    )
 
 
 def _add_model_commands(commands: Subcommands) -> None:
@@ -796,14 +1047,35 @@ def _add_tokenizer_commands(commands: Subcommands) -> None:
 
 
 def _add_corpus_command(commands: Subcommands) -> None:
-    parser = commands.add_parser("corpus", help="encode the pretraining corpus to token ids (M1)")
-    parser.set_defaults(run=corpus)
+    group = commands.add_parser(
+        "corpus", help="the pretraining corpus: encode it, or build TinyTools"
+    )
+    corpus_commands = group.add_subparsers(dest="corpus_command", required=True)
+    parser = corpus_commands.add_parser("encode", help="encode parquet text to token ids (M1)")
+    parser.set_defaults(run=corpus_encode)
     parser.add_argument("--parquet", default=defaults.PARQUET_GLOB)
     parser.add_argument("--tokenizer", default=defaults.TOKENIZER_FILE)
     parser.add_argument("--out", default=defaults.BIN_DIR)
     parser.add_argument("--train-tokens", default="250M")
     parser.add_argument("--val-tokens", default="2M")
     parser.add_argument("--workers", type=int, default=None)
+
+    parser = corpus_commands.add_parser("prompts", help="TinyTools: prompts for a generator")
+    parser.set_defaults(run=corpus_prompts)
+    parser.add_argument("--n", type=int, default=2000, help="documents to write")
+    parser.add_argument("--seed", type=int, default=0)
+    parser.add_argument("--out", default=defaults.TINYTOOLS_RUN, help="the run directory")
+    parser.add_argument("--lexicon", default=defaults.TINYTOOLS_DIR, help="word lists and domains")
+    parser.add_argument("--force", action="store_true", help="replace an existing prompts.jsonl")
+
+    parser = corpus_commands.add_parser("check", help="TinyTools: check written documents")
+    parser.set_defaults(run=corpus_check)
+    parser.add_argument(
+        "dir", nargs="?", default=defaults.TINYTOOLS_RUN, metavar="run", help="the run directory"
+    )
+    parser.add_argument("--lexicon", default=defaults.TINYTOOLS_DIR)
+    parser.add_argument("--tools", default=defaults.TOOLS_DIR, help="for the held-out tools")
+    parser.add_argument("--json", action="store_true", help="the stats as one JSON line")
 
 
 def _add_pretrain_command(commands: Subcommands) -> None:
@@ -827,7 +1099,7 @@ def _add_pretrain_command(commands: Subcommands) -> None:
 
 
 def _add_finetune_command(commands: Subcommands) -> None:
-    parser = commands.add_parser("finetune", help="fine-tune the question heads (M7)")
+    parser = commands.add_parser("finetune", help="fine-tune questions and values (M7, M8)")
     parser.set_defaults(run=finetune)
     _add_config_arg(parser, "finetune")
     start = parser.add_mutually_exclusive_group()  # one is required; finetune checks
@@ -849,8 +1121,15 @@ def _add_finetune_command(commands: Subcommands) -> None:
     _add_run_args(parser)
 
 
+def _add_run_command(commands: Subcommands) -> None:
+    parser = commands.add_parser("run", help="run an experiment file, e.g. a run's config.toml")
+    parser.set_defaults(run=run_file)
+    parser.add_argument("experiment", help="configs/experiments/*.toml, or <run>/config.toml")
+    _add_set_arg(parser)
+
+
 def _add_inspect_commands(commands: Subcommands) -> None:
-    parser = commands.add_parser("ask", help="ask the question heads about a request (M7)")
+    parser = commands.add_parser("ask", help="ask the model about a request (M7, M8)")
     parser.set_defaults(run=ask)
     parser.add_argument("text", nargs="*", help="requests; none: type them one by one")
     parser.add_argument("--tools", help="tool names from data/tools: set_lights,set_thermostat")
@@ -862,6 +1141,7 @@ def _add_inspect_commands(commands: Subcommands) -> None:
     parser.add_argument("--device", default=None)
 
     _add_evaluate_command(commands)
+    _add_calibrate_command(commands)
     parser = commands.add_parser("compare", help="val metrics of training runs side by side (M4)")
     parser.set_defaults(run=compare)
     parser.add_argument("runs", nargs="+", help="run directories, e.g. artifacts/runs/ab-*")
@@ -891,6 +1171,28 @@ def _add_evaluate_command(commands: Subcommands) -> None:
     )
     parser.add_argument("--batch-size", type=int, default=TRAIN_DEFAULTS.batch_size)
     parser.add_argument("--by-tool", action="store_true", help="also a row per gold tool")
+    parser.add_argument("--json", action="store_true", help="the results as one JSON object")
+    parser.add_argument("--device", default=None)
+
+
+def _add_calibrate_command(commands: Subcommands) -> None:
+    from eve.evaluate import SETS
+
+    parser = commands.add_parser("calibrate", help="fit the probabilities' temperatures (M9)")
+    parser.set_defaults(run=calibrate)
+    parser.add_argument(
+        "model", nargs="?", default=defaults.FINETUNED_MODEL, help="a model.pt or a run directory"
+    )
+    parser.add_argument("--task", default=defaults.TASK_DIR)
+    parser.add_argument(
+        "--fit-familiar", default="val", help="task file whose familiar-tool examples fit those"
+    )
+    parser.add_argument(
+        "--fit-new", default="probe-candidates", help="task file whose new-tool examples fit those"
+    )
+    parser.add_argument("--sets", nargs="+", default=list(SETS), help="task files to check them on")
+    parser.add_argument("--save", action="store_true", help="write them into the model file")
+    parser.add_argument("--batch-size", type=int, default=TRAIN_DEFAULTS.batch_size)
     parser.add_argument("--json", action="store_true", help="the results as one JSON object")
     parser.add_argument("--device", default=None)
 
@@ -946,6 +1248,7 @@ def build_parser() -> argparse.ArgumentParser:
     _add_corpus_command(commands)
     _add_pretrain_command(commands)
     _add_finetune_command(commands)
+    _add_run_command(commands)
     _add_inspect_commands(commands)
     _add_data_commands(commands)
     return parser

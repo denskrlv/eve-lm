@@ -1,0 +1,2 @@
+# Fill-in samples at each eval (eve.tasks.span). `samples` (a list of texts with <x0> holes)
+# replaces the built-in SAMPLES.

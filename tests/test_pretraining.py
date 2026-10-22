@@ -8,17 +8,10 @@ from eve.config import preset
 from eve.data.render import collate_pretrain
 from eve.model.checkpoint import load_pretrained
 from eve.model.eve import Eve
+from eve.tasks.span import SAMPLES, fill_in, prompt_ids, span_loss, span_metrics
 from eve.tokenizer.bpe import BYTE0, DEC, EOS, sentinel
 from eve.train.config import TrainConfig
-from eve.train.pretrain import (
-    SAMPLES,
-    fill_in,
-    pretrain,
-    prompt_ids,
-    span_loss,
-    span_metrics,
-    steps_for,
-)
+from eve.train.pretrain import pretrain, steps_for
 
 
 def test_fill_in_keeps_the_text_and_fills_each_hole(tokenizer):

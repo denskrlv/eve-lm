@@ -8,14 +8,15 @@ import torch
 
 from eve.cli import setup_logging
 from eve.config import preset
+from eve.data.modules import SpanCorruptionData
 from eve.data.pretrain import SpanCorruptionDataset
-from eve.data.render import collate_pretrain
 from eve.model.checkpoint import load_checkpoint, save_checkpoint
 from eve.model.eve import Eve
+from eve.tasks.span import span_loss
 from eve.tokenizer.bpe import BYTE0, BPETokenizer
 from eve.train.config import TrainConfig
-from eve.train.loop import Column, Report, batch_indices, lr_at, param_groups, train
-from eve.train.pretrain import span_loss
+from eve.train.loop import Column, Report, batch_indices, train
+from eve.train.optim import lr_at, param_groups
 
 CFG = preset("tiny", dropout=0.1)  # dropout on, so resuming must restore the RNG too
 CPU = torch.device("cpu")
@@ -38,9 +39,7 @@ def run(out, tokenizer, cfg=None, train_data=None, **kwargs) -> list[dict]:
     train(
         model,
         span_loss,
-        train_data or corpus(),
-        corpus(seed=1),
-        collate_pretrain,
+        SpanCorruptionData(train_data or corpus(), corpus(seed=1)),
         cfg or small_run(),
         out,
         tokenizer,
@@ -180,7 +179,7 @@ def test_compile_runs_the_losses_through_the_compiled_model(tokenizer, tmp_path,
     torch.manual_seed(0)
     model = Eve(CFG)
     train(
-        model, loss_fn, corpus(), corpus(seed=1), collate_pretrain, small_run(compile=True),
+        model, loss_fn, SpanCorruptionData(corpus(), corpus(seed=1)), small_run(compile=True),
         tmp_path, tokenizer, CPU, report=Report(on_eval=on_eval),
     )  # fmt: skip
     assert seen == {"loss": {"Wrapped"}, "on_eval": {"Eve"}}
