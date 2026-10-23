@@ -205,6 +205,8 @@ def corpus_encode(args: argparse.Namespace) -> None:
     """Encode the pretraining corpus into train and val token files."""
     from eve.data.corpus import encode_corpus
 
+    if args.mix and not 0 < args.mix_share < 1:
+        raise SystemExit(f"--mix-share must be between 0 and 1, got {args.mix_share}")
     meta = encode_corpus(
         _parquet_files(args.parquet),
         args.tokenizer,
@@ -212,8 +214,16 @@ def corpus_encode(args: argparse.Namespace) -> None:
         train_tokens=_count(args.train_tokens),
         val_tokens=_count(args.val_tokens),
         workers=args.workers,
+        mix=_parquet_files(args.mix) if args.mix else (),
+        mix_share=args.mix_share,
+        seed=args.seed,
     )
-    success(f"train {meta['train_tokens']:,} and val {meta['val_tokens']:,} tokens", args.out)
+    mixed = ""
+    if mix := meta.get("mix"):
+        mixed = f" ({mix['byte_share']:.0%} mixed in from {mix['documents']:,} documents)"
+    success(
+        f"train {meta['train_tokens']:,}{mixed} and val {meta['val_tokens']:,} tokens", args.out
+    )
 
 
 def corpus_prompts(args: argparse.Namespace) -> None:
@@ -1069,6 +1079,13 @@ def _add_corpus_command(commands: Subcommands) -> None:
     parser.add_argument("--train-tokens", default="250M")
     parser.add_argument("--val-tokens", default="2M")
     parser.add_argument("--workers", type=int, default=None)
+    parser.add_argument(
+        "--mix", help="a glob of parquet files to spread through the train tokens, e.g. TinyTools"
+    )
+    parser.add_argument(
+        "--mix-share", type=float, default=0.3, help="their share of the train text (with --mix)"
+    )
+    parser.add_argument("--seed", type=int, default=0, help="the order of the mixed documents")
 
     parser = corpus_commands.add_parser("prompts", help="TinyTools: prompts for a generator")
     parser.set_defaults(run=corpus_prompts)
