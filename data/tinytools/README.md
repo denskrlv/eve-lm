@@ -10,11 +10,13 @@ document; a generator writes the document; code checks it.
 - `nouns.txt`, `verbs.txt`, `adjectives.txt`: the words a prompt asks a document to use.
 - `domains.txt`: topics. `concept-only` marks the held-out tools' domains (arithmetic, units,
   currency, flights, hotels): documents may talk about them, but never invent a tool for them.
+- `names.txt`: about 300 first names from many languages; each scene prompt names its person.
 - `<run>/prompts.jsonl`: written by `uv run eve corpus prompts`, one prompt per line.
 - `<run>/documents.jsonl`: written by the generator, one document per line.
 - `<run>/tinytools.parquet` and `<run>/report.json`: written by `uv run eve corpus check`.
 
-The pilot run is `data/tinytools/pilot` (2,000 prompts).
+The pilot runs are `data/tinytools/pilot` (2,000 prompts) and `data/tinytools/pilot-v2` (the same
+2,000 draws with the reworded prompts).
 
 ## For the generator
 
@@ -34,6 +36,10 @@ The pilot run is `data/tinytools/pilot` (2,000 prompts).
 Rules that matter more than they look:
 
 - Write only the document: no "Sure, here is...", no title, no notes afterwards.
+- Spell the three words correctly; a misspelt word doesn't count as used.
+- In cards and ways lists, the three words may go outside the requests (in `does:`, `inputs:` or
+  the first line). Every request must be something a real person would say, so don't bend one
+  to fit a word.
 - Simple, everyday English. Vary the people, places, numbers and sentence shapes from one document
   to the next; a near-copy of an earlier document is rejected.
 - Never write angle brackets (`<`, `>`): Eve's special tokens look like `<tool>`.
