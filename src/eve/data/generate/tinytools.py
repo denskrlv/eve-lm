@@ -47,6 +47,21 @@ FEATURES = (  # one per scene, "ways" list and dialogue, as TinyStories added "h
     "a long, polite request that gives a reason",
     "an amount or comparison, like more, less, half or double",
 )
+EXAMPLES = {  # the pilot copied these two examples; each prompt now gets one of a pool instead
+    "twenty-five": (
+        "twenty-five", "forty-two", "seventeen", "three hundred", "sixty", "eleven",
+        "ninety-five", "eight", "a dozen", "two thousand", "thirty-one", "fifteen", "four",
+        "seventy", "a hundred and twenty", "nineteen", "fifty", "six", "two hundred", "thirteen",
+    ),
+    "tomorrow at seven": (
+        "tomorrow at seven", "on Friday morning", "in twenty minutes", "next Tuesday at noon",
+        "the day after tomorrow", "at half past six", "before lunch on Sunday",
+        "on the first of May", "tonight after dinner", "in an hour", "every Monday at nine",
+        "by the end of the week", "at quarter to eight", "this Saturday afternoon",
+        "in ten days", "on the twelfth of March", "at midnight", "early on Thursday",
+        "after school today", "in two weeks",
+    ),
+}  # fmt: skip
 SPEAKERS = (  # who asks, in scenes and dialogues
     "a child",
     "a grandparent",
@@ -82,19 +97,22 @@ class Domain:
 
 @dataclass(frozen=True)
 class Lexicon:
-    """The words and domains prompts are drawn from. A word maps to its irregular forms."""
+    """The words, domains and names prompts are drawn from. A word maps to its irregular forms."""
 
     nouns: dict[str, tuple[str, ...]]
     verbs: dict[str, tuple[str, ...]]
     adjectives: dict[str, tuple[str, ...]]
     domains: tuple[Domain, ...]
+    names: tuple[str, ...]  # first names for the people in scenes
 
     @classmethod
     def load(cls, directory: str | Path) -> "Lexicon":
-        """``nouns.txt``, ``verbs.txt``, ``adjectives.txt`` and ``domains.txt`` in ``directory``."""
+        """``nouns.txt``, ``verbs.txt``, ``adjectives.txt``, ``domains.txt`` and ``names.txt``
+        in ``directory``."""
         directory = Path(directory)
         words = {kind: _read_words(directory / name) for kind, name in FILES.items()}
-        return cls(**words, domains=_read_domains(directory / "domains.txt"))
+        domains = _read_domains(directory / "domains.txt")
+        return cls(**words, domains=domains, names=tuple(_lines(directory / "names.txt")))
 
 
 def _lines(path: Path) -> list[str]:
@@ -150,7 +168,9 @@ class PromptSpec:
 
 def make_prompts(lexicon: Lexicon, n: int, seed: int = 0, prefix: str = "tt") -> list[PromptSpec]:
     """``n`` prompts. Prompt ``i`` depends only on ``(seed, i)``, so a run can be extended
-    without changing the prompts it already has. Tool cards never use a concept-only domain."""
+    without changing the prompts it already has. Tool cards never use a concept-only domain.
+    The feature's example and the scene's name are drawn last, so the kind, domain, words,
+    feature and speaker match the pilot's prompts, which were drawn without them."""
     kinds, weights = list(KINDS), list(KINDS.values())
     carded = [d for d in lexicon.domains if not d.concept_only]
     nouns, verbs, adjectives = (list(words) for words in _parts(lexicon))
@@ -163,8 +183,12 @@ def make_prompts(lexicon: Lexicon, n: int, seed: int = 0, prefix: str = "tt") ->
         noun, verb, adjective = (str(rng.choice(words)) for words in (nouns, verbs, adjectives))
         feature = str(rng.choice(FEATURES)) if kind in ("scene", "ways", "dialogue") else ""
         speaker = str(rng.choice(SPEAKERS)) if kind in ("scene", "dialogue") else ""
+        for example, examples in EXAMPLES.items():
+            if example in feature:
+                feature = feature.replace(example, str(rng.choice(examples)))
+        name = str(rng.choice(lexicon.names)) if kind == "scene" else ""
         words = (noun, verb, adjective)
-        prompt = render_prompt(kind, domain, words, feature, speaker)
+        prompt = render_prompt(kind, domain, words, feature, speaker, name)
         out.append(
             PromptSpec(f"{prefix}-{i:06d}", kind, domain.name, *words, feature, speaker, prompt)
         )
@@ -176,16 +200,24 @@ def _parts(lexicon: Lexicon) -> tuple[dict[str, tuple[str, ...]], ...]:
 
 
 def render_prompt(
-    kind: str, domain: Domain, words: tuple[str, str, str], feature: str, speaker: str
+    kind: str,
+    domain: Domain,
+    words: tuple[str, str, str],
+    feature: str,
+    speaker: str,
+    name: str = "",
 ) -> str:
-    """The text a generator gets for one document."""
+    """The text a generator gets for one document. ``name`` is the person's in a scene."""
     noun, verb, adjective = words
     topic = f"{domain.name} ({domain.about})"
+    placement = ""  # where the three words may go, so they don't bend the requests
     if kind == "scene":
         task = (
             f"Write a short story (80 to 200 words) about {speaker} who asks a voice assistant, "
-            f"phone or smart device for help with something about {topic}. The person asks in "
-            "their own words, and the story says plainly what the assistant understood and did."
+            f"phone or smart device for help with something about {topic}. "
+            + (f"The person's name is {name}. " if name else "")
+            + "The person asks in their own words, and the story makes clear what the assistant "
+            "did."
         )
     elif kind == "explain":
         task = (
@@ -200,6 +232,10 @@ def render_prompt(
             "per line, from short and casual to long and polite. Most ways should not repeat the "
             "words of the first line."
         )
+        placement = (
+            " They can go in the first line; every way to ask must be something a real person "
+            "would really say."
+        )
     elif kind == "card":
         task = (
             f"Invent one tool an assistant could have for {topic}. Use exactly this format:\n"
@@ -209,6 +245,10 @@ def render_prompt(
             "people say:\n"
             "- then 4 to 6 things people say when they need it, one per line, mostly in words "
             "different from the tool's name"
+        )
+        placement = (
+            " They can go in the does: or inputs: line; every line under people say: must be "
+            "something a real person would say when they need this tool."
         )
     elif kind == "dialogue":
         task = (
@@ -223,7 +263,8 @@ def render_prompt(
     lines = [
         task,
         f'Use the noun "{noun}", the verb "{verb}" and the adjective "{adjective}" somewhere '
-        "(any form of them is fine, like a plural or the past tense).",
+        "(any form of them is fine, like a plural or the past tense). Spell these three words "
+        f"correctly.{placement}",
     ]
     if feature:
         lines.append(f"Include {feature}.")
@@ -238,18 +279,20 @@ def render_prompt(
 
 
 def word_forms(word: str, irregular: Sequence[str] = ()) -> set[str]:
-    """The forms of ``word`` a document may use: plurals, -ed, -ing, -er, -est, -ly, and the
+    """The forms of ``word`` a document may use: plurals, -ed, -ing, -er, -est, -ly, -y, and the
     listed irregular ones. Some aren't English ("childs"); they only make the check lenient."""
     forms = {word, *irregular, word + "s", word + "es", word + "ed", word + "d", word + "ing"}
-    forms |= {word + "er", word + "est", word + "r", word + "st", word + "ly"}
+    forms |= {word + "er", word + "est", word + "r", word + "st", word + "ly", word + "y"}
     if word.endswith("e"):
         forms |= {word[:-1] + "ing", word[:-1] + "y"}
+    if word.endswith("ic"):  # automatic -> automatically
+        forms.add(word + "ally")
     if word.endswith("y"):
         stem = word[:-1]
         forms |= {stem + "ies", stem + "ied", stem + "ier", stem + "iest", stem + "ily"}
-    if re.search(r"[^aeiou][aeiou][bdgklmnprt]$", word):  # stop -> stopped, big -> bigger
+    if re.search(r"[^aeiou][aeiou][bdgklmnprt]$", word):  # stop -> stopped, fog -> foggy
         double = word + word[-1]
-        forms |= {double + "ed", double + "ing", double + "er", double + "est"}
+        forms |= {double + "ed", double + "ing", double + "er", double + "est", double + "y"}
     if word.endswith("f"):
         forms.add(word[:-1] + "ves")
     if word.endswith("fe"):
@@ -310,7 +353,7 @@ def check_document(
     low, high = WORDS[spec.kind]
     if not low <= len(tokens) <= high:
         errors.append(f"{len(tokens)} words; a {spec.kind} needs {low} to {high}")
-    present = set(tokens)
+    present = set(tokens) | {t.removesuffix("'s") for t in tokens}  # "lamp's" uses "lamp"
     for word, forms in zip((spec.noun, spec.verb, spec.adjective), _parts(lexicon), strict=True):
         if not word_forms(word, forms.get(word, ())) & present:
             errors.append(f"doesn't use {word!r}")
@@ -369,6 +412,7 @@ class CorpusReport:
         words = {w: f for part in _parts(lexicon) for w, f in part.items()}
         covered = sum(bool(word_forms(w, f) & used) for w, f in words.items())
         n_words = [len(_tokens(text)) for _, text in self.accepted]
+        scenes = [text for spec, text in self.accepted if spec.kind == "scene"]
         return {
             "prompts": len(self.accepted) + len(self.rejected) + len(self.missing),
             "accepted": len(self.accepted),
@@ -381,7 +425,57 @@ class CorpusReport:
             "mean_words": sum(n_words) / len(n_words) if n_words else 0.0,
             "vocabulary_covered": covered / len(words) if words else 0.0,
             "domains_covered": len({spec.domain for spec, _ in self.accepted}),
+            "repeated_phrases": repeated_phrases(self.accepted),
+            "copied_examples": copied_examples(self.accepted),
+            "top_names": top_names(scenes, lexicon.names),
         }
+
+
+# ---- variety: reported, never a reason to reject ----------------------------------------------
+
+PHRASE, TOP = 4, 5  # report the 5 most common 4-word phrases, names, ...
+EXAMPLE = re.compile(r'\blike "([^"]+)"|\blike ([a-z][a-z -]*)$')  # a feature's example
+
+
+def _share(counts: Counter[str], total: int) -> dict[str, float]:
+    return {key: round(n / total, 3) for key, n in counts.most_common(TOP)}
+
+
+def repeated_phrases(documents: Sequence[tuple[PromptSpec, str]]) -> dict[str, dict[str, float]]:
+    """Per kind, the most common 4-word phrases and the share of that kind's documents that use
+    them: "the assistant understood that" in 85% of scenes is a template, not variety."""
+    by_kind: dict[str, Counter[str]] = {}
+    totals: Counter[str] = Counter()
+    for spec, text in documents:
+        words = _tokens(text)
+        phrases = {" ".join(words[i : i + PHRASE]) for i in range(len(words) - PHRASE + 1)}
+        by_kind.setdefault(spec.kind, Counter()).update(phrases)
+        totals[spec.kind] += 1
+    return {kind: _share(counts, totals[kind]) for kind, counts in by_kind.items()}
+
+
+def copied_examples(documents: Sequence[tuple[PromptSpec, str]]) -> dict[str, float]:
+    """For each feature that gives an example, the share of its documents that copy their
+    example word for word. Keyed by the feature with its example left out."""
+    copied: Counter[str] = Counter()
+    totals: Counter[str] = Counter()
+    for spec, text in documents:
+        if not (match := EXAMPLE.search(spec.feature)):
+            continue
+        example = match.group(1) or match.group(2)
+        feature = spec.feature.replace(example, "…")
+        totals[feature] += 1
+        copied[feature] += f" {' '.join(_tokens(example))} " in f" {' '.join(_tokens(text))} "
+    return {feature: round(copied[feature] / n, 3) for feature, n in totals.most_common()}
+
+
+def top_names(texts: Sequence[str], names: Sequence[str]) -> dict[str, float]:
+    """The names from ``names`` most documents use, with the share of ``texts`` that use them."""
+    if not texts or not names:
+        return {}
+    pattern = re.compile(r"\b(" + "|".join(map(re.escape, names)) + r")\b")
+    counts = Counter(name for text in texts for name in set(pattern.findall(text)))
+    return _share(counts, len(texts))
 
 
 def _reason(reason: str) -> str:

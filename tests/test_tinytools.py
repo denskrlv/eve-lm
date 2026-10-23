@@ -9,6 +9,7 @@ from eve.cli import main
 from eve.data.corpus import iter_documents
 from eve.data.generate.tinytools import (
     KINDS,
+    CorpusReport,
     Lexicon,
     PromptSpec,
     check_corpus,
@@ -57,6 +58,7 @@ def test_the_word_lists_and_domains_load(lexicon: Lexicon) -> None:
     assert len(lexicon.domains) > 90
     concept = {d.name for d in lexicon.domains if d.concept_only}
     assert {"arithmetic", "measurements and units", "flights"} <= concept
+    assert len(lexicon.names) > 250 and "Priya" in lexicon.names
 
 
 def test_prompts_are_seeded_and_follow_the_mix(lexicon: Lexicon) -> None:
@@ -77,16 +79,38 @@ def test_prompts_are_seeded_and_follow_the_mix(lexicon: Lexicon) -> None:
         assert PromptSpec.from_json(json.loads(json.dumps(s.to_json()))) == s
 
 
+def test_prompts_keep_the_pilot_draws_and_vary_the_wording(lexicon: Lexicon) -> None:
+    pilot = list(read_jsonl(LEXICON_DIR / "pilot" / "prompts.jsonl"))[:100]
+    specs = make_prompts(lexicon, 500, seed=0)
+    same = ("id", "kind", "domain", "noun", "verb", "adjective", "speaker")
+    for old, new in zip(pilot, specs, strict=False):
+        assert {k: old[k] for k in same} == {k: getattr(new, k) for k in same}
+    times = {s.feature for s in specs if s.feature.startswith("a time or date phrase")}
+    assert len(times) > 3
+    for s in specs:
+        if s.kind == "scene":
+            name = s.prompt.split("The person's name is ")[1].split(".")[0]
+            assert name in lexicon.names and "understood" not in s.prompt
+        if s.kind == "card":
+            assert "does: or inputs:" in s.prompt
+        assert "Spell these three words correctly." in s.prompt
+
+
 def test_word_forms_cover_inflections() -> None:
     assert {"stopped", "stopping", "stops"} <= word_forms("stop")
     assert {"berries"} <= word_forms("berry") and {"bigger", "biggest"} <= word_forms("big")
     assert {"baking", "baked"} <= word_forms("bake")
     assert "bought" in word_forms("buy", ("bought",))
     assert {"shelves"} <= word_forms("shelf") and {"knives"} <= word_forms("knife")
+    assert "automatically" in word_forms("automatic")
+    assert "foggy" in word_forms("fog") and "salty" in word_forms("salt")
 
 
 def test_a_good_scene_passes(lexicon: Lexicon, heldout) -> None:
     assert check_document(spec(), SCENE, lexicon, heldout) == []
+    possessive = SCENE.replace("new lamp", "new reading light").replace("hallway lamp", "lamp's")
+    assert "lamp " not in possessive.replace("lamp's", "")
+    assert check_document(spec(), possessive, lexicon, heldout) == []
 
 
 @pytest.mark.parametrize(
@@ -153,9 +177,26 @@ def test_check_corpus_keeps_the_good_ones(lexicon: Lexicon, heldout, tmp_path: P
     stats = report.stats(lexicon)
     assert stats["accepted"] == 1 and stats["prompts"] == 4 and stats["missing"] == 1
     assert stats["reject_reasons"] == {"doesn't use …": 1, "nearly repeats tt-…": 1}
+    assert stats["top_names"] == {"Nora": 1.0}
+    assert list(stats["repeated_phrases"]["scene"].values()) == [1.0] * 5  # one document
 
     write_parquet(report.accepted, tmp_path / "out.parquet")
     assert list(iter_documents([tmp_path / "out.parquet"])) == [SCENE]
+
+
+def test_stats_report_copied_examples(lexicon: Lexicon) -> None:
+    time = 'a time or date phrase, like "tomorrow at seven"'
+    texts = [
+        SCENE + " Remind me tomorrow at seven.",
+        SCENE.replace("Nora", "Ada") + " Tomorrow, at seven!",
+    ]
+    docs = [(spec(id=f"tt-{i}", feature=time), text) for i, text in enumerate(texts)]
+    docs.append((spec(id="tt-9", feature='a time or date phrase, like "in an hour"'), SCENE))
+    copied = CorpusReport(accepted=docs).stats(lexicon)["copied_examples"]
+    assert copied == {'a time or date phrase, like "…"': pytest.approx(2 / 3, abs=0.001)}
+    number = spec(feature="a number written in words, like three hundred")
+    copied = CorpusReport(accepted=[(number, SCENE + " Three hundred.")]).stats(lexicon)
+    assert copied["copied_examples"] == {"a number written in words, like …": 1.0}
 
 
 def test_eve_corpus_prompts_and_check(tmp_path: Path, capsys: pytest.CaptureFixture[str]) -> None:

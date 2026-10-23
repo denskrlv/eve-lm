@@ -289,6 +289,16 @@ def _print_corpus_report(stats: dict[str, Any], rejected: dict[str, list[str]], 
         if i == 3:
             break
         items.append(("examples" if i == 0 else "", f"{doc_id}: {'; '.join(reasons)}"))
+    phrases = [
+        f'{kind}: "{phrase}" {share:.0%}'
+        for kind, top in stats["repeated_phrases"].items()
+        for phrase, share in list(top.items())[:1]
+    ]
+    for i, line in enumerate(phrases):
+        items.append(("top phrase" if i == 0 else "", line))
+    copied = [(f, share) for f, share in stats["copied_examples"].items() if share > 0.3]
+    for i, (feature, share) in enumerate(copied):
+        items.append(("copied" if i == 0 else "", f"{share:.0%} of {feature}"))
     console.print(panel("eve corpus check", items))
     success("accepted documents", run / "tinytools.parquet")
 
