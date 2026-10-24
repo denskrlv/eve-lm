@@ -1,4 +1,6 @@
 import json
+import logging
+import re
 from pathlib import Path
 
 import numpy as np
@@ -7,6 +9,7 @@ import pyarrow.parquet as pq
 import pytest
 
 from eve.cli import main
+from eve.data import corpus
 from eve.data.corpus import (
     Mixed,
     encode_corpus,
@@ -152,3 +155,20 @@ def test_eve_corpus_encode_mix(tokenizer, tmp_path, capsys):
     assert json.loads((tmp_path / "bin/meta.json").read_text())["mix"]["share"] == 0.2
     with pytest.raises(SystemExit, match="mix-share"):
         main([*args, "--mix", str(tmp_path / "tt.parquet"), "--mix-share", "1"])
+
+
+def test_encode_corpus_logs_progress_when_the_bar_is_off(tokenizer, tmp_path, monkeypatch, caplog):
+    monkeypatch.setattr(corpus, "LOG_EVERY", 0.0)  # a line per chunk instead of per minute
+    log = logging.getLogger("eve.data.corpus")
+    log.addHandler(caplog.handler)  # eve's loggers may not propagate after main() ran
+    monkeypatch.setattr(log, "level", logging.INFO)
+    try:
+        encode_mixed(tokenizer, tmp_path, workers=1)
+    finally:
+        log.removeHandler(caplog.handler)
+    lines = [r.getMessage() for r in caplog.records if r.getMessage().startswith("encoding")]
+    assert len(lines) > 3
+    assert re.fullmatch(
+        r"encoding [\d.,]+M/[\d.,]+M tokens \(\d+%\) \| [\d.]+M tok/s \| eta \S+", lines[-1]
+    )
+    assert "(100%)" in lines[-1]

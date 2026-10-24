@@ -1,6 +1,7 @@
 import json
 import logging
 import os
+import time
 from collections.abc import Iterable, Iterator, Sequence
 from dataclasses import dataclass
 from itertools import chain, islice
@@ -14,7 +15,7 @@ import pyarrow.parquet as pq
 
 from eve import defaults
 from eve.data.schema import load_library
-from eve.progress import Bar
+from eve.progress import Bar, format_duration
 from eve.tokenizer.bpe import EOS, BPETokenizer
 
 
@@ -109,6 +110,35 @@ CHUNKS_PER_WORKER = 4
 _tokenizer: BPETokenizer | None = None
 logger = logging.getLogger(__name__)
 PARQUET_BATCH_ROWS = 1024  # rows read from a parquet file at a time
+LOG_EVERY = 60.0  # seconds between plain progress lines when the bar is off (Kaggle's log)
+
+
+class _Progress:
+    """The encoding bar, plus a plain line every ``LOG_EVERY`` seconds when the bar is off
+    (not a terminal), so a log shows the tokens done, the rate and the time left."""
+
+    def __init__(self, total: int) -> None:
+        self.bar = Bar(total, "encoding", "tokens")
+        self.total, self.done = total, 0
+        self.start = self.last = time.monotonic()
+
+    def update(self, n: int) -> None:
+        self.bar.update(n)
+        self.done += n
+        now = time.monotonic()
+        if self.bar.disable and now - self.last >= LOG_EVERY:
+            self.last = now
+            rate = self.done / max(now - self.start, 1e-9)
+            share = min(self.done / self.total, 1)  # val's whole documents may run over
+            eta = max(self.total - self.done, 0) / rate
+            logger.info(
+                f"encoding {self.done / 1e6:,.1f}M/{self.total / 1e6:,.1f}M tokens "
+                f"({share:.0%}) | {rate / 1e6:.2f}M tok/s | "
+                f"eta {format_duration(eta)}"
+            )
+
+    def close(self) -> None:
+        self.bar.close()
 
 
 def _init_worker(tokenizer_path: str) -> None:
@@ -139,7 +169,7 @@ def _encode_into(
     whole_documents: bool,
     workers: int,
     docs_per_chunk: int,
-    bar: Bar,
+    bar: _Progress,
 ) -> tuple[int, list[str]]:
     """Encode ``docs`` into ``file`` until it holds ``limit`` tokens: whole documents (the
     last chunk may go past ``limit``) or exactly ``limit``. Returns the tokens written and the
@@ -176,7 +206,7 @@ def _encode_splits(
     the val tokens stay comparable between runs with and without it. Returns the tokens
     written to each."""
     web = iter_documents(paths)
-    bar = Bar(val_tokens + train_tokens, "encoding", "tokens")
+    bar = _Progress(val_tokens + train_tokens)
     with (
         Pool(workers, initializer=_init_worker, initargs=(str(tokenizer_path),)) as pool,
         open(out_dir / "val.bin", "wb") as val_file,
