@@ -1,0 +1,127 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1040 560" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif" role="img" aria-labelledby="title desc">
+  <title id="title">Eve architecture</title>
+  <desc id="desc">A request and up to five tool schemas are encoded once. A question block of learned queries answers the intent and, with a pointer over the tool markers, which tools to call in order. A value decoder writes each argument value of the chosen tools, with the call structure copied from the schema.</desc>
+  <style>
+    .bg { fill: #ffffff; }
+    .box { fill: #f6f8fa; stroke: #d0d7de; stroke-width: 1.5; }
+    .enc { fill: #ddf4ff; stroke: #54aeff; stroke-width: 1.5; }
+    .q { fill: #fbefff; stroke: #c297ff; stroke-width: 1.5; }
+    .dec { fill: #dafbe1; stroke: #4ac26b; stroke-width: 1.5; }
+    .out { fill: #fff8c5; stroke: #d4a72c; stroke-width: 1.5; }
+    .h { fill: #1f2328; font-size: 15px; font-weight: 600; }
+    .t { fill: #1f2328; font-size: 12.5px; }
+    .m { fill: #59636e; font-size: 12px; }
+    .code { white-space: pre; fill: #1f2328; font-size: 12px; font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; }
+    .sp { fill: #8250df; }
+    .val { fill: #1a7f37; font-weight: 600; }
+    .line { stroke: #59636e; stroke-width: 1.6; fill: none; }
+    .dash { stroke: #8250df; stroke-width: 1.4; fill: none; stroke-dasharray: 5 4; }
+    .arrow { fill: #59636e; }
+    .arrowq { fill: #8250df; }
+    @media (prefers-color-scheme: dark) {
+      .bg { fill: #0d1117; }
+      .box { fill: #161b22; stroke: #3d444d; }
+      .enc { fill: #0c2d4a; stroke: #4493f8; }
+      .q { fill: #2b1a48; stroke: #ab7df8; }
+      .dec { fill: #0f2e1b; stroke: #3fb950; }
+      .out { fill: #2e2410; stroke: #bb8009; }
+      .h, .t, .code { white-space: pre; fill: #e6edf3; }
+      .m { fill: #9198a1; }
+      .sp { fill: #d2a8ff; }
+      .val { fill: #56d364; }
+      .line { stroke: #9198a1; }
+      .dash { stroke: #ab7df8; }
+      .arrow { fill: #9198a1; }
+      .arrowq { fill: #ab7df8; }
+    }
+  </style>
+  <defs>
+    <marker id="a" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path class="arrow" d="M0,0 L10,5 L0,10 z"/></marker>
+    <marker id="aq" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path class="arrowq" d="M0,0 L10,5 L0,10 z"/></marker>
+  </defs>
+
+  <rect class="bg" x="0" y="0" width="1040" height="560" rx="12"/>
+
+  <!-- Input -->
+  <rect class="box" x="20" y="150" width="270" height="200" rx="10"/>
+  <text class="h" x="36" y="176">Input: request + 1–5 tools</text>
+  <text class="code" x="36" y="204"><tspan class="sp">&lt;utt&gt;</tspan> turn off the kitchen</text>
+  <text class="code" x="36" y="220">      lights</text>
+  <text class="code" x="36" y="242"><tspan class="sp">&lt;tools&gt;</tspan></text>
+  <text class="code" x="36" y="262"><tspan class="sp">&lt;tool&gt;</tspan> set_lights : Turn the</text>
+  <text class="code" x="36" y="278">  lights in a room on or off</text>
+  <text class="code" x="36" y="294">  <tspan class="sp">&lt;arg&gt;</tspan> room : enum kitchen | …</text>
+  <text class="code" x="36" y="310">  <tspan class="sp">&lt;arg&gt;</tspan> on : bool  <tspan class="sp">&lt;arg&gt;</tspan> …</text>
+  <text class="code" x="36" y="332"><tspan class="sp">&lt;tool&gt;</tspan> play_music : …</text>
+
+  <line class="line" x1="290" y1="250" x2="326" y2="250" marker-end="url(#a)"/>
+
+  <!-- Encoder -->
+  <rect class="enc" x="330" y="150" width="180" height="200" rx="10"/>
+  <text class="h" x="346" y="176">Encoder</text>
+  <text class="t" x="346" y="202">8 transformer blocks</text>
+  <text class="t" x="346" y="222">bidirectional self-attention</text>
+  <text class="t" x="346" y="242">RoPE · QK-norm</text>
+  <text class="t" x="346" y="262">8k byte-level BPE</text>
+  <text class="m" x="346" y="296">→ memory: one vector</text>
+  <text class="m" x="346" y="312">   per input token, read</text>
+  <text class="m" x="346" y="328">   once by both heads</text>
+
+  <path class="line" d="M510,220 C540,220 540,120 572,120" marker-end="url(#a)"/>
+  <path class="line" d="M510,280 C540,280 540,410 572,410" marker-end="url(#a)"/>
+
+  <!-- Question block -->
+  <rect class="q" x="576" y="40" width="220" height="170" rx="10"/>
+  <text class="h" x="592" y="66">Question block</text>
+  <text class="t" x="592" y="92">9 learned queries:</text>
+  <text class="t" x="592" y="110">q_intent, q_1 … q_8</text>
+  <text class="t" x="592" y="134">2 blocks: self-attention +</text>
+  <text class="t" x="592" y="152">cross-attention to memory</text>
+  <text class="m" x="592" y="180">every question answered</text>
+  <text class="m" x="592" y="196">in one forward pass</text>
+
+  <line class="line" x1="796" y1="90" x2="828" y2="90" marker-end="url(#a)"/>
+  <line class="line" x1="796" y1="165" x2="828" y2="165" marker-end="url(#a)"/>
+
+  <rect class="out" x="832" y="40" width="196" height="80" rx="10"/>
+  <text class="h" x="846" y="64">Intent</text>
+  <text class="t" x="846" y="86"><tspan class="val">CALL 96%</tspan> · ASK 0%</text>
+  <text class="t" x="846" y="104">UNSUPPORTED 4% · NONE 0%</text>
+
+  <rect class="out" x="832" y="130" width="196" height="80" rx="10"/>
+  <text class="h" x="846" y="154">Which tools, in order</text>
+  <text class="t" x="846" y="176">call 1 → <tspan class="val">set_lights</tspan></text>
+  <text class="t" x="846" y="194">call 2 → <tspan class="val">STOP</tspan></text>
+
+  <!-- pointer note -->
+  <text class="m" x="592" y="232">pointer: query · encoder vector at each &lt;tool&gt;,</text>
+  <text class="m" x="592" y="248">plus STOP, so it can only pick a given tool</text>
+
+  <path class="dash" d="M930,210 C930,290 700,280 686,334" marker-end="url(#aq)"/>
+  <text class="m" x="820" y="292">chosen tools</text>
+
+  <!-- Value decoder -->
+  <rect class="dec" x="576" y="340" width="220" height="160" rx="10"/>
+  <text class="h" x="592" y="366">Value decoder</text>
+  <text class="t" x="592" y="392">4 causal blocks +</text>
+  <text class="t" x="592" y="410">cross-attention to memory</text>
+  <text class="m" x="592" y="436">structure copied from the</text>
+  <text class="m" x="592" y="452">schema; only values are written</text>
+  <text class="m" x="592" y="468">then parsed into its type;</text>
+  <text class="m" x="592" y="484"><tspan class="sp">&lt;ask&gt;</tspan> / <tspan class="sp">&lt;absent&gt;</tspan> for missing args</text>
+
+  <line class="line" x1="796" y1="420" x2="828" y2="420" marker-end="url(#a)"/>
+
+  <rect class="out" x="832" y="340" width="196" height="160" rx="10"/>
+  <text class="h" x="846" y="364">Arguments</text>
+  <text class="code" x="846" y="390"><tspan class="sp">&lt;call&gt;</tspan> set_lights</text>
+  <text class="code" x="846" y="408"><tspan class="sp">&lt;arg&gt;</tspan> room <tspan class="sp">&lt;val&gt;</tspan></text>
+  <text class="code" x="846" y="424">  <tspan class="val">kitchen</tspan> <tspan class="sp">&lt;end&gt;</tspan></text>
+  <text class="code" x="846" y="442"><tspan class="sp">&lt;arg&gt;</tspan> on <tspan class="sp">&lt;val&gt;</tspan></text>
+  <text class="code" x="846" y="458">  <tspan class="val">false</tspan> <tspan class="sp">&lt;end&gt;</tspan></text>
+  <text class="code" x="846" y="474"><tspan class="sp">&lt;arg&gt;</tspan> brightness</text>
+  <text class="code" x="846" y="490">  <tspan class="val">&lt;absent&gt;</tspan></text>
+
+  <!-- footer -->
+  <text class="m" x="20" y="536">base preset: d_model 384, 6 heads, ~32M parameters (embeddings 3.4M · encoder 14.2M · decoder 9.5M · question block 4.8M). LM head tied to the embeddings.</text>
+</svg>
