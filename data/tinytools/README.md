@@ -18,6 +18,27 @@ document; a generator writes the document; code checks it.
 The pilot runs are `data/tinytools/pilot` (2,000 prompts) and `data/tinytools/pilot-v2` (the same
 2,000 draws with the reworded prompts).
 
+## Writing a run
+
+```bash
+uv run eve corpus prompts --n 20000 --seed 1 --out data/tinytools/<run>
+uv run eve corpus generate data/tinytools/<run> --workers 8
+```
+
+`eve corpus generate` runs headless Claude Code (`claude -p`, no tools, in an empty directory) on
+batches of 50 prompts and checks each document as it comes back. A rejected document goes back
+with the checker's reasons, up to `--rounds` calls per batch (default 3). Each batch is saved to
+`<run>/batches/batch-NNNN.jsonl` beside its prompts and appended to `<run>/documents.jsonl` as soon
+as it finishes, so running the command again resumes. It ends with `eve corpus check`.
+
+- `--limit 200`: write only that many (a cheap look before a big run).
+- `--rewrite`: also send back documents the checker rejects, near-duplicates included.
+- `--model sonnet`: the generator's model (Claude Code's default if unset).
+- It stops when a batch gets nothing back but errors (no login, rate limit); run it again later.
+
+The cost so far is printed per batch and at the end. The rules the generator gets are the ones
+below (`SYSTEM` in `src/eve/data/generate/headless.py`).
+
 ## For the generator
 
 1. Read `<run>/prompts.jsonl`. Each line has an `id`, a `kind` and a `prompt`, plus what the
