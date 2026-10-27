@@ -14,7 +14,7 @@ import torch
 from rich.text import Text
 
 from eve import defaults
-from eve.config import INTENTS, PRESETS, STOP, ModelConfig
+from eve.config import INTENTS, PRESETS, ModelConfig
 from eve.progress import (
     console,
     format_duration,
@@ -35,9 +35,9 @@ if TYPE_CHECKING:
     from rich.panel import Panel
     from rich.table import Table
 
+    from eve.api import Call, Response
     from eve.data.schema import Tool
     from eve.evaluate import SetResult
-    from eve.infer.predict import Answers, WrittenCall
     from eve.tokenizer.bpe import BPETokenizer
 
 TRAIN_DEFAULTS = TrainConfig(steps=1)  # the CLI's defaults are TrainConfig's own
@@ -622,6 +622,19 @@ def _print_fill_report(
     console.print()
 
 
+def export(args: argparse.Namespace) -> None:
+    """Publish (M10): write a fine-tuned model and its model card for a Hugging Face Hub repo."""
+    from eve.export import export_model
+
+    try:
+        out = export_model(args.model, args.out, args.dtype, args.repo)
+    except ValueError as error:
+        raise SystemExit(str(error)) from None
+    size = (out / "model.pt").stat().st_size / 1e6
+    success(f"model.pt ({size:.0f} MB, {args.dtype}) and README.md", out)
+    console.print(Text(f"upload: hf upload {args.repo} {out} .", style="dim"))
+
+
 def fill(args: argparse.Namespace) -> None:
     """Learn (M4): ask a pretrained model to fill the <x0>, <x1>… holes in a sentence."""
     from eve import progress
@@ -646,8 +659,9 @@ def fill(args: argparse.Namespace) -> None:
 
 def _tools(args: argparse.Namespace) -> list["Tool"]:
     """The tools for ``eve ask``: names from the library and/or schemas from JSON files."""
+    from eve.api import EveError
+    from eve.api.tools import to_tool
     from eve.data.generate.build import Sources
-    from eve.data.schema import GENERATION_KEYS, Tool
 
     tools = []
     if args.tools:
@@ -659,10 +673,10 @@ def _tools(args: argparse.Namespace) -> list["Tool"]:
     for path in args.schema or []:
         data = json.loads(Path(path).read_text())
         schemas = data["tools"] if isinstance(data, dict) else data  # a data/tools file, or a list
-        tools += [
-            Tool.from_dict({k: v for k, v in t.items() if k not in GENERATION_KEYS})
-            for t in schemas
-        ]
+        try:
+            tools += [to_tool(t)[0] for t in schemas]  # Eve, OpenAI or MCP schemas
+        except EveError as error:
+            raise SystemExit(f"{path}: {error}") from None
     if not tools:
         raise SystemExit("give the tools with --tools a,b,c and/or --schema FILE")
     return tools
@@ -683,40 +697,38 @@ def _ranked(probs: dict[str, float], count: int) -> Text:
     )
 
 
-def _values(call: "WrittenCall") -> Text:
+def _values(call: "Call") -> Text:
     """``room kitchen 98% · on false 99% · brightness –``: each argument and what the decoder
     wrote, colored by how likely it is; ``?`` for one to ask the user for, ``✗`` if invalid."""
     parts = []
-    for name, value in call.values.items():
+    for name, prob in call.arg_confidence.items():
         part = Text(f"{name} ")
-        if value.kind == "absent":
-            part = Text(f"{name} –", style="dim")
-        elif value.kind == "ask":
+        if name in call.args:
+            value = call.args[name]
+            shown = value if isinstance(value, str) else json.dumps(value)
+            part.append(str(shown), style=f"bold {_confidence(prob)}")
+        elif name in call.missing:
             part.append("?", style="bold yellow")
-        elif value.kind == "invalid":
-            part.append(f"{value.value!r} ✗", style="bold red")
+        elif name in call.invalid:
+            part.append("✗", style="bold red")
         else:
-            shown = value.value if isinstance(value.value, str) else json.dumps(value.value)
-            part.append(str(shown), style=f"bold {_confidence(value.prob)}")
-        if value.kind != "absent":
-            part.append(f" {value.prob:.0%}", style="dim")
+            parts.append(Text(f"{name} –", style="dim"))
+            continue
+        part.append(f" {prob:.0%}", style="dim")
         parts.append(part)
     return Text(" · ", style="dim").join(parts) if parts else Text("no arguments", style="dim")
 
 
-def _print_answers(text: str, answers: "Answers", as_json: bool) -> None:
-    """The heads' answers for one request: one JSON line, or the intent and each call slot up
-    to the first one that says STOP, with its argument values if they were written."""
+def _print_response(response: "Response", as_json: bool) -> None:
+    """One response: a JSON line, or the intent and each call with its likeliest tools and the
+    arguments written for it."""
     if as_json:
-        print(json.dumps({"utterance": text, **answers.to_json()}))
+        print(json.dumps(response.to_dict()))
         return
-    items = [("intent", _ranked(answers.intent, INTENTS_SHOWN))]
-    for i, slot in enumerate(answers.slots, 1):
-        items.append((f"call {i}", _ranked(slot, TOOLS_SHOWN)))
-        if i <= len(answers.written):
-            items.append(("", _values(answers.written[i - 1])))
-        if max(slot, key=slot.__getitem__) == STOP:
-            break
+    items = [("intent", _ranked(response.intents, INTENTS_SHOWN))]
+    for i, call in enumerate(response.calls):
+        items.append((f"call {i + 1}", _ranked(response.slots[i], TOOLS_SHOWN)))
+        items.append(("", _values(call)))
     console.print(rows(items, indent=2))
     console.print()
 
@@ -735,22 +747,24 @@ def _ask_interactively(show: Callable[[str], None]) -> None:
 
 
 def ask(args: argparse.Namespace) -> None:
-    """Learn (M7, M8): what the question heads answer for a typed request, with probabilities,
-    and the argument values of each call, for a model from the joint run. The probabilities
-    use the checkpoint's temperatures if ``eve calibrate --save`` wrote them (M9): the
-    familiar-tool ones if the model trained on every tool given, else the new-tool ones."""
-    from eve.infer.predict import Calibrations, answer_questions
-    from eve.model.checkpoint import load_checkpoint
+    """Learn (M7–M9): what a fine-tuned model decides for a typed request, through the public
+    API (``eve.Eve``): the intent, each call with its argument values, and the probabilities,
+    calibrated if ``eve calibrate --save`` wrote temperatures (familiar or new tools, chosen
+    per request)."""
+    from eve.api import Eve, EveError
 
     tools = _tools(args)
-    ckpt = load_checkpoint(args.model, pick_device(args.device))
-    values = bool(ckpt.meta.get("joint"))  # earlier runs never trained the decoder to write them
-    calibrations = Calibrations.from_meta(ckpt.meta)
-    calibration = calibrations.for_tools(tools)
+    try:
+        eve = Eve.load(args.model, device=args.device or "auto")
+        eve.add_tools(tools)  # a schema Eve can't read fails before the first request
+    except EveError as error:
+        raise SystemExit(str(error)) from None
 
     def show(text: str) -> None:
-        answers = answer_questions(ckpt.model, ckpt.tokenizer, text, tools, values, calibration)
-        _print_answers(text, answers, args.json)
+        try:
+            _print_response(eve.respond(text), args.json)
+        except EveError as error:
+            console.print(Text(str(error), style="red"))
 
     if args.text:
         for text in args.text:
@@ -759,11 +773,9 @@ def ask(args: argparse.Namespace) -> None:
             show(text)
         return
     names = ", ".join(t.name for t in tools)
-    written = "written" if values else "not written: the model is not from a joint run"
-    regime = "familiar" if calibrations.is_familiar(tools) else "new"
-    fitted = ckpt.meta.get("calibrated_on", {}).get(regime)
-    probs = f"calibrated for {regime} tools" if fitted else "as trained: see eve calibrate"
-    items = [("model", args.model), ("tools", names), ("values", written), ("probs", probs)]
+    calibrated = eve.info["calibrated"]
+    probs = "calibrated (familiar or new tools)" if calibrated else "as trained: see eve calibrate"
+    items = [("model", str(args.model)), ("tools", names), ("probs", probs)]
     console.print(panel("eve ask", items))
     console.print(Text("type a request · empty line or Ctrl-D to quit\n", style="dim"))
     _ask_interactively(show)
@@ -1280,6 +1292,13 @@ def _add_inspect_commands(commands: Subcommands) -> None:
     parser.add_argument("runs", nargs="+", help="run directories, e.g. artifacts/runs/ab-*")
     parser.add_argument("--metric", nargs="+", default=["val_content", "val_content_acc", "val_lm"])
 
+    parser = commands.add_parser("export", help="write a fine-tuned model for the Hub (M10)")
+    parser.set_defaults(run=export)
+    parser.add_argument("model", nargs="?", default=defaults.FINETUNED_MODEL)
+    parser.add_argument("--out", default="dist/model", help="the directory to write")
+    parser.add_argument("--dtype", choices=["float16", "bfloat16", "float32"], default="float16")
+    parser.add_argument("--repo", default="<user>/<repo>", help="the Hub repo, for the card")
+
     parser = commands.add_parser("fill", help="fill <x0> holes with a pretrained model (M4)")
     parser.set_defaults(run=fill)
     parser.add_argument("text", nargs="*", help='e.g. "Paris is the capital of <x0>."')
@@ -1409,4 +1428,10 @@ def main(argv: list[str] | None = None) -> None:
     """Parse the command line and run the chosen subcommand."""
     args = parse_args(argv)
     setup_logging()
-    args.run(args)
+    try:
+        args.run(args)
+    except ModuleNotFoundError as error:
+        if error.name != "pyarrow":
+            raise
+        hint = "this command needs the training extras: pip install 'eve-lm[train]'"
+        raise SystemExit(hint) from None

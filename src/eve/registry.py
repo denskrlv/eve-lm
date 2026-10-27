@@ -16,17 +16,19 @@ from typing import Any
 KINDS = (
     "data", "model", "loss", "metrics", "report", "optimizer", "schedule", "callback", "trainer"
 )  # fmt: skip
-BUILTIN = (  # the modules that register the built-in components
-    "eve.data.modules",
-    "eve.model.eve",
-    "eve.train.callbacks",
-    "eve.train.loop",
-    "eve.train.optim",
-)
+BUILTIN = {  # kind -> the modules that register its built-in components
+    "data": ("eve.data.modules",),
+    "model": ("eve.model.eve",),
+    "callback": ("eve.train.callbacks",),
+    "trainer": ("eve.train.loop",),
+    "optimizer": ("eve.train.optim",),
+    "schedule": ("eve.train.optim",),
+}
 DISCOVERED = "eve.tasks"  # every module in this package is imported too: drop a file in it
+LIGHT = ("model",)  # kinds inference needs: they never import the training modules
 
 _components: dict[str, dict[str, Any]] = {kind: {} for kind in KINDS}
-_loaded = False
+_loaded: set[str] = set()  # the kinds whose built-ins are imported
 
 
 def _check_kind(kind: str) -> None:
@@ -47,15 +49,18 @@ def register[T](kind: str, name: str) -> Callable[[T], T]:
     return add
 
 
-def load_builtins() -> None:
-    """Import the modules that register the built-in components (once)."""
-    global _loaded
-    if _loaded:
+def load_builtins(kind: str | None = None) -> None:
+    """Import the modules that register the built-in components of ``kind``, or of every kind
+    (once). A light kind (a model) imports only its own modules, so loading a checkpoint for
+    inference never pulls in the training code and its dependencies."""
+    kinds = [kind] if kind is not None else list(KINDS)
+    if not set(kinds) - _loaded:
         return
-    _loaded = True
-    for module in BUILTIN:
-        importlib.import_module(module)
-    if importlib.util.find_spec(DISCOVERED) is None:
+    _loaded.update(kinds)
+    for k in kinds:
+        for module in BUILTIN.get(k, ()):
+            importlib.import_module(module)
+    if all(k in LIGHT for k in kinds) or importlib.util.find_spec(DISCOVERED) is None:
         return
     package = importlib.import_module(DISCOVERED)
     for info in pkgutil.iter_modules(package.__path__, f"{DISCOVERED}."):
@@ -65,7 +70,7 @@ def load_builtins() -> None:
 def get(kind: str, name: str) -> Any:
     """The registered ``kind`` component called ``name``, as registered."""
     _check_kind(kind)
-    load_builtins()
+    load_builtins(kind)
     if name not in _components[kind]:
         raise KeyError(f"no {kind} called {name!r}; registered: {names(kind)}")
     return _components[kind][name]
@@ -80,13 +85,13 @@ def build(kind: str, name: str, **params: Any) -> Any:
 def names(kind: str) -> list[str]:
     """The names registered for ``kind``, sorted."""
     _check_kind(kind)
-    load_builtins()
+    load_builtins(kind)
     return sorted(_components[kind])
 
 
 def name_of(kind: str, component: Any) -> str:
     """The name ``component`` (a registered function or class) is registered under."""
-    load_builtins()
+    load_builtins(kind)
     for name, registered in _components[kind].items():
         if registered is component:
             return name

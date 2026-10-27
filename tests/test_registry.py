@@ -1,3 +1,5 @@
+from types import SimpleNamespace
+
 import pytest
 
 from eve import registry
@@ -7,7 +9,7 @@ from eve import registry
 def clean(monkeypatch):
     """An empty registry, so test components don't leak into other tests."""
     monkeypatch.setattr(registry, "_components", {kind: {} for kind in registry.KINDS})
-    monkeypatch.setattr(registry, "_loaded", True)
+    monkeypatch.setattr(registry, "_loaded", set(registry.KINDS))
 
 
 def test_build_binds_the_params(clean):
@@ -42,3 +44,18 @@ def test_a_name_is_registered_once(clean):
     registry.register("loss", "a")(lambda m, b: {})
     with pytest.raises(ValueError, match="already registered"):
         registry.register("loss", "a")(lambda m, b: {})
+
+
+def test_loading_a_model_kind_skips_the_training_modules(monkeypatch):
+    imported = []
+
+    def fake_import(name):
+        imported.append(name)
+        return SimpleNamespace(__path__=[])  # an empty package for eve.tasks
+
+    monkeypatch.setattr(registry, "_loaded", set())
+    monkeypatch.setattr(registry.importlib, "import_module", fake_import)
+    registry.load_builtins("model")
+    assert imported == ["eve.model.eve"]
+    registry.load_builtins("loss")
+    assert "eve.tasks" in imported

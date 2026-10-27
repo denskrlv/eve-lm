@@ -129,20 +129,25 @@ def test_answers_write_a_call_per_chosen_tool(library, tokenizer):
     assert all({"tool", "args", "missing", "prob", "values"} <= set(c) for c in calls)
 
 
-def test_eve_ask_writes_values_only_for_a_joint_model(
+def test_eve_ask_answers_through_the_api_and_needs_a_joint_model(
     tmp_path: Path, tokenizer: BPETokenizer, capsys: pytest.CaptureFixture[str]
 ) -> None:
     torch.manual_seed(0)  # its slot head picks set_lights, then STOP
     model = Eve(CFG)
     save_checkpoint(tmp_path / "joint.pt", model, tokenizer, {"task": "questions", "joint": True})
     save_checkpoint(tmp_path / "old.pt", model, tokenizer, {"task": "questions"})
-    argv = ["ask", "turn off the kitchen lights", "--tools", "set_lights", "--json"]
+    argv = ["ask", "turn off the kitchen lights", "--tools", "set_lights", "--device", "cpu"]
 
-    main([*argv, "--model", str(tmp_path / "old.pt"), "--device", "cpu"])
-    old = json.loads(capsys.readouterr().out.strip().splitlines()[-1])
-    assert old["calls"] == ["set_lights"]  # tool names only
+    with pytest.raises(SystemExit, match="isn't a fine-tuned joint model"):
+        main([*argv, "--model", str(tmp_path / "old.pt")])
 
-    main([*argv, "--model", str(tmp_path / "joint.pt"), "--device", "cpu"])
+    main([*argv, "--model", str(tmp_path / "joint.pt"), "--json"])
     joint = json.loads(capsys.readouterr().out.strip().splitlines()[-1])
-    (call,) = joint["calls"]
-    assert call["tool"] == "set_lights" and set(call["values"]) == {"room", "on", "brightness"}
+    assert joint["text"] == "turn off the kitchen lights" and joint["intent"] in INTENTS
+    assert max(joint["slots"][0], key=joint["slots"][0].get) == "set_lights"
+    for call in joint["calls"]:
+        assert call["tool"] == "set_lights"
+        assert set(call["arg_confidence"]) == {"room", "on", "brightness"}
+
+    main([*argv, "--model", str(tmp_path / "joint.pt")])
+    assert "intent" in capsys.readouterr().out

@@ -1,0 +1,21 @@
+name: Release
+
+# Push a tag like v0.2.0 to publish that version to PyPI. Publishing uses PyPI's trusted
+# publishing: register this repository and workflow as a publisher of eve-lm on pypi.org first.
+on:
+  push:
+    tags: ["v*"]
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    environment: pypi
+    permissions:
+      id-token: write  # trusted publishing
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v6
+      - name: The tag matches the package version
+        run: test "${GITHUB_REF_NAME#v}" = "$(uv version --short)"
+      - run: uv build
+      - run: uv publish

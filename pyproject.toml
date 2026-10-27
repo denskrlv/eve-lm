@@ -1,30 +1,58 @@
 [project]
-name = "eve"
-version = "0.1.0"
-description = "A tiny function-calling model with Jev-style question heads"
+name = "eve-lm"
+version = "0.2.0"
+description = "A tiny on-device model that turns requests into tool calls, with calibrated confidences"
 readme = "README.md"
+license = "Apache-2.0"
+license-files = ["LICENSE"]
 authors = [
     { name = "Denis Krylov", email = "122829199+denskrlv@users.noreply.github.com" }
 ]
+keywords = ["function-calling", "tool-calling", "on-device", "small-language-model", "pytorch"]
+classifiers = [
+    "Development Status :: 3 - Alpha",
+    "Intended Audience :: Developers",
+    "Intended Audience :: Science/Research",
+    "Operating System :: OS Independent",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+    "Topic :: Scientific/Engineering :: Artificial Intelligence",
+    "Typing :: Typed",
+]
 requires-python = ">=3.12"
 dependencies = [
+    "huggingface-hub>=1.0",
     "numpy>=2.5.4",
-    "pyarrow>=26.0.0",
     "regex>=2026.9.29",
     "rich>=15.0.0",
     "torch>=2.14.1",
 ]
 
+[project.urls]
+Homepage = "https://github.com/denskrlv/eve-lm"
+Repository = "https://github.com/denskrlv/eve-lm"
+Issues = "https://github.com/denskrlv/eve-lm/issues"
+
 [project.scripts]
 eve = "eve.cli:main"
+
+[project.optional-dependencies]
+train = [
+    "pyarrow>=26.0.0",
+]
 
 [build-system]
 requires = ["uv_build>=0.13.0,<0.14.0"]
 build-backend = "uv_build"
 
+[tool.uv.build-backend]
+module-name = "eve"  # the distribution is eve-lm ("eve" on PyPI is another project)
+
 [dependency-groups]
 dev = [
     "mypy>=2.4.0",
+    "pyarrow>=26.0.0",
     "pytest>=9.1.1",
     "ruff>=0.17.0",
     "types-regex>=2026.9.29.20261017",

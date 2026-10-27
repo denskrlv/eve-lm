@@ -24,19 +24,17 @@ lock the front door and turn off the hallway lights
            door front 100% · locked true 100%
   call 2   set_lights 99% · lock_door 1% · STOP 0%
            room hallway 100% · on false 100% · brightness –
-  call 3   STOP 99% · set_lights 1% · lock_door 0%
 
 turn on the lights
   intent   ask 100% · unsupported 0% · call 0% · none 0%
   call 1   set_lights 100% · STOP 0% · play_music 0%
            room ? 100% · on true 100% · brightness –
-  call 2   STOP 100% · set_lights 0% · play_music 0%
 ```
 
 The second request names no room, so Eve answers **ask** and marks `room` as the missing argument instead of guessing one.
 
 > [!NOTE]
-> Eve is under active development. Pretraining, fine-tuning, evaluation and calibration work end to end; a Python SDK (`Eve.load(path)`, `eve.respond(utterance, tools)` returning whole calls with confidences), the Raspberry Pi build and released weights are coming soon (see [Roadmap](#roadmap)).
+> Eve is under active development. Pretraining, fine-tuning, evaluation, calibration and the Python library work end to end; the PyPI release, published weights and the Raspberry Pi build are coming soon (see [Roadmap](#roadmap)).
 
 ## Overview
 
@@ -102,22 +100,75 @@ A request counts as *familiar* when every tool's schema fingerprint is in the tr
 | M7 | Classifier fine-tuning: the question heads | ✅ `questions-base` |
 | M8 | Instruction fine-tuning: value decoder, joint run | ✅ `joint-base` |
 | M9 | Metrics and calibration | ✅ |
-| M10 | Python SDK (`Eve.load`, `eve.respond`) and inference on a Raspberry Pi 5 | 🚧 `eve ask` works; SDK and Pi coming soon |
+| M10 | Python library (`Eve.load`, `eve.respond`) and inference on a Raspberry Pi 5 | 🚧 library done; PyPI release, weights and Pi coming soon |
 | M11 | Retriever that picks the 1–5 tools to show the model | Planned |
 | – | TinyTools pretraining corpus | 🚧 pilot done |
 
+## Use it in Python
+
+```bash
+pip install eve-lm   # first release coming soon; until then:
+pip install git+https://github.com/denskrlv/eve-lm.git
+```
+
+```python
+from typing import Literal
+
+from eve import Eve, tool
+
+@tool
+def set_lights(room: str, on: bool, brightness: int | None = None):
+    """Turn the lights in a room on or off."""
+    ...
+
+@tool
+def play_music(query: str, speaker: Literal["kitchen", "living room"] | None = None):
+    """Play a song, artist or genre."""
+    ...
+
+eve = Eve.load("artifacts/runs/joint-base/model.pt")  # or a Hugging Face Hub repo id
+eve.add_tools(set_lights, play_music)  # once; eve.tools.save("tools.json") keeps the schemas
+response = eve.respond("turn off the kitchen lights")
+
+response.intent        # "call", "ask", "unsupported" or "none"
+response.confidence    # the intent's probability, calibrated
+response.calls         # [Call(tool="set_lights", args={"room": "kitchen", "on": False}, ...)]
+response.missing       # [("set_lights", "room")] when the intent is "ask"
+response.run()         # calls set_lights(room="kitchen", on=False)
+```
+
+- **Tools** can be typed Python functions (`@tool`: the docstring is the description, `Literal` an
+  enum, a default or `| None` makes an argument optional, `Annotated[int, Param(min=0, max=100)]`
+  adds a range), OpenAI- or MCP-style JSON Schema dicts, or Eve's own schema dicts.
+- **Registered tools:** `add_tools` registers tools for every request; `eve.tools` is the
+  registry (`remove`, `save`, `ToolBox.load`). Eve reads at most 5 tools per request, so with
+  more registered it first picks the 5 that best match the request. That pick is word overlap
+  (BM25) for now; a retriever trained on meaning is next (M11). `respond(text, tools=[...])`
+  uses exactly the tools given instead.
+- **`Response`**: `intent` and `confidence`, all four `intents`, `calls` (each with `args`, its
+  `confidence`, `arg_confidence`, `missing` and `invalid`), `considered` (the tools Eve read),
+  `familiar_tools` (whether the model trained on every tool, which picks the calibration) and
+  `to_dict()` for JSON.
+- **`run()`** calls your functions only when everything is in place: the intent is `call`, every
+  call has all its arguments, and optionally every probability is at least `min_confidence`.
+  Otherwise it raises `EveError`, and nothing runs.
+- **Limits:** Eve reads 1–5 tools per request; arguments are `str`, `int`, `float`, `bool` or an enum of
+  strings. Accuracy is highest on tools like the ones Eve trained on (see [Results](#results)).
+- `eve export MODEL --repo user/name` writes an fp16 `model.pt` (~63 MB) and a model card for a
+  Hub repo, so `Eve.load("user/name")` can download it.
+
 ## Quick start
 
-Requires Python 3.12+ and [uv](https://docs.astral.sh/uv/). Training runs on CUDA, Apple Silicon (MPS) or CPU.
+For training and development. Requires Python 3.12+ and [uv](https://docs.astral.sh/uv/). Training runs on CUDA, Apple Silicon (MPS) or CPU; outside this repo, training needs `pip install 'eve-lm[train]'`.
 
 ```bash
 git clone https://github.com/denskrlv/eve-lm.git && cd eve-lm
 uv sync
-uv run pytest            # 355 tests, about 30 s on a laptop
+uv run pytest            # about 390 tests, 30 s on a laptop
 uv run eve model         # parameters per part of each preset
 ```
 
-Weights and the Python SDK are coming soon. Until then, `eve ask` needs a model you trained: follow [Training](#training) below.
+Published weights are coming soon. Until then, `eve ask` and `Eve.load` need a model you trained: follow [Training](#training) below.
 
 ## Training
 
