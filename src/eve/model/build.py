@@ -81,12 +81,18 @@ def start_model(
     ``tokenizer``. ``overrides`` change config fields (``dropout=0.0``). Seed before calling:
     random weights come from the global RNG.
 
-    ``freeze`` trains only the question block (``freeze_body``); ``sdpa`` picks the attention
-    kernel of an Eve (``Eve.set_sdpa``).
+    An architecture with a ``start`` classmethod (the ``Retriever``) starts from ``init`` its
+    own way. ``freeze`` trains only the question block (``freeze_body``); ``sdpa`` picks the
+    attention kernel (``Eve.set_sdpa``).
     """
-    if init is not None:
-        ckpt = load_init(init, **overrides)
+    start = getattr(registry.get("model", architecture), "start", None)
+    if init is not None and start is not None:  # an architecture that starts its own way
+        ckpt = start(init, **overrides)
         model: nn.Module = ckpt.model
+        loaded = ckpt.tokenizer
+    elif init is not None:
+        ckpt = load_init(init, **overrides)
+        model = ckpt.model
         loaded = ckpt.tokenizer
     else:
         if config is None:
@@ -98,6 +104,6 @@ def start_model(
         model = registry.get("model", architecture).from_config(config | overrides)
         loaded = BPETokenizer.load(tokenizer)
     trainable = freeze_body(model) if freeze else sum(p.numel() for p in model.parameters())
-    if isinstance(model, Eve):
-        model.set_sdpa(sdpa)
+    if (set_sdpa := getattr(model, "set_sdpa", None)) is not None:  # an Eve or a Retriever
+        set_sdpa(sdpa)
     return Started(model, loaded, trainable)

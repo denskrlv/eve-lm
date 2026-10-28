@@ -1,0 +1,1 @@
+# The "retrieval" val metrics: the loss and top-1 accuracy among the batch's tools (eve.tasks.retrieval). No params.

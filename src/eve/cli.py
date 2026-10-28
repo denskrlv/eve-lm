@@ -627,12 +627,46 @@ def export(args: argparse.Namespace) -> None:
     from eve.export import export_model
 
     try:
-        out = export_model(args.model, args.out, args.dtype, args.repo)
+        out = export_model(args.model, args.out, args.dtype, args.repo, args.retriever)
     except ValueError as error:
         raise SystemExit(str(error)) from None
     size = (out / "model.pt").stat().st_size / 1e6
-    success(f"model.pt ({size:.0f} MB, {args.dtype}) and README.md", out)
+    extra = " · retriever.pt" if args.retriever else ""
+    success(f"model.pt ({size:.0f} MB, {args.dtype}){extra} and README.md", out)
     console.print(Text(f"upload: hf upload {args.repo} {out} .", style="dim"))
+
+
+def retriever_eval(args: argparse.Namespace) -> None:
+    """Retrieve (M11): how often each scorer puts every correct tool in the top 5 of a
+    registry: BM25, and with a retriever checkpoint, the retriever alone and fused with BM25.
+    Registries are filled with random tools, and with ``similar`` ones (the hard case)."""
+    from eve.api.toolbox import BM25, Dense, Hybrid, Scorer
+    from eve.data.generate.build import Sources
+    from eve.model.checkpoint import load_checkpoint
+    from eve.tasks.retrieval import TOP, evaluate_scorers, load_splits, suite
+
+    scorers: dict[str, Scorer] = {"bm25": BM25()}
+    if args.retriever:
+        ckpt = load_checkpoint(args.retriever, pick_device(args.device))
+        dense = Dense(ckpt.model, ckpt.tokenizer)  # type: ignore[arg-type]
+        scorers |= {"dense": dense, "hybrid": Hybrid(dense, BM25())}
+    examples = load_splits(Sources.load().library, args.task, args.splits)
+    suites = suite(examples, args.sizes, fills=args.fill)
+    results = evaluate_scorers(scorers, suites)
+    if args.json:
+        print(json.dumps(results, indent=1))
+        return
+    sizes = " · ".join(f"{key} {len(cases):,}" for key, cases in suites.items())
+    console.print(
+        panel("eve retriever eval", [("requests", sizes), ("retriever", args.retriever or "–")])
+    )
+    hard = [key for key in suites if " " in key]  # "val@25 similar"
+    for keys in ([key for key in suites if key not in hard], hard):
+        for metric in (f"all@{TOP}", f"recall@{TOP}", "mrr") if keys else ():
+            out = table(metric, *keys, first_style="bold")
+            for name, by_suite in results.items():
+                out.add_row(name, *(format_metric(metric, by_suite[key][metric]) for key in keys))
+            console.print(out)
 
 
 def fill(args: argparse.Namespace) -> None:
@@ -1298,6 +1332,25 @@ def _add_inspect_commands(commands: Subcommands) -> None:
     parser.add_argument("--out", default="dist/model", help="the directory to write")
     parser.add_argument("--dtype", choices=["float16", "bfloat16", "float32"], default="float16")
     parser.add_argument("--repo", default="<user>/<repo>", help="the Hub repo, for the card")
+    parser.add_argument("--retriever", default=None, help="a retriever model.pt to ship with it")
+
+    group = commands.add_parser("retriever", help="score tool retrieval (M11)")
+    retriever_commands = group.add_subparsers(dest="retriever_command", required=True)
+    parser = retriever_commands.add_parser("eval", help="top-5 recall of BM25 and a retriever")
+    parser.set_defaults(run=retriever_eval)
+    parser.add_argument("retriever", nargs="?", help="a retriever model.pt; BM25 alone without")
+    parser.add_argument("--task", default=defaults.TASK_DIR)
+    parser.add_argument("--splits", nargs="+", default=["val", "heldout", "massive"])
+    parser.add_argument("--sizes", nargs="+", type=int, default=[10, 25, 50], help="registry sizes")
+    parser.add_argument(
+        "--fill",
+        nargs="+",
+        choices=["random", "similar"],
+        default=["random", "similar"],
+        help="what fills a registry up: random tools, or ones like the correct tools",
+    )
+    parser.add_argument("--json", action="store_true", help="the results as one JSON object")
+    parser.add_argument("--device", default=None)
 
     parser = commands.add_parser("fill", help="fill <x0> holes with a pretrained model (M4)")
     parser.set_defaults(run=fill)

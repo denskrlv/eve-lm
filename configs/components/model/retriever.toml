@@ -1,0 +1,3 @@
+# The retriever (M11): a pretrained Eve's embeddings and encoder, mean-pooled and projected to
+# `embed_dim`. Start it from `init`, an Eve checkpoint (or a retriever one, to train on).
+sdpa = true  # PyTorch's fused attention kernel

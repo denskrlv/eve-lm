@@ -56,6 +56,6 @@ def test_loading_a_model_kind_skips_the_training_modules(monkeypatch):
     monkeypatch.setattr(registry, "_loaded", set())
     monkeypatch.setattr(registry.importlib, "import_module", fake_import)
     registry.load_builtins("model")
-    assert imported == ["eve.model.eve"]
+    assert imported == ["eve.model.eve", "eve.model.retriever"]
     registry.load_builtins("loss")
     assert "eve.tasks" in imported
