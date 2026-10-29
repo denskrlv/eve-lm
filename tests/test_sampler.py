@@ -72,7 +72,7 @@ def test_held_out_pool(sources):
 
 
 def test_conversions_are_sensible(sources):
-    bank = ToolBank(sources.heldout)
+    bank = ToolBank(sources.train + sources.heldout)
     sides = {
         "convert_units": ("from_unit", "to_unit"),
         "convert_currency": ("from_currency", "to_currency"),

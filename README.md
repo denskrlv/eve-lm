@@ -249,7 +249,7 @@ uv run eve compare artifacts/runs/ab-*            # val metrics of several runs 
 
 <br/>
 
-- **Hand-written tools.** 41 tools in 11 everyday domains (home, media, calendar, car, …) in [`data/tools/`](data/tools), each with request templates. [`data/tools/heldout/`](data/tools/heldout) holds 9 more in two domains, math and travel, that the model never trains on.
+- **Hand-written tools.** 46 tools in 12 everyday domains (home, media, calendar, car, math, …) in [`data/tools/`](data/tools), each with request templates. [`data/tools/heldout/`](data/tools/heldout) holds 4 more, travel, that the model never trains on. Until 2026-10-28 math was held out too (the models in [Results](#results) never saw it).
 - **Generated tools.** 1,042 more tools are generated in code, so the model learns to read schemas rather than memorise names.
 - **Chat-written requests.** Code picks the answer for each scenario (intent, calls, missing arguments) and an LLM writes only the request, following [`data/generation/README.md`](data/generation/README.md); `eve data check` rejects any request that doesn't lead to exactly those calls.
 - **External data.** xLAM and MASSIVE, converted.

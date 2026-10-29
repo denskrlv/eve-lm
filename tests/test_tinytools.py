@@ -33,7 +33,9 @@ def lexicon() -> Lexicon:
 
 @pytest.fixture(scope="module")
 def heldout():
-    return list(load_library(ROOT / "data" / "tools" / "heldout").values())
+    # travel, plus add: a short name, which only counts when used like a function (``add(``)
+    travel = load_library(ROOT / "data" / "tools" / "heldout").values()
+    return [*travel, load_library(ROOT / "data" / "tools")["add"]]
 
 
 def spec(kind="scene", noun="lamp", verb="buy", adjective="bright", **kw) -> PromptSpec:
@@ -120,7 +122,7 @@ def test_a_good_scene_passes(lexicon: Lexicon, heldout) -> None:
         ({}, "The lamp was bright. She bought it.", "words; a scene needs"),
         ({}, "Sure, here is a story. " + SCENE, "starts with a reply"),
         ({}, SCENE + " She typed <tool> by mistake.", "special token <tool>"),
-        ({}, SCENE + " Then it ran convert_units for her.", "held-out tool convert_units"),
+        ({}, SCENE + " Then it ran convert_currency for her.", "held-out tool convert_currency"),
         ({}, SCENE + " It called add(20, 10) as well.", "held-out tool add"),
         ({"kind": "dialogue"}, SCENE, "a dialogue needs 4+ turns"),
         ({"kind": "card"}, SCENE, "a tool card needs a line 'name:"),

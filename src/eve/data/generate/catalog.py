@@ -5,7 +5,7 @@ from eve.data.schema import Arg
 
 # Generated tools teach the model to read schemas it has never seen (users will bring their
 # own @tool functions). Each capability gets several tools that differ in name, argument names
-# and wording. Topics of the held-out domains (math, travel) are avoided on purpose.
+# and wording. Topics of the held-out domain (travel) are avoided on purpose.
 
 ROOMS = ("kitchen", "bedroom", "living room", "bathroom", "office", "garage", "basement", "nursery")
 

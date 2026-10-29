@@ -79,7 +79,11 @@ def test_convert_xlam():
         "value not in the request",
     )
     sums = [{"name": "sum_list", "arguments": {"xs": [1, 2]}}]
-    assert convert_xlam(xlam_row("add 1 and 2", sums, [LISTY]), rng)[1] == "held-out topic"
+    assert convert_xlam(xlam_row("add 1 and 2", sums, [LISTY]), rng)[1] == (
+        "list, dict or other complex argument"
+    )
+    hotel = xlam_row("add 1 and 2, then find hotels", sums, [LISTY])
+    assert convert_xlam(hotel, rng)[1] == "held-out topic"
 
 
 def test_unsupported_variant():
@@ -155,7 +159,7 @@ def test_held_out_topics_in_the_request_are_dropped():
     rng = np.random.default_rng(0)
     answers = [{"name": "getWeatherForecast", "arguments": {"location": "Oslo"}}]
     assert convert_xlam(
-        xlam_row("Weather in Oslo, in celsius, then calculate the average", answers), rng
+        xlam_row("Weather in Oslo, in celsius, then book a hotel there", answers), rng
     ) == (
         None,
         "held-out topic",
@@ -170,8 +174,8 @@ def test_held_out_topics_in_the_request_are_dropped():
         {
             "partition": "train",
             "intent": "general_quirky",
-            "utt": "is division done before addition",
-            "annot_utt": "is division done before addition",
+            "utt": "which airline flies there",
+            "annot_utt": "which airline flies there",
         },
     ]
     parts, dropped = convert_massive(rows, rng)
