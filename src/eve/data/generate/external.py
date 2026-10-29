@@ -16,14 +16,12 @@ from eve.data.jsonl import read_jsonl, write_jsonl
 from eve.data.render import Call, TaskExample
 from eve.data.schema import MAX_ARGS, Arg, SchemaError, Tool
 
-# Topics of the held-out domains (math, travel). An external example whose tools or request touch
-# them is dropped, or the held-out test would no longer measure unseen tools.
+# Topics of the held-out domain (travel; math was trained on from 2026-10-28, as a basic tool
+# every assistant needs). An external example whose tools or request touch them is dropped, or
+# the held-out test would no longer measure unseen tools. Conversion stays out with currency.
 HELD_OUT = re.compile(
     r"\b(flights?|airports?|airlines?|hotels?|travel\w*|trips?|currenc\w*|exchange rates?|"
-    r"convert\w*|conversion|calculat\w*|arithmetic|math\w*|sum|addition|subtract\w*|"
-    r"multipl(y|ies|ying|ication)|divide[sd]?|dividing|division|factorial|fibonacci|primes?|"
-    r"average|median|gcd|lcm|equations?|"
-    r"integral|derivatives?|matrix|matrices)\b",
+    r"convert\w*|conversion)\b",
     re.IGNORECASE,
 )
 TOOL_DESCRIPTION_CHARS, ARG_DESCRIPTION_CHARS = 120, 60  # longer xLAM descriptions are cut
@@ -215,8 +213,8 @@ def unsupported_variant(
 
 # ---- MASSIVE ---------------------------------------------------------------------------------
 
-# Intent -> the tool a person would have written for it. Left out: transport_*, qa_maths,
-# qa_currency and datetime_convert (held-out travel and math), and intents with < 30 examples.
+# Intent -> the tool a person would have written for it. Left out: transport_*, qa_currency and
+# datetime_convert (held-out travel), and intents with < 30 examples.
 MASSIVE_TOOLS = {
     "alarm_query": ("list_alarms", "List the alarms that are set"),
     "alarm_remove": ("remove_alarm", "Delete an alarm"),
@@ -256,6 +254,7 @@ MASSIVE_TOOLS = {
     "play_radio": ("play_radio", "Play a radio station"),
     "qa_definition": ("define_word", "Give the definition of a word"),
     "qa_factoid": ("answer_question", "Answer a factual question"),
+    "qa_maths": ("calculate", "Work out a math question"),
     "qa_stock": ("get_stock_price", "Get a company's stock price"),
     "recommendation_events": ("suggest_events", "Suggest events to go to"),
     "recommendation_locations": ("suggest_places", "Suggest places like restaurants or shops"),

@@ -201,4 +201,4 @@ def test_eve_corpus_generate(
 
 def test_the_rules_name_the_heldout_tools(heldout) -> None:
     rules = headless.system_prompt(heldout)
-    assert "convert_units" in rules and "search_flights" in rules and "{heldout}" not in rules
+    assert "convert_currency" in rules and "search_flights" in rules and "{heldout}" not in rules

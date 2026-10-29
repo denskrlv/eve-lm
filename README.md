@@ -101,7 +101,7 @@ A request counts as *familiar* when every tool's schema fingerprint is in the tr
 | M8 | Instruction fine-tuning: value decoder, joint run | ✅ `joint-base` |
 | M9 | Metrics and calibration | ✅ |
 | M10 | Python library (`Eve.load`, `eve.respond`) and inference on a Raspberry Pi 5 | 🚧 library done; PyPI release, weights and Pi coming soon |
-| M11 | Retriever that picks the 1–5 tools to show the model | Planned |
+| M11 | Retriever that picks the 1–5 tools to show the model | ✅ `retriever-base` |
 | – | TinyTools pretraining corpus | 🚧 pilot done |
 
 ## Use it in Python
@@ -142,8 +142,10 @@ response.run()         # calls set_lights(room="kitchen", on=False)
   adds a range), OpenAI- or MCP-style JSON Schema dicts, or Eve's own schema dicts.
 - **Registered tools:** `add_tools` registers tools for every request; `eve.tools` is the
   registry (`remove`, `save`, `ToolBox.load`). Eve reads at most 5 tools per request, so with
-  more registered it first picks the 5 that best match the request. That pick is word overlap
-  (BM25) for now; a retriever trained on meaning is next (M11). `respond(text, tools=[...])`
+  more registered it first picks the 5 that best match the request. With a `retriever.pt` beside
+  the model, a bi-encoder fine-tuned from Eve's encoder picks them by meaning; without one, word
+  overlap (BM25). With 25 registered, every correct tool makes the 5 for 99.4% of val requests
+  (BM25: 75.8%) and 95.8% on tools it never trained on (BM25: 77.1%). `respond(text, tools=[...])`
   uses exactly the tools given instead.
 - **`Response`**: `intent` and `confidence`, all four `intents`, `calls` (each with `args`, its
   `confidence`, `arg_confidence`, `missing` and `invalid`), `considered` (the tools Eve read),
@@ -155,7 +157,8 @@ response.run()         # calls set_lights(room="kitchen", on=False)
 - **Limits:** Eve reads 1–5 tools per request; arguments are `str`, `int`, `float`, `bool` or an enum of
   strings. Accuracy is highest on tools like the ones Eve trained on (see [Results](#results)).
 - `eve export MODEL --repo user/name` writes an fp16 `model.pt` (~63 MB) and a model card for a
-  Hub repo, so `Eve.load("user/name")` can download it.
+  Hub repo, so `Eve.load("user/name")` can download it. `--retriever RETRIEVER` adds
+  `retriever.pt` (~35 MB), which `Eve.load` picks up.
 
 ## Quick start
 
@@ -246,7 +249,7 @@ uv run eve compare artifacts/runs/ab-*            # val metrics of several runs 
 
 <br/>
 
-- **Hand-written tools.** 41 tools in 11 everyday domains (home, media, calendar, car, …) in [`data/tools/`](data/tools), each with request templates. [`data/tools/heldout/`](data/tools/heldout) holds 9 more in two domains, math and travel, that the model never trains on.
+- **Hand-written tools.** 46 tools in 12 everyday domains (home, media, calendar, car, math, …) in [`data/tools/`](data/tools), each with request templates. [`data/tools/heldout/`](data/tools/heldout) holds 4 more, travel, that the model never trains on. Until 2026-10-28 math was held out too (the models in [Results](#results) never saw it).
 - **Generated tools.** 1,042 more tools are generated in code, so the model learns to read schemas rather than memorise names.
 - **Chat-written requests.** Code picks the answer for each scenario (intent, calls, missing arguments) and an LLM writes only the request, following [`data/generation/README.md`](data/generation/README.md); `eve data check` rejects any request that doesn't lead to exactly those calls.
 - **External data.** xLAM and MASSIVE, converted.

@@ -2,15 +2,20 @@ from collections.abc import Iterable, Sequence
 from pathlib import Path
 from typing import Any
 
+import torch
+
 from eve.api.errors import CheckpointError, EveError, ToolError
-from eve.api.hub import resolve
+from eve.api.hub import companion, resolve
 from eve.api.response import Response
-from eve.api.toolbox import ToolBox
+from eve.api.toolbox import BM25, Dense, Hybrid, Scorer, ToolBox
 from eve.api.tools import ToolLike, to_tool
 from eve.data.schema import SchemaError, Tool
 from eve.infer.predict import Calibrations, answer_questions
 from eve.model.checkpoint import FORMAT, Checkpoint, load_checkpoint
 from eve.runtime import pick_device
+
+SCORERS = ("bm25", "dense", "hybrid")
+DEFAULT_SCORER = "dense"  # with a retriever; it beat hybrid on every split (M11)
 
 
 class Eve:
@@ -23,11 +28,18 @@ class Eve:
         response.run()
 
     ``respond`` shows the model at most ``max_tools`` of the registered tools: all of them if
-    there are that few, else the ones ``tools.search`` ranks best for the request. Passing
-    ``tools=`` to ``respond`` uses exactly those instead.
+    there are that few, else the ones ``tools.search`` ranks best for the request: by meaning
+    with a retriever (``retriever.pt`` beside the model), else by shared words (BM25).
+    Passing ``tools=`` to ``respond`` uses exactly those instead.
     """
 
-    def __init__(self, checkpoint: Checkpoint, source: str) -> None:
+    def __init__(
+        self,
+        checkpoint: Checkpoint,
+        source: str,
+        retriever: Checkpoint | None = None,
+        scorer: str = DEFAULT_SCORER,
+    ) -> None:
         if not checkpoint.meta.get("joint"):
             raise CheckpointError(
                 f"{source} isn't a fine-tuned joint model: it can't write argument values"
@@ -37,22 +49,40 @@ class Eve:
         self._meta = checkpoint.meta
         self._calibrations = Calibrations.from_meta(checkpoint.meta)
         self.source = source
-        self.tools = ToolBox()  # the registered tools
+        self.retriever = None if retriever is None else retriever.model.eval().requires_grad_(False)
+        self.tools = ToolBox(scorer=_scorer(scorer, retriever))  # the registered tools
 
     @classmethod
-    def load(cls, source: str | Path, *, device: str = "cpu", revision: str | None = None) -> "Eve":
+    def load(
+        cls,
+        source: str | Path,
+        *,
+        device: str = "cpu",
+        revision: str | None = None,
+        retriever: str | Path | None = "auto",
+        scorer: str = DEFAULT_SCORER,
+    ) -> "Eve":
         """The model in ``source``: a checkpoint file, a directory holding ``model.pt``, or a
         Hugging Face Hub repo id (``"user/eve-joint-base"``, cached after the first download).
 
         ``device`` is ``"cpu"`` (the default), ``"cuda"``, ``"mps"`` or ``"auto"`` (the
         fastest there is). ``revision`` pins a Hub branch, tag or commit.
+
+        ``retriever`` picks the tools a request is shown when more are registered than it
+        holds: ``"auto"`` loads ``retriever.pt`` from beside the model if there is one, a path
+        loads that file, ``None`` uses none (BM25). With one, ``scorer`` is ``"dense"``
+        (the retriever alone), ``"hybrid"`` (retriever and BM25 fused) or ``"bm25"``.
         """
+        if scorer not in SCORERS:
+            raise EveError(f"scorer must be one of {list(SCORERS)}, got {scorer!r}")
+        torch_device = pick_device(None if device == "auto" else device)
         path = resolve(source, revision)
-        try:
-            checkpoint = load_checkpoint(path, pick_device(None if device == "auto" else device))
-        except Exception as error:  # torch.load raises many kinds for a file that isn't one
-            raise CheckpointError(f"can't load {path}: {error}") from error
-        return cls(checkpoint, str(source))
+        checkpoint = _load(path, torch_device)
+        found = companion(source, revision) if retriever == "auto" else retriever
+        extra = None if found is None else _load(resolve(found), torch_device)
+        if extra is not None and extra.meta.get("task") != "retrieval":
+            raise CheckpointError(f"{found} isn't a retriever")
+        return cls(checkpoint, str(source), extra, scorer)
 
     @property
     def max_tools(self) -> int:
@@ -69,6 +99,7 @@ class Eve:
             "max_tools": self.max_tools,
             "calibrated": "calibration" in self._meta,
             "known_tools": len(self._calibrations.known),
+            "scorer": type(self.tools.scorer).__name__,
             "metrics": {k: v for k, v in self._meta.items() if k.startswith("val_")},
         }
 
@@ -115,6 +146,21 @@ class Eve:
 
     def __repr__(self) -> str:
         return f"Eve({self.source!r})"
+
+
+def _load(path: Path, device: torch.device) -> Checkpoint:
+    try:
+        return load_checkpoint(path, device)
+    except Exception as error:  # torch.load raises many kinds for a file that isn't one
+        raise CheckpointError(f"can't load {path}: {error}") from error
+
+
+def _scorer(name: str, retriever: Checkpoint | None) -> Scorer:
+    """What ``tools.search`` ranks by: BM25 without a retriever, else ``name``."""
+    if retriever is None or name == "bm25":
+        return BM25()
+    dense = Dense(retriever.model, retriever.tokenizer)  # type: ignore[arg-type]
+    return dense if name == "dense" else Hybrid(dense, BM25())
 
 
 def _check(tools: Sequence[Tool], max_tools: int) -> None:

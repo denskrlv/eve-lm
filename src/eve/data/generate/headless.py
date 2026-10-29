@@ -42,8 +42,8 @@ a word.
 - Simple, everyday English. Vary the people, places, numbers and sentence shapes from one \
 document to the next, within this batch too.
 - Never write angle brackets.
-- Never name one of these as a tool: {heldout}. Saying "add the two numbers" in a story is fine; \
-a tool called add is not."""
+- Never name one of these as a tool: {heldout}. Saying "book a hotel" in a story is fine; \
+a tool called book_hotel is not."""
 
 BATCH = re.compile(r"batch-(\d+)\.prompts\.jsonl$")
 

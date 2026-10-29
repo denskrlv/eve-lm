@@ -4,6 +4,7 @@ from pathlib import Path
 from eve.api.errors import CheckpointError
 
 FILENAME = "model.pt"  # the checkpoint in a model directory or Hub repo
+RETRIEVER = "retriever.pt"  # its retriever (M11), if it has one
 REPO_ID = re.compile(r"[\w.-]+/[\w.-]+")  # "user/eve-joint-base"
 
 
@@ -30,3 +31,23 @@ def resolve(source: str | Path, revision: str | None = None) -> Path:
         raise CheckpointError(
             f"no local file {source}, and the Hub download failed: {error}"
         ) from error
+
+
+def companion(
+    source: str | Path, revision: str | None = None, filename: str = RETRIEVER
+) -> Path | None:
+    """``filename`` beside the checkpoint ``source`` names (in its directory or Hub repo), or
+    None if there is none or it can't be fetched: a companion is optional."""
+    path = Path(source).expanduser()
+    if path.is_file():
+        path = path.parent
+    if path.is_dir():
+        return path / filename if (path / filename).is_file() else None
+    if not REPO_ID.fullmatch(str(source)):
+        return None
+    try:
+        from huggingface_hub import hf_hub_download
+
+        return Path(hf_hub_download(str(source), filename, revision=revision))
+    except Exception:  # no huggingface_hub, offline, or the repo has no such file
+        return None

@@ -94,13 +94,15 @@ def bar(total: int, desc: str, unit: str, initial: int = 0, leave: bool = True) 
 
 
 def format_metric(name: str, value: float) -> str:
-    """Accuracies, rates and recalls as percentages (``97.5%``), losses with four decimals."""
-    return f"{value:.1%}" if name.endswith(("acc", "rate", "recall")) else f"{value:.4f}"
+    """Accuracies, rates and recalls as percentages (``97.5%``, also the retrieval scores
+    ``all@5`` and ``recall@5``), losses with four decimals."""
+    percent = name.endswith(("acc", "rate", "recall")) or "@" in name
+    return f"{value:.1%}" if percent else f"{value:.4f}"
 
 
 def higher_is_better(name: str) -> bool:
     """Accuracies and recalls should go up; losses and rates (e.g. ``call_stop_rate``) down."""
-    return name.endswith(("acc", "recall"))
+    return name.endswith(("acc", "recall")) or "@" in name
 
 
 def format_duration(seconds: float) -> str:

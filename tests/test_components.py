@@ -38,7 +38,16 @@ KIND_ARGS = {  # the runtime arguments before a component's config params, per k
     "callback": 0,
     "trainer": 0,  # its params are all keywords
 }
-DATA_FOR = {"span": "span_corruption", "question": "task", "joint": "task"}  # loss/metrics
+DATA_FOR = {  # loss/metrics -> the data they read
+    "span": "span_corruption", "question": "task", "joint": "task", "retrieval": "retrieval"
+}  # fmt: skip
+BATCH_KEYS = {  # data -> keys every batch has (the first one's rows are the items)
+    "span_corruption": {"enc_ids", "enc_mask", "dec_ids", "dec_mask", "dec_labels"},
+    "task": {"enc_ids", "enc_mask", "dec_ids", "dec_mask", "dec_labels"},
+    "retrieval": {"q_ids", "q_mask", "t_ids", "t_mask", "positive", "allowed"},
+}
+ROWS = {"span_corruption": "enc_ids", "task": "enc_ids", "retrieval": "q_ids"}
+MODEL_FOR = {"retrieval": "retriever"}  # data -> the model its losses take (default: eve)
 TINY = {"preset": "tiny", "max_encoder_len": 128}  # the smallest encoder bucket
 TIMING = {"tok_s", "s_per_step"}
 
@@ -73,21 +82,25 @@ def span_dir(tmp_path, tokenizer) -> Path:
 @pytest.fixture
 def data_dirs(span_dir, library) -> dict[str, Path]:
     write_task(span_dir / "task", library)
-    return {"span_corruption": span_dir, "task": span_dir / "task"}
+    return {"span_corruption": span_dir, "task": span_dir / "task", "retrieval": span_dir / "task"}
 
 
-def _tiny_config() -> dict[str, Any]:
-    return preset("tiny").to_dict()
+def _tiny_config(architecture: str = "eve") -> dict[str, Any]:
+    return preset("tiny").to_dict() | ({"embed_dim": 16} if architecture == "retriever" else {})
+
+
+def tiny_model(architecture: str = "eve") -> nn.Module:
+    torch.manual_seed(0)
+    return registry.get("model", architecture).from_config(_tiny_config(architecture))
 
 
 @pytest.fixture
 def model():
-    torch.manual_seed(0)
-    return registry.get("model", "eve").from_config(_tiny_config())
+    return tiny_model()
 
 
 def build_data(name, data_dirs, tokenizer, library):
-    extra = {"library": library} if name == "task" else {}
+    extra = {"library": library} if name in ("task", "retrieval") else {}
     builder = registry.build("data", name, path=str(data_dirs[name]))
     return builder(
         tokenizer, registry.get("model", "eve").from_config(_tiny_config()).cfg, 0, **extra
@@ -98,9 +111,10 @@ def build_data(name, data_dirs, tokenizer, library):
 def test_data_modules_batch_their_items(name, data_dirs, tokenizer, library):
     data = build_data(name, data_dirs, tokenizer, library)
     batch = data.collate([data.train[0], data.train[1]])
-    assert {"enc_ids", "enc_mask", "dec_ids", "dec_mask", "dec_labels"} <= set(batch)
-    assert batch["enc_ids"].shape[0] == 2
-    assert 0 < data.batch_tokens(batch) <= batch["enc_ids"].numel() + batch["dec_ids"].numel()
+    assert BATCH_KEYS[name] <= set(batch)
+    assert batch[ROWS[name]].shape[0] == 2
+    ids = sum(v.numel() for k, v in batch.items() if k.endswith("_ids"))
+    assert 0 < data.batch_tokens(batch) <= ids
     assert len(data.val) > 0
 
 
@@ -114,6 +128,8 @@ def test_every_loss_and_metric_names_its_data():
 def test_losses_and_metrics_give_finite_scalars(kind, name, data_dirs, tokenizer, library, model):
     data = build_data(DATA_FOR[name], data_dirs, tokenizer, library)
     batch = data.collate([data.train[i] for i in range(3)])
+    if DATA_FOR[name] in MODEL_FOR:
+        model = tiny_model(MODEL_FOR[DATA_FOR[name]])
     values = registry.build(kind, name)(model, batch)
     assert values and all(v.dim() == 0 and math.isfinite(v.item()) for v in values.values())
     if kind == "loss":
@@ -122,24 +138,30 @@ def test_losses_and_metrics_give_finite_scalars(kind, name, data_dirs, tokenizer
 
 
 @pytest.mark.parametrize("name", registry.names("model"))
-def test_models_rebuild_from_their_config(name, model):
-    cls = registry.get("model", name)
-    rebuilt = cls.from_config(model.cfg.to_dict())
+def test_models_rebuild_from_their_config(name):
+    model = tiny_model(name)
+    rebuilt = registry.get("model", name).from_config(model.cfg.to_dict())
     assert rebuilt.cfg == model.cfg
     ids = torch.full((2, 8), BYTE0)
-    out = rebuilt(
-        ids, torch.ones_like(ids, dtype=torch.bool), ids, torch.ones_like(ids, dtype=torch.bool)
-    )
+    mask = torch.ones_like(ids, dtype=torch.bool)
+    if name == "retriever":
+        assert rebuilt(ids, mask).shape == (2, model.cfg.embed_dim)
+        return
+    out = rebuilt(ids, mask, ids, mask)
     assert out.lm.shape == (2, 8, model.cfg.vocab_size)
 
 
 @pytest.mark.parametrize("name", registry.names("report"))
 def test_reports_evaluate_a_model(name, data_dirs, tokenizer, library, model):
-    data_name = {"span_samples": "span_corruption", "task_scores": "task"}[name]
+    data_name = {
+        "span_samples": "span_corruption", "task_scores": "task", "retrieval_scores": "retrieval"
+    }[name]  # fmt: skip
     data = build_data(data_name, data_dirs, tokenizer, library)
     report = registry.build("report", name)(data, tokenizer, 4)
     assert isinstance(report, Report) and report.on_eval is not None
-    assert report.on_eval(model)["samples"]
+    if data_name in MODEL_FOR:
+        model = tiny_model(MODEL_FOR[data_name])
+    assert report.on_eval(model)
 
 
 @pytest.mark.parametrize("name", registry.names("optimizer"))

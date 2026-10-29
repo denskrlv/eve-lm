@@ -1,0 +1,5 @@
+# Request-tool pairs from the task splits: <path>/train.jsonl and val.jsonl; the report scores
+# registries of `eval_size` tools from val.jsonl, heldout-templates.jsonl and massive-test.jsonl.
+path = "data/task"
+hard_negatives = 1  # how many of each example's distractors join the batch (0-4)
+eval_size = 25

@@ -1,0 +1,40 @@
+# M11, the retriever: base-900m's encoder as a bi-encoder, trained contrastively on the task
+# splits' requests and their correct tools. Run it with
+# `eve run configs/experiments/retriever-base.toml`, score it with `eve retriever eval`.
+
+[components]
+data = "retrieval"
+model = "retriever"
+loss = "retrieval"
+metrics = "retrieval"
+report = "retrieval_scores"
+optimizer = "adamw"
+schedule = "warmup_cosine"
+callbacks = ["train_log", "evaluate", "checkpoint"]
+
+[model]
+init = "artifacts/runs/base-900m/model.pt"
+embed_dim = 256
+max_tool_len = 128  # tokens of a tool schema; bounds training memory
+
+[data]
+path = "data/task"
+hard_negatives = 1  # of each example's distractors; more costs memory
+eval_size = 25
+
+[train]
+epochs = 1.0  # steps = epochs * train pairs / batch_size
+batch_size = 32
+dtype = "bfloat16"  # halves the activations kept for the backward pass
+lr = 1e-4
+warmup_steps = 100
+eval_batches = 10000  # all of val
+eval_every = 500
+save_every = 500
+
+[run]
+out = "artifacts/runs/retriever-base"
+
+[meta]
+task = "retrieval"
+init = "artifacts/runs/base-900m/model.pt"

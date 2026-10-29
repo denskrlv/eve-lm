@@ -78,11 +78,16 @@ def test_a_hub_repo_id_is_downloaded(checkpoint: Path, monkeypatch: pytest.Monke
 
     def download(repo: str, filename: str, revision: str | None = None) -> str:
         asked.append((repo, filename, revision))
+        if filename != "model.pt":
+            raise FileNotFoundError(filename)  # the repo has no retriever
         return str(checkpoint)
 
     monkeypatch.setattr(huggingface_hub, "hf_hub_download", download)
     assert Eve.load("someone/eve-joint-base", revision="v1").source == "someone/eve-joint-base"
-    assert asked == [("someone/eve-joint-base", "model.pt", "v1")]
+    assert asked == [
+        ("someone/eve-joint-base", "model.pt", "v1"),
+        ("someone/eve-joint-base", "retriever.pt", "v1"),  # looked for, not there: BM25
+    ]
 
     def offline(*args: object, **kwargs: object) -> str:
         raise OSError("no network")
