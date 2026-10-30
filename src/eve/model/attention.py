@@ -76,7 +76,6 @@ class MultiHeadAttention(nn.Module):
         n_heads: int,
         causal: bool = False,
         dropout: float = 0.0,
-        use_sdpa: bool = False,
         rope: bool = False,
         rope_base: float = 10000.0,
         qk_norm: bool = False,
@@ -88,7 +87,7 @@ class MultiHeadAttention(nn.Module):
         self.head_dim = d_model // n_heads
         self.causal = causal
         self.dropout = dropout
-        self.use_sdpa = use_sdpa
+        self.use_sdpa = False  # see the class docstring; models switch it with set_sdpa
         self.rope = rope
         self.rope_base = rope_base
         self.W_query = nn.Linear(d_model, d_model)

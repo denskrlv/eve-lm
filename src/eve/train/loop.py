@@ -35,7 +35,7 @@ RUN_FIELDS = (
     "log_every",
     "compile",
 )  # may change on resume
-# What a run is given when the caller passes none, by registered name.
+# What a run is given when the caller or the experiment names none, by registered name.
 DEFAULT_OPTIMIZER, DEFAULT_SCHEDULE = "adamw", "warmup_cosine"
 DEFAULT_CALLBACKS = ("train_log", "evaluate", "checkpoint")
 

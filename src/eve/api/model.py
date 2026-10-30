@@ -7,15 +7,12 @@ import torch
 from eve.api.errors import CheckpointError, EveError, ToolError
 from eve.api.hub import companion, resolve
 from eve.api.response import Response
-from eve.api.toolbox import BM25, Dense, Hybrid, Scorer, ToolBox
+from eve.api.toolbox import BM25, Dense, Scorer, ToolBox
 from eve.api.tools import ToolLike, to_tool
 from eve.data.schema import SchemaError, Tool
 from eve.infer.predict import Calibrations, answer_questions
 from eve.model.checkpoint import FORMAT, Checkpoint, load_checkpoint
 from eve.runtime import pick_device
-
-SCORERS = ("bm25", "dense", "hybrid")
-DEFAULT_SCORER = "dense"  # with a retriever; it beat hybrid on every split (M11)
 
 
 class Eve:
@@ -38,7 +35,6 @@ class Eve:
         checkpoint: Checkpoint,
         source: str,
         retriever: Checkpoint | None = None,
-        scorer: str = DEFAULT_SCORER,
     ) -> None:
         if not checkpoint.meta.get("joint"):
             raise CheckpointError(
@@ -49,8 +45,7 @@ class Eve:
         self._meta = checkpoint.meta
         self._calibrations = Calibrations.from_meta(checkpoint.meta)
         self.source = source
-        self.retriever = None if retriever is None else retriever.model.eval().requires_grad_(False)
-        self.tools = ToolBox(scorer=_scorer(scorer, retriever))  # the registered tools
+        self.tools = ToolBox(scorer=_scorer(retriever))  # the registered tools
 
     @classmethod
     def load(
@@ -60,7 +55,6 @@ class Eve:
         device: str = "cpu",
         revision: str | None = None,
         retriever: str | Path | None = "auto",
-        scorer: str = DEFAULT_SCORER,
     ) -> "Eve":
         """The model in ``source``: a checkpoint file, a directory holding ``model.pt``, or a
         Hugging Face Hub repo id (``"user/eve-joint-base"``, cached after the first download).
@@ -70,11 +64,8 @@ class Eve:
 
         ``retriever`` picks the tools a request is shown when more are registered than it
         holds: ``"auto"`` loads ``retriever.pt`` from beside the model if there is one, a path
-        loads that file, ``None`` uses none (BM25). With one, ``scorer`` is ``"dense"``
-        (the retriever alone), ``"hybrid"`` (retriever and BM25 fused) or ``"bm25"``.
+        loads that file, ``None`` uses none: tools are then ranked by shared words (BM25).
         """
-        if scorer not in SCORERS:
-            raise EveError(f"scorer must be one of {list(SCORERS)}, got {scorer!r}")
         torch_device = pick_device(None if device == "auto" else device)
         path = resolve(source, revision)
         checkpoint = _load(path, torch_device)
@@ -82,7 +73,7 @@ class Eve:
         extra = None if found is None else _load(resolve(found), torch_device)
         if extra is not None and extra.meta.get("task") != "retrieval":
             raise CheckpointError(f"{found} isn't a retriever")
-        return cls(checkpoint, str(source), extra, scorer)
+        return cls(checkpoint, str(source), extra)
 
     @property
     def max_tools(self) -> int:
@@ -155,12 +146,12 @@ def _load(path: Path, device: torch.device) -> Checkpoint:
         raise CheckpointError(f"can't load {path}: {error}") from error
 
 
-def _scorer(name: str, retriever: Checkpoint | None) -> Scorer:
-    """What ``tools.search`` ranks by: BM25 without a retriever, else ``name``."""
-    if retriever is None or name == "bm25":
+def _scorer(retriever: Checkpoint | None) -> Scorer:
+    """What ``tools.search`` ranks by: the retriever (``Dense``), else BM25."""
+    if retriever is None:
         return BM25()
-    dense = Dense(retriever.model, retriever.tokenizer)  # type: ignore[arg-type]
-    return dense if name == "dense" else Hybrid(dense, BM25())
+    model = retriever.model.eval().requires_grad_(False)
+    return Dense(model, retriever.tokenizer)  # type: ignore[arg-type]
 
 
 def _check(tools: Sequence[Tool], max_tools: int) -> None:

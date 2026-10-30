@@ -460,9 +460,9 @@ def export(args: argparse.Namespace) -> None:
 
 def retriever_eval(args: argparse.Namespace) -> None:
     """Retrieve (M11): how often each scorer puts every correct tool in the top 5 of a
-    registry: BM25, and with a retriever checkpoint, the retriever alone and fused with BM25.
-    Registries are filled with random tools, and with ``similar`` ones (the hard case)."""
-    from eve.api.toolbox import BM25, Dense, Hybrid, Scorer
+    registry: BM25, and with a retriever checkpoint, the retriever (dense). Registries are
+    filled with random tools, and with ``similar`` ones (the hard case)."""
+    from eve.api.toolbox import BM25, Dense, Scorer
     from eve.data.generate.build import Sources
     from eve.model.checkpoint import load_checkpoint
     from eve.tasks.retrieval import TOP, evaluate_scorers, load_splits, suite
@@ -470,8 +470,7 @@ def retriever_eval(args: argparse.Namespace) -> None:
     scorers: dict[str, Scorer] = {"bm25": BM25()}
     if args.retriever:
         ckpt = load_checkpoint(args.retriever, pick_device(args.device))
-        dense = Dense(ckpt.model, ckpt.tokenizer)  # type: ignore[arg-type]
-        scorers |= {"dense": dense, "hybrid": Hybrid(dense, BM25())}
+        scorers["dense"] = Dense(ckpt.model, ckpt.tokenizer)  # type: ignore[arg-type]
     examples = load_splits(Sources.load().library, args.task, args.splits)
     suites = suite(examples, args.sizes, fills=args.fill)
     results = evaluate_scorers(scorers, suites)

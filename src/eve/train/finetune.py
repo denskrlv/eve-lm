@@ -21,14 +21,13 @@ def finetune_experiment(
     overrides: dict[str, Any] | None = None,
     resume: bool = False,
     stop_after: int | None = None,
-    sdpa: bool = True,
 ) -> dict[str, Any]:
     """The experiment ``finetune`` runs, as config sections (see ``eve.experiment``): task
     data, the joint loss and metrics, and the ``task_scores`` report. ``scratch`` is a config
     or a preset name."""
     if (init is None) == (scratch is None):
         raise ValueError("give either init (a checkpoint) or scratch (a config)")
-    model: dict[str, Any] = {"sdpa": sdpa, **(overrides or {})}
+    model: dict[str, Any] = dict(overrides or {})
     if init is not None:
         model["init"] = str(init)
     elif scratch is not None:
@@ -67,7 +66,6 @@ def finetune(
     overrides: dict[str, Any] | None = None,
     resume: bool = False,
     stop_after: int | None = None,
-    sdpa: bool = True,
 ) -> dict[str, float]:
     """Boxes 8 and 9: fine-tune the question heads and the decoder's argument values together
     (``joint_loss``) on ``task_dir``'s ``train.jsonl``, evaluated on ``val.jsonl``, with
@@ -79,6 +77,6 @@ def finetune(
     """
     values = finetune_experiment(
         train_cfg, task_dir, out_dir, device, init, scratch, tokenizer_path, overrides, resume,
-        stop_after, sdpa,
+        stop_after,
     )  # fmt: skip
     return run(Experiment.from_dict(values), library=library)

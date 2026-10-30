@@ -184,14 +184,6 @@ def evaluate_scorers(
     }
 
 
-def results_rows(results: dict[str, dict[str, dict[str, float]]], metric: str) -> list[list[Any]]:
-    """One row per scorer: its name, then ``metric`` for each registry."""
-    return [
-        [name, *(scores[metric] for scores in by_suite.values())]
-        for name, by_suite in results.items()
-    ]
-
-
 # ---- training ---------------------------------------------------------------------------------
 
 

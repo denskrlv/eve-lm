@@ -32,6 +32,7 @@ from eve import defaults, registry
 from eve.model.build import start_model
 from eve.runtime import pick_device, seed_everything
 from eve.train.config import TrainConfig
+from eve.train.loop import DEFAULT_CALLBACKS, DEFAULT_OPTIMIZER, DEFAULT_SCHEDULE
 
 COMPONENTS_DIR = f"{defaults.CONFIG_DIR}/components"  # variant files: <kind>/<name>.toml
 CONFIG_FILE = "config.toml"  # the resolved experiment, in every run directory
@@ -49,10 +50,10 @@ class Components:
     metrics: str
     report: str
     model: str = "eve"
-    optimizer: str = "adamw"
-    schedule: str = "warmup_cosine"
+    optimizer: str = DEFAULT_OPTIMIZER
+    schedule: str = DEFAULT_SCHEDULE
     trainer: str = "default"
-    callbacks: tuple[str, ...] = ("train_log", "evaluate", "checkpoint")
+    callbacks: tuple[str, ...] = DEFAULT_CALLBACKS
 
 
 @dataclass(frozen=True)
