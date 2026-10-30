@@ -222,6 +222,40 @@ def corpus_encode(args: argparse.Namespace) -> None:
     )
 
 
+def _tinytools_names(names: list[str]) -> list[str]:
+    """The named TinyTools sources, or all of them; exits on an unknown name."""
+    from eve.data.tinytools.build import SOURCES
+
+    if unknown := [n for n in names if n not in SOURCES]:
+        raise SystemExit(f"unknown sources {unknown}; choose from {sorted(SOURCES)}")
+    return names or list(SOURCES)
+
+
+def corpus_fetch(args: argparse.Namespace) -> None:
+    """Download the TinyTools sources into the raw folder."""
+    from eve.data.tinytools.build import SOURCES
+    from eve.data.tinytools.fetch import fetch
+
+    for name in _tinytools_names(args.sources):
+        saved = fetch(SOURCES[name].downloads, Path(args.raw), args.force)
+        success(f"{name}: {len(saved)} downloaded" if saved else f"{name}: already here")
+
+
+def corpus_tinytools(args: argparse.Namespace) -> None:
+    """Convert the downloaded TinyTools sources into one parquet file each."""
+    from eve.data.tinytools.build import build_tinytools
+
+    names = _tinytools_names(args.sources)
+    report = build_tinytools(names, args.raw, args.out, args.tokenizer, args.seed)
+    built = {n: report["sources"][n] for n in names}
+    if lacking := [n for n, r in built.items() if "missing" in r]:
+        warn(f"not downloaded yet: {', '.join(lacking)} (run `eve corpus fetch`)")
+    console.print(tree("TinyTools", {n: r for n, r in built.items() if "missing" not in r}))
+    if not report["eval_sets"]:
+        warn("no eval sets found to dedupe against: run `eve data build` first")
+    success(f"{report['tokens']:,} tokens in all", Path(args.out) / "report.json")
+
+
 def _train_config(args: argparse.Namespace, steps: int, lr: float, **extra: Any) -> TrainConfig:
     """The ``TrainConfig`` from the options ``pretrain`` and ``finetune`` share."""
     return TrainConfig(
@@ -1026,6 +1060,20 @@ def _add_corpus_command(commands: Subcommands) -> None:
         "--mix-share", type=float, default=0.3, help="their share of the train text (with --mix)"
     )
     parser.add_argument("--seed", type=int, default=0, help="the order of the mixed documents")
+    parser = corpus_commands.add_parser("fetch", help="download the TinyTools sources")
+    parser.set_defaults(run=corpus_fetch)
+    parser.add_argument("sources", nargs="*", help="default: all")
+    parser.add_argument("--raw", default=defaults.RAW_DIR)
+    parser.add_argument("--force", action="store_true", help="download again what is there")
+    parser = corpus_commands.add_parser(
+        "tinytools", help="convert the TinyTools sources -> data/tinytools/*.parquet"
+    )
+    parser.set_defaults(run=corpus_tinytools)
+    parser.add_argument("sources", nargs="*", help="default: all")
+    parser.add_argument("--raw", default=defaults.RAW_DIR)
+    parser.add_argument("--out", default=defaults.TINYTOOLS_DIR)
+    parser.add_argument("--tokenizer", default=defaults.TOKENIZER_FILE, help="counts the tokens")
+    parser.add_argument("--seed", type=int, default=0)
 
 
 def _add_pretrain_command(commands: Subcommands) -> None:
