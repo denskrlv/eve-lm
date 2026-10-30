@@ -4,7 +4,6 @@ import json
 import logging
 import sys
 import time
-from collections import Counter
 from collections.abc import Callable, Sequence
 from pathlib import Path
 from typing import TYPE_CHECKING, Any
@@ -222,177 +221,6 @@ def corpus_encode(args: argparse.Namespace) -> None:
     success(
         f"train {meta['train_tokens']:,}{mixed} and val {meta['val_tokens']:,} tokens", args.out
     )
-
-
-def corpus_prompts(args: argparse.Namespace) -> None:
-    """Write the prompts of a TinyTools run: one document to write per line."""
-    from eve.data.generate.tinytools import KINDS, Lexicon, make_prompts
-    from eve.data.jsonl import write_jsonl
-
-    path = Path(args.out) / "prompts.jsonl"
-    if path.exists() and not args.force:
-        raise SystemExit(f"{path} exists; documents may already follow it (--force replaces it)")
-    specs = make_prompts(Lexicon.load(args.lexicon), args.n, args.seed)
-    write_jsonl(path, (spec.to_json() for spec in specs))
-    counts = Counter(spec.kind for spec in specs)
-    kinds = " · ".join(f"{kind} {counts[kind]:,}" for kind in KINDS)
-    domains = len({spec.domain for spec in specs})
-    success(f"{len(specs):,} prompts ({kinds}) over {domains} domains", path)
-
-
-def corpus_generate(args: argparse.Namespace) -> None:
-    """Write a TinyTools run's documents with headless Claude Code, then check the run."""
-    from eve.data.generate.headless import (
-        BatchResult,
-        GenerateError,
-        claude_writer,
-        generate,
-        pending,
-        read_documents,
-    )
-    from eve.data.generate.tinytools import Lexicon, PromptSpec
-    from eve.data.jsonl import read_jsonl
-    from eve.data.schema import load_library
-    from eve.progress import Bar
-
-    run = Path(args.dir)
-    if not (run / "prompts.jsonl").is_file():
-        raise SystemExit(f"no {run / 'prompts.jsonl'}; write it with eve corpus prompts")
-    specs = [PromptSpec.from_json(row) for row in read_jsonl(run / "prompts.jsonl")]
-    lexicon = Lexicon.load(args.lexicon)
-    heldout = list(load_library(Path(args.tools) / "heldout").values())
-    documents = read_documents(run / "documents.jsonl")
-    todo, previous = pending(specs, documents, lexicon, heldout, args.rewrite)
-    if args.limit is not None:
-        todo = todo[: args.limit]
-    batches = -(-len(todo) // args.batch)
-    console.print(
-        panel(
-            "eve corpus generate",
-            [
-                ("run", str(run)),
-                ("written", f"{len(documents):,} of {len(specs):,} prompts"),
-                (
-                    "to write",
-                    f"{len(todo):,} ({len(previous):,} rewrites)" if previous else f"{len(todo):,}",
-                ),
-                (
-                    "batches",
-                    f"{batches:,} of {args.batch} · {args.workers} at a time · "
-                    f"{args.rounds} rounds",
-                ),
-                ("generator", f"{args.claude} -p · model {args.model or 'default'}"),
-            ],
-        )
-    )
-    if todo:
-        cost, accepted = 0.0, 0
-        with Bar(len(todo), "writing", "documents") as progress:
-
-            def on_batch(result: BatchResult) -> None:
-                nonlocal cost, accepted
-                cost, accepted = cost + result.cost, accepted + result.accepted
-                progress.update(result.size)
-                progress.set_stats(f"{accepted:,} accepted", f"${cost:.2f}")
-                line = (
-                    f"batch {result.number}: {result.accepted} accepted, "
-                    f"{len(result.rejected)} rejected, {len(result.documents)} written · "
-                    f"{result.calls} calls · ${result.cost:.2f}"
-                )
-                if result.errors:
-                    line += f" · {len(result.errors)} errors: {result.errors[-1]}"
-                if progress.disable or result.errors:
-                    progress.write(line)
-
-            write = claude_writer(args.claude, args.model, args.timeout)
-            try:
-                generate(
-                    run,
-                    todo,
-                    write,
-                    lexicon,
-                    heldout,
-                    previous,
-                    args.batch,
-                    args.workers,
-                    args.rounds,
-                    on_batch,
-                )
-            except GenerateError as error:
-                raise SystemExit(f"stopped: {error}; run the command again to resume") from None
-        console.print(f"wrote {accepted:,} accepted documents for ${cost:.2f}")
-    corpus_check(args)
-
-
-def corpus_check(args: argparse.Namespace) -> None:
-    """Check a TinyTools run's documents against their prompts; write the accepted ones."""
-    from eve.data.generate.tinytools import (
-        Lexicon,
-        PromptSpec,
-        check_corpus,
-        write_parquet,
-    )
-    from eve.data.jsonl import read_jsonl
-    from eve.data.schema import load_library
-
-    run = Path(args.dir)  # not args.run: that is the command's function
-    prompts, documents = run / "prompts.jsonl", run / "documents.jsonl"
-    for path in (prompts, documents):
-        if not path.is_file():
-            raise SystemExit(f"no {path}; see data/tinytools/README.md")
-    specs = [PromptSpec.from_json(row) for row in read_jsonl(prompts)]
-    texts = {str(row["id"]): str(row["text"]) for row in read_jsonl(documents)}
-    lexicon = Lexicon.load(args.lexicon)
-    heldout = list(load_library(Path(args.tools) / "heldout").values())
-    report = check_corpus(specs, texts, lexicon, heldout)
-    stats = report.stats(lexicon)
-    write_parquet(report.accepted, run / "tinytools.parquet")
-    (run / "report.json").write_text(
-        json.dumps(
-            {"stats": stats, "rejected": report.rejected, "missing": report.missing}, indent=1
-        )
-    )
-    if args.json:
-        print(json.dumps(stats))
-        return
-    _print_corpus_report(stats, report.rejected, run)
-
-
-def _print_corpus_report(stats: dict[str, Any], rejected: dict[str, list[str]], run: Path) -> None:
-    """The counts, the most common reject reasons and a few rejected documents."""
-    kinds = " · ".join(f"{k} {n:,}" for k, n in stats["accepted_by_kind"].items())
-    items: list[tuple[str, str | Text]] = [
-        ("accepted", f"{stats['accepted']:,} of {stats['prompts']:,} prompts · {kinds}"),
-        ("rejected", f"{stats['rejected']:,}"),
-        ("not written", f"{stats['missing']:,}"),
-        ("words", f"{stats['words']:,} · {stats['mean_words']:.0f} per document"),
-        (
-            "covered",
-            f"{stats['vocabulary_covered']:.0%} of the words · {stats['domains_covered']} domains",
-        ),
-    ]
-    if stats["unknown"]:
-        items.append(("unknown ids", f"{stats['unknown']:,} documents match no prompt"))
-    for i, (reason, n) in enumerate(stats["reject_reasons"].items()):
-        if i == 5:
-            break
-        items.append(("reasons" if i == 0 else "", f"{n:,} × {reason}"))
-    for i, (doc_id, reasons) in enumerate(rejected.items()):
-        if i == 3:
-            break
-        items.append(("examples" if i == 0 else "", f"{doc_id}: {'; '.join(reasons)}"))
-    phrases = [
-        f'{kind}: "{phrase}" {share:.0%}'
-        for kind, top in stats["repeated_phrases"].items()
-        for phrase, share in list(top.items())[:1]
-    ]
-    for i, line in enumerate(phrases):
-        items.append(("top phrase" if i == 0 else "", line))
-    copied = [(f, share) for f, share in stats["copied_examples"].items() if share > 0.3]
-    for i, (feature, share) in enumerate(copied):
-        items.append(("copied" if i == 0 else "", f"{share:.0%} of {feature}"))
-    console.print(panel("eve corpus check", items))
-    success("accepted documents", run / "tinytools.parquet")
 
 
 def _train_config(args: argparse.Namespace, steps: int, lr: float, **extra: Any) -> TrainConfig:
@@ -1177,9 +1005,7 @@ def _add_tokenizer_commands(commands: Subcommands) -> None:
 
 
 def _add_corpus_command(commands: Subcommands) -> None:
-    group = commands.add_parser(
-        "corpus", help="the pretraining corpus: encode it, or build TinyTools"
-    )
+    group = commands.add_parser("corpus", help="the pretraining corpus")
     corpus_commands = group.add_subparsers(dest="corpus_command", required=True)
     parser = corpus_commands.add_parser("encode", help="encode parquet text to token ids (M1)")
     parser.set_defaults(run=corpus_encode)
@@ -1190,51 +1016,12 @@ def _add_corpus_command(commands: Subcommands) -> None:
     parser.add_argument("--val-tokens", default="2M")
     parser.add_argument("--workers", type=int, default=None)
     parser.add_argument(
-        "--mix", help="a glob of parquet files to spread through the train tokens, e.g. TinyTools"
+        "--mix", help="a glob of parquet files (a text column) to spread through the train tokens"
     )
     parser.add_argument(
         "--mix-share", type=float, default=0.3, help="their share of the train text (with --mix)"
     )
     parser.add_argument("--seed", type=int, default=0, help="the order of the mixed documents")
-
-    parser = corpus_commands.add_parser("prompts", help="TinyTools: prompts for a generator")
-    parser.set_defaults(run=corpus_prompts)
-    parser.add_argument("--n", type=int, default=2000, help="documents to write")
-    parser.add_argument("--seed", type=int, default=0)
-    parser.add_argument("--out", default=defaults.TINYTOOLS_RUN, help="the run directory")
-    parser.add_argument("--lexicon", default=defaults.TINYTOOLS_DIR, help="word lists and domains")
-    parser.add_argument("--force", action="store_true", help="replace an existing prompts.jsonl")
-
-    parser = corpus_commands.add_parser(
-        "generate", help="TinyTools: write the documents with headless Claude Code"
-    )
-    parser.set_defaults(run=corpus_generate, json=False)
-    parser.add_argument(
-        "dir", nargs="?", default=defaults.TINYTOOLS_RUN, metavar="run", help="the run directory"
-    )
-    parser.add_argument("--batch", type=int, default=50, help="prompts per call")
-    parser.add_argument("--workers", type=int, default=4, help="calls at a time")
-    parser.add_argument(
-        "--rounds", type=int, default=3, help="calls per batch: the first, then rewrites"
-    )
-    parser.add_argument("--limit", type=int, default=None, help="write at most this many")
-    parser.add_argument(
-        "--rewrite", action="store_true", help="also rewrite documents the checker rejects"
-    )
-    parser.add_argument("--model", default=None, help="e.g. sonnet; Claude Code's default if unset")
-    parser.add_argument("--claude", default="claude", help="the Claude Code command")
-    parser.add_argument("--timeout", type=float, default=900, help="seconds per call")
-    parser.add_argument("--lexicon", default=defaults.TINYTOOLS_DIR)
-    parser.add_argument("--tools", default=defaults.TOOLS_DIR, help="for the held-out tools")
-
-    parser = corpus_commands.add_parser("check", help="TinyTools: check written documents")
-    parser.set_defaults(run=corpus_check)
-    parser.add_argument(
-        "dir", nargs="?", default=defaults.TINYTOOLS_RUN, metavar="run", help="the run directory"
-    )
-    parser.add_argument("--lexicon", default=defaults.TINYTOOLS_DIR)
-    parser.add_argument("--tools", default=defaults.TOOLS_DIR, help="for the held-out tools")
-    parser.add_argument("--json", action="store_true", help="the stats as one JSON line")
 
 
 def _add_pretrain_command(commands: Subcommands) -> None:

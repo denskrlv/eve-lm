@@ -84,7 +84,7 @@ A request counts as *familiar* when every tool's schema fingerprint is in the tr
 
 - **New tools are the hard part.** On familiar tools the model is accurate and, after calibration, honest about it. On held-out tools it is confidently wrong: before calibration it was 99% sure of the intent and right 64% of the time.
 - **It matches words, not meaning.** In 76% of training calls the request shares a content word with the tool's name. On new tools, Eve gets 71% of calls exact when they share a word and 30% when they don't. "20 plus 10" with an `add` tool is answered *unsupported*, and "make it warmer in here" doesn't find `set_thermostat`.
-- **So the next fix is data, not size.** [TinyTools](data/tinytools/README.md) is a [TinyStories](https://arxiv.org/abs/2305.07759)-style pretraining corpus: short, simple documents about what people ask assistants for and what tools do, with random constraints per prompt to keep them varied. In a 2,000-document pilot, 98.6% passed the automatic checks first time; the next experiment pretrains with and without it on the same token budget and compares held-out accuracy.
+- **So the next fix is data, not size.** TinyTools is a [TinyStories](https://arxiv.org/abs/2305.07759)-style pretraining corpus of the background knowledge new tools need: how everyday things work, many ways to say the same request, and assistant dialogues. The first round converts permissively licensed datasets (about 25–35M tokens); the next experiment pretrains with and without it on the same token budget and compares accuracy on tools the model never saw.
 
 ## Roadmap
 
@@ -102,7 +102,7 @@ A request counts as *familiar* when every tool's schema fingerprint is in the tr
 | M9 | Metrics and calibration | ✅ |
 | M10 | Python library (`Eve.load`, `eve.respond`) and inference on a Raspberry Pi 5 | 🚧 library done; PyPI release, weights and Pi coming soon |
 | M11 | Retriever that picks the 1–5 tools to show the model | ✅ `retriever-base` |
-| – | TinyTools pretraining corpus | 🚧 pilot done |
+| – | TinyTools pretraining corpus | 🚧 round 1: converting existing datasets |
 
 ## Use it in Python
 
@@ -358,8 +358,7 @@ eve-lm/
 │   └── experiments/       # Whole experiments for `eve run`: pretraining, joint, retriever
 ├── data/
 │   ├── tools/             # Hand-written tool schemas; heldout/ is never trained on
-│   ├── generation/        # Scenario batches and the chat-written requests
-│   └── tinytools/         # TinyTools word lists, prompts and pilot documents
+│   └── generation/        # Scenario batches and the chat-written requests
 ├── notebooks/             # Pretraining on Kaggle
 ├── src/eve/
 │   ├── tokenizer/         # Byte-level BPE
