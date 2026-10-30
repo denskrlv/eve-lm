@@ -8,12 +8,12 @@ where the run writes (``[run]``)::
     data = "task"
     loss = "joint"          # swap a component: change its name here
     [model]
-    init = "artifacts/runs/base-900m/model.pt"
+    init = "artifacts/runs/eve-32m-pretrain/model.pt"
     [train]
     epochs = 2.0            # or steps
     lr = 3e-4
     [run]
-    out = "artifacts/runs/joint-base"
+    out = "artifacts/runs/eve-32m"
 
 Params are layered, later ones winning: the component's variant file
 ``configs/components/<kind>/<name>.toml``, then the experiment's ``[<kind>]`` table, then
@@ -32,11 +32,13 @@ from eve import defaults, registry
 from eve.model.build import start_model
 from eve.runtime import pick_device, seed_everything
 from eve.train.config import TrainConfig
+from eve.train.loop import DEFAULT_CALLBACKS, DEFAULT_OPTIMIZER, DEFAULT_SCHEDULE
 
 COMPONENTS_DIR = f"{defaults.CONFIG_DIR}/components"  # variant files: <kind>/<name>.toml
 CONFIG_FILE = "config.toml"  # the resolved experiment, in every run directory
 PARAM_KINDS = ("model", "data", "loss", "metrics", "report", "optimizer", "schedule", "trainer")
 SECTIONS = ("components", *PARAM_KINDS, "train", "run", "meta")
+JOINT_LOSS = "joint"  # the loss that also trains the decoder to write argument values
 
 
 @dataclass(frozen=True)
@@ -48,10 +50,10 @@ class Components:
     metrics: str
     report: str
     model: str = "eve"
-    optimizer: str = "adamw"
-    schedule: str = "warmup_cosine"
+    optimizer: str = DEFAULT_OPTIMIZER
+    schedule: str = DEFAULT_SCHEDULE
     trainer: str = "default"
-    callbacks: tuple[str, ...] = ("train_log", "evaluate", "checkpoint")
+    callbacks: tuple[str, ...] = DEFAULT_CALLBACKS
 
 
 @dataclass(frozen=True)
@@ -200,6 +202,18 @@ def with_epochs(train: TrainConfig, epochs: float, n_train: int) -> TrainConfig:
     return replace(train, steps=steps, warmup_steps=min(train.warmup_steps, steps))
 
 
+def trained_meta(experiment: Experiment) -> dict[str, Any]:
+    """The experiment's ``[meta]`` plus what its components say about the checkpoints, so a
+    ``--set`` can't leave it stale: ``joint`` (trained with the joint loss, so the decoder
+    writes argument values) and ``init``, the checkpoint the model started from."""
+    init = experiment.params["model"].get("init")
+    return {
+        **experiment.meta,
+        "joint": experiment.components.loss == JOINT_LOSS,
+        "init": "scratch" if init is None else str(init),
+    }
+
+
 def run(experiment: Experiment, **data_args: Any) -> dict[str, float]:
     """Build every component of ``experiment`` from the registry and train. ``data_args`` go
     to the data builder as they are (e.g. a ``library`` of tools already loaded). Returns the
@@ -225,7 +239,11 @@ def run(experiment: Experiment, **data_args: Any) -> dict[str, float]:
     (out_dir / CONFIG_FILE).write_text(to_toml(resolved.to_dict()))
 
     trainer = registry.build("trainer", c.trainer, **params["trainer"])
-    meta = {**experiment.meta, "trainable": started.trainable, "experiment": resolved.to_dict()}
+    meta = {
+        **trained_meta(experiment),
+        "trainable": started.trainable,
+        "experiment": resolved.to_dict(),
+    }
     val: dict[str, float] = trainer(
         started.model,
         registry.build("loss", c.loss, **params["loss"]),

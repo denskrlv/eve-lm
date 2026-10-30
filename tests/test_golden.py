@@ -85,14 +85,13 @@ def test_golden_pretrain(tokenizer, tmp_path):
     check("pretrain", tmp_path / "run")
 
 
-@pytest.mark.parametrize("freeze", [False, True], ids=["joint", "frozen"])
-def test_golden_finetune(library, tokenizer, tmp_path, freeze):
+def test_golden_finetune(library, tokenizer, tmp_path):
     torch.manual_seed(0)
     save_checkpoint(tmp_path / "pre.pt", Eve(preset("tiny")), tokenizer, {"step": 1})
     write_task(tmp_path / "task", library)
     train_cfg = TrainConfig(steps=6, batch_size=3, warmup_steps=2, eval_every=3, log_every=1)
     finetune(
         train_cfg, tmp_path / "task", tmp_path / "run", "cpu", library,
-        init=tmp_path / "pre.pt", freeze=freeze, overrides={"dropout": 0.1},
+        init=tmp_path / "pre.pt", overrides={"dropout": 0.1},
     )  # fmt: skip
-    check("finetune-frozen" if freeze else "finetune-joint", tmp_path / "run")
+    check("finetune-joint", tmp_path / "run")

@@ -34,6 +34,7 @@ from eve.infer.predict import Calibration, Calibrations
 from eve.model.checkpoint import Checkpoint, load_checkpoint, save_checkpoint
 from eve.model.eve import Eve, Output
 from eve.runtime import eval_mode, to_device
+from eve.tasks.questions import forward_batch
 
 HEADS = ("intent", "tools", "values")  # the answers that get a temperature, as in Calibration
 REGIMES = ("familiar", "new")  # as in Calibrations
@@ -150,18 +151,6 @@ def _answered(out: Output, batch: dict[str, torch.Tensor], stop: int) -> dict[st
     }
 
 
-def _forward(model: Eve, batch: dict[str, torch.Tensor]) -> Output:
-    out: Output = model(
-        batch["enc_ids"],
-        batch["enc_mask"],
-        batch["dec_ids"],
-        batch["dec_mask"],
-        batch["tool_pos"],
-        batch["tool_mask"],
-    )
-    return out
-
-
 def _answers(
     model: Eve, batches: Sequence[dict[str, torch.Tensor]]
 ) -> Iterator[dict[str, _Answered]]:
@@ -169,7 +158,7 @@ def _answers(
     with torch.no_grad(), eval_mode(model) as device:
         for batch in batches:
             batch = to_device(batch, device)
-            yield _answered(_forward(model, batch), batch, model.cfg.max_tools)
+            yield _answered(forward_batch(model, batch), batch, model.cfg.max_tools)
 
 
 def fit(

@@ -1,0 +1,25 @@
+# Pretraining eve-32m with span corruption (M4): 850M tokens of the 900M-token corpus, ~10 h on
+# MPS. The recipe (no dropout, RoPE, QK-norm) won A/B runs at ~12M parameters. Run it with
+# `eve run configs/experiments/eve-32m-pretrain.toml`.
+
+[components]
+data = "span_corruption"
+loss = "span"
+metrics = "span"
+report = "span_samples"
+
+[model]
+preset = "eve-32m"
+dropout = 0.0
+rope = true
+qk_norm = true
+
+[data]
+path = "data/bin"
+
+[train]
+steps = 46682  # 850M corpus tokens: 850M // (32 * 569 tokens per window)
+compile = true
+
+[run]
+out = "artifacts/runs/eve-32m-pretrain"

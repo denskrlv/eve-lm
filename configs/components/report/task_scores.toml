@@ -1,2 +1,1 @@
-# Per-intent answers and val/held-out scores at each eval (eve.tasks.questions).
-values = true  # score the decoder's argument values too (off when it isn't trained)
+# Per-intent answers and val/held-out scores at each eval (eve.tasks.questions). No params.

@@ -1,9 +1,0 @@
-# The A/B winner at ~12M parameters: the recipe of artifacts/runs/ab-dropout0-rope-qk
-# (13,730 steps). That run was eager; compiling gives the same loss, about 2x faster.
-preset = "small"
-dropout = 0.0
-rope = true
-qk-norm = true
-compile = true
-data = "data/bin"
-tokens = "250M"

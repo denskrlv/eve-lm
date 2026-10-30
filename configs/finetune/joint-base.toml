@@ -1,5 +1,0 @@
-# M8, the joint run: question heads and argument values together, from the base-900m
-# pretraining run, with the questions-base recipe.
-init = "artifacts/runs/base-900m/model.pt"
-epochs = 2.0
-lr = 3e-4

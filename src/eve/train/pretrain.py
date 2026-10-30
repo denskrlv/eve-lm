@@ -6,7 +6,6 @@ import torch
 from eve.config import ModelConfig
 from eve.data.pretrain import INPUT_LEN, raw_length
 from eve.experiment import Experiment, run
-from eve.tasks.span import SAMPLES
 from eve.train.config import TrainConfig
 
 
@@ -19,13 +18,10 @@ def pretrain_experiment(
     device: str | torch.device | None = None,
     resume: bool = False,
     stop_after: int | None = None,
-    sdpa: bool = True,
-    samples: tuple[str, ...] = SAMPLES,
 ) -> dict[str, Any]:
     """The experiment ``pretrain`` runs, as config sections (see ``eve.experiment``):
     span-corruption data, loss and metrics, and fill-in samples. ``model`` is the start of
     the ``[model]`` table: a ``config`` or a ``preset`` and overrides."""
-    report = {} if tuple(samples) == SAMPLES else {"samples": list(samples)}
     return {
         "components": {
             "data": "span_corruption",
@@ -33,9 +29,8 @@ def pretrain_experiment(
             "metrics": "span",
             "report": "span_samples",
         },
-        "model": {**model, "tokenizer": str(tokenizer_path), "sdpa": sdpa},
+        "model": {**model, "tokenizer": str(tokenizer_path)},
         "data": {"path": str(data_dir)},
-        "report": report,
         "train": train_cfg.to_dict(),
         "run": {
             "out": str(out_dir),
@@ -55,8 +50,6 @@ def pretrain(
     device: str | torch.device,
     resume: bool = False,
     stop_after: int | None = None,
-    sdpa: bool = True,
-    samples: tuple[str, ...] = SAMPLES,
 ) -> dict[str, float]:
     """Box 4: span-corruption pretraining of the whole encoder-decoder on ``data_dir``'s
     ``train.bin``, evaluated on ``val.bin``. Each eval logs fill-in-the-blank samples; the
@@ -67,7 +60,7 @@ def pretrain(
     """
     values = pretrain_experiment(
         {"config": cfg.to_dict()}, train_cfg, data_dir, tokenizer_path, out_dir, device,
-        resume, stop_after, sdpa, samples,
+        resume, stop_after,
     )  # fmt: skip
     return run(Experiment.from_dict(values))
 

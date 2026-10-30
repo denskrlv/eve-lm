@@ -14,7 +14,7 @@ import torch
 from rich.text import Text
 
 from eve import progress
-from eve.model.checkpoint import save_checkpoint
+from eve.model.checkpoint import MODEL_FILE, save_checkpoint
 from eve.registry import register
 from eve.train.loop import Report, Run, evaluate, rng_state, val_batches_of
 
@@ -187,9 +187,9 @@ class Checkpoint:
         took = progress.format_duration(time.time() - run.start)
         if step == run.cfg.steps:
             info = {**(run.meta or {}), "step": step, **run.last_val}
-            save_checkpoint(run.out_dir / "model.pt", run.model, run.tokenizer, info)
+            save_checkpoint(run.out_dir / MODEL_FILE, run.model, run.tokenizer, info)
             progress.console.print()
-            progress.success(f"done in {took}", run.out_dir / "model.pt")
+            progress.success(f"done in {took}", run.out_dir / MODEL_FILE)
         else:
             progress.console.print()
             progress.warn(f"stopped at step {step:,} after {took} · continue with --resume")

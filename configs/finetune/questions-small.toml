@@ -1,4 +1,0 @@
-# The v3 recipe: one full fine-tune straight from the small pretrained model, 2 epochs.
-init = "artifacts/runs/ab-dropout0-rope-qk/model.pt"
-epochs = 2.0
-lr = 3e-4

@@ -193,7 +193,7 @@ def test_a_temperature_changes_the_probabilities_not_the_answers(library, tokeni
     torch.manual_seed(0)
     model = Eve(CFG)
     tools = [library["set_lights"], library["play_music"]]
-    args = (model, tokenizer, "turn off the kitchen lights", tools, True)
+    args = (model, tokenizer, "turn off the kitchen lights", tools)
     raw = answer_questions(*args)
     hot = answer_questions(*args, Calibration(intent=3.0, tools=3.0, values=3.0))
     assert max(hot.intent.values()) < max(raw.intent.values())

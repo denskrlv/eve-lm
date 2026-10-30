@@ -14,7 +14,7 @@ first, then tools whose arguments have the same types, then random ones. The sco
 - ``recall@5``: the share of correct tools in the top 5;
 - ``mrr``: 1 / the rank of the best-ranked correct tool, averaged.
 
-Training (``eve run configs/experiments/retriever-base.toml``): each request of a CALL or ASK
+Training (``eve run configs/experiments/eve-32m-retriever.toml``): each request of a CALL or ASK
 example is paired with each of its correct tools. The loss is InfoNCE: the request's cosine
 with its tool, against every other tool in the batch, the first ``hard_negatives`` of the
 example's own distractors among them (hard negatives: the generator picked them to look
@@ -39,12 +39,13 @@ from eve.config import ModelConfig
 from eve.data.modules import load_examples
 from eve.data.render import TaskExample
 from eve.data.schema import Tool
+from eve.model.checkpoint import RETRIEVAL_TASK
 from eve.model.retriever import Retriever, RetrieverConfig, padded, query_ids, tool_ids
 from eve.registry import register
 from eve.tokenizer.bpe import BOS, EOS, TOOLS, BPETokenizer
 from eve.train.loop import Column, Report
 
-TASK = "retrieval"  # meta["task"] of the checkpoints a retriever run writes
+TASK = RETRIEVAL_TASK  # meta["task"] of the checkpoints a retriever run writes
 EVAL_SIZE = 25  # the registry size the training report scores
 FILLER = [BOS, TOOLS, EOS]  # pads a batch's tools to its full count: no one's tool
 
@@ -182,14 +183,6 @@ def evaluate_scorers(
         name: {key: measure(scorer, cases_, top) for key, cases_ in suites.items()}
         for name, scorer in scorers.items()
     }
-
-
-def results_rows(results: dict[str, dict[str, dict[str, float]]], metric: str) -> list[list[Any]]:
-    """One row per scorer: its name, then ``metric`` for each registry."""
-    return [
-        [name, *(scores[metric] for scores in by_suite.values())]
-        for name, by_suite in results.items()
-    ]
 
 
 # ---- training ---------------------------------------------------------------------------------

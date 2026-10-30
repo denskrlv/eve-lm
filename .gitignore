@@ -226,7 +226,6 @@ data/bin*/
 
 data/task/
 data/external/
-data/tinytools/*/tinytools.parquet
-data/tinytools/*/report.json
+data/tinytools/
 
 md/

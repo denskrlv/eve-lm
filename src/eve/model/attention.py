@@ -76,7 +76,6 @@ class MultiHeadAttention(nn.Module):
         n_heads: int,
         causal: bool = False,
         dropout: float = 0.0,
-        use_sdpa: bool = False,
         rope: bool = False,
         rope_base: float = 10000.0,
         qk_norm: bool = False,
@@ -88,7 +87,7 @@ class MultiHeadAttention(nn.Module):
         self.head_dim = d_model // n_heads
         self.causal = causal
         self.dropout = dropout
-        self.use_sdpa = use_sdpa
+        self.use_sdpa = False  # see the class docstring; models switch it with set_sdpa
         self.rope = rope
         self.rope_base = rope_base
         self.W_query = nn.Linear(d_model, d_model)
@@ -205,3 +204,11 @@ class MultiHeadAttention(nn.Module):
             past = torch.ones(n_q, n_kv, dtype=torch.bool, device=device).tril()
             allowed = past if allowed is None else allowed & past
         return allowed
+
+
+def set_sdpa(model: nn.Module, enabled: bool) -> None:
+    """Switch every attention layer of ``model`` to PyTorch's fused kernel (fast) or the manual
+    path."""
+    for m in model.modules():
+        if isinstance(m, MultiHeadAttention):
+            m.use_sdpa = enabled

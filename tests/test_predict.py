@@ -107,7 +107,7 @@ def test_decoding_follows_the_renderers_rules(library, tokenizer):
     model = Eve(CFG).eval()
     tools = [library["set_lights"], library["set_thermostat"]]
     for _ in range(3):
-        answers = answer_questions(model, tokenizer, "turn off the lights", tools, values=True)
+        answers = answer_questions(model, tokenizer, "turn off the lights", tools)
         for call in answers.written:
             tool = library[call.tool]
             assert list(call.values) == [arg.name for arg in tool.args]
@@ -122,11 +122,8 @@ def test_answers_write_a_call_per_chosen_tool(library, tokenizer):
     torch.manual_seed(0)
     model = Eve(CFG)
     tools = [library["set_lights"], library["play_music"]]
-    answers = answer_questions(model, tokenizer, "turn off the lights", tools, values=True)
+    answers = answer_questions(model, tokenizer, "turn off the lights", tools)
     assert [c.tool for c in answers.written] == answers.calls
-    assert answer_questions(model, tokenizer, "turn off the lights", tools).written == []
-    calls = answers.to_json()["calls"]
-    assert all({"tool", "args", "missing", "prob", "values"} <= set(c) for c in calls)
 
 
 def test_eve_ask_answers_through_the_api_and_needs_a_joint_model(

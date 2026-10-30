@@ -10,7 +10,7 @@ from eve.config import INTENTS
 from eve.data.modules import VAL_SEED, in_batches, load_examples
 from eve.data.render import TaskCollator, TaskDataset, TaskExample
 from eve.data.schema import Tool
-from eve.model.checkpoint import Checkpoint, load_checkpoint
+from eve.model.checkpoint import Checkpoint, load_checkpoint, model_file
 from eve.tasks.questions import (
     TASK,
     Outcome,
@@ -21,7 +21,6 @@ from eve.tasks.questions import (
 
 SETS = ("val", "heldout-templates", "massive-test")  # the task files scored by default
 SEEDS = {"val": VAL_SEED}  # tool-shuffle seeds that differ from TaskDataset's default
-MODEL_FILE = "model.pt"  # what a run directory holds the final model in
 
 
 @dataclass(frozen=True)
@@ -67,12 +66,6 @@ class SetResult:
         """The result as plain values; the per-tool results only with ``by_tool``."""
         out = {"examples": self.examples, "scores": self.scores, "confusion": self.confusion}
         return out | ({"by_tool": [vars(r) for r in self.by_tool]} if by_tool else {})
-
-
-def model_file(path: str | Path) -> Path:
-    """A checkpoint path as given, or the final model of a run directory."""
-    path = Path(path)
-    return path / MODEL_FILE if path.is_dir() else path
 
 
 def load_questions_model(path: str | Path, device: str | torch.device = "cpu") -> Checkpoint:

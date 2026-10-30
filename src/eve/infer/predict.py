@@ -29,11 +29,6 @@ class Calibration:
     tools: float = 1.0  # the slot head: each "what is call #i?"
     values: float = 1.0  # each token the decoder writes
 
-    @classmethod
-    def from_meta(cls, meta: dict[str, Any]) -> "Calibration":
-        """The temperatures saved in a checkpoint's meta; all 1 if it has none."""
-        return cls(**meta.get("calibration", {}))
-
     def to_dict(self) -> dict[str, float]:
         """The temperatures as plain values, for a checkpoint's meta."""
         return asdict(self)
@@ -88,13 +83,6 @@ class Value:
     prob: float = 1.0  # probability of the written tokens, the <end>/<absent>/<ask> included
     error: str | None = None  # why an "invalid" value isn't one
 
-    def to_json(self) -> dict[str, Any]:
-        """The value as plain values, without the fields that don't apply."""
-        out: dict[str, Any] = {"kind": self.kind, "prob": self.prob}
-        if self.kind in ("value", "invalid"):
-            out["value"] = self.value
-        return out | ({"error": self.error} if self.error else {})
-
 
 @dataclass(frozen=True)
 class WrittenCall:
@@ -119,21 +107,11 @@ class WrittenCall:
         """The arguments whose written value doesn't fit the schema."""
         return [name for name, v in self.values.items() if v.kind == "invalid"]
 
-    def to_json(self) -> dict[str, Any]:
-        """``{"tool", "args", "missing", "prob", "values"}``: the call, then the details."""
-        return {
-            "tool": self.tool,
-            "args": self.args,
-            "missing": self.missing,
-            "prob": self.prob,
-            "values": {name: v.to_json() for name, v in self.values.items()},
-        }
-
 
 @dataclass
 class Answers:
     """What the question heads say about one request, as probabilities, and the calls with
-    their argument values (M8) if they were written."""
+    their argument values (M8)."""
 
     intent: dict[str, float]  # CALL / ASK / UNSUPPORTED / NONE, in INTENTS order
     slots: list[dict[str, float]]  # per "what is call #i?": tool name (or STOP) -> probability
@@ -149,12 +127,6 @@ class Answers:
                 break
             out.append(best)
         return out
-
-    def to_json(self) -> dict[str, Any]:
-        """The answers as plain values: the whole calls if they were written, else the most
-        likely tools."""
-        calls = [c.to_json() for c in self.written] if self.written else self.calls
-        return {"intent": self.intent, "calls": calls, "slots": self.slots}
 
 
 def _allowed(arg: Arg, first: bool, vocab_size: int, n_tokens: int) -> torch.Tensor:
@@ -258,13 +230,12 @@ def answer_questions(
     tokenizer: BPETokenizer,
     utterance: str,
     tools: Sequence[Tool],
-    values: bool = False,
     calibration: Calibration | None = None,
 ) -> Answers:
-    """One encoder pass and one question pass for a typed request, as at inference (M9). With
-    ``values``, the decoder then writes the arguments of each call the slot head picked (M8):
-    only for a model from the joint run, whose decoder learned to. ``calibration`` sets the
-    temperatures of the probabilities (M9); by default they are as trained.
+    """One encoder pass and one question pass for a typed request, as at inference (M9), then
+    the decoder writes the arguments of each call the slot head picked (M8): a model from the
+    joint run, whose decoder learned to. ``calibration`` sets the temperatures of the
+    probabilities (M9); by default they are as trained.
 
     The tools stay in the given order. The example's intent is a placeholder: render needs one
     to build the labels, which aren't used here.
@@ -285,12 +256,11 @@ def answer_questions(
             intent=dict(zip(INTENTS, intent, strict=True)),
             slots=[dict(zip([*names, STOP], s, strict=True)) for s in slots.tolist()],
         )
-        if values:
-            by_name = {t.name: t for t in tools}
-            called = [by_name[name] for name in answers.calls]
-            written = write_values(model, tokenizer, memory, batch["enc_mask"], called, cal.values)
-            answers.written = [
-                WrittenCall(name, answers.slots[i][name], vals)
-                for i, (name, vals) in enumerate(zip(answers.calls, written, strict=True))
-            ]
+        by_name = {t.name: t for t in tools}
+        called = [by_name[name] for name in answers.calls]
+        written = write_values(model, tokenizer, memory, batch["enc_mask"], called, cal.values)
+        answers.written = [
+            WrittenCall(name, answers.slots[i][name], vals)
+            for i, (name, vals) in enumerate(zip(answers.calls, written, strict=True))
+        ]
     return answers

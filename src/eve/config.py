@@ -7,7 +7,7 @@ STOP = "STOP"  # the slot answer after the last call
 
 @dataclass(frozen=True)
 class ModelConfig:
-    """Sizes and options of an Eve model; ``PRESETS`` holds the named ones."""
+    """Sizes and options of an Eve model; the defaults are ``eve-32m``'s (``PRESETS``)."""
 
     # Box 1: tokens and positions
     vocab_size: int = 8192
@@ -15,10 +15,10 @@ class ModelConfig:
     max_decoder_len: int = 256  # argument values of up to 5 calls
 
     # Box 3: transformer body
-    d_model: int = 256
-    n_heads: int = 4
-    n_encoder_layers: int = 6
-    n_decoder_layers: int = 3
+    d_model: int = 384
+    n_heads: int = 6
+    n_encoder_layers: int = 8
+    n_decoder_layers: int = 4
     ffn_mult: int = 4  # hidden size of the feed-forward layer = ffn_mult * d_model
     dropout: float = 0.1
 
@@ -97,17 +97,13 @@ PRESETS: dict[str, ModelConfig] = {
         pointer_dim=16,
         dropout=0.0,
     ),
-    # First real model, ~12M parameters.
-    "small": ModelConfig(),
-    # If the data supports it, ~32M parameters.
-    "base": ModelConfig(d_model=384, n_heads=6, n_encoder_layers=8, n_decoder_layers=4),
-    # ~55M parameters: base's layout, wider. ~5x small's training cost per token.
-    "medium": ModelConfig(d_model=512, n_heads=8, n_encoder_layers=8, n_decoder_layers=4),
+    # The model, ~32M parameters.
+    "eve-32m": ModelConfig(),
 }
 
 
 def preset(name: str, **overrides: Any) -> ModelConfig:
-    """Return a preset, optionally with some fields changed: ``preset("small", dropout=0.0)``."""
+    """Return a preset, optionally with some fields changed: ``preset("eve-32m", dropout=0.0)``."""
     if name not in PRESETS:
         raise KeyError(f"unknown preset {name!r}; choose from {sorted(PRESETS)}")
     return replace(PRESETS[name], **overrides)

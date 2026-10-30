@@ -1,6 +1,6 @@
-# M8, the joint run, as a full experiment: what `eve finetune --config joint-base` runs.
-# Run it with `eve run configs/experiments/joint-base.toml`; swap a component by changing
-# its name under [components] (or `--set components.loss=question`).
+# eve-32m, fine-tuned (M8): question heads and argument values together, from the
+# eve-32m-pretrain run. Run it with `eve run configs/experiments/eve-32m.toml`; swap a component
+# by changing its name under [components] (or `--set components.optimizer=...`).
 
 [components]
 data = "task"
@@ -13,13 +13,10 @@ schedule = "warmup_cosine"
 callbacks = ["train_log", "evaluate", "checkpoint"]
 
 [model]
-init = "artifacts/runs/base-900m/model.pt"
+init = "artifacts/runs/eve-32m-pretrain/model.pt"
 
 [data]
 path = "data/task"
-
-[report]
-values = true
 
 [train]
 epochs = 2.0  # steps = epochs * train examples / batch_size
@@ -30,10 +27,7 @@ eval_every = 500
 save_every = 500
 
 [run]
-out = "artifacts/runs/joint-base"
+out = "artifacts/runs/eve-32m"
 
 [meta]
 task = "questions"
-frozen = false
-joint = true
-init = "artifacts/runs/base-900m/model.pt"

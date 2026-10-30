@@ -5,7 +5,7 @@ import torch
 
 import eve
 from eve import Eve
-from eve.api.toolbox import BM25, Dense, Hybrid, ToolBox
+from eve.api.toolbox import BM25, Dense, ToolBox
 from eve.config import preset
 from eve.data.render import Call, TaskExample
 from eve.data.schema import ASK_VALUE, Tool
@@ -190,20 +190,6 @@ def test_measure_counts_all_and_partial_hits(library: dict[str, Tool]) -> None:
 # ---- scorers and Eve.load ---------------------------------------------------------------------
 
 
-def test_hybrid_fuses_ranks(library: dict[str, Tool]) -> None:
-    tools = [library[n] for n in HOME[:3]]
-
-    class Fixed:
-        def __init__(self, scores: list[float]) -> None:
-            self.values = scores
-
-        def scores(self, text: str, tools: list[Tool]) -> list[float]:
-            return self.values
-
-    fused = Hybrid(Fixed([3, 2, 1]), Fixed([1, 3, 2]), k=0).scores("x", tools)
-    assert fused == pytest.approx([1 + 1 / 3, 1 / 2 + 1, 1 / 3 + 1 / 2])
-
-
 def test_dense_scores_are_cosines_and_cached(
     library: dict[str, Tool], tokenizer: BPETokenizer
 ) -> None:
@@ -232,9 +218,7 @@ def test_load_finds_a_retriever_beside_the_model(tmp_path: Path, tokenizer: BPET
     save_retriever(tmp_path / "retriever.pt", tokenizer)
     loaded = Eve.load(tmp_path / "model.pt")
     assert isinstance(loaded.tools.scorer, Dense) and loaded.info["scorer"] == "Dense"
-    assert isinstance(Eve.load(tmp_path, scorer="hybrid").tools.scorer, Hybrid)
+    assert not loaded.tools.scorer.retriever.training  # type: ignore[attr-defined]
     assert isinstance(Eve.load(tmp_path, retriever=None).tools.scorer, BM25)
-    with pytest.raises(eve.EveError, match="scorer"):
-        Eve.load(tmp_path, scorer="cosine")
     with pytest.raises(eve.CheckpointError, match="isn't a retriever"):
         Eve.load(tmp_path, retriever=tmp_path / "model.pt")

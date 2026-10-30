@@ -83,10 +83,10 @@ def test_a_hub_repo_id_is_downloaded(checkpoint: Path, monkeypatch: pytest.Monke
         return str(checkpoint)
 
     monkeypatch.setattr(huggingface_hub, "hf_hub_download", download)
-    assert Eve.load("someone/eve-joint-base", revision="v1").source == "someone/eve-joint-base"
+    assert Eve.load("someone/eve-32m", revision="v1").source == "someone/eve-32m"
     assert asked == [
-        ("someone/eve-joint-base", "model.pt", "v1"),
-        ("someone/eve-joint-base", "retriever.pt", "v1"),  # looked for, not there: BM25
+        ("someone/eve-32m", "model.pt", "v1"),
+        ("someone/eve-32m", "retriever.pt", "v1"),  # looked for, not there: BM25
     ]
 
     def offline(*args: object, **kwargs: object) -> str:
@@ -94,7 +94,7 @@ def test_a_hub_repo_id_is_downloaded(checkpoint: Path, monkeypatch: pytest.Monke
 
     monkeypatch.setattr(huggingface_hub, "hf_hub_download", offline)
     with pytest.raises(eve.CheckpointError, match="Hub download failed: no network"):
-        Eve.load("someone/eve-joint-base")
+        Eve.load("someone/eve-32m")
 
 
 def answers(intent: str, values: dict[str, Value], prob: float = 0.9) -> Answers:

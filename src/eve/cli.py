@@ -4,8 +4,6 @@ import json
 import logging
 import sys
 import time
-import tomllib
-from collections import Counter
 from collections.abc import Callable, Sequence
 from pathlib import Path
 from typing import TYPE_CHECKING, Any
@@ -27,7 +25,6 @@ from eve.progress import (
     tree,
     warn,
 )
-from eve.run_configs import apply_config, available, config_path, read_config
 from eve.runtime import pick_device
 from eve.train.config import DTYPES, TrainConfig
 
@@ -42,7 +39,7 @@ if TYPE_CHECKING:
 
 TRAIN_DEFAULTS = TrainConfig(steps=1)  # the CLI's defaults are TrainConfig's own
 DTYPE_CHOICES = list(DTYPES)
-FROZEN_LR, FULL_LR = 1e-3, 3e-4  # finetune's default lr with and without --freeze
+FINETUNE_LR = 3e-4
 ALL_VAL_BATCHES = 10_000  # finetune evaluates on all of val: it is small
 FINETUNE_WARMUP = 200
 
@@ -98,8 +95,12 @@ def _parquet_files(pattern: str) -> list[str]:
     return paths
 
 
-def info(_: argparse.Namespace) -> None:
-    """Print the torch version, the device, and each preset's size."""
+def info(args: argparse.Namespace) -> None:
+    """Print the torch version, the device, each preset's size, and (M3) its parameters per
+    part and memory size, like the book's count in ch. 4.6."""
+    from eve.config import preset
+    from eve.model.eve import Eve
+
     console.print(rows([("torch", torch.__version__), ("device", str(pick_device()))]))
     console.print()
     presets = table("preset", "d_model", "heads", "encoder", "decoder", "questions", "params")
@@ -113,12 +114,7 @@ def info(_: argparse.Namespace) -> None:
             f"{cfg.approx_params() / 1e6:.1f}M",
         )
     console.print(presets)
-
-
-def model(args: argparse.Namespace) -> None:
-    """Learn (M3): parameters per part and memory size, like the book's count in ch. 4.6."""
-    from eve.config import preset
-    from eve.model.eve import Eve
+    console.print()
 
     names = [args.preset] if args.preset else list(PRESETS)
     counts = {name: Eve(preset(name)).parameter_counts() for name in names}
@@ -226,177 +222,6 @@ def corpus_encode(args: argparse.Namespace) -> None:
     )
 
 
-def corpus_prompts(args: argparse.Namespace) -> None:
-    """Write the prompts of a TinyTools run: one document to write per line."""
-    from eve.data.generate.tinytools import KINDS, Lexicon, make_prompts
-    from eve.data.jsonl import write_jsonl
-
-    path = Path(args.out) / "prompts.jsonl"
-    if path.exists() and not args.force:
-        raise SystemExit(f"{path} exists; documents may already follow it (--force replaces it)")
-    specs = make_prompts(Lexicon.load(args.lexicon), args.n, args.seed)
-    write_jsonl(path, (spec.to_json() for spec in specs))
-    counts = Counter(spec.kind for spec in specs)
-    kinds = " · ".join(f"{kind} {counts[kind]:,}" for kind in KINDS)
-    domains = len({spec.domain for spec in specs})
-    success(f"{len(specs):,} prompts ({kinds}) over {domains} domains", path)
-
-
-def corpus_generate(args: argparse.Namespace) -> None:
-    """Write a TinyTools run's documents with headless Claude Code, then check the run."""
-    from eve.data.generate.headless import (
-        BatchResult,
-        GenerateError,
-        claude_writer,
-        generate,
-        pending,
-        read_documents,
-    )
-    from eve.data.generate.tinytools import Lexicon, PromptSpec
-    from eve.data.jsonl import read_jsonl
-    from eve.data.schema import load_library
-    from eve.progress import Bar
-
-    run = Path(args.dir)
-    if not (run / "prompts.jsonl").is_file():
-        raise SystemExit(f"no {run / 'prompts.jsonl'}; write it with eve corpus prompts")
-    specs = [PromptSpec.from_json(row) for row in read_jsonl(run / "prompts.jsonl")]
-    lexicon = Lexicon.load(args.lexicon)
-    heldout = list(load_library(Path(args.tools) / "heldout").values())
-    documents = read_documents(run / "documents.jsonl")
-    todo, previous = pending(specs, documents, lexicon, heldout, args.rewrite)
-    if args.limit is not None:
-        todo = todo[: args.limit]
-    batches = -(-len(todo) // args.batch)
-    console.print(
-        panel(
-            "eve corpus generate",
-            [
-                ("run", str(run)),
-                ("written", f"{len(documents):,} of {len(specs):,} prompts"),
-                (
-                    "to write",
-                    f"{len(todo):,} ({len(previous):,} rewrites)" if previous else f"{len(todo):,}",
-                ),
-                (
-                    "batches",
-                    f"{batches:,} of {args.batch} · {args.workers} at a time · "
-                    f"{args.rounds} rounds",
-                ),
-                ("generator", f"{args.claude} -p · model {args.model or 'default'}"),
-            ],
-        )
-    )
-    if todo:
-        cost, accepted = 0.0, 0
-        with Bar(len(todo), "writing", "documents") as progress:
-
-            def on_batch(result: BatchResult) -> None:
-                nonlocal cost, accepted
-                cost, accepted = cost + result.cost, accepted + result.accepted
-                progress.update(result.size)
-                progress.set_stats(f"{accepted:,} accepted", f"${cost:.2f}")
-                line = (
-                    f"batch {result.number}: {result.accepted} accepted, "
-                    f"{len(result.rejected)} rejected, {len(result.documents)} written · "
-                    f"{result.calls} calls · ${result.cost:.2f}"
-                )
-                if result.errors:
-                    line += f" · {len(result.errors)} errors: {result.errors[-1]}"
-                if progress.disable or result.errors:
-                    progress.write(line)
-
-            write = claude_writer(args.claude, args.model, args.timeout)
-            try:
-                generate(
-                    run,
-                    todo,
-                    write,
-                    lexicon,
-                    heldout,
-                    previous,
-                    args.batch,
-                    args.workers,
-                    args.rounds,
-                    on_batch,
-                )
-            except GenerateError as error:
-                raise SystemExit(f"stopped: {error}; run the command again to resume") from None
-        console.print(f"wrote {accepted:,} accepted documents for ${cost:.2f}")
-    corpus_check(args)
-
-
-def corpus_check(args: argparse.Namespace) -> None:
-    """Check a TinyTools run's documents against their prompts; write the accepted ones."""
-    from eve.data.generate.tinytools import (
-        Lexicon,
-        PromptSpec,
-        check_corpus,
-        write_parquet,
-    )
-    from eve.data.jsonl import read_jsonl
-    from eve.data.schema import load_library
-
-    run = Path(args.dir)  # not args.run: that is the command's function
-    prompts, documents = run / "prompts.jsonl", run / "documents.jsonl"
-    for path in (prompts, documents):
-        if not path.is_file():
-            raise SystemExit(f"no {path}; see data/tinytools/README.md")
-    specs = [PromptSpec.from_json(row) for row in read_jsonl(prompts)]
-    texts = {str(row["id"]): str(row["text"]) for row in read_jsonl(documents)}
-    lexicon = Lexicon.load(args.lexicon)
-    heldout = list(load_library(Path(args.tools) / "heldout").values())
-    report = check_corpus(specs, texts, lexicon, heldout)
-    stats = report.stats(lexicon)
-    write_parquet(report.accepted, run / "tinytools.parquet")
-    (run / "report.json").write_text(
-        json.dumps(
-            {"stats": stats, "rejected": report.rejected, "missing": report.missing}, indent=1
-        )
-    )
-    if args.json:
-        print(json.dumps(stats))
-        return
-    _print_corpus_report(stats, report.rejected, run)
-
-
-def _print_corpus_report(stats: dict[str, Any], rejected: dict[str, list[str]], run: Path) -> None:
-    """The counts, the most common reject reasons and a few rejected documents."""
-    kinds = " · ".join(f"{k} {n:,}" for k, n in stats["accepted_by_kind"].items())
-    items: list[tuple[str, str | Text]] = [
-        ("accepted", f"{stats['accepted']:,} of {stats['prompts']:,} prompts · {kinds}"),
-        ("rejected", f"{stats['rejected']:,}"),
-        ("not written", f"{stats['missing']:,}"),
-        ("words", f"{stats['words']:,} · {stats['mean_words']:.0f} per document"),
-        (
-            "covered",
-            f"{stats['vocabulary_covered']:.0%} of the words · {stats['domains_covered']} domains",
-        ),
-    ]
-    if stats["unknown"]:
-        items.append(("unknown ids", f"{stats['unknown']:,} documents match no prompt"))
-    for i, (reason, n) in enumerate(stats["reject_reasons"].items()):
-        if i == 5:
-            break
-        items.append(("reasons" if i == 0 else "", f"{n:,} × {reason}"))
-    for i, (doc_id, reasons) in enumerate(rejected.items()):
-        if i == 3:
-            break
-        items.append(("examples" if i == 0 else "", f"{doc_id}: {'; '.join(reasons)}"))
-    phrases = [
-        f'{kind}: "{phrase}" {share:.0%}'
-        for kind, top in stats["repeated_phrases"].items()
-        for phrase, share in list(top.items())[:1]
-    ]
-    for i, line in enumerate(phrases):
-        items.append(("top phrase" if i == 0 else "", line))
-    copied = [(f, share) for f, share in stats["copied_examples"].items() if share > 0.3]
-    for i, (feature, share) in enumerate(copied):
-        items.append(("copied" if i == 0 else "", f"{share:.0%} of {feature}"))
-    console.print(panel("eve corpus check", items))
-    success("accepted documents", run / "tinytools.parquet")
-
-
 def _train_config(args: argparse.Namespace, steps: int, lr: float, **extra: Any) -> TrainConfig:
     """The ``TrainConfig`` from the options ``pretrain`` and ``finetune`` share."""
     return TrainConfig(
@@ -495,11 +320,9 @@ def _finetune_panel(
     args: argparse.Namespace, device: torch.device, lr: float, steps: int, n_train: int
 ) -> "Panel":
     """What ``finetune`` is about to do: where from, on what, how long, and where to."""
-    start = [args.init or f"{args.scratch} preset, random weights"]
-    start += ["body frozen"] if args.freeze else []
     epochs = steps * args.batch_size / n_train
     items = [
-        ("start", " · ".join(start)),
+        ("start", args.init or f"{args.scratch} preset, random weights"),
         ("task", f"{args.task} · {n_train:,} train examples"),
         ("schedule", f"{_schedule(args, lr, steps)} · {epochs:.1f} epochs"),
     ]
@@ -512,13 +335,12 @@ def finetune(args: argparse.Namespace) -> None:
     from eve.train.finetune import finetune_experiment
 
     if (args.init is None) == (args.scratch is None):
-        raise SystemExit("give one of --init or --scratch (on the command line or in --config)")
+        raise SystemExit("give one of --init or --scratch")
     n_train = len(read_jsonl(Path(args.task) / "train.jsonl"))
     steps = args.steps or round(args.epochs * n_train / args.batch_size)
-    lr = args.lr or (FROZEN_LR if args.freeze else FULL_LR)
-    train_cfg = _train_config(args, steps, lr, eval_batches=ALL_VAL_BATCHES)
+    train_cfg = _train_config(args, steps, args.lr, eval_batches=ALL_VAL_BATCHES)
     device = pick_device(args.device)
-    console.print(_finetune_panel(args, device, lr, steps, n_train))
+    console.print(_finetune_panel(args, device, args.lr, steps, n_train))
     values = finetune_experiment(
         train_cfg,
         args.task,
@@ -527,7 +349,6 @@ def finetune(args: argparse.Namespace) -> None:
         init=args.init,
         scratch=args.scratch,
         tokenizer_path=args.tokenizer,
-        freeze=args.freeze,
         overrides={} if args.dropout is None else {"dropout": args.dropout},
         resume=args.resume,
         stop_after=args.stop_after,
@@ -625,22 +446,23 @@ def _print_fill_report(
 def export(args: argparse.Namespace) -> None:
     """Publish (M10): write a fine-tuned model and its model card for a Hugging Face Hub repo."""
     from eve.export import export_model
+    from eve.model.checkpoint import MODEL_FILE, RETRIEVER_FILE
 
     try:
         out = export_model(args.model, args.out, args.dtype, args.repo, args.retriever)
     except ValueError as error:
         raise SystemExit(str(error)) from None
-    size = (out / "model.pt").stat().st_size / 1e6
-    extra = " · retriever.pt" if args.retriever else ""
-    success(f"model.pt ({size:.0f} MB, {args.dtype}){extra} and README.md", out)
+    size = (out / MODEL_FILE).stat().st_size / 1e6
+    extra = f" · {RETRIEVER_FILE}" if args.retriever else ""
+    success(f"{MODEL_FILE} ({size:.0f} MB, {args.dtype}){extra} and README.md", out)
     console.print(Text(f"upload: hf upload {args.repo} {out} .", style="dim"))
 
 
 def retriever_eval(args: argparse.Namespace) -> None:
     """Retrieve (M11): how often each scorer puts every correct tool in the top 5 of a
-    registry: BM25, and with a retriever checkpoint, the retriever alone and fused with BM25.
-    Registries are filled with random tools, and with ``similar`` ones (the hard case)."""
-    from eve.api.toolbox import BM25, Dense, Hybrid, Scorer
+    registry: BM25, and with a retriever checkpoint, the retriever (dense). Registries are
+    filled with random tools, and with ``similar`` ones (the hard case)."""
+    from eve.api.toolbox import BM25, Dense, Scorer
     from eve.data.generate.build import Sources
     from eve.model.checkpoint import load_checkpoint
     from eve.tasks.retrieval import TOP, evaluate_scorers, load_splits, suite
@@ -648,8 +470,7 @@ def retriever_eval(args: argparse.Namespace) -> None:
     scorers: dict[str, Scorer] = {"bm25": BM25()}
     if args.retriever:
         ckpt = load_checkpoint(args.retriever, pick_device(args.device))
-        dense = Dense(ckpt.model, ckpt.tokenizer)  # type: ignore[arg-type]
-        scorers |= {"dense": dense, "hybrid": Hybrid(dense, BM25())}
+        scorers["dense"] = Dense(ckpt.model, ckpt.tokenizer)  # type: ignore[arg-type]
     examples = load_splits(Sources.load().library, args.task, args.splits)
     suites = suite(examples, args.sizes, fills=args.fill)
     results = evaluate_scorers(scorers, suites)
@@ -819,10 +640,9 @@ def _evaluate_panel(
     args: argparse.Namespace, meta: dict[str, Any], device: torch.device
 ) -> "Panel":
     """Which model is scored, how it was trained, and on what."""
-    from eve.evaluate import model_file
+    from eve.model.checkpoint import model_file
 
     trained = [f"{meta['step']:,} steps" if "step" in meta else "? steps", f"from {meta['init']}"]
-    trained += ["body frozen"] if meta.get("frozen") else []
     items = [
         ("model", str(model_file(args.model))),
         ("trained", " ".join(trained)),
@@ -959,8 +779,9 @@ def calibrate(args: argparse.Namespace) -> None:
         save_calibration,
     )
     from eve.data.generate.build import Sources
-    from eve.evaluate import load_questions_model, model_file, task_files
+    from eve.evaluate import load_questions_model, task_files
     from eve.infer.predict import Calibrations
+    from eve.model.checkpoint import model_file
 
     device = pick_device(args.device)
     fit_on = {"familiar": args.fit_familiar, "new": args.fit_new}
@@ -1035,7 +856,7 @@ def data_build(args: argparse.Namespace) -> None:
         args.heldout,
         args.seed,
         tokenizer,
-        preset("small"),
+        preset("eve-32m"),
     )
     console.print(_splits_table(report["splits"]))
     if rejected := report["rejected_chat_lines"]:
@@ -1111,30 +932,17 @@ def _rejects_table(rejects: list[tuple[dict[str, Any], list[str]]]) -> "Table":
     return out
 
 
-def _add_schedule_args(
-    parser: argparse.ArgumentParser, lr: float | None, lr_help: str | None, warmup: int
-) -> None:
+def _add_schedule_args(parser: argparse.ArgumentParser, lr: float, warmup: int) -> None:
     """Batch size, learning rate, warmup and precision: the options both training runs take."""
     parser.add_argument("--batch-size", type=int, default=TRAIN_DEFAULTS.batch_size)
-    parser.add_argument("--lr", type=float, default=lr, help=lr_help)
+    parser.add_argument("--lr", type=float, default=lr)
     parser.add_argument("--warmup", type=int, default=warmup)
     parser.add_argument("--dtype", choices=DTYPE_CHOICES, default=TRAIN_DEFAULTS.dtype)
 
 
 def _add_switch(parser: argparse.ArgumentParser, flag: str, help_: str) -> None:
-    """An off-by-default ``--flag``, with a ``--no-flag`` to turn off what a config turned on."""
-    parser.add_argument(flag, action=argparse.BooleanOptionalAction, default=False, help=help_)
-
-
-def _add_config_arg(parser: argparse.ArgumentParser, command: str) -> None:
-    """``--config NAME``: the options in ``configs/<command>/NAME.toml`` become the defaults."""
-    names = ", ".join(available(command)) or "none yet"
-    parser.add_argument(
-        "--config",
-        default=None,
-        help=f"a configs/{command}/*.toml name or path ({names}); flags still win",
-    )
-    parser.set_defaults(parser=parser)
+    """An off-by-default ``--flag``."""
+    parser.add_argument(flag, action="store_true", help=help_)
 
 
 def _add_run_args(parser: argparse.ArgumentParser) -> None:
@@ -1151,21 +959,25 @@ def _add_run_args(parser: argparse.ArgumentParser) -> None:
 
 
 def _add_set_arg(parser: argparse.ArgumentParser) -> None:
-    """``--set section.key=value``: change any experiment value, e.g. components.loss=question."""
+    """``--set section.key=value``: change any experiment value, e.g. train.lr=1e-3."""
     parser.add_argument(
         "--set",
         action="append",
         default=[],
         metavar="SECTION.KEY=VALUE",
-        help="override an experiment value (repeatable), e.g. components.loss=question",
+        help="override an experiment value (repeatable), e.g. train.lr=1e-3",
     )
 
 
 def _add_model_commands(commands: Subcommands) -> None:
-    commands.add_parser("info", help="show the device and model presets").set_defaults(run=info)
-    parser = commands.add_parser("model", help="parameters per part of a preset (M3)")
-    parser.set_defaults(run=model)
-    parser.add_argument("--preset", choices=sorted(PRESETS), default=None, help="default: all")
+    parser = commands.add_parser("info", help="the device, and the model presets' sizes (M3)")
+    parser.set_defaults(run=info)
+    parser.add_argument(
+        "--preset",
+        choices=sorted(PRESETS),
+        default=None,
+        help="parameters per part of only this one",
+    )
 
 
 def _add_tokenizer_commands(commands: Subcommands) -> None:
@@ -1197,79 +1009,35 @@ def _add_tokenizer_commands(commands: Subcommands) -> None:
 
 
 def _add_corpus_command(commands: Subcommands) -> None:
-    group = commands.add_parser(
-        "corpus", help="the pretraining corpus: encode it, or build TinyTools"
-    )
+    group = commands.add_parser("corpus", help="the pretraining corpus")
     corpus_commands = group.add_subparsers(dest="corpus_command", required=True)
     parser = corpus_commands.add_parser("encode", help="encode parquet text to token ids (M1)")
     parser.set_defaults(run=corpus_encode)
     parser.add_argument("--parquet", default=defaults.PARQUET_GLOB)
     parser.add_argument("--tokenizer", default=defaults.TOKENIZER_FILE)
     parser.add_argument("--out", default=defaults.BIN_DIR)
-    parser.add_argument("--train-tokens", default="250M")
+    parser.add_argument("--train-tokens", default="900M")
     parser.add_argument("--val-tokens", default="2M")
     parser.add_argument("--workers", type=int, default=None)
     parser.add_argument(
-        "--mix", help="a glob of parquet files to spread through the train tokens, e.g. TinyTools"
+        "--mix", help="a glob of parquet files (a text column) to spread through the train tokens"
     )
     parser.add_argument(
         "--mix-share", type=float, default=0.3, help="their share of the train text (with --mix)"
     )
     parser.add_argument("--seed", type=int, default=0, help="the order of the mixed documents")
 
-    parser = corpus_commands.add_parser("prompts", help="TinyTools: prompts for a generator")
-    parser.set_defaults(run=corpus_prompts)
-    parser.add_argument("--n", type=int, default=2000, help="documents to write")
-    parser.add_argument("--seed", type=int, default=0)
-    parser.add_argument("--out", default=defaults.TINYTOOLS_RUN, help="the run directory")
-    parser.add_argument("--lexicon", default=defaults.TINYTOOLS_DIR, help="word lists and domains")
-    parser.add_argument("--force", action="store_true", help="replace an existing prompts.jsonl")
-
-    parser = corpus_commands.add_parser(
-        "generate", help="TinyTools: write the documents with headless Claude Code"
-    )
-    parser.set_defaults(run=corpus_generate, json=False)
-    parser.add_argument(
-        "dir", nargs="?", default=defaults.TINYTOOLS_RUN, metavar="run", help="the run directory"
-    )
-    parser.add_argument("--batch", type=int, default=50, help="prompts per call")
-    parser.add_argument("--workers", type=int, default=4, help="calls at a time")
-    parser.add_argument(
-        "--rounds", type=int, default=3, help="calls per batch: the first, then rewrites"
-    )
-    parser.add_argument("--limit", type=int, default=None, help="write at most this many")
-    parser.add_argument(
-        "--rewrite", action="store_true", help="also rewrite documents the checker rejects"
-    )
-    parser.add_argument("--model", default=None, help="e.g. sonnet; Claude Code's default if unset")
-    parser.add_argument("--claude", default="claude", help="the Claude Code command")
-    parser.add_argument("--timeout", type=float, default=900, help="seconds per call")
-    parser.add_argument("--lexicon", default=defaults.TINYTOOLS_DIR)
-    parser.add_argument("--tools", default=defaults.TOOLS_DIR, help="for the held-out tools")
-
-    parser = corpus_commands.add_parser("check", help="TinyTools: check written documents")
-    parser.set_defaults(run=corpus_check)
-    parser.add_argument(
-        "dir", nargs="?", default=defaults.TINYTOOLS_RUN, metavar="run", help="the run directory"
-    )
-    parser.add_argument("--lexicon", default=defaults.TINYTOOLS_DIR)
-    parser.add_argument("--tools", default=defaults.TOOLS_DIR, help="for the held-out tools")
-    parser.add_argument("--json", action="store_true", help="the stats as one JSON line")
-
 
 def _add_pretrain_command(commands: Subcommands) -> None:
     parser = commands.add_parser("pretrain", help="span-corruption pretraining (M4)")
     parser.set_defaults(run=pretrain)
-    _add_config_arg(parser, "pretrain")
-    parser.add_argument("--preset", choices=sorted(PRESETS), default="small")
+    parser.add_argument("--preset", choices=sorted(PRESETS), default="eve-32m")
     parser.add_argument("--data", default=defaults.BIN_DIR)
     parser.add_argument("--tokenizer", default=defaults.TOKENIZER_FILE)
     parser.add_argument("--out", default=defaults.PRETRAIN_RUN)
-    parser.add_argument("--tokens", default="250M", help="corpus tokens to read (sets --steps)")
+    parser.add_argument("--tokens", default="850M", help="corpus tokens to read (sets --steps)")
     parser.add_argument("--steps", type=int, default=None, help="default: from --tokens")
-    _add_schedule_args(
-        parser, lr=TRAIN_DEFAULTS.lr, lr_help=None, warmup=TRAIN_DEFAULTS.warmup_steps
-    )
+    _add_schedule_args(parser, lr=TRAIN_DEFAULTS.lr, warmup=TRAIN_DEFAULTS.warmup_steps)
     parser.add_argument("--dropout", type=float, default=None, help="default: the preset's (0.1)")
     _add_switch(parser, "--rope", "rotary positions, no position tables")
     _add_switch(parser, "--qk-norm", "RMS-normalize queries and keys")
@@ -1280,22 +1048,15 @@ def _add_pretrain_command(commands: Subcommands) -> None:
 def _add_finetune_command(commands: Subcommands) -> None:
     parser = commands.add_parser("finetune", help="fine-tune questions and values (M7, M8)")
     parser.set_defaults(run=finetune)
-    _add_config_arg(parser, "finetune")
     start = parser.add_mutually_exclusive_group()  # one is required; finetune checks
     start.add_argument("--init", help="a pretraining checkpoint or an earlier finetune's model.pt")
     start.add_argument("--scratch", choices=sorted(PRESETS), help="random init (experiment E1)")
-    _add_switch(parser, "--freeze", "train only the question block (E2)")
     parser.add_argument("--task", default=defaults.TASK_DIR)
     parser.add_argument("--tokenizer", default=defaults.TOKENIZER_FILE, help="for --scratch")
     parser.add_argument("--out", default=defaults.FINETUNE_RUN)
     parser.add_argument("--epochs", type=float, default=2.0, help="sets --steps")
     parser.add_argument("--steps", type=int, default=None, help="default: from --epochs")
-    _add_schedule_args(
-        parser,
-        lr=None,
-        lr_help=f"default: {FROZEN_LR:g} frozen, else {FULL_LR:g}",
-        warmup=FINETUNE_WARMUP,
-    )
+    _add_schedule_args(parser, lr=FINETUNE_LR, warmup=FINETUNE_WARMUP)
     parser.add_argument("--dropout", type=float, default=None, help="default: the checkpoint's")
     _add_run_args(parser)
 
@@ -1308,6 +1069,8 @@ def _add_run_command(commands: Subcommands) -> None:
 
 
 def _add_inspect_commands(commands: Subcommands) -> None:
+    from eve.export import DTYPES as EXPORT_DTYPES
+
     parser = commands.add_parser("ask", help="ask the model about a request (M7, M8)")
     parser.set_defaults(run=ask)
     parser.add_argument("text", nargs="*", help="requests; none: type them one by one")
@@ -1330,7 +1093,7 @@ def _add_inspect_commands(commands: Subcommands) -> None:
     parser.set_defaults(run=export)
     parser.add_argument("model", nargs="?", default=defaults.FINETUNED_MODEL)
     parser.add_argument("--out", default="dist/model", help="the directory to write")
-    parser.add_argument("--dtype", choices=["float16", "bfloat16", "float32"], default="float16")
+    parser.add_argument("--dtype", choices=list(EXPORT_DTYPES), default="float16")
     parser.add_argument("--repo", default="<user>/<repo>", help="the Hub repo, for the card")
     parser.add_argument("--retriever", default=None, help="a retriever model.pt to ship with it")
 
@@ -1459,27 +1222,9 @@ def build_parser() -> argparse.ArgumentParser:
     return parser
 
 
-def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
-    """The command line's options; with ``--config``, the config file fills in the defaults.
-
-    The command line is parsed twice: once to find the config, and again after the config's
-    values became the subcommand's defaults, so a flag given on the command line still wins.
-    """
-    parser = build_parser()
-    args = parser.parse_args(argv)
-    if getattr(args, "config", None) is None:
-        return args
-    try:
-        options = read_config(config_path(args.command, args.config))
-    except (FileNotFoundError, tomllib.TOMLDecodeError) as error:
-        raise SystemExit(f"{args.config}: {error}") from error
-    apply_config(args.parser, options)
-    return parser.parse_args(argv)
-
-
 def main(argv: list[str] | None = None) -> None:
     """Parse the command line and run the chosen subcommand."""
-    args = parse_args(argv)
+    args = build_parser().parse_args(argv)
     setup_logging()
     try:
         args.run(args)

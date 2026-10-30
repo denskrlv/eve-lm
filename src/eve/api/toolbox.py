@@ -7,9 +7,9 @@ ones to show it, ranked by the box's ``scorer``:
   options and argument descriptions. It misses paraphrases: "20 plus 10" shares no word with
   "Add two numbers".
 - ``Dense``: a trained retriever (M11, ``eve.model.retriever``) embeds the request and each
-  tool, and scores them by cosine similarity, so meaning counts, not shared words.
-- ``Hybrid``: both rankings fused (reciprocal-rank fusion). BM25's word matches pull in tools
-  that share a word but not the meaning, so it ranks below ``Dense`` alone (M11).
+  tool, and scores them by cosine similarity, so meaning counts, not shared words. Fusing it
+  with BM25 ranked worse than ``Dense`` alone: shared words pulled in tools with another
+  meaning (M11).
 
 A registry is saved as JSON schemas. Functions are code and can't be saved: after ``load``, add
 them again and each one takes the place of the schema with its name.
@@ -34,7 +34,6 @@ if TYPE_CHECKING:
     from eve.tokenizer.bpe import BPETokenizer
 
 K1, B = 1.2, 0.75  # BM25's usual term-saturation and length-normalization constants
-RRF_K = 60  # reciprocal-rank fusion's usual constant: rank r counts 1 / (RRF_K + r)
 _WORD = re.compile(r"[a-z0-9]+")  # snake_case names split at "_"
 
 
@@ -123,28 +122,6 @@ class Dense:
             query = self.retriever.embed_queries([text], self.tokenizer)[0]
         matrix = torch.stack([self._tools[tool] for tool in tools])
         return (matrix @ query).tolist()
-
-
-class Hybrid:
-    """Reciprocal-rank fusion: a tool scores ``sum(1 / (RRF_K + rank))`` over the scorers'
-    rankings (rank 1 is the best). Ranks, not raw scores, so BM25's unbounded scores and
-    cosines in [-1, 1] count the same."""
-
-    def __init__(self, *scorers: Scorer, k: int = RRF_K) -> None:
-        self.scorers, self.k = scorers, k
-
-    def prime(self, texts: Sequence[str] = (), tools: Sequence[Tool] = ()) -> None:
-        for scorer in self.scorers:
-            if prime := getattr(scorer, "prime", None):
-                prime(texts, tools)
-
-    def scores(self, text: str, tools: Sequence[Tool]) -> list[float]:
-        fused = [0.0] * len(tools)
-        for scorer in self.scorers:
-            scores = scorer.scores(text, tools)
-            for rank, i in enumerate(sorted(range(len(tools)), key=lambda i: -scores[i]), 1):
-                fused[i] += 1 / (self.k + rank)
-        return fused
 
 
 class ToolBox:
