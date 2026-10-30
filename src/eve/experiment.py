@@ -37,6 +37,7 @@ COMPONENTS_DIR = f"{defaults.CONFIG_DIR}/components"  # variant files: <kind>/<n
 CONFIG_FILE = "config.toml"  # the resolved experiment, in every run directory
 PARAM_KINDS = ("model", "data", "loss", "metrics", "report", "optimizer", "schedule", "trainer")
 SECTIONS = ("components", *PARAM_KINDS, "train", "run", "meta")
+JOINT_LOSS = "joint"  # the loss that also trains the decoder to write argument values
 
 
 @dataclass(frozen=True)
@@ -200,6 +201,18 @@ def with_epochs(train: TrainConfig, epochs: float, n_train: int) -> TrainConfig:
     return replace(train, steps=steps, warmup_steps=min(train.warmup_steps, steps))
 
 
+def trained_meta(experiment: Experiment) -> dict[str, Any]:
+    """The experiment's ``[meta]`` plus what its components say about the checkpoints, so a
+    ``--set`` can't leave it stale: ``joint`` (trained with the joint loss, so the decoder
+    writes argument values) and ``init``, the checkpoint the model started from."""
+    init = experiment.params["model"].get("init")
+    return {
+        **experiment.meta,
+        "joint": experiment.components.loss == JOINT_LOSS,
+        "init": "scratch" if init is None else str(init),
+    }
+
+
 def run(experiment: Experiment, **data_args: Any) -> dict[str, float]:
     """Build every component of ``experiment`` from the registry and train. ``data_args`` go
     to the data builder as they are (e.g. a ``library`` of tools already loaded). Returns the
@@ -225,7 +238,11 @@ def run(experiment: Experiment, **data_args: Any) -> dict[str, float]:
     (out_dir / CONFIG_FILE).write_text(to_toml(resolved.to_dict()))
 
     trainer = registry.build("trainer", c.trainer, **params["trainer"])
-    meta = {**experiment.meta, "trainable": started.trainable, "experiment": resolved.to_dict()}
+    meta = {
+        **trained_meta(experiment),
+        "trainable": started.trainable,
+        "experiment": resolved.to_dict(),
+    }
     val: dict[str, float] = trainer(
         started.model,
         registry.build("loss", c.loss, **params["loss"]),

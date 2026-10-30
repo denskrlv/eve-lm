@@ -1,8 +1,0 @@
-# The same recipe at ~32M parameters on the 850M-token corpus: 46,682 steps, ~10 h on MPS.
-preset = "base"
-dropout = 0.0
-rope = true
-qk-norm = true
-compile = true
-data = "data/bin-900m"
-tokens = "850M"

@@ -16,11 +16,21 @@ import torch
 from test_finetune import write_task
 from torch import nn
 
-from eve import registry
+from eve import defaults, registry
 from eve.cli import main
 from eve.config import preset
 from eve.data.render import IGNORE
-from eve.experiment import COMPONENTS_DIR, CONFIG_FILE, Experiment, run, to_toml, variant
+from eve.experiment import (
+    COMPONENTS_DIR,
+    CONFIG_FILE,
+    Experiment,
+    apply_sets,
+    read,
+    run,
+    to_toml,
+    trained_meta,
+    variant,
+)
 from eve.model.build import start_model
 from eve.model.checkpoint import load_checkpoint, save_checkpoint
 from eve.model.eve import Output
@@ -257,6 +267,37 @@ def test_epochs_set_the_steps_from_the_train_set(data_dirs, tokenizer, library, 
     saved = Experiment.from_dict(tomllib.loads((tmp_path / "run" / CONFIG_FILE).read_text()))
     assert saved.train.steps == 4  # 2 epochs of 6 examples in batches of 3
     assert saved.train.warmup_steps == 4  # capped at the steps
+    meta = load_checkpoint(tmp_path / "run" / "model.pt").meta
+    assert meta["joint"] is True and meta["init"] == str(init)
+
+
+EXPERIMENTS = sorted(Path(defaults.CONFIG_DIR, "experiments").glob("*.toml"))
+
+
+@pytest.mark.parametrize("path", EXPERIMENTS, ids=[path.stem for path in EXPERIMENTS])
+def test_every_experiment_file_loads(path):
+    experiment = Experiment.from_dict(read(path))
+    for kind in ("data", "loss", "metrics", "report", "model"):
+        registry.get(kind, getattr(experiment.components, kind))  # raises if not registered
+    assert experiment.run.out == f"{defaults.RUNS_DIR}/{path.stem}"
+
+
+def test_the_meta_follows_the_components_not_a_stale_table():
+    values = read(Path(defaults.CONFIG_DIR, "experiments", "joint-base.toml"))
+    joint = Experiment.from_dict(values)
+    assert trained_meta(joint) == {
+        "task": "questions",
+        "joint": True,
+        "init": "artifacts/runs/base-900m/model.pt",
+    }
+    swapped = Experiment.from_dict(
+        apply_sets(values, ["components.loss=question", 'model.init="other.pt"'])
+    )
+    assert trained_meta(swapped) == {
+        "task": "questions",
+        "joint": False,
+        "init": "other.pt",
+    }
 
 
 # --- Swapping components by config alone ---------------------------------------------------

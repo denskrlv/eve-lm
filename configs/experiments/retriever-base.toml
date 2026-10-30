@@ -37,4 +37,3 @@ out = "artifacts/runs/retriever-base"
 
 [meta]
 task = "retrieval"
-init = "artifacts/runs/base-900m/model.pt"

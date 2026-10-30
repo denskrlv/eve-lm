@@ -4,7 +4,6 @@ import json
 import logging
 import sys
 import time
-import tomllib
 from collections import Counter
 from collections.abc import Callable, Sequence
 from pathlib import Path
@@ -27,7 +26,6 @@ from eve.progress import (
     tree,
     warn,
 )
-from eve.run_configs import apply_config, available, config_path, read_config
 from eve.runtime import pick_device
 from eve.train.config import DTYPES, TrainConfig
 
@@ -512,7 +510,7 @@ def finetune(args: argparse.Namespace) -> None:
     from eve.train.finetune import finetune_experiment
 
     if (args.init is None) == (args.scratch is None):
-        raise SystemExit("give one of --init or --scratch (on the command line or in --config)")
+        raise SystemExit("give one of --init or --scratch")
     n_train = len(read_jsonl(Path(args.task) / "train.jsonl"))
     steps = args.steps or round(args.epochs * n_train / args.batch_size)
     lr = args.lr or (FROZEN_LR if args.freeze else FULL_LR)
@@ -1122,19 +1120,8 @@ def _add_schedule_args(
 
 
 def _add_switch(parser: argparse.ArgumentParser, flag: str, help_: str) -> None:
-    """An off-by-default ``--flag``, with a ``--no-flag`` to turn off what a config turned on."""
-    parser.add_argument(flag, action=argparse.BooleanOptionalAction, default=False, help=help_)
-
-
-def _add_config_arg(parser: argparse.ArgumentParser, command: str) -> None:
-    """``--config NAME``: the options in ``configs/<command>/NAME.toml`` become the defaults."""
-    names = ", ".join(available(command)) or "none yet"
-    parser.add_argument(
-        "--config",
-        default=None,
-        help=f"a configs/{command}/*.toml name or path ({names}); flags still win",
-    )
-    parser.set_defaults(parser=parser)
+    """An off-by-default ``--flag``."""
+    parser.add_argument(flag, action="store_true", help=help_)
 
 
 def _add_run_args(parser: argparse.ArgumentParser) -> None:
@@ -1260,7 +1247,6 @@ def _add_corpus_command(commands: Subcommands) -> None:
 def _add_pretrain_command(commands: Subcommands) -> None:
     parser = commands.add_parser("pretrain", help="span-corruption pretraining (M4)")
     parser.set_defaults(run=pretrain)
-    _add_config_arg(parser, "pretrain")
     parser.add_argument("--preset", choices=sorted(PRESETS), default="small")
     parser.add_argument("--data", default=defaults.BIN_DIR)
     parser.add_argument("--tokenizer", default=defaults.TOKENIZER_FILE)
@@ -1280,7 +1266,6 @@ def _add_pretrain_command(commands: Subcommands) -> None:
 def _add_finetune_command(commands: Subcommands) -> None:
     parser = commands.add_parser("finetune", help="fine-tune questions and values (M7, M8)")
     parser.set_defaults(run=finetune)
-    _add_config_arg(parser, "finetune")
     start = parser.add_mutually_exclusive_group()  # one is required; finetune checks
     start.add_argument("--init", help="a pretraining checkpoint or an earlier finetune's model.pt")
     start.add_argument("--scratch", choices=sorted(PRESETS), help="random init (experiment E1)")
@@ -1459,27 +1444,9 @@ def build_parser() -> argparse.ArgumentParser:
     return parser
 
 
-def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
-    """The command line's options; with ``--config``, the config file fills in the defaults.
-
-    The command line is parsed twice: once to find the config, and again after the config's
-    values became the subcommand's defaults, so a flag given on the command line still wins.
-    """
-    parser = build_parser()
-    args = parser.parse_args(argv)
-    if getattr(args, "config", None) is None:
-        return args
-    try:
-        options = read_config(config_path(args.command, args.config))
-    except (FileNotFoundError, tomllib.TOMLDecodeError) as error:
-        raise SystemExit(f"{args.config}: {error}") from error
-    apply_config(args.parser, options)
-    return parser.parse_args(argv)
-
-
 def main(argv: list[str] | None = None) -> None:
     """Parse the command line and run the chosen subcommand."""
-    args = parse_args(argv)
+    args = build_parser().parse_args(argv)
     setup_logging()
     try:
         args.run(args)

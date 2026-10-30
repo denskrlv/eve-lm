@@ -181,9 +181,9 @@ The whole pipeline, from raw text to a calibrated model. Each command writes whe
 |---|---|
 | 1. Tokenizer: 8k byte-level BPE on web text, tool schemas and commands | `uv run eve tokenizer train` |
 | 2. Pretraining corpus: FineWeb-Edu to token ids | `uv run eve corpus encode` |
-| 3. Pretrain with span corruption | `uv run eve pretrain --config base-900m` |
+| 3. Pretrain with span corruption | `uv run eve run configs/experiments/base-900m.toml` |
 | 4. Task data: hand-written tools, templates, chat-written requests, xLAM, MASSIVE | `uv run eve data external && uv run eve data build` |
-| 5. Fine-tune intents, tools and values together | `uv run eve finetune --config joint-base` |
+| 5. Fine-tune intents, tools and values together | `uv run eve run configs/experiments/joint-base.toml` |
 | 6. Evaluate | `uv run eve evaluate artifacts/runs/joint-base` |
 | 7. Fit and save the temperatures | `uv run eve calibrate artifacts/runs/joint-base --save` |
 | 8. Try it | `uv run eve ask --tools set_lights,play_music "turn off the kitchen lights"` |
@@ -227,10 +227,10 @@ uv run eve data build                       # -> data/task/*.jsonl
 T5-style span corruption: spans of the input are replaced with sentinels (`<x0>`, `<x1>`, …) and the decoder writes them back. It trains the encoder and the decoder, the parts fine-tuning starts from.
 
 ```bash
-uv run eve pretrain --config small-250m   # ~12M parameters, 250M tokens, 13,730 steps
-uv run eve pretrain --config base-900m    # ~32M parameters, 850M tokens, 46,682 steps
-uv run eve pretrain --config base-900m --resume                       # continue after an interruption
-uv run eve pretrain --config base-900m --lr 2e-3 --stop-after 2000 --out artifacts/runs/ab-lr2e-3
+uv run eve run configs/experiments/small-250m.toml   # ~12M parameters, 250M tokens, 13,730 steps
+uv run eve run configs/experiments/base-900m.toml    # ~32M parameters, 850M tokens, 46,682 steps
+uv run eve run configs/experiments/base-900m.toml --set run.resume=true   # continue after an interruption
+uv run eve pretrain --preset small --rope --qk-norm --lr 2e-3 --stop-after 2000 --out artifacts/runs/ab-lr2e-3
 ```
 
 Both recipes came out of A/B runs at the small size: no dropout, rotary positions and QK-norm, and `torch.compile` (about 2× faster on MPS). An A/B arm uses the full run's schedule and stops early, so the winner continues with `--resume`. The number to watch is `val_content`, the loss on the words inside the holes only.
@@ -268,8 +268,7 @@ uv run eve data check batch-0001              # validate what it wrote
 <br/>
 
 ```bash
-uv run eve finetune --config joint-base        # intents, tools and values: the main recipe
-uv run eve finetune --config questions-base    # intents and tools only (M7)
+uv run eve run configs/experiments/joint-base.toml   # intents, tools and values: the main recipe
 uv run eve finetune --init artifacts/runs/base-900m/model.pt --freeze --out artifacts/runs/frozen   # question block only
 uv run eve finetune --scratch small --out artifacts/runs/scratch   # no pretraining, for comparison
 ```
@@ -313,10 +312,11 @@ out = "artifacts/runs/joint-base"
 ```bash
 uv run eve run configs/experiments/joint-base.toml
 uv run eve run configs/experiments/joint-base.toml --set components.loss=question \
-  --set components.metrics=question --set report.values=false --set train.lr=1e-3
+  --set components.metrics=question --set report.values=false --set train.lr=1e-3 \
+  --set run.out=artifacts/runs/questions-only
 ```
 
-Params are layered, later ones winning: the component's file in `configs/components/`, the experiment's table, then `--set section.key=value`. An unknown param stops the run instead of being ignored. Every run writes its resolved experiment to `<out>/config.toml`, so `eve run <out>/config.toml` repeats it; `last.pt` holds the weights, optimizer and RNG states, so `--resume` continues exactly.
+Params are layered, later ones winning: the component's file in `configs/components/`, the experiment's table, then `--set section.key=value`. An unknown param stops the run instead of being ignored. Every run writes its resolved experiment to `<out>/config.toml`, so `eve run <out>/config.toml` repeats it; `last.pt` holds the weights, optimizer and RNG states, so `--set run.resume=true` continues exactly. The checkpoints' meta says whether the joint loss trained them (`joint`) and where they started (`init`), taken from the components, so a `--set` can't leave it stale.
 
 **Adding a component.** Register it with `@register(kind, name)` in a new module, give it its kind's call signature from [`src/eve/components.py`](src/eve/components.py) with config params as keyword arguments, and add `configs/components/<kind>/<name>.toml` with its defaults. [`tests/test_components.py`](tests/test_components.py) checks the config and runs a smoke test on every registered component.
 
@@ -357,8 +357,7 @@ eve-lm/
 ├── assets/                # Architecture figure
 ├── configs/
 │   ├── components/        # Default params per component: <kind>/<name>.toml
-│   ├── experiments/       # Whole experiments for `eve run`
-│   └── pretrain/, finetune/   # Presets for `eve pretrain/finetune --config`
+│   └── experiments/       # Whole experiments for `eve run`: pretraining, joint, retriever
 ├── data/
 │   ├── tools/             # Hand-written tool schemas; heldout/ is never trained on
 │   ├── generation/        # Scenario batches and the chat-written requests

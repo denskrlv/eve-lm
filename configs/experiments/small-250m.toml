@@ -1,5 +1,5 @@
-# The small pretraining recipe as a full experiment: what `eve pretrain --config small-250m`
-# runs. Run it with `eve run configs/experiments/small-250m.toml`.
+# The small pretraining recipe (M4), the A/B winner at ~12M parameters. Run it with
+# `eve run configs/experiments/small-250m.toml`.
 
 [components]
 data = "span_corruption"

@@ -10,11 +10,11 @@ EXTERNAL_DIR = "data/external"
 TASK_DIR = "data/task"
 BIN_DIR = "data/bin"
 TOKENIZER_FILE = "artifacts/tokenizer/eve-8k.json"
-CONFIG_DIR = "configs"  # named run configs: configs/<command>/<name>.toml
+CONFIG_DIR = "configs"  # experiments/*.toml and the components' variant files
 RUNS_DIR = "artifacts/runs"
-PRETRAIN_RUN = f"{RUNS_DIR}/pretrain"  # where a run without --config or --out writes
-FINETUNE_RUN = f"{RUNS_DIR}/questions"
-PRETRAINED_MODEL = f"{RUNS_DIR}/ab-dropout0-rope-qk/model.pt"  # the best ones so far
+PRETRAIN_RUN = f"{RUNS_DIR}/pretrain"  # where a run without --out writes
+FINETUNE_RUN = f"{RUNS_DIR}/finetune"
+PRETRAINED_MODEL = f"{RUNS_DIR}/base-900m/model.pt"  # the best ones so far
 FINETUNED_MODEL = f"{RUNS_DIR}/joint-base/model.pt"
 
 # Defaults shared by the command line and the library.

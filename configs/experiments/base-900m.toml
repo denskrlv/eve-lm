@@ -1,0 +1,24 @@
+# The small recipe at ~32M parameters (M4): 850M tokens of the 900M-token corpus, ~10 h on MPS.
+# Run it with `eve run configs/experiments/base-900m.toml`.
+
+[components]
+data = "span_corruption"
+loss = "span"
+metrics = "span"
+report = "span_samples"
+
+[model]
+preset = "base"
+dropout = 0.0
+rope = true
+qk_norm = true
+
+[data]
+path = "data/bin-900m"
+
+[train]
+steps = 46682  # 850M corpus tokens: 850M // (32 * 569 tokens per window)
+compile = true
+
+[run]
+out = "artifacts/runs/base-900m"

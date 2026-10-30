@@ -1,6 +1,6 @@
-# M8, the joint run, as a full experiment: what `eve finetune --config joint-base` runs.
-# Run it with `eve run configs/experiments/joint-base.toml`; swap a component by changing
-# its name under [components] (or `--set components.loss=question`).
+# M8, the joint run: question heads and argument values together, from the base-900m
+# pretraining run. Run it with `eve run configs/experiments/joint-base.toml`; swap a component
+# by changing its name under [components] (or `--set components.loss=question`).
 
 [components]
 data = "task"
@@ -34,6 +34,3 @@ out = "artifacts/runs/joint-base"
 
 [meta]
 task = "questions"
-frozen = false
-joint = true
-init = "artifacts/runs/base-900m/model.pt"

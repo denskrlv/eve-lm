@@ -50,12 +50,7 @@ def finetune_experiment(
             "resume": resume,
             "stop_after": stop_after,
         },
-        "meta": {
-            "task": TASK,
-            "frozen": freeze,
-            "joint": joint,  # the decoder was trained to write argument values too
-            "init": str(init or "scratch"),
-        },
+        "meta": {"task": TASK, "frozen": freeze},  # joint and init: see trained_meta
     }
 
 
