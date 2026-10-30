@@ -49,7 +49,7 @@ KIND_ARGS = {  # the runtime arguments before a component's config params, per k
     "trainer": 0,  # its params are all keywords
 }
 DATA_FOR = {  # loss/metrics -> the data they read
-    "span": "span_corruption", "question": "task", "joint": "task", "retrieval": "retrieval"
+    "span": "span_corruption", "joint": "task", "retrieval": "retrieval"
 }  # fmt: skip
 BATCH_KEYS = {  # data -> keys every batch has (the first one's rows are the items)
     "span_corruption": {"enc_ids", "enc_mask", "dec_ids", "dec_mask", "dec_labels"},
@@ -283,21 +283,17 @@ def test_every_experiment_file_loads(path):
 
 
 def test_the_meta_follows_the_components_not_a_stale_table():
-    values = read(Path(defaults.CONFIG_DIR, "experiments", "joint-base.toml"))
-    joint = Experiment.from_dict(values)
-    assert trained_meta(joint) == {
+    experiments = Path(defaults.CONFIG_DIR, "experiments")
+    values = read(experiments / "joint-base.toml")
+    assert trained_meta(Experiment.from_dict(values)) == {
         "task": "questions",
         "joint": True,
         "init": "artifacts/runs/base-900m/model.pt",
     }
-    swapped = Experiment.from_dict(
-        apply_sets(values, ["components.loss=question", 'model.init="other.pt"'])
-    )
-    assert trained_meta(swapped) == {
-        "task": "questions",
-        "joint": False,
-        "init": "other.pt",
-    }
+    moved = Experiment.from_dict(apply_sets(values, ['model.init="other.pt"']))
+    assert trained_meta(moved)["init"] == "other.pt"
+    pretraining = Experiment.from_dict(read(experiments / "small-250m.toml"))
+    assert trained_meta(pretraining) == {"joint": False, "init": "scratch"}
 
 
 # --- Swapping components by config alone ---------------------------------------------------

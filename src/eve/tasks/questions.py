@@ -35,6 +35,14 @@ SCORED = {"val": "val", "heldout": "held-out"}  # on_eval's score groups and the
 
 
 def _losses(questions: Questions, batch: dict[str, torch.Tensor]) -> dict[str, torch.Tensor]:
+    """Box 8, the classifier fine-tuning loss (book ch. 6.7, ``calc_loss_batch``), for two
+    questions at once:
+
+    - ``intent``: cross-entropy of the 4-way CALL / ASK / UNSUPPORTED / NONE answer;
+    - ``slots``: the mean cross-entropy of every "what is call #i?" answer over {the prompt's
+      tools, STOP}. Slots after the last call should say STOP; NONE and UNSUPPORTED examples
+      are all STOP. An ASK whose tool is unclear has no slot labels (IGNORE).
+    """
     slots, labels = questions.slots.flatten(0, 1).float(), batch["slots"].flatten()
     if (labels != IGNORE).any():
         slot_loss = F.cross_entropy(slots, labels, ignore_index=IGNORE)
@@ -44,21 +52,6 @@ def _losses(questions: Questions, batch: dict[str, torch.Tensor]) -> dict[str, t
         "intent": F.cross_entropy(questions.intent.float(), batch["intent"]),
         "slots": slot_loss,
     }
-
-
-@register("loss", "question")
-def question_loss(model: Eve, batch: dict[str, torch.Tensor]) -> dict[str, torch.Tensor]:
-    """Box 8, the classifier fine-tuning loss (book ch. 6.7, ``calc_loss_batch``), for two
-    questions at once:
-
-    - ``intent``: cross-entropy of the 4-way CALL / ASK / UNSUPPORTED / NONE answer;
-    - ``slots``: the mean cross-entropy of every "what is call #i?" answer over {the prompt's
-      tools, STOP}. Slots after the last call should say STOP; NONE and UNSUPPORTED examples
-      are all STOP. An ASK whose tool is unclear has no slot labels (IGNORE).
-
-    Each term is a mean over its own labels, and the training loop adds them with weight 1.
-    """
-    return _losses(ask(model, batch), batch)
 
 
 def _value_loss(lm: torch.Tensor, labels: torch.Tensor) -> torch.Tensor:
@@ -84,8 +77,8 @@ def _forward(model: Eve, batch: dict[str, torch.Tensor]) -> Output:
 
 @register("loss", "joint")
 def joint_loss(model: Eve, batch: dict[str, torch.Tensor]) -> dict[str, torch.Tensor]:
-    """Box 9, the joint run: ``question_loss`` plus the instruction fine-tuning loss of book
-    ch. 7, on the decoder.
+    """Boxes 8 and 9, the joint run: the question heads' losses (``_losses``) plus the
+    instruction fine-tuning loss of book ch. 7, on the decoder.
 
     - ``values``: the mean cross-entropy of the decoder's next tokens where it writes an
       argument value (the value's tokens then ``<end>``, or ``<absent>``, or ``<ask>``). The
@@ -93,7 +86,8 @@ def joint_loss(model: Eve, batch: dict[str, torch.Tensor]) -> dict[str, torch.Te
       its labels are IGNORE, like the instruction tokens the book masks in ch. 7.5's exercise.
 
     The decoder reads the gold calls in order (teacher forcing): at inference the slot head
-    picks the tools and the decoder only writes their values.
+    picks the tools and the decoder only writes their values. Each term is a mean over its own
+    labels, and the training loop adds them with weight 1.
     """
     out = _forward(model, batch)
     assert out.questions is not None and out.lm is not None
@@ -133,7 +127,7 @@ class _Graded:
     labelled: torch.Tensor  # (B, n_slots) slots with a label
     has_slots: torch.Tensor  # (B,) the renderer labels all of an example's slots or none
     tools_right: torch.Tensor  # (B,) every slot right: the right tools in order, then STOP
-    values: torch.Tensor  # (B,) argument values in the gold calls; 0 without the decoder
+    values: torch.Tensor  # (B,) argument values in the gold calls
     values_right: torch.Tensor  # (B,) of those, the ones the decoder writes right
 
     @property
@@ -142,15 +136,10 @@ class _Graded:
         return self.intent_right & (self.tools_right | ~self.has_slots)
 
 
-def _grade(
-    questions: Questions, batch: dict[str, torch.Tensor], lm: torch.Tensor | None = None
-) -> _Graded:
+def _grade(questions: Questions, batch: dict[str, torch.Tensor], lm: torch.Tensor) -> _Graded:
     intent, slots = questions.intent.argmax(-1), questions.slots.argmax(-1)
     labelled = batch["slots"] != IGNORE
-    if lm is None:
-        values = values_right = intent.new_zeros(intent.shape)
-    else:
-        values, values_right = value_hits(lm, batch["dec_labels"])
+    values, values_right = value_hits(lm, batch["dec_labels"])
     return _Graded(
         intent=intent,
         slots=slots,
@@ -168,9 +157,9 @@ def _ratio(right: torch.Tensor, total: torch.Tensor) -> torch.Tensor:
     return right.sum().float() / total.sum().clamp(min=1)
 
 
-@register("metrics", "question")
-def question_metrics(model: Eve, batch: dict[str, torch.Tensor]) -> dict[str, torch.Tensor]:
-    """The val metrics (box 6): both losses and their sum ``loss``, plus what they mean for
+@register("metrics", "joint")
+def joint_metrics(model: Eve, batch: dict[str, torch.Tensor]) -> dict[str, torch.Tensor]:
+    """The val metrics (box 6): the losses and their sum ``loss``, plus what they mean for
     answers.
 
     - ``intent_acc``: the most likely intent is the right one (book ch. 6.6's accuracy).
@@ -179,17 +168,14 @@ def question_metrics(model: Eve, batch: dict[str, torch.Tensor]) -> dict[str, to
       STOP after the last one. Only examples with slot labels count.
     - ``exact_acc``: the intent right and, where there are slot labels, every slot right too.
     - ``call_stop_rate``: the heads disagree: intent CALL, but slot 1 says STOP (no call).
+    - ``value_acc``: the share of argument values the decoder writes right (``value_hits``),
+      ``<absent>`` and ``<ask>`` included, given the gold tools.
+    - ``full_acc``: exact, and every value of the example right too: the whole answer.
     """
-    questions = ask(model, batch)
-    return _question_metrics(model, _grade(questions, batch), _losses(questions, batch), batch)
-
-
-def _question_metrics(
-    model: Eve,
-    graded: _Graded,
-    losses: dict[str, torch.Tensor],
-    batch: dict[str, torch.Tensor],
-) -> dict[str, torch.Tensor]:
+    out = _forward(model, batch)
+    assert out.questions is not None and out.lm is not None
+    graded = _grade(out.questions, batch, out.lm)
+    losses = _losses(out.questions, batch) | {"values": _value_loss(out.lm, batch["dec_labels"])}
     return {
         **losses,
         "loss": torch.stack(list(losses.values())).sum(),
@@ -200,22 +186,6 @@ def _question_metrics(
         "call_stop_rate": _mean(
             (graded.intent == INTENTS.index("call")) & (graded.slots[:, 0] == model.cfg.max_tools)
         ),
-    }
-
-
-@register("metrics", "joint")
-def joint_metrics(model: Eve, batch: dict[str, torch.Tensor]) -> dict[str, torch.Tensor]:
-    """``question_metrics`` for the joint run: the ``values`` loss is in ``loss`` too, plus
-
-    - ``value_acc``: the share of argument values the decoder writes right (``value_hits``),
-      ``<absent>`` and ``<ask>`` included, given the gold tools.
-    - ``full_acc``: exact, and every value of the example right too: the whole answer.
-    """
-    out = _forward(model, batch)
-    assert out.questions is not None and out.lm is not None
-    graded = _grade(out.questions, batch, out.lm)
-    losses = _losses(out.questions, batch) | {"values": _value_loss(out.lm, batch["dec_labels"])}
-    return _question_metrics(model, graded, losses, batch) | {
         "value_acc": _ratio(graded.values_right, graded.values),
         "full_acc": _mean(graded.exact & (graded.values_right == graded.values)),
     }
@@ -230,7 +200,7 @@ class Outcome:
     said: str
     has_slots: bool  # the example has slot labels (an ASK with an unclear tool has none)
     tools_ok: bool  # every slot right: the right tools in order, then STOP
-    values: int = 0  # argument values in the gold calls (0 if the decoder wasn't scored)
+    values: int = 0  # argument values in the gold calls
     values_right: int = 0
 
 
@@ -260,7 +230,7 @@ class Tally:
 
     def scores(self) -> dict[str, float]:
         """The recall per intent and its mean, ``tools_acc`` and ``exact_acc``, and, if the
-        decoder was scored, ``value_acc`` and ``full_acc`` (see ``score``)."""
+        gold calls have argument values, ``value_acc`` and ``full_acc`` (see ``score``)."""
         recalls = {f"recall_{i}": self.right[i] / self.seen[i] for i in INTENTS if self.seen[i]}
         total = sum(self.seen[i] for i in INTENTS)
         out = {
@@ -276,21 +246,16 @@ class Tally:
 
 
 @torch.no_grad()
-def outcomes(
-    model: Eve, batches: Sequence[dict[str, torch.Tensor]], values: bool = True
-) -> list[Outcome]:
-    """The heads' answers for every example of ``batches``, in order, checked against gold.
-    With ``values``, the decoder's argument values are checked too (``value_hits``)."""
+def outcomes(model: Eve, batches: Sequence[dict[str, torch.Tensor]]) -> list[Outcome]:
+    """The heads' answers and the decoder's argument values (``value_hits``) for every example
+    of ``batches``, in order, checked against gold."""
     out = []
     with eval_mode(model) as device:
         for batch in batches:
             batch = to_device(batch, device)
-            if values:
-                answers = _forward(model, batch)
-                assert answers.questions is not None
-                graded = _grade(answers.questions, batch, answers.lm)
-            else:
-                graded = _grade(ask(model, batch), batch)
+            answers = _forward(model, batch)
+            assert answers.questions is not None and answers.lm is not None
+            graded = _grade(answers.questions, batch, answers.lm)
             columns = (
                 batch["intent"],
                 graded.intent,
@@ -312,21 +277,19 @@ def tally(answers: Sequence[Outcome]) -> Tally:
     return out
 
 
-def score(
-    model: Eve, batches: Sequence[dict[str, torch.Tensor]], values: bool = True
-) -> dict[str, float]:
+def score(model: Eve, batches: Sequence[dict[str, torch.Tensor]]) -> dict[str, float]:
     """Accuracy counted over all of ``batches`` at once, not averaged per batch, so rare
     classes count right. A recall per intent says how often its examples get that answer:
     val is 84% CALL, so answering CALL every time already gets 84% intent accuracy, but a
     recall of 0 for ASK, UNSUPPORTED and NONE. ``macro_recall`` is the mean of the recalls.
-    With ``values``, also ``value_acc`` and ``full_acc`` (see ``joint_metrics``).
+    Also ``value_acc`` and ``full_acc`` (see ``joint_metrics``).
     """
-    return tally(outcomes(model, batches, values)).scores()
+    return tally(outcomes(model, batches)).scores()
 
 
 def score_line(scores: dict[str, float]) -> str:
     """``macro recall 52.0% (call 90% · ask 10% · …) · tools 51.0% · exact 40.0%``, then
-    ``· values 80.0% · full 35.0%`` if the decoder was scored."""
+    ``· values 80.0% · full 35.0%`` if the set has argument values."""
     recalls = " · ".join(
         f"{k.removeprefix('recall_')} {v:.0%}" for k, v in scores.items() if k.startswith("recall_")
     )
@@ -410,12 +373,10 @@ def _shown(examples: Sequence[TaskExample]) -> list[int]:
 
 
 @register("report", "task_scores")
-def task_scores(
-    data: DataModule, tokenizer: BPETokenizer, batch_size: int, values: bool = True
-) -> Report:
+def task_scores(data: DataModule, tokenizer: BPETokenizer, batch_size: int) -> Report:
     """The fine-tuning report: at each eval, the answers for the first val example of each
-    intent, and the val and held-out-tool scores (``score``), with the decoder's values if
-    ``values``; the eval table's ``COLUMNS``, and the last scores at the end. Needs task data."""
+    intent, and the val and held-out-tool scores (``score``); the eval table's ``COLUMNS``, and
+    the last scores at the end. Needs task data."""
     del tokenizer  # the examples are rendered already
     if not isinstance(data, TaskData):
         raise TypeError(f"the task_scores report needs task data, got {type(data).__name__}")
@@ -427,7 +388,7 @@ def task_scores(
 
     def on_eval(model: Eve) -> dict[str, Any]:
         out: dict[str, Any] = {"samples": describe(model, data.val_examples, data.val, shown)}
-        out |= {key: score(model, batches, values) for key, batches in scored.items() if batches}
+        out |= {key: score(model, batches) for key, batches in scored.items() if batches}
         return out
 
     return Report(COLUMNS, on_eval, summary, HIGHLIGHTS)

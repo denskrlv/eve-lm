@@ -135,10 +135,10 @@ class Eve:
                     functions[schema.name] = function
         _check(schemas, self.max_tools)
         familiar = self._calibrations.is_familiar(schemas)
-        calibration = self._calibrations.familiar if familiar else self._calibrations.new
+        calibration = self._calibrations.for_tools(schemas)
         try:
             answers = answer_questions(
-                self._model, self._tokenizer, text.strip(), schemas, True, calibration
+                self._model, self._tokenizer, text.strip(), schemas, calibration
             )
         except (SchemaError, ValueError) as error:  # e.g. too long for the encoder
             raise EveError(str(error)) from error

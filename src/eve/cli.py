@@ -40,7 +40,7 @@ if TYPE_CHECKING:
 
 TRAIN_DEFAULTS = TrainConfig(steps=1)  # the CLI's defaults are TrainConfig's own
 DTYPE_CHOICES = list(DTYPES)
-FROZEN_LR, FULL_LR = 1e-3, 3e-4  # finetune's default lr with and without --freeze
+FINETUNE_LR = 3e-4
 ALL_VAL_BATCHES = 10_000  # finetune evaluates on all of val: it is small
 FINETUNE_WARMUP = 200
 
@@ -493,11 +493,9 @@ def _finetune_panel(
     args: argparse.Namespace, device: torch.device, lr: float, steps: int, n_train: int
 ) -> "Panel":
     """What ``finetune`` is about to do: where from, on what, how long, and where to."""
-    start = [args.init or f"{args.scratch} preset, random weights"]
-    start += ["body frozen"] if args.freeze else []
     epochs = steps * args.batch_size / n_train
     items = [
-        ("start", " · ".join(start)),
+        ("start", args.init or f"{args.scratch} preset, random weights"),
         ("task", f"{args.task} · {n_train:,} train examples"),
         ("schedule", f"{_schedule(args, lr, steps)} · {epochs:.1f} epochs"),
     ]
@@ -513,10 +511,9 @@ def finetune(args: argparse.Namespace) -> None:
         raise SystemExit("give one of --init or --scratch")
     n_train = len(read_jsonl(Path(args.task) / "train.jsonl"))
     steps = args.steps or round(args.epochs * n_train / args.batch_size)
-    lr = args.lr or (FROZEN_LR if args.freeze else FULL_LR)
-    train_cfg = _train_config(args, steps, lr, eval_batches=ALL_VAL_BATCHES)
+    train_cfg = _train_config(args, steps, args.lr, eval_batches=ALL_VAL_BATCHES)
     device = pick_device(args.device)
-    console.print(_finetune_panel(args, device, lr, steps, n_train))
+    console.print(_finetune_panel(args, device, args.lr, steps, n_train))
     values = finetune_experiment(
         train_cfg,
         args.task,
@@ -525,7 +522,6 @@ def finetune(args: argparse.Namespace) -> None:
         init=args.init,
         scratch=args.scratch,
         tokenizer_path=args.tokenizer,
-        freeze=args.freeze,
         overrides={} if args.dropout is None else {"dropout": args.dropout},
         resume=args.resume,
         stop_after=args.stop_after,
@@ -820,7 +816,6 @@ def _evaluate_panel(
     from eve.evaluate import model_file
 
     trained = [f"{meta['step']:,} steps" if "step" in meta else "? steps", f"from {meta['init']}"]
-    trained += ["body frozen"] if meta.get("frozen") else []
     items = [
         ("model", str(model_file(args.model))),
         ("trained", " ".join(trained)),
@@ -1109,12 +1104,10 @@ def _rejects_table(rejects: list[tuple[dict[str, Any], list[str]]]) -> "Table":
     return out
 
 
-def _add_schedule_args(
-    parser: argparse.ArgumentParser, lr: float | None, lr_help: str | None, warmup: int
-) -> None:
+def _add_schedule_args(parser: argparse.ArgumentParser, lr: float, warmup: int) -> None:
     """Batch size, learning rate, warmup and precision: the options both training runs take."""
     parser.add_argument("--batch-size", type=int, default=TRAIN_DEFAULTS.batch_size)
-    parser.add_argument("--lr", type=float, default=lr, help=lr_help)
+    parser.add_argument("--lr", type=float, default=lr)
     parser.add_argument("--warmup", type=int, default=warmup)
     parser.add_argument("--dtype", choices=DTYPE_CHOICES, default=TRAIN_DEFAULTS.dtype)
 
@@ -1138,13 +1131,13 @@ def _add_run_args(parser: argparse.ArgumentParser) -> None:
 
 
 def _add_set_arg(parser: argparse.ArgumentParser) -> None:
-    """``--set section.key=value``: change any experiment value, e.g. components.loss=question."""
+    """``--set section.key=value``: change any experiment value, e.g. train.lr=1e-3."""
     parser.add_argument(
         "--set",
         action="append",
         default=[],
         metavar="SECTION.KEY=VALUE",
-        help="override an experiment value (repeatable), e.g. components.loss=question",
+        help="override an experiment value (repeatable), e.g. train.lr=1e-3",
     )
 
 
@@ -1253,9 +1246,7 @@ def _add_pretrain_command(commands: Subcommands) -> None:
     parser.add_argument("--out", default=defaults.PRETRAIN_RUN)
     parser.add_argument("--tokens", default="250M", help="corpus tokens to read (sets --steps)")
     parser.add_argument("--steps", type=int, default=None, help="default: from --tokens")
-    _add_schedule_args(
-        parser, lr=TRAIN_DEFAULTS.lr, lr_help=None, warmup=TRAIN_DEFAULTS.warmup_steps
-    )
+    _add_schedule_args(parser, lr=TRAIN_DEFAULTS.lr, warmup=TRAIN_DEFAULTS.warmup_steps)
     parser.add_argument("--dropout", type=float, default=None, help="default: the preset's (0.1)")
     _add_switch(parser, "--rope", "rotary positions, no position tables")
     _add_switch(parser, "--qk-norm", "RMS-normalize queries and keys")
@@ -1269,18 +1260,12 @@ def _add_finetune_command(commands: Subcommands) -> None:
     start = parser.add_mutually_exclusive_group()  # one is required; finetune checks
     start.add_argument("--init", help="a pretraining checkpoint or an earlier finetune's model.pt")
     start.add_argument("--scratch", choices=sorted(PRESETS), help="random init (experiment E1)")
-    _add_switch(parser, "--freeze", "train only the question block (E2)")
     parser.add_argument("--task", default=defaults.TASK_DIR)
     parser.add_argument("--tokenizer", default=defaults.TOKENIZER_FILE, help="for --scratch")
     parser.add_argument("--out", default=defaults.FINETUNE_RUN)
     parser.add_argument("--epochs", type=float, default=2.0, help="sets --steps")
     parser.add_argument("--steps", type=int, default=None, help="default: from --epochs")
-    _add_schedule_args(
-        parser,
-        lr=None,
-        lr_help=f"default: {FROZEN_LR:g} frozen, else {FULL_LR:g}",
-        warmup=FINETUNE_WARMUP,
-    )
+    _add_schedule_args(parser, lr=FINETUNE_LR, warmup=FINETUNE_WARMUP)
     parser.add_argument("--dropout", type=float, default=None, help="default: the checkpoint's")
     _add_run_args(parser)
 

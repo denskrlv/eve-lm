@@ -1,6 +1,6 @@
 # M8, the joint run: question heads and argument values together, from the base-900m
 # pretraining run. Run it with `eve run configs/experiments/joint-base.toml`; swap a component
-# by changing its name under [components] (or `--set components.loss=question`).
+# by changing its name under [components] (or `--set components.optimizer=...`).
 
 [components]
 data = "task"
@@ -17,9 +17,6 @@ init = "artifacts/runs/base-900m/model.pt"
 
 [data]
 path = "data/task"
-
-[report]
-values = true
 
 [train]
 epochs = 2.0  # steps = epochs * train examples / batch_size

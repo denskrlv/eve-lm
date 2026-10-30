@@ -269,7 +269,6 @@ uv run eve data check batch-0001              # validate what it wrote
 
 ```bash
 uv run eve run configs/experiments/joint-base.toml   # intents, tools and values: the main recipe
-uv run eve finetune --init artifacts/runs/base-900m/model.pt --freeze --out artifacts/runs/frozen   # question block only
 uv run eve finetune --scratch small --out artifacts/runs/scratch   # no pretraining, for comparison
 ```
 
@@ -311,9 +310,8 @@ out = "artifacts/runs/joint-base"
 
 ```bash
 uv run eve run configs/experiments/joint-base.toml
-uv run eve run configs/experiments/joint-base.toml --set components.loss=question \
-  --set components.metrics=question --set report.values=false --set train.lr=1e-3 \
-  --set run.out=artifacts/runs/questions-only
+uv run eve run configs/experiments/joint-base.toml --set train.lr=1e-3 \
+  --set train.warmup_steps=500 --set run.out=artifacts/runs/joint-lr1e-3
 ```
 
 Params are layered, later ones winning: the component's file in `configs/components/`, the experiment's table, then `--set section.key=value`. An unknown param stops the run instead of being ignored. Every run writes its resolved experiment to `<out>/config.toml`, so `eve run <out>/config.toml` repeats it; `last.pt` holds the weights, optimizer and RNG states, so `--set run.resume=true` continues exactly. The checkpoints' meta says whether the joint loss trained them (`joint`) and where they started (`init`), taken from the components, so a `--set` can't leave it stale.
