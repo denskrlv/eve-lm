@@ -1,6 +1,6 @@
 # Requests no tool in the library can do (intent "unsupported", with random tools in the
-# prompt). Keep math and travel out of here: those are the held-out domains, and the model must
-# not learn that "book a flight" is always unsupported.
+# prompt). Keep out what a library tool does (math too, since 2026-10-28) and travel, the
+# held-out domain: the model must not learn that "book a flight" is always unsupported.
 order me a pizza
 book a table for two at 8
 book me a ride to the airport
