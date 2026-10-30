@@ -10,11 +10,15 @@ from torch import nn
 
 from eve import registry
 from eve.config import preset as preset_config
-from eve.model.checkpoint import QUESTION_FIELDS, Checkpoint, load_checkpoint, load_pretrained
+from eve.model.checkpoint import (
+    QUESTION_FIELDS,
+    QUESTIONS_TASK,
+    Checkpoint,
+    load_checkpoint,
+    load_pretrained,
+)
 from eve.model.eve import Eve
 from eve.tokenizer.bpe import BPETokenizer
-
-QUESTIONS_TASK = "questions"  # meta["task"] of a question run's checkpoints (tasks.questions)
 
 
 @dataclass

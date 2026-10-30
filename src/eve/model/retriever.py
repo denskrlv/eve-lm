@@ -23,7 +23,7 @@ from torch.nn import functional as F
 from eve.config import ModelConfig
 from eve.data.render import bucket
 from eve.data.schema import Tool
-from eve.model.attention import MultiHeadAttention
+from eve.model.attention import set_sdpa
 from eve.model.blocks import EncoderBlock, LayerNorm
 from eve.model.checkpoint import Checkpoint, _read
 from eve.model.embeddings import Embeddings
@@ -147,9 +147,7 @@ class Retriever(nn.Module):
 
     def set_sdpa(self, enabled: bool) -> None:
         """Switch every attention layer to PyTorch's fused kernel (fast) or the manual path."""
-        for m in self.modules():
-            if isinstance(m, MultiHeadAttention):
-                m.use_sdpa = enabled
+        set_sdpa(self, enabled)
 
     @property
     def scale(self) -> torch.Tensor:

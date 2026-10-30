@@ -13,7 +13,7 @@ from eve.components import DataModule
 from eve.config import INTENTS, STOP
 from eve.data.modules import TaskData, in_batches
 from eve.data.render import IGNORE, Rendered, TaskCollator, TaskDataset, TaskExample
-from eve.model.build import QUESTIONS_TASK
+from eve.model.checkpoint import QUESTIONS_TASK
 from eve.model.eve import Eve, Output, Questions, ask
 from eve.registry import register
 from eve.runtime import eval_mode, to_device
@@ -62,8 +62,8 @@ def _value_loss(lm: torch.Tensor, labels: torch.Tensor) -> torch.Tensor:
     return F.cross_entropy(lm.flatten(0, 1).float(), labels.flatten(), ignore_index=IGNORE)
 
 
-def _forward(model: Eve, batch: dict[str, torch.Tensor]) -> Output:
-    """One encoder pass for both the question block and the decoder."""
+def forward_batch(model: Eve, batch: dict[str, torch.Tensor]) -> Output:
+    """One encoder pass of a task batch for both the question block and the decoder."""
     out: Output = model(
         batch["enc_ids"],
         batch["enc_mask"],
@@ -89,7 +89,7 @@ def joint_loss(model: Eve, batch: dict[str, torch.Tensor]) -> dict[str, torch.Te
     picks the tools and the decoder only writes their values. Each term is a mean over its own
     labels, and the training loop adds them with weight 1.
     """
-    out = _forward(model, batch)
+    out = forward_batch(model, batch)
     assert out.questions is not None and out.lm is not None
     return {**_losses(out.questions, batch), "values": _value_loss(out.lm, batch["dec_labels"])}
 
@@ -172,7 +172,7 @@ def joint_metrics(model: Eve, batch: dict[str, torch.Tensor]) -> dict[str, torch
       ``<absent>`` and ``<ask>`` included, given the gold tools.
     - ``full_acc``: exact, and every value of the example right too: the whole answer.
     """
-    out = _forward(model, batch)
+    out = forward_batch(model, batch)
     assert out.questions is not None and out.lm is not None
     graded = _grade(out.questions, batch, out.lm)
     losses = _losses(out.questions, batch) | {"values": _value_loss(out.lm, batch["dec_labels"])}
@@ -253,7 +253,7 @@ def outcomes(model: Eve, batches: Sequence[dict[str, torch.Tensor]]) -> list[Out
     with eval_mode(model) as device:
         for batch in batches:
             batch = to_device(batch, device)
-            answers = _forward(model, batch)
+            answers = forward_batch(model, batch)
             assert answers.questions is not None and answers.lm is not None
             graded = _grade(answers.questions, batch, answers.lm)
             columns = (

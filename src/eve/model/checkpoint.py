@@ -12,10 +12,20 @@ from eve.model.eve import Eve
 from eve.tokenizer.bpe import BPETokenizer
 
 FORMAT = "eve-ckpt-1"
+MODEL_FILE = "model.pt"  # a run directory's final model, and an exported model's checkpoint
+RETRIEVER_FILE = "retriever.pt"  # an exported model's retriever (M11), beside its model.pt
+QUESTIONS_TASK = "questions"  # meta["task"] of a question run's checkpoints (tasks.questions)
+RETRIEVAL_TASK = "retrieval"  # meta["task"] of a retriever run's checkpoints (tasks.retrieval)
 FRESH = "questions."  # the question block: pretraining never trains it, fine-tuning starts it new
 QUESTION_FIELDS = frozenset(  # config fields that change no pretrained weight's shape
     {"n_question_layers", "n_slots", "max_tools", "pointer_dim", "dropout"}
 )
+
+
+def model_file(path: str | Path) -> Path:
+    """A checkpoint path as given, or the final model of a run directory."""
+    path = Path(path)
+    return path / MODEL_FILE if path.is_dir() else path
 
 
 @dataclass

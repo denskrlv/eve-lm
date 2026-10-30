@@ -12,7 +12,13 @@ from typing import Any
 
 import torch
 
-from eve.model.checkpoint import load_checkpoint, save_checkpoint
+from eve.model.checkpoint import (
+    MODEL_FILE,
+    RETRIEVAL_TASK,
+    RETRIEVER_FILE,
+    load_checkpoint,
+    save_checkpoint,
+)
 
 DTYPES = {"float32": torch.float32, "float16": torch.float16, "bfloat16": torch.bfloat16}
 METRICS = {  # the validation scores shown in the model card, by meta key
@@ -40,15 +46,16 @@ def export_model(
     out = Path(out)
     meta = checkpoint.meta | {"dtype": dtype, "exported_from": str(model)}
     save_checkpoint(
-        out / "model.pt", checkpoint.model.to(DTYPES[dtype]), checkpoint.tokenizer, meta
+        out / MODEL_FILE, checkpoint.model.to(DTYPES[dtype]), checkpoint.tokenizer, meta
     )
     params = sum(p.numel() for p in checkpoint.model.parameters())
     if retriever is not None:
         found = load_checkpoint(retriever)
-        if found.meta.get("task") != "retrieval":
+        if found.meta.get("task") != RETRIEVAL_TASK:
             raise ValueError(f"{retriever} isn't a retriever")
         extra = found.meta | {"dtype": dtype, "exported_from": str(retriever)}
-        save_checkpoint(out / "retriever.pt", found.model.to(DTYPES[dtype]), found.tokenizer, extra)
+        weights = found.model.to(DTYPES[dtype])
+        save_checkpoint(out / RETRIEVER_FILE, weights, found.tokenizer, extra)
     (out / "README.md").write_text(model_card(meta, params, repo, retriever is not None))
     return out
 

@@ -95,8 +95,12 @@ def _parquet_files(pattern: str) -> list[str]:
     return paths
 
 
-def info(_: argparse.Namespace) -> None:
-    """Print the torch version, the device, and each preset's size."""
+def info(args: argparse.Namespace) -> None:
+    """Print the torch version, the device, each preset's size, and (M3) its parameters per
+    part and memory size, like the book's count in ch. 4.6."""
+    from eve.config import preset
+    from eve.model.eve import Eve
+
     console.print(rows([("torch", torch.__version__), ("device", str(pick_device()))]))
     console.print()
     presets = table("preset", "d_model", "heads", "encoder", "decoder", "questions", "params")
@@ -110,12 +114,7 @@ def info(_: argparse.Namespace) -> None:
             f"{cfg.approx_params() / 1e6:.1f}M",
         )
     console.print(presets)
-
-
-def model(args: argparse.Namespace) -> None:
-    """Learn (M3): parameters per part and memory size, like the book's count in ch. 4.6."""
-    from eve.config import preset
-    from eve.model.eve import Eve
+    console.print()
 
     names = [args.preset] if args.preset else list(PRESETS)
     counts = {name: Eve(preset(name)).parameter_counts() for name in names}
@@ -447,14 +446,15 @@ def _print_fill_report(
 def export(args: argparse.Namespace) -> None:
     """Publish (M10): write a fine-tuned model and its model card for a Hugging Face Hub repo."""
     from eve.export import export_model
+    from eve.model.checkpoint import MODEL_FILE, RETRIEVER_FILE
 
     try:
         out = export_model(args.model, args.out, args.dtype, args.repo, args.retriever)
     except ValueError as error:
         raise SystemExit(str(error)) from None
-    size = (out / "model.pt").stat().st_size / 1e6
-    extra = " · retriever.pt" if args.retriever else ""
-    success(f"model.pt ({size:.0f} MB, {args.dtype}){extra} and README.md", out)
+    size = (out / MODEL_FILE).stat().st_size / 1e6
+    extra = f" · {RETRIEVER_FILE}" if args.retriever else ""
+    success(f"{MODEL_FILE} ({size:.0f} MB, {args.dtype}){extra} and README.md", out)
     console.print(Text(f"upload: hf upload {args.repo} {out} .", style="dim"))
 
 
@@ -640,7 +640,7 @@ def _evaluate_panel(
     args: argparse.Namespace, meta: dict[str, Any], device: torch.device
 ) -> "Panel":
     """Which model is scored, how it was trained, and on what."""
-    from eve.evaluate import model_file
+    from eve.model.checkpoint import model_file
 
     trained = [f"{meta['step']:,} steps" if "step" in meta else "? steps", f"from {meta['init']}"]
     items = [
@@ -779,8 +779,9 @@ def calibrate(args: argparse.Namespace) -> None:
         save_calibration,
     )
     from eve.data.generate.build import Sources
-    from eve.evaluate import load_questions_model, model_file, task_files
+    from eve.evaluate import load_questions_model, task_files
     from eve.infer.predict import Calibrations
+    from eve.model.checkpoint import model_file
 
     device = pick_device(args.device)
     fit_on = {"familiar": args.fit_familiar, "new": args.fit_new}
@@ -969,10 +970,14 @@ def _add_set_arg(parser: argparse.ArgumentParser) -> None:
 
 
 def _add_model_commands(commands: Subcommands) -> None:
-    commands.add_parser("info", help="show the device and model presets").set_defaults(run=info)
-    parser = commands.add_parser("model", help="parameters per part of a preset (M3)")
-    parser.set_defaults(run=model)
-    parser.add_argument("--preset", choices=sorted(PRESETS), default=None, help="default: all")
+    parser = commands.add_parser("info", help="the device, and the model presets' sizes (M3)")
+    parser.set_defaults(run=info)
+    parser.add_argument(
+        "--preset",
+        choices=sorted(PRESETS),
+        default=None,
+        help="parameters per part of only this one",
+    )
 
 
 def _add_tokenizer_commands(commands: Subcommands) -> None:
@@ -1064,6 +1069,8 @@ def _add_run_command(commands: Subcommands) -> None:
 
 
 def _add_inspect_commands(commands: Subcommands) -> None:
+    from eve.export import DTYPES as EXPORT_DTYPES
+
     parser = commands.add_parser("ask", help="ask the model about a request (M7, M8)")
     parser.set_defaults(run=ask)
     parser.add_argument("text", nargs="*", help="requests; none: type them one by one")
@@ -1086,7 +1093,7 @@ def _add_inspect_commands(commands: Subcommands) -> None:
     parser.set_defaults(run=export)
     parser.add_argument("model", nargs="?", default=defaults.FINETUNED_MODEL)
     parser.add_argument("--out", default="dist/model", help="the directory to write")
-    parser.add_argument("--dtype", choices=["float16", "bfloat16", "float32"], default="float16")
+    parser.add_argument("--dtype", choices=list(EXPORT_DTYPES), default="float16")
     parser.add_argument("--repo", default="<user>/<repo>", help="the Hub repo, for the card")
     parser.add_argument("--retriever", default=None, help="a retriever model.pt to ship with it")
 

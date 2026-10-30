@@ -9,8 +9,8 @@ from eve.config import INTENTS, preset
 from eve.data.modules import VAL_SEED, in_batches, load_examples
 from eve.data.render import Call, TaskCollator, TaskDataset, TaskExample
 from eve.data.schema import Tool
-from eve.evaluate import by_tool, evaluate_set, load_questions_model, model_file, task_files
-from eve.model.checkpoint import save_checkpoint
+from eve.evaluate import by_tool, evaluate_set, load_questions_model, task_files
+from eve.model.checkpoint import model_file, save_checkpoint
 from eve.model.eve import Eve
 from eve.tasks.questions import TASK, Outcome, score
 from eve.tokenizer.bpe import BPETokenizer

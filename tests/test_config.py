@@ -53,11 +53,11 @@ def test_pick_device_respects_explicit_name():
 def test_info_command(capsys):
     main(["info"])
     out = capsys.readouterr().out
-    assert "small" in out and "base" in out
+    assert "small" in out and "base" in out and "MB (fp32)" in out
 
 
-def test_model_command_counts_parameters_per_part(capsys):
-    main(["model", "--preset", "tiny"])
+def test_info_counts_one_presets_parameters_per_part(capsys):
+    main(["info", "--preset", "tiny"])
     out = capsys.readouterr().out
     assert "embeddings" in out and "total" in out and "MB (fp32)" in out
 

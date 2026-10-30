@@ -168,7 +168,7 @@ For training and development. Requires Python 3.12+ and [uv](https://docs.astral
 git clone https://github.com/denskrlv/eve-lm.git && cd eve-lm
 uv sync
 uv run pytest            # about 390 tests, 30 s on a laptop
-uv run eve model         # parameters per part of each preset
+uv run eve info          # the device, and each preset's parameters per part
 ```
 
 Published weights are coming soon. Until then, `eve ask` and `Eve.load` need a model you trained: follow [Training](#training) below.

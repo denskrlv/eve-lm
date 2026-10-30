@@ -5,7 +5,7 @@ import torch
 from torch import nn
 
 from eve.config import ModelConfig
-from eve.model.attention import MultiHeadAttention
+from eve.model.attention import set_sdpa
 from eve.model.blocks import DecoderBlock, EncoderBlock, LayerNorm
 from eve.model.embeddings import Embeddings
 from eve.registry import register
@@ -179,9 +179,7 @@ class Eve(nn.Module):
 
     def set_sdpa(self, enabled: bool) -> None:
         """Switch every attention layer to PyTorch's fused kernel (fast) or the manual path."""
-        for m in self.modules():
-            if isinstance(m, MultiHeadAttention):
-                m.use_sdpa = enabled
+        set_sdpa(self, enabled)
 
     def parameter_counts(self) -> dict[str, int]:
         """Parameters per part, like the book's count in ch. 4.6. The LM head has none of its

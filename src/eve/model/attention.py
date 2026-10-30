@@ -204,3 +204,11 @@ class MultiHeadAttention(nn.Module):
             past = torch.ones(n_q, n_kv, dtype=torch.bool, device=device).tril()
             allowed = past if allowed is None else allowed & past
         return allowed
+
+
+def set_sdpa(model: nn.Module, enabled: bool) -> None:
+    """Switch every attention layer of ``model`` to PyTorch's fused kernel (fast) or the manual
+    path."""
+    for m in model.modules():
+        if isinstance(m, MultiHeadAttention):
+            m.use_sdpa = enabled

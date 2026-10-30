@@ -11,7 +11,7 @@ from eve.api.toolbox import BM25, Dense, Scorer, ToolBox
 from eve.api.tools import ToolLike, to_tool
 from eve.data.schema import SchemaError, Tool
 from eve.infer.predict import Calibrations, answer_questions
-from eve.model.checkpoint import FORMAT, Checkpoint, load_checkpoint
+from eve.model.checkpoint import FORMAT, RETRIEVAL_TASK, Checkpoint, load_checkpoint
 from eve.runtime import pick_device
 
 
@@ -71,7 +71,7 @@ class Eve:
         checkpoint = _load(path, torch_device)
         found = companion(source, revision) if retriever == "auto" else retriever
         extra = None if found is None else _load(resolve(found), torch_device)
-        if extra is not None and extra.meta.get("task") != "retrieval":
+        if extra is not None and extra.meta.get("task") != RETRIEVAL_TASK:
             raise CheckpointError(f"{found} isn't a retriever")
         return cls(checkpoint, str(source), extra)
 
