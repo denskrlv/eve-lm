@@ -73,5 +73,5 @@ files = ["src"]
 untyped_calls_exclude = ["torch"]  # e.g. Tensor.backward has no annotations
 
 [[tool.mypy.overrides]]
-module = ["pyarrow", "pyarrow.*"]
+module = ["pyarrow", "pyarrow.*", "yaml"]
 ignore_missing_imports = true
