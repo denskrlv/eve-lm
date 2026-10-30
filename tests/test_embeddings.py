@@ -19,7 +19,7 @@ def test_shapes_and_positions():
 
 
 def test_parameter_count_matches_config():
-    cfg = preset("small")
+    cfg = preset("eve-32m")
     n = sum(p.numel() for p in Embeddings(cfg).parameters())
     assert n == (cfg.vocab_size + cfg.max_encoder_len + cfg.max_decoder_len) * cfg.d_model
 

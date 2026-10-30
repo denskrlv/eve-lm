@@ -4,7 +4,7 @@ from pathlib import Path
 from eve.api.errors import CheckpointError
 from eve.model.checkpoint import MODEL_FILE, RETRIEVER_FILE
 
-REPO_ID = re.compile(r"[\w.-]+/[\w.-]+")  # "user/eve-joint-base"
+REPO_ID = re.compile(r"[\w.-]+/[\w.-]+")  # "user/eve-32m"
 
 
 def resolve(source: str | Path, revision: str | None = None) -> Path:

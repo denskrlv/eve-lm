@@ -284,15 +284,15 @@ def test_every_experiment_file_loads(path):
 
 def test_the_meta_follows_the_components_not_a_stale_table():
     experiments = Path(defaults.CONFIG_DIR, "experiments")
-    values = read(experiments / "joint-base.toml")
+    values = read(experiments / "eve-32m.toml")
     assert trained_meta(Experiment.from_dict(values)) == {
         "task": "questions",
         "joint": True,
-        "init": "artifacts/runs/base-900m/model.pt",
+        "init": "artifacts/runs/eve-32m-pretrain/model.pt",
     }
     moved = Experiment.from_dict(apply_sets(values, ['model.init="other.pt"']))
     assert trained_meta(moved)["init"] == "other.pt"
-    pretraining = Experiment.from_dict(read(experiments / "small-250m.toml"))
+    pretraining = Experiment.from_dict(read(experiments / "eve-32m-pretrain.toml"))
     assert trained_meta(pretraining) == {"joint": False, "init": "scratch"}
 
 

@@ -18,7 +18,7 @@ from eve.runtime import pick_device
 class Eve:
     """A fine-tuned Eve model, ready to answer requests::
 
-    eve = Eve.load("artifacts/runs/joint-base/model.pt")
+    eve = Eve.load("artifacts/runs/eve-32m/model.pt")
     eve.add_tools(set_lights, set_thermostat, play_music)  # once
     response = eve.respond("turn off the kitchen lights")
     if response.intent == "call":
@@ -57,7 +57,7 @@ class Eve:
         retriever: str | Path | None = "auto",
     ) -> "Eve":
         """The model in ``source``: a checkpoint file, a directory holding ``model.pt``, or a
-        Hugging Face Hub repo id (``"user/eve-joint-base"``, cached after the first download).
+        Hugging Face Hub repo id (``"user/eve-32m"``, cached after the first download).
 
         ``device`` is ``"cpu"`` (the default), ``"cuda"``, ``"mps"`` or ``"auto"`` (the
         fastest there is). ``revision`` pins a Hub branch, tag or commit.

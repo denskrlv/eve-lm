@@ -17,16 +17,14 @@ def test_presets_are_valid():
 
 
 def test_preset_sizes_match_the_plan():
-    assert 11e6 < preset("small").approx_params() < 13.5e6
-    assert 29e6 < preset("base").approx_params() < 34e6
-    assert 50e6 < preset("medium").approx_params() < 60e6
+    assert 29e6 < preset("eve-32m").approx_params() < 34e6
     assert preset("tiny").approx_params() < 1e6
 
 
 def test_preset_overrides_do_not_change_the_preset():
-    cfg = preset("small", dropout=0.0)
+    cfg = preset("eve-32m", dropout=0.0)
     assert cfg.dropout == 0.0
-    assert PRESETS["small"].dropout == 0.1
+    assert PRESETS["eve-32m"].dropout == 0.1
 
 
 def test_unknown_preset():
@@ -53,7 +51,7 @@ def test_pick_device_respects_explicit_name():
 def test_info_command(capsys):
     main(["info"])
     out = capsys.readouterr().out
-    assert "small" in out and "base" in out and "MB (fp32)" in out
+    assert "tiny" in out and "eve-32m" in out and "MB (fp32)" in out
 
 
 def test_info_counts_one_presets_parameters_per_part(capsys):

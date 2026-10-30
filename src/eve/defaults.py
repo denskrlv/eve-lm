@@ -12,8 +12,8 @@ CONFIG_DIR = "configs"  # experiments/*.toml and the components' variant files
 RUNS_DIR = "artifacts/runs"
 PRETRAIN_RUN = f"{RUNS_DIR}/pretrain"  # where a run without --out writes
 FINETUNE_RUN = f"{RUNS_DIR}/finetune"
-PRETRAINED_MODEL = f"{RUNS_DIR}/base-900m/model.pt"  # the best ones so far
-FINETUNED_MODEL = f"{RUNS_DIR}/joint-base/model.pt"
+PRETRAINED_MODEL = f"{RUNS_DIR}/eve-32m-pretrain/model.pt"
+FINETUNED_MODEL = f"{RUNS_DIR}/eve-32m/model.pt"
 
 # Defaults shared by the command line and the library.
 TOKENIZER_WEIGHT = 50  # how many times tool schemas and commands count in tokenizer training

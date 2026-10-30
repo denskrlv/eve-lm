@@ -103,7 +103,7 @@ OPTIONS = {"rope": True, "qk_norm": True}
 
 @pytest.mark.parametrize(
     "name, overrides",
-    [("tiny", {}), ("small", {}), ("base", {}), ("tiny", OPTIONS), ("small", OPTIONS)],
+    [("tiny", {}), ("eve-32m", {}), ("tiny", OPTIONS), ("eve-32m", OPTIONS)],
 )
 def test_parameter_count_matches_config(name, overrides):
     cfg = preset(name, **overrides)

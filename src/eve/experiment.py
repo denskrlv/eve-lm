@@ -8,12 +8,12 @@ where the run writes (``[run]``)::
     data = "task"
     loss = "joint"          # swap a component: change its name here
     [model]
-    init = "artifacts/runs/base-900m/model.pt"
+    init = "artifacts/runs/eve-32m-pretrain/model.pt"
     [train]
     epochs = 2.0            # or steps
     lr = 3e-4
     [run]
-    out = "artifacts/runs/joint-base"
+    out = "artifacts/runs/eve-32m"
 
 Params are layered, later ones winning: the component's variant file
 ``configs/components/<kind>/<name>.toml``, then the experiment's ``[<kind>]`` table, then

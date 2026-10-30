@@ -14,7 +14,7 @@ first, then tools whose arguments have the same types, then random ones. The sco
 - ``recall@5``: the share of correct tools in the top 5;
 - ``mrr``: 1 / the rank of the best-ranked correct tool, averaged.
 
-Training (``eve run configs/experiments/retriever-base.toml``): each request of a CALL or ASK
+Training (``eve run configs/experiments/eve-32m-retriever.toml``): each request of a CALL or ASK
 example is paired with each of its correct tools. The loss is InfoNCE: the request's cosine
 with its tool, against every other tool in the batch, the first ``hard_negatives`` of the
 example's own distractors among them (hard negatives: the generator picked them to look

@@ -856,7 +856,7 @@ def data_build(args: argparse.Namespace) -> None:
         args.heldout,
         args.seed,
         tokenizer,
-        preset("small"),
+        preset("eve-32m"),
     )
     console.print(_splits_table(report["splits"]))
     if rejected := report["rejected_chat_lines"]:
@@ -1016,7 +1016,7 @@ def _add_corpus_command(commands: Subcommands) -> None:
     parser.add_argument("--parquet", default=defaults.PARQUET_GLOB)
     parser.add_argument("--tokenizer", default=defaults.TOKENIZER_FILE)
     parser.add_argument("--out", default=defaults.BIN_DIR)
-    parser.add_argument("--train-tokens", default="250M")
+    parser.add_argument("--train-tokens", default="900M")
     parser.add_argument("--val-tokens", default="2M")
     parser.add_argument("--workers", type=int, default=None)
     parser.add_argument(
@@ -1031,11 +1031,11 @@ def _add_corpus_command(commands: Subcommands) -> None:
 def _add_pretrain_command(commands: Subcommands) -> None:
     parser = commands.add_parser("pretrain", help="span-corruption pretraining (M4)")
     parser.set_defaults(run=pretrain)
-    parser.add_argument("--preset", choices=sorted(PRESETS), default="small")
+    parser.add_argument("--preset", choices=sorted(PRESETS), default="eve-32m")
     parser.add_argument("--data", default=defaults.BIN_DIR)
     parser.add_argument("--tokenizer", default=defaults.TOKENIZER_FILE)
     parser.add_argument("--out", default=defaults.PRETRAIN_RUN)
-    parser.add_argument("--tokens", default="250M", help="corpus tokens to read (sets --steps)")
+    parser.add_argument("--tokens", default="850M", help="corpus tokens to read (sets --steps)")
     parser.add_argument("--steps", type=int, default=None, help="default: from --tokens")
     _add_schedule_args(parser, lr=TRAIN_DEFAULTS.lr, warmup=TRAIN_DEFAULTS.warmup_steps)
     parser.add_argument("--dropout", type=float, default=None, help="default: the preset's (0.1)")

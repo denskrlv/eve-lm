@@ -52,7 +52,7 @@ The second request names no room, so Eve answers **ask** and marks `room` as the
 
 ## Results
 
-`joint-base`: the ~32M `base` model pretrained on 850M tokens, then fine-tuned for 8,038 steps on intents, tools and argument values together.
+`eve-32m`, first training run: ~32M parameters, pretrained on 850M tokens, then fine-tuned for 8,038 steps on intents, tools and argument values together. A run on the current data, with math trained on and TinyTools, comes next.
 
 | Eval set | What it measures | Exact ↑ | Macro recall ↑ | Values ↑ | Full call ↑ |
 |---|---|---|---|---|---|
@@ -94,14 +94,14 @@ A request counts as *familiar* when every tool's schema fingerprint is in the tr
 | M1 | Tokenizer, pretraining corpus, span corruption, task renderer | ✅ |
 | M2 | Self, causal and cross attention | ✅ |
 | M3 | Encoder, value decoder, question block | ✅ |
-| M4 | Span-corruption pretraining | ✅ `small-250m`, `base-900m` |
+| M4 | Span-corruption pretraining | ✅ |
 | M5 | Checkpoints and loading pretrained weights | ✅ |
 | M6 | Tool library and task data | ✅ |
-| M7 | Classifier fine-tuning: the question heads | ✅ `questions-base` |
-| M8 | Instruction fine-tuning: value decoder, joint run | ✅ `joint-base` |
+| M7 | Classifier fine-tuning: the question heads | ✅ |
+| M8 | Instruction fine-tuning: value decoder, joint run | ✅ `eve-32m` |
 | M9 | Metrics and calibration | ✅ |
 | M10 | Python library (`Eve.load`, `eve.respond`) and inference on a Raspberry Pi 5 | 🚧 library done; PyPI release, weights and Pi coming soon |
-| M11 | Retriever that picks the 1–5 tools to show the model | ✅ `retriever-base` |
+| M11 | Retriever that picks the 1–5 tools to show the model | ✅ `eve-32m-retriever` |
 | – | TinyTools pretraining corpus | 🚧 round 1: converting existing datasets |
 
 ## Use it in Python
@@ -126,7 +126,7 @@ def play_music(query: str, speaker: Literal["kitchen", "living room"] | None = N
     """Play a song, artist or genre."""
     ...
 
-eve = Eve.load("artifacts/runs/joint-base/model.pt")  # or a Hugging Face Hub repo id
+eve = Eve.load("artifacts/runs/eve-32m/model.pt")  # or a Hugging Face Hub repo id
 eve.add_tools(set_lights, play_music)  # once; eve.tools.save("tools.json") keeps the schemas
 response = eve.respond("turn off the kitchen lights")
 
@@ -181,11 +181,11 @@ The whole pipeline, from raw text to a calibrated model. Each command writes whe
 |---|---|
 | 1. Tokenizer: 8k byte-level BPE on web text, tool schemas and commands | `uv run eve tokenizer train` |
 | 2. Pretraining corpus: FineWeb-Edu to token ids | `uv run eve corpus encode` |
-| 3. Pretrain with span corruption | `uv run eve run configs/experiments/base-900m.toml` |
+| 3. Pretrain with span corruption | `uv run eve run configs/experiments/eve-32m-pretrain.toml` |
 | 4. Task data: hand-written tools, templates, chat-written requests, xLAM, MASSIVE | `uv run eve data external && uv run eve data build` |
-| 5. Fine-tune intents, tools and values together | `uv run eve run configs/experiments/joint-base.toml` |
-| 6. Evaluate | `uv run eve evaluate artifacts/runs/joint-base` |
-| 7. Fit and save the temperatures | `uv run eve calibrate artifacts/runs/joint-base --save` |
+| 5. Fine-tune intents, tools and values together | `uv run eve run configs/experiments/eve-32m.toml` |
+| 6. Evaluate | `uv run eve evaluate artifacts/runs/eve-32m` |
+| 7. Fit and save the temperatures | `uv run eve calibrate artifacts/runs/eve-32m --save` |
 | 8. Try it | `uv run eve ask --tools set_lights,play_music "turn off the kitchen lights"` |
 
 <details>
@@ -193,17 +193,16 @@ The whole pipeline, from raw text to a calibrated model. Each command writes whe
 
 <br/>
 
-Pretraining uses one [FineWeb-Edu](https://huggingface.co/datasets/HuggingFaceFW/fineweb-edu) shard (about 700M tokens) for `small-250m`; `base-900m` needs two.
+Pretraining uses two [FineWeb-Edu](https://huggingface.co/datasets/HuggingFaceFW/fineweb-edu) shards (about 700M tokens each).
 
 ```bash
 mkdir -p data/raw/fineweb-edu
 curl -L -o data/raw/fineweb-edu/000_00000.parquet \
   https://huggingface.co/datasets/HuggingFaceFW/fineweb-edu/resolve/main/sample/10BT/000_00000.parquet
-uv run eve tokenizer train                  # -> artifacts/tokenizer/eve-8k.json
-uv run eve corpus encode                    # 250M train + 2M val tokens -> data/bin/
 curl -L -o data/raw/fineweb-edu/001_00000.parquet \
   https://huggingface.co/datasets/HuggingFaceFW/fineweb-edu/resolve/main/sample/10BT/001_00000.parquet
-uv run eve corpus encode --train-tokens 900M --out data/bin-900m   # for base-900m: both shards
+uv run eve tokenizer train                  # -> artifacts/tokenizer/eve-8k.json
+uv run eve corpus encode                    # 900M train + 2M val tokens -> data/bin/
 ```
 
 Fine-tuning mixes in two external datasets, converted to Eve's format with the held-out domains removed: [xLAM function-calling 60k](https://huggingface.co/datasets/Salesforce/xlam-function-calling-60k) (gated: accept its terms on Hugging Face first) and [MASSIVE](https://github.com/alexa/massive) en-US (CC BY 4.0).
@@ -227,20 +226,19 @@ uv run eve data build                       # -> data/task/*.jsonl
 T5-style span corruption: spans of the input are replaced with sentinels (`<x0>`, `<x1>`, …) and the decoder writes them back. It trains the encoder and the decoder, the parts fine-tuning starts from.
 
 ```bash
-uv run eve run configs/experiments/small-250m.toml   # ~12M parameters, 250M tokens, 13,730 steps
-uv run eve run configs/experiments/base-900m.toml    # ~32M parameters, 850M tokens, 46,682 steps
-uv run eve run configs/experiments/base-900m.toml --set run.resume=true   # continue after an interruption
-uv run eve pretrain --preset small --rope --qk-norm --lr 2e-3 --stop-after 2000 --out artifacts/runs/ab-lr2e-3
+uv run eve run configs/experiments/eve-32m-pretrain.toml   # 850M tokens, 46,682 steps
+uv run eve run configs/experiments/eve-32m-pretrain.toml --set run.resume=true   # continue after an interruption
+uv run eve pretrain --rope --qk-norm --lr 2e-3 --stop-after 2000 --out artifacts/runs/ab-lr2e-3
 ```
 
-Both recipes came out of A/B runs at the small size: no dropout, rotary positions and QK-norm, and `torch.compile` (about 2× faster on MPS). An A/B arm uses the full run's schedule and stops early, so the winner continues with `--resume`. The number to watch is `val_content`, the loss on the words inside the holes only.
+The recipe came out of A/B runs at ~12M parameters: no dropout, rotary positions and QK-norm, and `torch.compile` (about 2× faster on MPS). An A/B arm uses the full run's schedule and stops early, so the winner continues with `--resume`. The number to watch is `val_content`, the loss on the words inside the holes only.
 
 ```bash
 uv run eve fill "Paris is the capital of <x0>."   # prompt a pretrained model
 uv run eve compare artifacts/runs/ab-*            # val metrics of several runs side by side
 ```
 
-[`notebooks/kaggle-train.ipynb`](notebooks/kaggle-train.ipynb) runs the same pipeline on a free Kaggle T4. `base-900m` takes 10–11 hours, on a T4 or on an M3 Pro alike.
+[`notebooks/kaggle-train.ipynb`](notebooks/kaggle-train.ipynb) runs the same pipeline on a free Kaggle T4. Pretraining takes 10–11 hours, on a T4 or on an M3 Pro alike.
 
 </details>
 
@@ -268,15 +266,15 @@ uv run eve data check batch-0001              # validate what it wrote
 <br/>
 
 ```bash
-uv run eve run configs/experiments/joint-base.toml   # intents, tools and values: the main recipe
-uv run eve finetune --scratch small --out artifacts/runs/scratch   # no pretraining, for comparison
+uv run eve run configs/experiments/eve-32m.toml   # intents, tools and values: the main recipe
+uv run eve finetune --scratch eve-32m --out artifacts/runs/scratch   # no pretraining, for comparison
 ```
 
 `eve evaluate` scores a model on whole task files: recall per intent and their mean, exact, value and full-call accuracy, and a confusion table of intents. `--by-tool` adds a row per tool, worst first.
 
 ```bash
-uv run eve evaluate artifacts/runs/joint-base --sets heldout-templates --by-tool
-uv run eve calibrate artifacts/runs/joint-base --save   # fits intent, tool and value temperatures
+uv run eve evaluate artifacts/runs/eve-32m --sets heldout-templates --by-tool
+uv run eve calibrate artifacts/runs/eve-32m --save   # fits intent, tool and value temperatures
 uv run eve ask --json --tools set_lights,play_music "dim the bedroom lights to 30"
 uv run eve ask --schema my_tools.json                   # your own schemas; no request: type them one by one
 ```
@@ -298,20 +296,20 @@ metrics = "joint"
 report = "task_scores"
 
 [model]
-init = "artifacts/runs/base-900m/model.pt"
+init = "artifacts/runs/eve-32m-pretrain/model.pt"
 
 [train]
 epochs = 2.0
 lr = 3e-4
 
 [run]
-out = "artifacts/runs/joint-base"
+out = "artifacts/runs/eve-32m"
 ```
 
 ```bash
-uv run eve run configs/experiments/joint-base.toml
-uv run eve run configs/experiments/joint-base.toml --set train.lr=1e-3 \
-  --set train.warmup_steps=500 --set run.out=artifacts/runs/joint-lr1e-3
+uv run eve run configs/experiments/eve-32m.toml
+uv run eve run configs/experiments/eve-32m.toml --set train.lr=1e-3 \
+  --set train.warmup_steps=500 --set run.out=artifacts/runs/eve-32m-lr1e-3
 ```
 
 Params are layered, later ones winning: the component's file in `configs/components/`, the experiment's table, then `--set section.key=value`. An unknown param stops the run instead of being ignored. Every run writes its resolved experiment to `<out>/config.toml`, so `eve run <out>/config.toml` repeats it; `last.pt` holds the weights, optimizer and RNG states, so `--set run.resume=true` continues exactly. The checkpoints' meta says whether the joint loss trained them (`joint`) and where they started (`init`), taken from the components, so a `--set` can't leave it stale.
@@ -330,15 +328,13 @@ Presets from [`src/eve/config.py`](src/eve/config.py):
 | Preset | d_model | Heads | Encoder | Decoder | Question block | Parameters |
 |---|---|---|---|---|---|---|
 | `tiny` (tests) | 64 | 2 | 2 | 1 | 1 | 0.8M |
-| `small` | 256 | 4 | 6 | 3 | 2 | 12.3M |
-| `base` | 384 | 6 | 8 | 4 | 2 | 31.9M |
-| `medium` | 512 | 8 | 8 | 4 | 2 | 55.1M |
+| `eve-32m` | 384 | 6 | 8 | 4 | 2 | 31.9M |
 
 | Component | Configuration |
 |---|---|
 | Tokenizer | byte-level BPE, 8,192 tokens, trained with tool schemas and commands weighted 50× |
 | Input | up to 512 encoder tokens (request + 5 schemas), 256 decoder tokens, up to 8 calls |
-| Body | pre-norm transformer blocks, rotary positions and QK-norm (`base-900m`), LM head tied to the embeddings |
+| Body | pre-norm transformer blocks, rotary positions and QK-norm, LM head tied to the embeddings |
 | Question block | 1 + 8 learned queries, non-causal decoder blocks; linear intent head; pointer slot head (64-d) over `<tool>` vectors + STOP |
 | Fine-tuning loss | intent and slot cross-entropy + decoder cross-entropy on value tokens |
 | Optimisation | AdamW, linear warmup and cosine decay |
