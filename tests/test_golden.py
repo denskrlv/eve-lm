@@ -26,8 +26,10 @@ from eve.train.pretrain import pretrain
 GOLDEN = Path(__file__).parent / "golden"
 TIMING = {"tok_s", "s_per_step"}  # depend on the machine, not the code
 # Float32 math differs across CPUs and BLAS builds: CI (Linux x86) drifts from a Mac (arm64)
-# by ~1e-5 within a few steps. A real change in behavior moves the numbers far more.
+# by ~1e-5 within a few steps, and gradient norms, the most sensitive, by ~2e-4 by step 6. A
+# real change in behavior moves the numbers far more.
 TOLERANCE = 1e-4
+GRAD_NORM_TOLERANCE = 1e-3
 
 
 def _flatten(value: Any, prefix: str, out: dict[str, Any]) -> None:
@@ -70,7 +72,8 @@ def check(name: str, run: Path) -> None:
     wrong = []
     for key, value in want.items():
         if isinstance(value, float):
-            if got[key] != pytest.approx(value, rel=TOLERANCE, abs=TOLERANCE):
+            tol = GRAD_NORM_TOLERANCE if key.endswith("grad_norm") else TOLERANCE
+            if got[key] != pytest.approx(value, rel=tol, abs=tol):
                 rel = abs(got[key] - value) / max(abs(value), 1e-12)
                 wrong.append(f"{key}: got {got[key]!r}, want {value!r} (rel {rel:.1e})")
         elif got[key] != value:
