@@ -1,0 +1,19 @@
+{
+  "domain": "pets",
+  "tools": [
+    {"name": "schedule_grooming", "description": "Book a pet in for a wash and trim",
+     "args": [
+       {"name": "pet", "type": "str"},
+       {"name": "day", "type": "str", "description": "as the user said it"}
+     ]},
+    {"name": "report_lost_pet", "description": "Post an alert that a pet is missing",
+     "args": [
+       {"name": "pet", "type": "str"},
+       {"name": "area", "type": "str", "description": "where it was last seen"}
+     ]},
+    {"name": "dispense_treat", "description": "Toss treats from the pet camera",
+     "args": [{"name": "count", "type": "int", "min": 1, "max": 5, "required": false}]},
+    {"name": "vaccine_due", "description": "Say when a pet's next vaccination is due",
+     "args": [{"name": "pet", "type": "str"}]}
+  ]
+}

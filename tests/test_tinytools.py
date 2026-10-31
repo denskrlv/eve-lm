@@ -182,10 +182,10 @@ def raw(tmp_path):
 
 
 def test_build_tinytools(raw, tmp_path):
-    task = tmp_path / "task"
-    task.mkdir()
+    evals = tmp_path / "evals"
+    evals.mkdir()
     write_jsonl(
-        task / "val.jsonl",
+        evals / "val.jsonl",
         [
             {"utterance": "turn off the kitchen lights", "intent": "call"},
             {"utterance": "which toppings", "intent": "none"},  # chitchat isn't matched
@@ -193,7 +193,7 @@ def test_build_tinytools(raw, tmp_path):
     )
     out = tmp_path / "tinytools"
     names = ["taskmaster-1", "hwu64", "abcd", "clinc150"]
-    report = build_tinytools(names, raw, out, tokenizer=None, task_dir=task)
+    report = build_tinytools(names, raw, out, tokenizer=None, evals_dir=evals)
 
     assert report["eval_sets"] == ["val.jsonl"]
     assert report["sources"]["clinc150"] == {"missing": ["clinc150/data_full.json"]}

@@ -386,6 +386,7 @@ def finetune(args: argparse.Namespace) -> None:
         overrides={} if args.dropout is None else {"dropout": args.dropout},
         resume=args.resume,
         stop_after=args.stop_after,
+        evals_dir=args.evals,
     )
     _run_experiment(values, args.set)
 
@@ -505,7 +506,7 @@ def retriever_eval(args: argparse.Namespace) -> None:
     if args.retriever:
         ckpt = load_checkpoint(args.retriever, pick_device(args.device))
         scorers["dense"] = Dense(ckpt.model, ckpt.tokenizer)  # type: ignore[arg-type]
-    examples = load_splits(Sources.load().library, args.task, args.splits)
+    examples = load_splits(Sources.load().library, args.evals, args.splits)
     suites = suite(examples, args.sizes, fills=args.fill)
     results = evaluate_scorers(scorers, suites)
     if args.json:
@@ -680,7 +681,7 @@ def _evaluate_panel(
     items = [
         ("model", str(model_file(args.model))),
         ("trained", " ".join(trained)),
-        ("task", f"{args.task} · {', '.join(args.sets)}"),
+        ("sets", f"{args.evals} · {', '.join(args.sets)}"),
         ("device", str(device)),
     ]
     return panel("eve evaluate", items)
@@ -695,12 +696,16 @@ def _score_cell(scores: dict[str, float], key: str) -> str:
 
 
 def _scores_table(results: dict[str, "SetResult"]) -> "Table":
-    """One row per scored set: its size, the recall per intent and their mean, tools and exact.
-    A set without examples of an intent has a blank recall for it."""
+    """One row per scored set: its size, the recall per intent and their mean, tools and exact,
+    then a row per group of its rows, if it has groups. A set without examples of an intent has
+    a blank recall for it."""
     out = table("set", "n", *(label for label, _ in SCORE_COLUMNS), first_style="bold")
     for name, result in results.items():
         cells = [_score_cell(result.scores, key) for _, key in SCORE_COLUMNS]
         out.add_row(name, f"{result.examples:,}", *cells)
+        for group, (n, scores) in result.groups.items():  # novel-tools: shared word or not
+            cells = [_score_cell(scores, key) for _, key in SCORE_COLUMNS]
+            out.add_row(Text(f"  {group}", style="dim"), f"{n:,}", *cells)
     return out
 
 
@@ -758,11 +763,11 @@ def evaluate(args: argparse.Namespace) -> None:
     """Score a fine-tuned model on whole task files: recall per intent, tools and exact."""
     from eve import progress
     from eve.data.generate.build import Sources
-    from eve.evaluate import evaluate_set, load_questions_model, task_files
+    from eve.evaluate import evaluate_set, load_questions_model, set_files
 
     device = pick_device(args.device)
     try:
-        paths = task_files(args.task, args.sets)
+        paths = set_files(args.evals, args.sets)
         ckpt = load_questions_model(args.model, device)
     except (FileNotFoundError, ValueError) as error:
         raise SystemExit(str(error)) from error
@@ -813,7 +818,7 @@ def calibrate(args: argparse.Namespace) -> None:
         save_calibration,
     )
     from eve.data.generate.build import Sources
-    from eve.evaluate import load_questions_model, task_files
+    from eve.evaluate import load_questions_model, set_files
     from eve.infer.predict import Calibrations
     from eve.model.checkpoint import model_file
 
@@ -821,7 +826,7 @@ def calibrate(args: argparse.Namespace) -> None:
     fit_on = {"familiar": args.fit_familiar, "new": args.fit_new}
     sets = list(dict.fromkeys([*fit_on.values(), *args.sets]))  # the fit sets first, once
     try:
-        paths = task_files(args.task, [*sets, "train"])
+        paths = set_files(args.evals, sets) | set_files(args.task, ["train"])
         ckpt = load_questions_model(args.model, device)
     except (FileNotFoundError, ValueError) as error:
         raise SystemExit(str(error)) from error
@@ -886,6 +891,7 @@ def data_build(args: argparse.Namespace) -> None:
         warn(f"no tokenizer at {args.tokenizer}: not checking example lengths")
     report = build(
         args.out,
+        args.evals,
         args.templates,
         args.heldout,
         args.seed,
@@ -1099,7 +1105,8 @@ def _add_finetune_command(commands: Subcommands) -> None:
     start = parser.add_mutually_exclusive_group()  # one is required; finetune checks
     start.add_argument("--init", help="a pretraining checkpoint or an earlier finetune's model.pt")
     start.add_argument("--scratch", choices=sorted(PRESETS), help="random init (experiment E1)")
-    parser.add_argument("--task", default=defaults.TASK_DIR)
+    parser.add_argument("--task", default=defaults.TASK_DIR, help="where train.jsonl is")
+    parser.add_argument("--evals", default=defaults.EVALS_DIR, help="where val and held-out are")
     parser.add_argument("--tokenizer", default=defaults.TOKENIZER_FILE, help="for --scratch")
     parser.add_argument("--out", default=defaults.FINETUNE_RUN)
     parser.add_argument("--epochs", type=float, default=2.0, help="sets --steps")
@@ -1150,8 +1157,8 @@ def _add_inspect_commands(commands: Subcommands) -> None:
     parser = retriever_commands.add_parser("eval", help="top-5 recall of BM25 and a retriever")
     parser.set_defaults(run=retriever_eval)
     parser.add_argument("retriever", nargs="?", help="a retriever model.pt; BM25 alone without")
-    parser.add_argument("--task", default=defaults.TASK_DIR)
-    parser.add_argument("--splits", nargs="+", default=["val", "heldout", "massive"])
+    parser.add_argument("--evals", default=defaults.EVALS_DIR)
+    parser.add_argument("--splits", nargs="+", default=["val", "heldout", "massive", "novel"])
     parser.add_argument("--sizes", nargs="+", type=int, default=[10, 25, 50], help="registry sizes")
     parser.add_argument(
         "--fill",
@@ -1176,14 +1183,14 @@ def _add_inspect_commands(commands: Subcommands) -> None:
 def _add_evaluate_command(commands: Subcommands) -> None:
     from eve.evaluate import SETS
 
-    parser = commands.add_parser("evaluate", help="score a fine-tuned model on whole task files")
+    parser = commands.add_parser("evaluate", help="score a fine-tuned model on whole eval sets")
     parser.set_defaults(run=evaluate)
     parser.add_argument(
         "model", nargs="?", default=defaults.FINETUNED_MODEL, help="a model.pt or a run directory"
     )
-    parser.add_argument("--task", default=defaults.TASK_DIR)
+    parser.add_argument("--evals", default=defaults.EVALS_DIR, help="where the sets are")
     parser.add_argument(
-        "--sets", nargs="+", default=list(SETS), help="task file names, e.g. probe-candidates"
+        "--sets", nargs="+", default=list(SETS), help="set names, e.g. probe-candidates"
     )
     parser.add_argument("--batch-size", type=int, default=TRAIN_DEFAULTS.batch_size)
     parser.add_argument("--by-tool", action="store_true", help="also a row per gold tool")
@@ -1199,14 +1206,15 @@ def _add_calibrate_command(commands: Subcommands) -> None:
     parser.add_argument(
         "model", nargs="?", default=defaults.FINETUNED_MODEL, help="a model.pt or a run directory"
     )
-    parser.add_argument("--task", default=defaults.TASK_DIR)
+    parser.add_argument("--task", default=defaults.TASK_DIR, help="where train.jsonl is")
+    parser.add_argument("--evals", default=defaults.EVALS_DIR, help="where the sets are")
     parser.add_argument(
-        "--fit-familiar", default="val", help="task file whose familiar-tool examples fit those"
+        "--fit-familiar", default="val", help="set whose familiar-tool examples fit those"
     )
     parser.add_argument(
-        "--fit-new", default="probe-candidates", help="task file whose new-tool examples fit those"
+        "--fit-new", default="probe-candidates", help="set whose new-tool examples fit those"
     )
-    parser.add_argument("--sets", nargs="+", default=list(SETS), help="task files to check them on")
+    parser.add_argument("--sets", nargs="+", default=list(SETS), help="sets to check them on")
     parser.add_argument("--save", action="store_true", help="write them into the model file")
     parser.add_argument("--batch-size", type=int, default=TRAIN_DEFAULTS.batch_size)
     parser.add_argument("--json", action="store_true", help="the results as one JSON object")
@@ -1214,9 +1222,12 @@ def _add_calibrate_command(commands: Subcommands) -> None:
 
 
 def _add_data_build_command(data_commands: Subcommands) -> None:
-    parser = data_commands.add_parser("build", help="templates + chat-written -> data/task/*.jsonl")
+    parser = data_commands.add_parser(
+        "build", help="templates + chat-written -> data/task/train.jsonl, data/evals/*.jsonl"
+    )
     parser.set_defaults(run=data_build)
-    parser.add_argument("--out", default=defaults.TASK_DIR)
+    parser.add_argument("--out", default=defaults.TASK_DIR, help="where train.jsonl goes")
+    parser.add_argument("--evals", default=defaults.EVALS_DIR, help="where the eval sets go")
     parser.add_argument(
         "--templates",
         type=_count,

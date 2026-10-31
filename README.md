@@ -213,7 +213,7 @@ uvx --from huggingface_hub hf download Salesforce/xlam-function-calling-60k \
 mkdir -p data/raw/massive && curl -L https://amazon-massive-nlu-dataset.s3.amazonaws.com/amazon-massive-dataset-1.1.tar.gz \
   | tar -xz -C data/raw/massive --include '*/en-US.jsonl'
 uv run eve data external                    # -> data/external/*.jsonl
-uv run eve data build                       # -> data/task/*.jsonl
+uv run eve data build                       # -> data/task/train.jsonl, data/evals/*.jsonl
 ```
 
 </details>
@@ -251,7 +251,17 @@ uv run eve compare artifacts/runs/ab-*            # val metrics of several runs 
 - **Generated tools.** 1,042 more tools are generated in code, so the model learns to read schemas rather than memorise names.
 - **Chat-written requests.** Code picks the answer for each scenario (intent, calls, missing arguments) and an LLM writes only the request, following [`data/generation/README.md`](data/generation/README.md); `eve data check` rejects any request that doesn't lead to exactly those calls.
 - **External data.** xLAM and MASSIVE, converted.
-- **Splits.** `val`, `heldout-templates` (only held-out tools), `massive-test` and `probe-candidates` (a small mixed set for calibrating new tools).
+- **Splits.** `data/task/` holds `train`, the only split trained on. Every set a model is scored on is in `data/evals/`, and anything trained on is deduplicated against all of them:
+
+  | Set | What it measures |
+  |---|---|
+  | `val` | tools seen in training; picks checkpoints and fits the familiar-tool temperatures |
+  | `heldout-templates` | the 4 held-out travel tools, in template requests |
+  | `massive-test` | MASSIVE's human-written test requests |
+  | `probe-candidates` | a small mixed set for fitting the new-tool temperatures |
+  | `novel-tools` | 41 made-up tools in 12 domains, with 243 hand-written requests; it scores the requests that share a word with the tool's name and those that don't separately |
+
+  The novel-tools benchmark is built from [`data/novel-tools/`](data/novel-tools).
 
 ```bash
 uv run eve data batch --split val --ask 0.4   # scenarios for a chat to write requests for
@@ -270,10 +280,10 @@ uv run eve run configs/experiments/eve-32m.toml   # intents, tools and values: t
 uv run eve finetune --scratch eve-32m --out artifacts/runs/scratch   # no pretraining, for comparison
 ```
 
-`eve evaluate` scores a model on whole task files: recall per intent and their mean, exact, value and full-call accuracy, and a confusion table of intents. `--by-tool` adds a row per tool, worst first.
+`eve evaluate` scores a model on whole eval sets: recall per intent and their mean, exact, value and full-call accuracy, and a confusion table of intents. `novel-tools` gets a row for requests that share a word with the tool's name and one for those that don't. `--by-tool` adds a row per tool, worst first.
 
 ```bash
-uv run eve evaluate artifacts/runs/eve-32m --sets heldout-templates --by-tool
+uv run eve evaluate artifacts/runs/eve-32m --sets novel-tools --by-tool
 uv run eve calibrate artifacts/runs/eve-32m --save   # fits intent, tool and value temperatures
 uv run eve ask --json --tools set_lights,play_music "dim the bedroom lights to 30"
 uv run eve ask --schema my_tools.json                   # your own schemas; no request: type them one by one
@@ -354,7 +364,8 @@ eve-lm/
 │   └── experiments/       # Whole experiments for `eve run`: pretraining, joint, retriever
 ├── data/
 │   ├── tools/             # Hand-written tool schemas; heldout/ is never trained on
-│   └── generation/        # Scenario batches and the chat-written requests
+│   ├── generation/        # Scenario batches and the chat-written requests
+│   └── novel-tools/       # The novel-tools benchmark: made-up tools and their requests
 ├── notebooks/             # Pretraining on Kaggle
 ├── src/eve/
 │   ├── tokenizer/         # Byte-level BPE

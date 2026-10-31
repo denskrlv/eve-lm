@@ -231,7 +231,8 @@ def test_eve_calibrate(
         tmp_path / "joint.pt", Eve(CFG), tokenizer, {"task": "questions", "joint": True}
     )
     task = _write_task(tmp_path / "task", library)
-    argv = ["calibrate", "--task", str(task), "--sets", "massive-test", "--device", "cpu"]
+    argv = ["calibrate", "--task", str(task), "--evals", str(task), "--sets", "massive-test"]
+    argv += ["--device", "cpu"]
 
     with pytest.raises(SystemExit, match="joint"):
         main([*argv[:1], str(tmp_path / "old.pt"), *argv[1:]])

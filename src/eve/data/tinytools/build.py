@@ -269,13 +269,13 @@ def build_tinytools(
     out: str | Path = defaults.TINYTOOLS_DIR,
     tokenizer: str | Path | None = defaults.TOKENIZER_FILE,
     seed: int = 0,
-    task_dir: str | Path = defaults.TASK_DIR,
+    evals_dir: str | Path = defaults.EVALS_DIR,
     vocab_dir: str | Path = defaults.VOCAB_DIR,
 ) -> dict[str, Any]:
     """Build the named sources whose downloads are in ``raw``; return the report, which is also
     merged into ``out/report.json``."""
     raw, out = Path(raw), Path(out)
-    evals = EvalSet.load(task_dir)
+    evals = EvalSet.load(evals_dir)
     sections = read_sections(Path(vocab_dir) / "nouns.txt")
     nouns = frozenset(w for words in sections.values() for w in words)
     person_nouns = frozenset(sections.get("people and family", []))

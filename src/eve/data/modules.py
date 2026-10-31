@@ -104,9 +104,10 @@ def task(
     seed: int,
     path: str = defaults.TASK_DIR,
     library: dict[str, Tool] | None = None,
+    evals: str = defaults.EVALS_DIR,
 ) -> TaskData:
-    """``path``'s ``train.jsonl``, ``val.jsonl`` and ``heldout-templates.jsonl``, with tools
-    looked up in ``library`` (default: every known tool, ``Sources.load().library``).
+    """``path``'s ``train.jsonl`` and ``evals``' ``val.jsonl`` and ``heldout-templates.jsonl``,
+    with tools looked up in ``library`` (default: every known tool, ``Sources.load().library``).
 
     Train's tool shuffle is seeded 0 whatever ``seed`` is, as before components were
     swappable; val's is ``VAL_SEED``.
@@ -116,14 +117,14 @@ def task(
         from eve.data.generate.build import Sources
 
         library = Sources.load().library
-    task_dir = Path(path)
-    val_examples = load_examples(task_dir / "val.jsonl", library)
+    evals_dir = Path(evals)
+    val_examples = load_examples(evals_dir / "val.jsonl", library)
     return TaskData(
-        train=TaskDataset(load_examples(task_dir / "train.jsonl", library), tokenizer, model_cfg),
+        train=TaskDataset(load_examples(Path(path) / "train.jsonl", library), tokenizer, model_cfg),
         val=TaskDataset(val_examples, tokenizer, model_cfg, seed=VAL_SEED),
         val_examples=val_examples,
         heldout=TaskDataset(
-            load_examples(task_dir / "heldout-templates.jsonl", library), tokenizer, model_cfg
+            load_examples(evals_dir / "heldout-templates.jsonl", library), tokenizer, model_cfg
         ),
         collator=TaskCollator(model_cfg),
     )

@@ -1,0 +1,16 @@
+{
+  "domain": "upkeep",
+  "tools": [
+    {"name": "estimate_paint", "description": "Work out how much paint a wall needs",
+     "args": [
+       {"name": "area", "type": "float", "min": 1, "max": 1000, "description": "square metres"},
+       {"name": "coats", "type": "int", "min": 1, "max": 4, "required": false}
+     ]},
+    {"name": "remove_stain", "description": "Explain how to get a stain out of fabric",
+     "args": [{"name": "stain", "type": "str"}]},
+    {"name": "plant_spacing", "description": "Say how far apart to plant something",
+     "args": [{"name": "plant", "type": "str"}]},
+    {"name": "read_meter", "description": "Tell how much of a utility the home used this month",
+     "args": [{"name": "meter", "type": "enum", "options": ["electricity", "gas", "water"]}]}
+  ]
+}

@@ -1,0 +1,15 @@
+{
+  "domain": "shopping",
+  "tools": [
+    {"name": "watch_price", "description": "Alert the user when a product drops to a price",
+     "args": [
+       {"name": "product", "type": "str"},
+       {"name": "target", "type": "float", "min": 0.01, "max": 100000}
+     ]},
+    {"name": "start_return", "description": "Send a bought item back to the shop",
+     "args": [
+       {"name": "item", "type": "str"},
+       {"name": "reason", "type": "enum", "options": ["damaged", "wrong size", "changed mind"]}
+     ]}
+  ]
+}

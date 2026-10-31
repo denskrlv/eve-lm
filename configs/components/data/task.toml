@@ -1,2 +1,3 @@
-# The task splits from `eve data build`: <path>/train.jsonl, val.jsonl, heldout-templates.jsonl.
+# The splits from `eve data build`: <path>/train.jsonl; <evals>/val.jsonl, heldout-templates.jsonl.
 path = "data/task"
+evals = "data/evals"

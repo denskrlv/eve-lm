@@ -1,0 +1,13 @@
+{
+  "domain": "security",
+  "tools": [
+    {"name": "arm_security_system", "description": "Turn on the house's burglar alarm",
+     "args": [{"name": "mode", "type": "enum", "options": ["away", "night"]}]},
+    {"name": "disarm_security_system", "description": "Turn off the house's burglar alarm",
+     "args": []},
+    {"name": "doorbell_snapshot", "description": "Show a picture of whoever is at the front door",
+     "args": []},
+    {"name": "move_garage_door", "description": "Open or close the garage door",
+     "args": [{"name": "open", "type": "bool"}]}
+  ]
+}

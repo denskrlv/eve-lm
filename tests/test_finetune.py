@@ -210,6 +210,7 @@ def test_scratch_needs_a_tokenizer_path(library: dict[str, Tool], tmp_path: Path
 
 
 def write_task(path, library) -> None:
+    """train.jsonl and the sets fine-tuning reads, all in ``path`` (its task and evals dir)."""
     path.mkdir()
     rows = [e.to_json() for e in examples(library)]
     for name in ("train", "val", "heldout-templates"):
@@ -224,8 +225,9 @@ def test_finetune_then_train_on(library, tokenizer, tmp_path):
     train_cfg = TrainConfig(steps=4, batch_size=3, warmup_steps=1, eval_every=2, log_every=1)
 
     val = finetune(
-        train_cfg, tmp_path / "task", tmp_path / "first", "cpu", library, init=tmp_path / "pre.pt"
-    )
+        train_cfg, tmp_path / "task", tmp_path / "first", "cpu", library,
+        init=tmp_path / "pre.pt", evals_dir=tmp_path / "task",
+    )  # fmt: skip
     assert {"val_values", "val_value_acc", "val_full_acc"} <= set(val)
     assert val["val_loss"] == pytest.approx(
         val["val_intent"] + val["val_slots"] + val["val_values"]
@@ -252,7 +254,7 @@ def test_finetune_then_train_on(library, tokenizer, tmp_path):
         torch.testing.assert_close(again.model.state_dict()[k], v)
     finetune(
         train_cfg, tmp_path / "task", tmp_path / "second", "cpu", library,
-        init=tmp_path / "first" / "model.pt",
+        init=tmp_path / "first" / "model.pt", evals_dir=tmp_path / "task",
     )  # fmt: skip
     assert load_checkpoint(tmp_path / "second" / "model.pt").meta["joint"] is True
 

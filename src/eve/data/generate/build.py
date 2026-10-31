@@ -10,6 +10,7 @@ import numpy as np
 from eve import defaults
 from eve.config import ModelConfig
 from eve.data.generate.library import ToolSpec, load_specs
+from eve.data.generate.novel import novel_examples
 from eve.data.generate.sampler import INTENT_MIX, Sample, ToolBank, sample
 from eve.data.generate.templates import sensible
 from eve.data.generate.toolgen import generated_specs
@@ -230,8 +231,11 @@ def _stats(rows: list[dict[str, Any]], sources: Sources) -> dict[str, Any]:
 
 
 Splits = dict[str, list[dict[str, Any]]]
+TRAIN_SPLITS = ("train",)  # written to the task directory; every other split to the evals one
 # (keep, drop): an utterance in ``keep`` is removed from ``drop``, so test and val stay unseen.
 DEDUP_ORDER = (
+    ("novel-tools", "val"),
+    ("novel-tools", "train"),
     ("probe-candidates", "val"),
     ("probe-candidates", "train"),
     ("massive-test", "val"),
@@ -253,6 +257,7 @@ def _assemble(
     n_templates: int,
     n_heldout: int,
     external_dir: Path,
+    novel_dir: Path,
 ) -> Splits:
     """Every split from its sources (see ``build``)."""
     train_bank = ToolBank(sources.train)
@@ -267,6 +272,7 @@ def _assemble(
         "probe-candidates": chat["probe"],
         "heldout-templates": template_examples(all_bank, n_heldout, rng, sources, heldout_pool),
         "massive-test": _external(external_dir, "massive-test"),
+        "novel-tools": novel_examples(rng, sources.library, novel_dir),
     }
 
 
@@ -302,6 +308,7 @@ def _drop_too_long(
 
 def build(
     out_dir: str | Path = defaults.TASK_DIR,
+    evals_dir: str | Path = defaults.EVALS_DIR,
     n_templates: int = defaults.TEMPLATE_EXAMPLES,
     n_heldout: int = defaults.HELDOUT_EXAMPLES,
     seed: int = 0,
@@ -310,8 +317,10 @@ def build(
     tools_dir: str | Path = defaults.TOOLS_DIR,
     generation_dir: str | Path = defaults.GENERATION_DIR,
     external_dir: str | Path = defaults.EXTERNAL_DIR,
+    novel_dir: str | Path = defaults.NOVEL_TOOLS_DIR,
 ) -> dict[str, Any]:
-    """Write the task splits as .jsonl files and return a report.
+    """Write the splits as .jsonl files, train to ``out_dir`` and the sets models are scored on
+    to ``evals_dir``, and return a report (also ``out_dir/report.json``).
 
     - train: template examples + chat-written train batches + xLAM + MASSIVE train
     - val: chat-written val batches + MASSIVE dev. Only written by people or chats: template
@@ -319,6 +328,8 @@ def build(
     - probe-candidates: chat-written probe batches, to be checked by hand into evals/probe-v1
     - heldout-templates: template examples whose correct tool is from a held-out domain
     - massive-test: MASSIVE's test partition, human-written
+    - novel-tools: made-up tools with hand-written requests, from ``novel_dir`` (see
+      ``eve.data.generate.novel``)
     External data is read from ``external_dir`` (see ``eve data external``) if present.
     An utterance in a test or val split is removed from the splits below it.
     With a tokenizer, examples too long for the model are dropped.
@@ -326,15 +337,17 @@ def build(
     sources = Sources.load(tools_dir, generation_dir)
     rng = np.random.default_rng(seed)
     chat, rejects = chat_examples(sources, generation_dir)
-    splits = _assemble(sources, chat, rng, n_templates, n_heldout, Path(external_dir))
+    splits = _assemble(
+        sources, chat, rng, n_templates, n_heldout, Path(external_dir), Path(novel_dir)
+    )
     removed = _remove_duplicates(splits)
     too_long: Counter[str] = Counter()
     if tokenizer is not None and cfg is not None:
         too_long = _drop_too_long(splits, sources.library, tokenizer, cfg)
 
-    out_dir = Path(out_dir)
+    out_dir, evals_dir = Path(out_dir), Path(evals_dir)
     for name, rows in splits.items():
-        write_jsonl(out_dir / f"{name}.jsonl", rows)
+        write_jsonl((out_dir if name in TRAIN_SPLITS else evals_dir) / f"{name}.jsonl", rows)
     report = {
         "splits": {name: _stats(rows, sources) for name, rows in splits.items()},
         "tools": {"train": len(sources.train), "heldout": len(sources.heldout)},

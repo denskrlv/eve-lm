@@ -1,0 +1,11 @@
+{
+  "domain": "music",
+  "tools": [
+    {"name": "identify_song", "description": "Name the song playing nearby",
+     "args": []},
+    {"name": "tune_instrument", "description": "Play reference notes to tune an instrument",
+     "args": [{"name": "instrument", "type": "enum", "options": ["guitar", "ukulele", "violin", "bass"]}]},
+    {"name": "start_metronome", "description": "Start a steady click at a tempo",
+     "args": [{"name": "bpm", "type": "int", "min": 30, "max": 240}]}
+  ]
+}

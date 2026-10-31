@@ -1,0 +1,17 @@
+{
+  "domain": "family",
+  "tools": [
+    {"name": "limit_screen_time", "description": "Set how long a child may use devices today",
+     "args": [
+       {"name": "child", "type": "str"},
+       {"name": "minutes", "type": "int", "min": 15, "max": 240}
+     ]},
+    {"name": "bedtime_story", "description": "Tell a bedtime story about a topic",
+     "args": [{"name": "topic", "type": "str"}]},
+    {"name": "pay_allowance", "description": "Send a child their pocket money",
+     "args": [
+       {"name": "child", "type": "str"},
+       {"name": "amount", "type": "int", "min": 1, "max": 100}
+     ]}
+  ]
+}

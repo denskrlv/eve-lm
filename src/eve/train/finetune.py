@@ -3,6 +3,7 @@ from typing import Any
 
 import torch
 
+from eve import defaults
 from eve.config import ModelConfig
 from eve.data.schema import Tool
 from eve.experiment import Experiment, run
@@ -21,6 +22,7 @@ def finetune_experiment(
     overrides: dict[str, Any] | None = None,
     resume: bool = False,
     stop_after: int | None = None,
+    evals_dir: str | Path = defaults.EVALS_DIR,
 ) -> dict[str, Any]:
     """The experiment ``finetune`` runs, as config sections (see ``eve.experiment``): task
     data, the joint loss and metrics, and the ``task_scores`` report. ``scratch`` is a config
@@ -42,7 +44,7 @@ def finetune_experiment(
             "report": "task_scores",
         },
         "model": model,
-        "data": {"path": str(task_dir)},
+        "data": {"path": str(task_dir), "evals": str(evals_dir)},
         "train": train_cfg.to_dict(),
         "run": {
             "out": str(out_dir),
@@ -66,10 +68,11 @@ def finetune(
     overrides: dict[str, Any] | None = None,
     resume: bool = False,
     stop_after: int | None = None,
+    evals_dir: str | Path = defaults.EVALS_DIR,
 ) -> dict[str, float]:
     """Boxes 8 and 9: fine-tune the question heads and the decoder's argument values together
-    (``joint_loss``) on ``task_dir``'s ``train.jsonl``, evaluated on ``val.jsonl``, with
-    held-out-tool accuracy from ``heldout-templates.jsonl`` at each eval.
+    (``joint_loss``) on ``task_dir``'s ``train.jsonl``, evaluated on ``evals_dir``'s
+    ``val.jsonl``, with held-out-tool accuracy from its ``heldout-templates.jsonl`` at each eval.
 
     Start from ``init`` (a pretraining checkpoint or an earlier question run, see ``load_init``)
     or, for the "what does pretraining buy?" experiment (E1), from a random ``scratch`` config
@@ -77,6 +80,6 @@ def finetune(
     """
     values = finetune_experiment(
         train_cfg, task_dir, out_dir, device, init, scratch, tokenizer_path, overrides, resume,
-        stop_after,
+        stop_after, evals_dir,
     )  # fmt: skip
     return run(Experiment.from_dict(values), library=library)

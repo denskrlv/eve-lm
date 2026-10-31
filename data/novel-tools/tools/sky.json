@@ -1,0 +1,11 @@
+{
+  "domain": "sky",
+  "tools": [
+    {"name": "aurora_forecast", "description": "Say how likely the northern lights are tonight",
+     "args": [{"name": "city", "type": "str", "required": false}]},
+    {"name": "check_uv_index", "description": "Say how strong the sun's rays are today",
+     "args": [{"name": "city", "type": "str", "required": false}]},
+    {"name": "meteor_shower", "description": "Say when the next meteor shower is",
+     "args": []}
+  ]
+}

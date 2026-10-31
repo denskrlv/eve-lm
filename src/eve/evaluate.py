@@ -1,12 +1,13 @@
 from collections import defaultdict
 from collections.abc import Sequence
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any
 
 import torch
 
 from eve.config import INTENTS
+from eve.data.jsonl import read_jsonl
 from eve.data.modules import VAL_SEED, in_batches, load_examples
 from eve.data.render import TaskCollator, TaskDataset, TaskExample
 from eve.data.schema import Tool
@@ -19,7 +20,7 @@ from eve.tasks.questions import (
     tally,
 )
 
-SETS = ("val", "heldout-templates", "massive-test")  # the task files scored by default
+SETS = ("val", "heldout-templates", "massive-test", "novel-tools")  # the sets scored by default
 SEEDS = {"val": VAL_SEED}  # tool-shuffle seeds that differ from TaskDataset's default
 
 
@@ -55,16 +56,20 @@ class ToolResult:
 
 @dataclass(frozen=True)
 class SetResult:
-    """How a model did on one task file."""
+    """How a model did on one set."""
 
     examples: int
     scores: dict[str, float]  # as fine-tuning's evals log them, see finetune.score
     confusion: dict[str, dict[str, int]]  # gold intent -> answered intent -> examples
     by_tool: list[ToolResult]  # worst exact accuracy first
+    groups: dict[str, tuple[int, dict[str, float]]] = field(default_factory=dict)
+    # rows' "group" -> (examples, scores), for sets whose rows have one (novel-tools)
 
     def to_json(self, by_tool: bool = False) -> dict[str, Any]:
         """The result as plain values; the per-tool results only with ``by_tool``."""
         out = {"examples": self.examples, "scores": self.scores, "confusion": self.confusion}
+        if self.groups:
+            out["groups"] = {g: {"examples": n, "scores": s} for g, (n, s) in self.groups.items()}
         return out | ({"by_tool": [vars(r) for r in self.by_tool]} if by_tool else {})
 
 
@@ -79,9 +84,10 @@ def load_questions_model(path: str | Path, device: str | torch.device = "cpu") -
 def evaluate_set(
     ckpt: Checkpoint, path: Path, library: dict[str, Tool], batch_size: int
 ) -> SetResult:
-    """Score the heads and the decoder's argument values on every example of one task file,
-    in order. A checkpoint from before the joint run (``meta["joint"]`` unset) has an untrained
-    decoder: its values are scored anyway, and show it.
+    """Score the heads and the decoder's argument values on every example of one set, in
+    order, and on each group of its rows (a row's ``group``, if it has one). A checkpoint from
+    before the joint run (``meta["joint"]`` unset) has an untrained decoder: its values are
+    scored anyway, and show it.
 
     Each file keeps the tool shuffle fine-tuning's evals used (``SEEDS``), so a model's val
     and held-out scores here are the ones its run logged at its last eval.
@@ -92,7 +98,20 @@ def evaluate_set(
     answers = outcomes(ckpt.model, in_batches(data, TaskCollator(cfg), batch_size))
     counts = tally(answers)
     confusion = {gold: {said: counts.answered[gold, said] for said in INTENTS} for gold in INTENTS}
-    return SetResult(len(examples), counts.scores(), confusion, by_tool(examples, answers))
+    groups: defaultdict[str, list[Outcome]] = defaultdict(list)
+    for row, outcome in zip(read_jsonl(path), answers, strict=True):
+        if group := row.get("group"):
+            groups[group].append(outcome)
+    return SetResult(
+        len(examples),
+        counts.scores(),
+        confusion,
+        by_tool(examples, answers),
+        {
+            group: (len(group_answers), tally(group_answers).scores())
+            for group, group_answers in sorted(groups.items())
+        },
+    )
 
 
 def by_tool(examples: Sequence[TaskExample], answers: Sequence[Outcome]) -> list[ToolResult]:
@@ -106,9 +125,9 @@ def by_tool(examples: Sequence[TaskExample], answers: Sequence[Outcome]) -> list
     return sorted(results, key=lambda result: (result.exact_acc, result.tool))
 
 
-def task_files(task_dir: str | Path, sets: Sequence[str] = SETS) -> dict[str, Path]:
-    """The .jsonl file of each set name in ``task_dir``; all of them must exist."""
-    paths = {name: Path(task_dir) / f"{name}.jsonl" for name in sets}
+def set_files(directory: str | Path, sets: Sequence[str] = SETS) -> dict[str, Path]:
+    """The .jsonl file of each set name in ``directory``; all of them must exist."""
+    paths = {name: Path(directory) / f"{name}.jsonl" for name in sets}
     if missing := [str(path) for path in paths.values() if not path.is_file()]:
         raise FileNotFoundError(f"no task file {', '.join(missing)}")
     return paths

@@ -51,12 +51,16 @@ FILLER = [BOS, TOOLS, EOS]  # pads a batch's tools to its full count: no one's t
 
 TOP = 5  # the tools one request shows Eve (ModelConfig.max_tools)
 SIZES = (10, 25, 50)  # registry sizes the eval reports
-SPLITS = {  # split -> its file in the task directory
+SPLITS = {  # split -> its file in the evals directory
     "val": "val.jsonl",
     "heldout": "heldout-templates.jsonl",  # tools never trained on: the generalization test
     "massive": "massive-test.jsonl",
+    "novel": "novel-tools.jsonl",  # made-up tools, hand-written requests
 }
-WHOLE = {"massive": None}  # splits whose registry is every tool in them (47), not ``SIZES``
+WHOLE = {
+    "massive": None,
+    "novel": None,
+}  # registry: every tool in the split (47, 41), not ``SIZES``
 FILLS = ("random", "similar")  # how a registry is filled up (see the module)
 RETRIEVED = ("call", "ask")  # the intents that name tools
 
@@ -147,11 +151,11 @@ def measure(scorer: Scorer, cases: Sequence[Case], top: int = TOP) -> dict[str, 
 
 def load_splits(
     library: dict[str, Tool],
-    task_dir: str | Path = defaults.TASK_DIR,
+    evals_dir: str | Path = defaults.EVALS_DIR,
     splits: Sequence[str] = tuple(SPLITS),
 ) -> dict[str, list[TaskExample]]:
     """The examples of each split, with tools looked up in ``library``."""
-    return {name: load_examples(Path(task_dir) / SPLITS[name], library) for name in splits}
+    return {name: load_examples(Path(evals_dir) / SPLITS[name], library) for name in splits}
 
 
 def suite(
@@ -295,10 +299,11 @@ def retrieval(
     hard_negatives: int = 1,
     eval_size: int = EVAL_SIZE,
     library: dict[str, Tool] | None = None,
+    evals: str = defaults.EVALS_DIR,
 ) -> RetrievalData:
-    """``path``'s ``train.jsonl`` and ``val.jsonl`` as request-tool pairs, and the report's
-    registries of ``eval_size`` tools from the val, held-out and MASSIVE files it has
-    (``suite``). Each request brings ``hard_negatives`` of its example's distractors into its
+    """``path``'s ``train.jsonl`` and ``evals``' ``val.jsonl`` as request-tool pairs, and the
+    report's registries of ``eval_size`` tools from the eval sets it has (``SPLITS``, see
+    ``suite``). Each request brings ``hard_negatives`` of its example's distractors into its
     batch (0 to 4)."""
     del seed  # the batch order is the trainer's
     from eve.data.generate.build import Sources
@@ -306,15 +311,15 @@ def retrieval(
     sources = Sources.load()
     library = sources.library if library is None else library
     capability = {spec.name: spec.capability for spec in sources.train + sources.heldout}
-    task_dir = Path(path)
+    evals_dir = Path(evals)
     table = _Table(tokenizer, model_cfg)
-    train = pairs(load_examples(task_dir / "train.jsonl", library), table)
-    val = pairs(load_examples(task_dir / "val.jsonl", library), table)
+    train = pairs(load_examples(Path(path) / "train.jsonl", library), table)
+    val = pairs(load_examples(evals_dir / "val.jsonl", library), table)
     groups = [""] * len(table.ids)
     for tool, i in table.index.items():
         groups[i] = capability.get(tool.name, tool.name)
-    there = [name for name, file in SPLITS.items() if (task_dir / file).is_file()]
-    suites = suite(load_splits(library, task_dir, there), (eval_size,))
+    there = [name for name, file in SPLITS.items() if (evals_dir / file).is_file()]
+    suites = suite(load_splits(library, evals_dir, there), (eval_size,))
     return RetrievalData(
         train, val, table.ids, groups, suites, hard_negatives, table.query_len, table.tool_len
     )

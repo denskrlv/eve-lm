@@ -1,0 +1,19 @@
+{
+  "domain": "wellbeing",
+  "tools": [
+    {"name": "breathing_exercise", "description": "Guide a slow breathing exercise",
+     "args": [{"name": "minutes", "type": "int", "min": 1, "max": 30}]},
+    {"name": "stretch_routine", "description": "Lead a short stretching routine",
+     "args": [{"name": "area", "type": "enum", "options": ["back", "neck", "legs", "shoulders"]}]},
+    {"name": "record_dose", "description": "Note that the user took a medicine",
+     "args": [
+       {"name": "medicine", "type": "str"},
+       {"name": "amount", "type": "int", "min": 1, "max": 2000, "description": "milligrams"}
+     ]},
+    {"name": "rate_sleep", "description": "Note how long and how well the user slept",
+     "args": [
+       {"name": "hours", "type": "float", "min": 0, "max": 16},
+       {"name": "quality", "type": "enum", "options": ["poor", "okay", "great"]}
+     ]}
+  ]
+}
