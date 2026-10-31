@@ -73,23 +73,29 @@ def test_build(tmp_path, sources):
 
     report = build(
         tmp_path / "task",
+        tmp_path / "evals",
         300,
         50,
         seed=0,
         tools_dir=ROOT / "data/tools",
         generation_dir=gen,
         external_dir=tmp_path / "no-external",
+        novel_dir=ROOT / "data/novel-tools",
     )
-    assert (
-        report["splits"]["train"]["examples"]
-        == 300 - report["removed_duplicates"]["train (in val)"]
+    removed = report["removed_duplicates"]
+    assert report["splits"]["train"]["examples"] == 300 - sum(
+        n for where, n in removed.items() if where.startswith("train ")
     )
     assert report["splits"]["val"]["examples"] == 10
     assert report["rejected_chat_lines"] == 1
-    val = {r["utterance"] for r in read_jsonl(tmp_path / "task/val.jsonl")}
+    assert sorted(p.name for p in (tmp_path / "task").iterdir()) == ["report.json", "train.jsonl"]
+    val = {r["utterance"] for r in read_jsonl(tmp_path / "evals/val.jsonl")}
     assert not val & {r["utterance"] for r in read_jsonl(tmp_path / "task/train.jsonl")}
-    heldout = read_jsonl(tmp_path / "task/heldout-templates.jsonl")
+    heldout = read_jsonl(tmp_path / "evals/heldout-templates.jsonl")
     assert len(heldout) == 50
+    novel = read_jsonl(tmp_path / "evals/novel-tools.jsonl")
+    assert {r.get("group") for r in novel} == {"shared word", "no shared word", None}
+    assert all(r["source"] == "novel" for r in novel)
 
 
 def test_batch_ask_share(sources):

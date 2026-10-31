@@ -92,6 +92,6 @@ def test_golden_finetune(library, tokenizer, tmp_path):
     train_cfg = TrainConfig(steps=6, batch_size=3, warmup_steps=2, eval_every=3, log_every=1)
     finetune(
         train_cfg, tmp_path / "task", tmp_path / "run", "cpu", library,
-        init=tmp_path / "pre.pt", overrides={"dropout": 0.1},
+        init=tmp_path / "pre.pt", overrides={"dropout": 0.1}, evals_dir=tmp_path / "task",
     )  # fmt: skip
     check("finetune-joint", tmp_path / "run")

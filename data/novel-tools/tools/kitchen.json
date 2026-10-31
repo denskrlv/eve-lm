@@ -1,0 +1,19 @@
+{
+  "domain": "kitchen",
+  "tools": [
+    {"name": "scale_recipe", "description": "Change a recipe's amounts to feed a number of people",
+     "args": [
+       {"name": "dish", "type": "str"},
+       {"name": "servings", "type": "int", "min": 1, "max": 40}
+     ]},
+    {"name": "substitute_ingredient", "description": "Suggest something to use instead of an ingredient",
+     "args": [{"name": "ingredient", "type": "str"}]},
+    {"name": "pair_wine", "description": "Suggest a wine to drink with a dish",
+     "args": [{"name": "dish", "type": "str"}]},
+    {"name": "check_leftovers", "description": "Say whether cooked food is still safe to eat",
+     "args": [
+       {"name": "food", "type": "str"},
+       {"name": "days", "type": "int", "min": 0, "max": 30, "description": "since it was cooked"}
+     ]}
+  ]
+}

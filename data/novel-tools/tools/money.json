@@ -1,0 +1,19 @@
+{
+  "domain": "money",
+  "tools": [
+    {"name": "freeze_card", "description": "Block a bank card so nobody can pay with it",
+     "args": [{"name": "card", "type": "enum", "options": ["debit", "credit"]}]},
+    {"name": "dispute_charge", "description": "Challenge a payment the user doesn't recognize",
+     "args": [
+       {"name": "merchant", "type": "str"},
+       {"name": "amount", "type": "float", "min": 0.01, "max": 100000}
+     ]},
+    {"name": "set_spending_cap", "description": "Limit how much can be spent in a category this month",
+     "args": [
+       {"name": "category", "type": "enum", "options": ["groceries", "dining", "shopping", "fun"]},
+       {"name": "amount", "type": "int", "min": 10, "max": 5000}
+     ]},
+    {"name": "check_credit_score", "description": "Tell the user's current credit score",
+     "args": []}
+  ]
+}

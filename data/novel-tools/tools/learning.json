@@ -1,0 +1,14 @@
+{
+  "domain": "learning",
+  "tools": [
+    {"name": "pronounce_word", "description": "Say a word out loud the right way",
+     "args": [{"name": "word", "type": "str"}]},
+    {"name": "practice_quiz", "description": "Ask the user practice questions on a subject",
+     "args": [
+       {"name": "subject", "type": "str"},
+       {"name": "questions", "type": "int", "min": 1, "max": 20, "required": false}
+     ]},
+    {"name": "spell_word", "description": "Spell a word letter by letter",
+     "args": [{"name": "word", "type": "str"}]}
+  ]
+}

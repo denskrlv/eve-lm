@@ -110,7 +110,9 @@ def model():
 
 
 def build_data(name, data_dirs, tokenizer, library):
-    extra = {"library": library} if name in ("task", "retrieval") else {}
+    extra = (
+        {"library": library, "evals": str(data_dirs[name])} if name in ("task", "retrieval") else {}
+    )
     builder = registry.build("data", name, path=str(data_dirs[name]))
     return builder(
         tokenizer, registry.get("model", "eve").from_config(_tiny_config()).cfg, 0, **extra
@@ -259,7 +261,7 @@ def test_epochs_set_the_steps_from_the_train_set(data_dirs, tokenizer, library, 
             "report": "task_scores",
         },
         "model": {"init": str(init)},
-        "data": {"path": str(data_dirs["task"])},
+        "data": {"path": str(data_dirs["task"]), "evals": str(data_dirs["task"])},
         "train": {"epochs": 2.0, "batch_size": 3, "warmup_steps": 50, "eval_every": 2},
         "run": {"out": str(tmp_path / "run"), "device": "cpu"},
     }

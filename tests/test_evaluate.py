@@ -9,7 +9,7 @@ from eve.config import INTENTS, preset
 from eve.data.modules import VAL_SEED, in_batches, load_examples
 from eve.data.render import Call, TaskCollator, TaskDataset, TaskExample
 from eve.data.schema import Tool
-from eve.evaluate import by_tool, evaluate_set, load_questions_model, task_files
+from eve.evaluate import by_tool, evaluate_set, load_questions_model, set_files
 from eve.model.checkpoint import model_file, save_checkpoint
 from eve.model.eve import Eve
 from eve.tasks.questions import TASK, Outcome, score
@@ -36,8 +36,9 @@ def _write_task(path: Path, library: dict[str, Tool]) -> Path:
         TaskExample("order me a pizza", (library["set_lights"],), "unsupported"),
         TaskExample("thanks, that's all", (library["set_volume"],), "none"),
     ]
+    lines = [r.to_json() | ({"group": "shared word"} if r.calls else {}) for r in rows]
     path.mkdir()
-    (path / "val.jsonl").write_text("".join(json.dumps(r.to_json()) + "\n" for r in rows))
+    (path / "val.jsonl").write_text("".join(json.dumps(line) + "\n" for line in lines))
     return path
 
 
@@ -52,16 +53,16 @@ def test_a_pretraining_checkpoint_is_refused(tmp_path: Path, tokenizer: BPEToken
         load_questions_model(run)
 
 
-def test_missing_task_files_are_named(tmp_path: Path) -> None:
+def test_missing_sets_are_named(tmp_path: Path) -> None:
     with pytest.raises(FileNotFoundError, match="probe.jsonl"):
-        task_files(tmp_path, ["probe"])
+        set_files(tmp_path, ["probe"])
 
 
 def test_scores_are_the_training_evals_and_confusion_counts_every_example(
     tmp_path: Path, library: dict[str, Tool], tokenizer: BPETokenizer
 ) -> None:
     ckpt = load_questions_model(_write_run(tmp_path / "run", tokenizer))
-    path = task_files(_write_task(tmp_path / "task", library), ["val"])["val"]
+    path = set_files(_write_task(tmp_path / "task", library), ["val"])["val"]
     result = evaluate_set(ckpt, path, library, batch_size=2)
 
     data = TaskDataset(load_examples(path, library), tokenizer, CFG, seed=VAL_SEED)
@@ -69,6 +70,9 @@ def test_scores_are_the_training_evals_and_confusion_counts_every_example(
     assert result.examples == sum(sum(said.values()) for said in result.confusion.values()) == 3
     assert list(result.confusion) == list(INTENTS)
     assert sum(result.confusion["call"].values()) == 1
+    ((n, scores),) = result.groups.values()  # only the CALL row has a group
+    assert list(result.groups) == ["shared word"] and n == 1 and "recall_call" in scores
+    assert "recall_none" not in scores
 
 
 def test_by_tool_counts_an_example_for_each_of_its_tools(library: dict[str, Tool]) -> None:
@@ -107,12 +111,13 @@ def test_evaluate_prints_json(
 ) -> None:
     run = _write_run(tmp_path / "run", tokenizer)
     task = _write_task(tmp_path / "task", library)
-    argv = ["evaluate", str(run), "--task", str(task), "--sets", "val", "--device", "cpu"]
+    argv = ["evaluate", str(run), "--evals", str(task), "--sets", "val", "--device", "cpu"]
     main([*argv, "--json"])
     out = json.loads(capsys.readouterr().out.strip().splitlines()[-1])
     assert set(out) == {"val"} and out["val"]["examples"] == 3
     assert {"macro_recall", "exact_acc", "value_acc", "full_acc"} <= set(out["val"]["scores"])
     assert "by_tool" not in out["val"]
+    assert out["val"]["groups"]["shared word"]["examples"] == 1
 
     main([*argv, "--json", "--by-tool"])
     out = json.loads(capsys.readouterr().out.strip().splitlines()[-1])

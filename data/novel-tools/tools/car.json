@@ -1,0 +1,11 @@
+{
+  "domain": "car",
+  "tools": [
+    {"name": "check_tire_pressure", "description": "Read the air pressure of the car's tires",
+     "args": []},
+    {"name": "sound_car_horn", "description": "Honk the car's horn and flash its lights",
+     "args": []},
+    {"name": "cheapest_fuel", "description": "Find the lowest fuel price nearby",
+     "args": [{"name": "fuel", "type": "enum", "options": ["petrol", "diesel"]}]}
+  ]
+}

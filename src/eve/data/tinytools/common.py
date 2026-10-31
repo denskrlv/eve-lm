@@ -24,8 +24,6 @@ TRAVEL = re.compile(
     r"convert_currency)\b",
     re.IGNORECASE,
 )
-# The eval sets TinyTools must not contain (novel-tools is planned; missing files are skipped).
-EVAL_SETS = ("val", "heldout-templates", "massive-test", "probe-candidates", "novel-tools")
 # Words that don't make two requests different: "olly" is MASSIVE's and HWU64's wake word.
 FILLER = frozenset("please olly hey ok okay the a an can could would you me i to for".split())
 MIN_KEY_WORDS = 2  # words (not numbers): a shorter request ("lights") matches too much
@@ -56,18 +54,17 @@ class EvalSet:
     files: tuple[str, ...] = ()
 
     @classmethod
-    def load(cls, task_dir: str | Path = defaults.TASK_DIR) -> "EvalSet":
+    def load(cls, evals_dir: str | Path = defaults.EVALS_DIR) -> "EvalSet":
+        """Every set in ``evals_dir``: TinyTools must contain none of them."""
         keys: set[str] = set()
         files = []
-        for name in EVAL_SETS:
-            path = Path(task_dir) / f"{name}.jsonl"
-            if path.exists():
-                keys.update(
-                    request_key(row["utterance"])
-                    for row in read_jsonl(path)
-                    if row.get("intent") != "none"
-                )
-                files.append(path.name)
+        for path in sorted(Path(evals_dir).glob("*.jsonl")):
+            keys.update(
+                request_key(row["utterance"])
+                for row in read_jsonl(path)
+                if row.get("intent") != "none"
+            )
+            files.append(path.name)
         keys.discard("")
         return cls(frozenset(keys), tuple(files))
 

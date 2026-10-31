@@ -1,0 +1,243 @@
+{"utterance": "scale the lasagna recipe up to 12 servings", "intent": "call", "calls": [{"tool": "scale_recipe", "args": {"dish": "lasagna", "servings": 12}}]}
+{"utterance": "can you redo the pancake recipe for 3 people", "intent": "call", "calls": [{"tool": "scale_recipe", "args": {"dish": "pancake", "servings": 3}}]}
+{"utterance": "I'm making chili for twenty guests, adjust the amounts", "intent": "call", "calls": [{"tool": "scale_recipe", "args": {"dish": "chili", "servings": 20}}]}
+{"utterance": "doing banana bread for just 2 of us tonight, cut everything down", "intent": "call", "calls": [{"tool": "scale_recipe", "args": {"dish": "banana bread", "servings": 2}}]}
+{"utterance": "how much of everything do I need to make risotto for a crowd", "intent": "ask", "calls": [{"tool": "scale_recipe", "args": {"dish": "risotto", "servings": "?"}}]}
+{"utterance": "what can I substitute for buttermilk", "intent": "call", "calls": [{"tool": "substitute_ingredient", "args": {"ingredient": "buttermilk"}}]}
+{"utterance": "out of eggs, what works in their place for baking", "intent": "call", "calls": [{"tool": "substitute_ingredient", "args": {"ingredient": "eggs"}}]}
+{"utterance": "is there a swap for heavy cream in this soup", "intent": "call", "calls": [{"tool": "substitute_ingredient", "args": {"ingredient": "heavy cream"}}]}
+{"utterance": "need an ingredient that can replace fish sauce", "intent": "call", "calls": [{"tool": "substitute_ingredient", "args": {"ingredient": "fish sauce"}}]}
+{"utterance": "I ran out of something for the cake, what can I use instead", "intent": "ask", "calls": [{"tool": "substitute_ingredient", "args": {"ingredient": "?"}}]}
+{"utterance": "which wine goes with roast lamb", "intent": "call", "calls": [{"tool": "pair_wine", "args": {"dish": "roast lamb"}}]}
+{"utterance": "what should I pour with grilled salmon tonight", "intent": "call", "calls": [{"tool": "pair_wine", "args": {"dish": "grilled salmon"}}]}
+{"utterance": "a red or a white for mushroom risotto?", "intent": "call", "calls": [{"tool": "pair_wine", "args": {"dish": "mushroom risotto"}}]}
+{"utterance": "pair a wine with the beef stew please", "intent": "call", "calls": [{"tool": "pair_wine", "args": {"dish": "beef stew"}}]}
+{"utterance": "having duck tonight, what bottle should I open", "intent": "call", "calls": [{"tool": "pair_wine", "args": {"dish": "duck"}}]}
+{"utterance": "is the rice I cooked 4 days ago still safe to eat", "intent": "call", "calls": [{"tool": "check_leftovers", "args": {"food": "rice", "days": 4}}]}
+{"utterance": "check the leftovers: chicken curry from 2 days ago, still ok?", "intent": "call", "calls": [{"tool": "check_leftovers", "args": {"food": "chicken curry", "days": 2}}]}
+{"utterance": "pizza's been in the fridge for five days, can I still eat it", "intent": "call", "calls": [{"tool": "check_leftovers", "args": {"food": "pizza", "days": 5}}]}
+{"utterance": "made soup 3 days back, will it make me sick", "intent": "call", "calls": [{"tool": "check_leftovers", "args": {"food": "soup", "days": 3}}]}
+{"utterance": "are my leftover noodles still good", "intent": "ask", "calls": [{"tool": "check_leftovers", "args": {"food": "noodles", "days": "?"}}]}
+{"utterance": "arm the security system, we're heading out", "intent": "call", "calls": [{"tool": "arm_security_system", "args": {"mode": "away"}}]}
+{"utterance": "set the alarm to night mode, going to bed", "intent": "call", "calls": [{"tool": "arm_security_system", "args": {"mode": "night"}}]}
+{"utterance": "we're all leaving for the weekend, protect the house", "intent": "call", "calls": [{"tool": "arm_security_system", "args": {"mode": "away"}}]}
+{"utterance": "guard the place while we sleep", "intent": "call", "calls": [{"tool": "arm_security_system", "args": {"mode": "night"}}]}
+{"utterance": "arm the system", "intent": "ask", "calls": [{"tool": "arm_security_system", "args": {"mode": "?"}}]}
+{"utterance": "disarm the security system", "intent": "call", "calls": [{"tool": "disarm_security_system", "args": {}}]}
+{"utterance": "I'm home, stand the burglar alarm down", "intent": "call", "calls": [{"tool": "disarm_security_system", "args": {}}]}
+{"utterance": "kill the house alarm before it goes off, it's just me", "intent": "call", "calls": [{"tool": "disarm_security_system", "args": {}}]}
+{"utterance": "who rang the doorbell? show me", "intent": "call", "calls": [{"tool": "doorbell_snapshot", "args": {}}]}
+{"utterance": "who's outside the front door right now", "intent": "call", "calls": [{"tool": "doorbell_snapshot", "args": {}}]}
+{"utterance": "somebody knocked, can I see them", "intent": "call", "calls": [{"tool": "doorbell_snapshot", "args": {}}]}
+{"utterance": "grab a picture of whoever's on the porch", "intent": "call", "calls": [{"tool": "doorbell_snapshot", "args": {}}]}
+{"utterance": "close the garage door", "intent": "call", "calls": [{"tool": "move_garage_door", "args": {"open": false}}]}
+{"utterance": "open the garage, I'm pulling in", "intent": "call", "calls": [{"tool": "move_garage_door", "args": {"open": true}}]}
+{"utterance": "did I leave the garage open? shut it", "intent": "call", "calls": [{"tool": "move_garage_door", "args": {"open": false}}]}
+{"utterance": "lift the big door so I can park the car inside", "intent": "call", "calls": [{"tool": "move_garage_door", "args": {"open": true}}]}
+{"utterance": "book Max in for grooming on Friday", "intent": "call", "calls": [{"tool": "schedule_grooming", "args": {"pet": "Max", "day": "Friday"}}]}
+{"utterance": "Bella needs a bath and a nail trim, Saturday works", "intent": "call", "calls": [{"tool": "schedule_grooming", "args": {"pet": "Bella", "day": "Saturday"}}]}
+{"utterance": "get the dog's fur cut tomorrow", "intent": "call", "calls": [{"tool": "schedule_grooming", "args": {"pet": "dog", "day": "tomorrow"}}]}
+{"utterance": "Oscar is so shaggy, find him a slot next Tuesday for a tidy up", "intent": "call", "calls": [{"tool": "schedule_grooming", "args": {"pet": "Oscar", "day": "next Tuesday"}}]}
+{"utterance": "schedule a grooming for Coco", "intent": "ask", "calls": [{"tool": "schedule_grooming", "args": {"pet": "Coco", "day": "?"}}]}
+{"utterance": "report my cat Mittens as lost near Elm Park", "intent": "call", "calls": [{"tool": "report_lost_pet", "args": {"pet": "Mittens", "area": "Elm Park"}}]}
+{"utterance": "Rex ran off in Riverside, put out an alert", "intent": "call", "calls": [{"tool": "report_lost_pet", "args": {"pet": "Rex", "area": "Riverside"}}]}
+{"utterance": "our parrot Kiwi flew away around Oak Street, let the neighbours know", "intent": "call", "calls": [{"tool": "report_lost_pet", "args": {"pet": "Kiwi", "area": "Oak Street"}}]}
+{"utterance": "Daisy hasn't come home, she was last seen by the old mill", "intent": "call", "calls": [{"tool": "report_lost_pet", "args": {"pet": "Daisy", "area": "the old mill"}}]}
+{"utterance": "my dog is missing, help me find him", "intent": "ask", "calls": [{"tool": "report_lost_pet", "args": {"pet": "dog", "area": "?"}}]}
+{"utterance": "dispense a treat", "intent": "call", "calls": [{"tool": "dispense_treat", "args": {}}]}
+{"utterance": "give Biscuit 3 snacks through the camera", "intent": "call", "calls": [{"tool": "dispense_treat", "args": {"count": 3}}]}
+{"utterance": "toss the cat two goodies, she's been good", "intent": "call", "calls": [{"tool": "dispense_treat", "args": {"count": 2}}]}
+{"utterance": "reward the puppy with a biscuit from the cam", "intent": "call", "calls": [{"tool": "dispense_treat", "args": {}}]}
+{"utterance": "treat time! one treat please", "intent": "call", "calls": [{"tool": "dispense_treat", "args": {"count": 1}}]}
+{"utterance": "when is Luna's next vaccine due", "intent": "call", "calls": [{"tool": "vaccine_due", "args": {"pet": "Luna"}}]}
+{"utterance": "when does Rocky need his next shots", "intent": "call", "calls": [{"tool": "vaccine_due", "args": {"pet": "Rocky"}}]}
+{"utterance": "is Pepper up to date on her jabs", "intent": "call", "calls": [{"tool": "vaccine_due", "args": {"pet": "Pepper"}}]}
+{"utterance": "which vaccine is due next?", "intent": "ask", "calls": [{"tool": "vaccine_due", "args": {"pet": "?"}}]}
+{"utterance": "freeze my credit card", "intent": "call", "calls": [{"tool": "freeze_card", "args": {"card": "credit"}}]}
+{"utterance": "I lost my debit, make sure no one can use it", "intent": "call", "calls": [{"tool": "freeze_card", "args": {"card": "debit"}}]}
+{"utterance": "put a hold on the credit one, I think it got skimmed", "intent": "call", "calls": [{"tool": "freeze_card", "args": {"card": "credit"}}]}
+{"utterance": "my wallet was stolen with the debit card in it, lock it", "intent": "call", "calls": [{"tool": "freeze_card", "args": {"card": "debit"}}]}
+{"utterance": "freeze my card", "intent": "ask", "calls": [{"tool": "freeze_card", "args": {"card": "?"}}]}
+{"utterance": "dispute the 59.99 charge from Zappy Games", "intent": "call", "calls": [{"tool": "dispute_charge", "args": {"merchant": "Zappy Games", "amount": 59.99}}]}
+{"utterance": "I never bought anything from Lumo Store for 120, get my money back", "intent": "call", "calls": [{"tool": "dispute_charge", "args": {"merchant": "Lumo Store", "amount": 120}}]}
+{"utterance": "there's a payment of 15.99 to Kwik Mart that isn't mine", "intent": "call", "calls": [{"tool": "dispute_charge", "args": {"merchant": "Kwik Mart", "amount": 15.99}}]}
+{"utterance": "Nova Gym took 45 after I cancelled, fight it", "intent": "call", "calls": [{"tool": "dispute_charge", "args": {"merchant": "Nova Gym", "amount": 45}}]}
+{"utterance": "I want to dispute a charge from Bright Telecom", "intent": "ask", "calls": [{"tool": "dispute_charge", "args": {"merchant": "Bright Telecom", "amount": "?"}}]}
+{"utterance": "set a spending cap of 300 on dining", "intent": "call", "calls": [{"tool": "set_spending_cap", "args": {"category": "dining", "amount": 300}}]}
+{"utterance": "don't let me spend more than 200 on groceries this month", "intent": "call", "calls": [{"tool": "set_spending_cap", "args": {"category": "groceries", "amount": 200}}]}
+{"utterance": "limit my fun money to 150", "intent": "call", "calls": [{"tool": "set_spending_cap", "args": {"category": "fun", "amount": 150}}]}
+{"utterance": "no more than 400 on clothes and gadgets till the month is over", "intent": "call", "calls": [{"tool": "set_spending_cap", "args": {"category": "shopping", "amount": 400}}]}
+{"utterance": "cap my shopping", "intent": "ask", "calls": [{"tool": "set_spending_cap", "args": {"category": "shopping", "amount": "?"}}]}
+{"utterance": "check my credit score before I apply for the loan", "intent": "call", "calls": [{"tool": "check_credit_score", "args": {}}]}
+{"utterance": "how do lenders rate me right now", "intent": "call", "calls": [{"tool": "check_credit_score", "args": {}}]}
+{"utterance": "would a bank give me a mortgage, how's my rating", "intent": "call", "calls": [{"tool": "check_credit_score", "args": {}}]}
+{"utterance": "check the tire pressure on the van", "intent": "call", "calls": [{"tool": "check_tire_pressure", "args": {}}]}
+{"utterance": "are my tyres ok for the drive", "intent": "call", "calls": [{"tool": "check_tire_pressure", "args": {}}]}
+{"utterance": "do the wheels need air?", "intent": "call", "calls": [{"tool": "check_tire_pressure", "args": {}}]}
+{"utterance": "the front left one looks flat to me, how low is it", "intent": "call", "calls": [{"tool": "check_tire_pressure", "args": {}}]}
+{"utterance": "honk the horn on my car so I can spot it", "intent": "call", "calls": [{"tool": "sound_car_horn", "args": {}}]}
+{"utterance": "where did I park, make it beep", "intent": "call", "calls": [{"tool": "sound_car_horn", "args": {}}]}
+{"utterance": "flash and beep the vehicle, I'm lost in this parking lot", "intent": "call", "calls": [{"tool": "sound_car_horn", "args": {}}]}
+{"utterance": "where's the cheapest diesel nearby", "intent": "call", "calls": [{"tool": "cheapest_fuel", "args": {"fuel": "diesel"}}]}
+{"utterance": "I need to fill up with petrol for less around here", "intent": "call", "calls": [{"tool": "cheapest_fuel", "args": {"fuel": "petrol"}}]}
+{"utterance": "lowest price for gas near me?", "intent": "call", "calls": [{"tool": "cheapest_fuel", "args": {"fuel": "petrol"}}]}
+{"utterance": "tank's nearly empty, which station has diesel on offer", "intent": "call", "calls": [{"tool": "cheapest_fuel", "args": {"fuel": "diesel"}}]}
+{"utterance": "find me some cheap fuel", "intent": "ask", "calls": [{"tool": "cheapest_fuel", "args": {"fuel": "?"}}]}
+{"utterance": "start a breathing exercise for 5 minutes", "intent": "call", "calls": [{"tool": "breathing_exercise", "args": {"minutes": 5}}]}
+{"utterance": "help me calm down for ten minutes", "intent": "call", "calls": [{"tool": "breathing_exercise", "args": {"minutes": 10}}]}
+{"utterance": "I'm anxious, slow my breaths down with me for 3 minutes", "intent": "call", "calls": [{"tool": "breathing_exercise", "args": {"minutes": 3}}]}
+{"utterance": "panicking before my talk, two minutes of inhale exhale please", "intent": "call", "calls": [{"tool": "breathing_exercise", "args": {"minutes": 2}}]}
+{"utterance": "I need to relax, walk me through some deep breathing", "intent": "ask", "calls": [{"tool": "breathing_exercise", "args": {"minutes": "?"}}]}
+{"utterance": "give me a stretch routine for my back", "intent": "call", "calls": [{"tool": "stretch_routine", "args": {"area": "back"}}]}
+{"utterance": "my neck is stiff from the desk, loosen it up", "intent": "call", "calls": [{"tool": "stretch_routine", "args": {"area": "neck"}}]}
+{"utterance": "legs are sore after the run, help me limber up", "intent": "call", "calls": [{"tool": "stretch_routine", "args": {"area": "legs"}}]}
+{"utterance": "stretch out my shoulders", "intent": "call", "calls": [{"tool": "stretch_routine", "args": {"area": "shoulders"}}]}
+{"utterance": "I want a stretching routine", "intent": "ask", "calls": [{"tool": "stretch_routine", "args": {"area": "?"}}]}
+{"utterance": "record a dose: 400 mg of ibuprofen", "intent": "call", "calls": [{"tool": "record_dose", "args": {"medicine": "ibuprofen", "amount": 400}}]}
+{"utterance": "I just took 500 mg paracetamol", "intent": "call", "calls": [{"tool": "record_dose", "args": {"medicine": "paracetamol", "amount": 500}}]}
+{"utterance": "had my metformin, 850 milligrams", "intent": "call", "calls": [{"tool": "record_dose", "args": {"medicine": "metformin", "amount": 850}}]}
+{"utterance": "write down that I swallowed 81 mg of aspirin", "intent": "call", "calls": [{"tool": "record_dose", "args": {"medicine": "aspirin", "amount": 81}}]}
+{"utterance": "note that I had my amoxicillin", "intent": "ask", "calls": [{"tool": "record_dose", "args": {"medicine": "amoxicillin", "amount": "?"}}]}
+{"utterance": "rate my sleep: 7 hours, great", "intent": "call", "calls": [{"tool": "rate_sleep", "args": {"hours": 7, "quality": "great"}}]}
+{"utterance": "only got 5 hours last night and it was poor", "intent": "call", "calls": [{"tool": "rate_sleep", "args": {"hours": 5, "quality": "poor"}}]}
+{"utterance": "slept 8 hours, felt okay", "intent": "call", "calls": [{"tool": "rate_sleep", "args": {"hours": 8, "quality": "okay"}}]}
+{"utterance": "6.5 hours of rest, woke up feeling amazing", "intent": "call", "calls": [{"tool": "rate_sleep", "args": {"hours": 6.5, "quality": "great"}}]}
+{"utterance": "my sleep was poor last night", "intent": "ask", "calls": [{"tool": "rate_sleep", "args": {"hours": "?", "quality": "poor"}}]}
+{"utterance": "limit Max's screen time to 60 minutes", "intent": "call", "calls": [{"tool": "limit_screen_time", "args": {"child": "Max", "minutes": 60}}]}
+{"utterance": "Lily can only have 45 minutes on the tablet today", "intent": "call", "calls": [{"tool": "limit_screen_time", "args": {"child": "Lily", "minutes": 45}}]}
+{"utterance": "no more than 90 minutes of games for Sam", "intent": "call", "calls": [{"tool": "limit_screen_time", "args": {"child": "Sam", "minutes": 90}}]}
+{"utterance": "Jack gets thirty minutes of the iPad, then it switches off", "intent": "call", "calls": [{"tool": "limit_screen_time", "args": {"child": "Jack", "minutes": 30}}]}
+{"utterance": "cut down Leo's screen time", "intent": "ask", "calls": [{"tool": "limit_screen_time", "args": {"child": "Leo", "minutes": "?"}}]}
+{"utterance": "tell a bedtime story about dragons", "intent": "call", "calls": [{"tool": "bedtime_story", "args": {"topic": "dragons"}}]}
+{"utterance": "Mia can't sleep, tell her something about a brave little fox", "intent": "call", "calls": [{"tool": "bedtime_story", "args": {"topic": "a brave little fox"}}]}
+{"utterance": "a story about pirates before lights out", "intent": "call", "calls": [{"tool": "bedtime_story", "args": {"topic": "pirates"}}]}
+{"utterance": "help the kids drift off with a tale about space", "intent": "call", "calls": [{"tool": "bedtime_story", "args": {"topic": "space"}}]}
+{"utterance": "the twins want a story before bed", "intent": "ask", "calls": [{"tool": "bedtime_story", "args": {"topic": "?"}}]}
+{"utterance": "pay Tom's allowance, 10 dollars", "intent": "call", "calls": [{"tool": "pay_allowance", "args": {"child": "Tom", "amount": 10}}]}
+{"utterance": "give Ava 5 dollars pocket money for the week", "intent": "call", "calls": [{"tool": "pay_allowance", "args": {"child": "Ava", "amount": 5}}]}
+{"utterance": "send Noah his weekly 15", "intent": "call", "calls": [{"tool": "pay_allowance", "args": {"child": "Noah", "amount": 15}}]}
+{"utterance": "Zoe did all her chores, she earned twelve bucks", "intent": "call", "calls": [{"tool": "pay_allowance", "args": {"child": "Zoe", "amount": 12}}]}
+{"utterance": "pay Ella her allowance", "intent": "ask", "calls": [{"tool": "pay_allowance", "args": {"child": "Ella", "amount": "?"}}]}
+{"utterance": "how do you pronounce quinoa", "intent": "call", "calls": [{"tool": "pronounce_word", "args": {"word": "quinoa"}}]}
+{"utterance": "how do I say gnocchi", "intent": "call", "calls": [{"tool": "pronounce_word", "args": {"word": "gnocchi"}}]}
+{"utterance": "read Worcestershire out loud for me", "intent": "call", "calls": [{"tool": "pronounce_word", "args": {"word": "Worcestershire"}}]}
+{"utterance": "what does açaí sound like when people say it", "intent": "call", "calls": [{"tool": "pronounce_word", "args": {"word": "açaí"}}]}
+{"utterance": "quiz me on world capitals, 10 questions", "intent": "call", "calls": [{"tool": "practice_quiz", "args": {"subject": "world capitals", "questions": 10}}]}
+{"utterance": "test what I know about the French Revolution with five questions", "intent": "call", "calls": [{"tool": "practice_quiz", "args": {"subject": "the French Revolution", "questions": 5}}]}
+{"utterance": "ask me 3 things about photosynthesis to see if I get it", "intent": "call", "calls": [{"tool": "practice_quiz", "args": {"subject": "photosynthesis", "questions": 3}}]}
+{"utterance": "exam on Monday, drill me on fractions", "intent": "call", "calls": [{"tool": "practice_quiz", "args": {"subject": "fractions"}}]}
+{"utterance": "give me a practice quiz with 8 questions", "intent": "ask", "calls": [{"tool": "practice_quiz", "args": {"subject": "?", "questions": 8}}]}
+{"utterance": "spell necessary", "intent": "call", "calls": [{"tool": "spell_word", "args": {"word": "necessary"}}]}
+{"utterance": "how do you write rhythm letter by letter", "intent": "call", "calls": [{"tool": "spell_word", "args": {"word": "rhythm"}}]}
+{"utterance": "what are the letters in Mississippi", "intent": "call", "calls": [{"tool": "spell_word", "args": {"word": "Mississippi"}}]}
+{"utterance": "is it accommodate with two m's? give me all of it", "intent": "call", "calls": [{"tool": "spell_word", "args": {"word": "accommodate"}}]}
+{"utterance": "estimate paint for 40 square metres, 2 coats", "intent": "call", "calls": [{"tool": "estimate_paint", "args": {"area": 40, "coats": 2}}]}
+{"utterance": "how many tins do I need for a 25 square metre wall, two layers", "intent": "call", "calls": [{"tool": "estimate_paint", "args": {"area": 25, "coats": 2}}]}
+{"utterance": "covering 60 square metres with 3 coats, how much do I buy", "intent": "call", "calls": [{"tool": "estimate_paint", "args": {"area": 60, "coats": 3}}]}
+{"utterance": "redoing a 12.5 square metre room in blue, how many litres", "intent": "call", "calls": [{"tool": "estimate_paint", "args": {"area": 12.5}}]}
+{"utterance": "how much paint for the bedroom", "intent": "ask", "calls": [{"tool": "estimate_paint", "args": {"area": "?"}}]}
+{"utterance": "how do I remove a red wine stain", "intent": "call", "calls": [{"tool": "remove_stain", "args": {"stain": "red wine"}}]}
+{"utterance": "spilled coffee on my white shirt, what now", "intent": "call", "calls": [{"tool": "remove_stain", "args": {"stain": "coffee"}}]}
+{"utterance": "grass marks all over the kid's jeans, help", "intent": "call", "calls": [{"tool": "remove_stain", "args": {"stain": "grass"}}]}
+{"utterance": "got ink on the couch cushion, how do I get it out", "intent": "call", "calls": [{"tool": "remove_stain", "args": {"stain": "ink"}}]}
+{"utterance": "what spacing do tomatoes need", "intent": "call", "calls": [{"tool": "plant_spacing", "args": {"plant": "tomatoes"}}]}
+{"utterance": "how far apart should I put the lettuce", "intent": "call", "calls": [{"tool": "plant_spacing", "args": {"plant": "lettuce"}}]}
+{"utterance": "how much room goes between garlic cloves in the bed", "intent": "call", "calls": [{"tool": "plant_spacing", "args": {"plant": "garlic"}}]}
+{"utterance": "putting in sunflowers, how close together can they go", "intent": "call", "calls": [{"tool": "plant_spacing", "args": {"plant": "sunflowers"}}]}
+{"utterance": "planting carrots this weekend, what gap do they need", "intent": "call", "calls": [{"tool": "plant_spacing", "args": {"plant": "carrots"}}]}
+{"utterance": "read the gas meter", "intent": "call", "calls": [{"tool": "read_meter", "args": {"meter": "gas"}}]}
+{"utterance": "how much electricity have we used this month", "intent": "call", "calls": [{"tool": "read_meter", "args": {"meter": "electricity"}}]}
+{"utterance": "what's our water usage so far", "intent": "call", "calls": [{"tool": "read_meter", "args": {"meter": "water"}}]}
+{"utterance": "how many kilowatt hours have we burned through since the 1st", "intent": "call", "calls": [{"tool": "read_meter", "args": {"meter": "electricity"}}]}
+{"utterance": "give me a meter reading", "intent": "ask", "calls": [{"tool": "read_meter", "args": {"meter": "?"}}]}
+{"utterance": "aurora forecast for Tromsø", "intent": "call", "calls": [{"tool": "aurora_forecast", "args": {"city": "Tromsø"}}]}
+{"utterance": "will I see the northern lights tonight in Reykjavik", "intent": "call", "calls": [{"tool": "aurora_forecast", "args": {"city": "Reykjavik"}}]}
+{"utterance": "any chance of the northern lights tonight", "intent": "call", "calls": [{"tool": "aurora_forecast", "args": {}}]}
+{"utterance": "is the sky going to glow green over Fairbanks", "intent": "call", "calls": [{"tool": "aurora_forecast", "args": {"city": "Fairbanks"}}]}
+{"utterance": "what's the uv index today", "intent": "call", "calls": [{"tool": "check_uv_index", "args": {}}]}
+{"utterance": "do I need sunscreen in Madrid today", "intent": "call", "calls": [{"tool": "check_uv_index", "args": {"city": "Madrid"}}]}
+{"utterance": "how strong is the sun right now", "intent": "call", "calls": [{"tool": "check_uv_index", "args": {}}]}
+{"utterance": "will I burn if I sit outside in Sydney this afternoon", "intent": "call", "calls": [{"tool": "check_uv_index", "args": {"city": "Sydney"}}]}
+{"utterance": "when's the next meteor shower", "intent": "call", "calls": [{"tool": "meteor_shower", "args": {}}]}
+{"utterance": "when can I next see shooting stars", "intent": "call", "calls": [{"tool": "meteor_shower", "args": {}}]}
+{"utterance": "are the Perseids coming soon", "intent": "call", "calls": [{"tool": "meteor_shower", "args": {}}]}
+{"utterance": "watch the price of the Switch and tell me when it's 250", "intent": "call", "calls": [{"tool": "watch_price", "args": {"product": "Switch", "target": 250}}]}
+{"utterance": "let me know when the Dyson vacuum drops to 299", "intent": "call", "calls": [{"tool": "watch_price", "args": {"product": "Dyson vacuum", "target": 299}}]}
+{"utterance": "alert me if AirPods go below 99", "intent": "call", "calls": [{"tool": "watch_price", "args": {"product": "AirPods", "target": 99}}]}
+{"utterance": "I'd buy the Kindle at 79.99, ping me when it gets there", "intent": "call", "calls": [{"tool": "watch_price", "args": {"product": "Kindle", "target": 79.99}}]}
+{"utterance": "watch the price on the standing lamp", "intent": "ask", "calls": [{"tool": "watch_price", "args": {"product": "standing lamp", "target": "?"}}]}
+{"utterance": "start a return for the boots, wrong size", "intent": "call", "calls": [{"tool": "start_return", "args": {"item": "boots", "reason": "wrong size"}}]}
+{"utterance": "these headphones arrived broken, send them back", "intent": "call", "calls": [{"tool": "start_return", "args": {"item": "headphones", "reason": "damaged"}}]}
+{"utterance": "I don't want the lamp anymore, can I get a refund", "intent": "call", "calls": [{"tool": "start_return", "args": {"item": "lamp", "reason": "changed mind"}}]}
+{"utterance": "the jeans are too tight, ship them back", "intent": "call", "calls": [{"tool": "start_return", "args": {"item": "jeans", "reason": "wrong size"}}]}
+{"utterance": "return the jacket", "intent": "ask", "calls": [{"tool": "start_return", "args": {"item": "jacket", "reason": "?"}}]}
+{"utterance": "identify this song", "intent": "call", "calls": [{"tool": "identify_song", "args": {}}]}
+{"utterance": "what's this tune called", "intent": "call", "calls": [{"tool": "identify_song", "args": {}}]}
+{"utterance": "who sings this track playing in the cafe", "intent": "call", "calls": [{"tool": "identify_song", "args": {}}]}
+{"utterance": "help me tune my guitar", "intent": "call", "calls": [{"tool": "tune_instrument", "args": {"instrument": "guitar"}}]}
+{"utterance": "my uke sounds off, get it back in pitch", "intent": "call", "calls": [{"tool": "tune_instrument", "args": {"instrument": "ukulele"}}]}
+{"utterance": "the violin is flat, give me an A to match", "intent": "call", "calls": [{"tool": "tune_instrument", "args": {"instrument": "violin"}}]}
+{"utterance": "play the open strings for a bass so I can match them", "intent": "call", "calls": [{"tool": "tune_instrument", "args": {"instrument": "bass"}}]}
+{"utterance": "tune my instrument", "intent": "ask", "calls": [{"tool": "tune_instrument", "args": {"instrument": "?"}}]}
+{"utterance": "start the metronome at 90", "intent": "call", "calls": [{"tool": "start_metronome", "args": {"bpm": 90}}]}
+{"utterance": "give me a click at 120 to practice to", "intent": "call", "calls": [{"tool": "start_metronome", "args": {"bpm": 120}}]}
+{"utterance": "keep a steady beat at sixty for my scales", "intent": "call", "calls": [{"tool": "start_metronome", "args": {"bpm": 60}}]}
+{"utterance": "start a metronome", "intent": "ask", "calls": [{"tool": "start_metronome", "args": {"bpm": "?"}}]}
+{"utterance": "arm the security system for the night and close the garage door", "intent": "call", "calls": [{"tool": "arm_security_system", "args": {"mode": "night"}}, {"tool": "move_garage_door", "args": {"open": false}}]}
+{"utterance": "freeze my debit card and then check my credit score", "intent": "call", "calls": [{"tool": "freeze_card", "args": {"card": "debit"}}, {"tool": "check_credit_score", "args": {}}]}
+{"utterance": "someone took my debit, stop it working, then tell me how lenders rate me", "intent": "call", "calls": [{"tool": "freeze_card", "args": {"card": "debit"}}, {"tool": "check_credit_score", "args": {}}]}
+{"utterance": "breathing exercise for 5 minutes, then a bedtime story about the sea", "intent": "call", "calls": [{"tool": "breathing_exercise", "args": {"minutes": 5}}, {"tool": "bedtime_story", "args": {"topic": "the sea"}}]}
+{"utterance": "I took 200 mg of ibuprofen and only got 4 hours of rest, poor night", "intent": "call", "calls": [{"tool": "record_dose", "args": {"medicine": "ibuprofen", "amount": 200}}, {"tool": "rate_sleep", "args": {"hours": 4, "quality": "poor"}}]}
+{"utterance": "honk the horn and check the tire pressure", "intent": "call", "calls": [{"tool": "sound_car_horn", "args": {}}, {"tool": "check_tire_pressure", "args": {}}]}
+{"utterance": "tell Ava a story about owls, then limit Ava's screen time to 30 minutes", "intent": "call", "calls": [{"tool": "bedtime_story", "args": {"topic": "owls"}}, {"tool": "limit_screen_time", "args": {"child": "Ava", "minutes": 30}}]}
+{"utterance": "give Tom his 10 for the week and toss Biscuit 2 goodies", "intent": "call", "calls": [{"tool": "pay_allowance", "args": {"child": "Tom", "amount": 10}}, {"tool": "dispense_treat", "args": {"count": 2}}]}
+{"utterance": "order a new bag of dog food", "intent": "unsupported", "calls": []}
+{"utterance": "bake the cake for 40 minutes", "intent": "unsupported", "calls": []}
+{"utterance": "what's the capital of Peru", "intent": "unsupported", "calls": []}
+{"utterance": "turn on the porch light", "intent": "unsupported", "calls": []}
+{"utterance": "move 50 into my savings account", "intent": "unsupported", "calls": []}
+{"utterance": "call the vet and make an appointment", "intent": "unsupported", "calls": []}
+{"utterance": "put on something jazzy", "intent": "unsupported", "calls": []}
+{"utterance": "how many calories are in an avocado", "intent": "unsupported", "calls": []}
+{"utterance": "book the car in for an oil change", "intent": "unsupported", "calls": []}
+{"utterance": "wake me up at 6 tomorrow", "intent": "unsupported", "calls": []}
+{"utterance": "add milk to the shopping list", "intent": "unsupported", "calls": []}
+{"utterance": "translate thank you into Japanese", "intent": "unsupported", "calls": []}
+{"utterance": "reserve a table for two at an Italian place", "intent": "unsupported", "calls": []}
+{"utterance": "will it rain tomorrow", "intent": "unsupported", "calls": []}
+{"utterance": "message my mum and say I'll be ten minutes late", "intent": "unsupported", "calls": []}
+{"utterance": "get us a large pepperoni from Gino's", "intent": "unsupported", "calls": []}
+{"utterance": "remind me to water the plants on Sunday", "intent": "unsupported", "calls": []}
+{"utterance": "how many hours ahead is Tokyo right now", "intent": "unsupported", "calls": []}
+{"utterance": "get the robot to suck up the crumbs under the table", "intent": "unsupported", "calls": []}
+{"utterance": "turn the heating down to 19", "intent": "unsupported", "calls": []}
+{"utterance": "find a plumber near me", "intent": "unsupported", "calls": []}
+{"utterance": "how many kilometres is 5 miles", "intent": "unsupported", "calls": []}
+{"utterance": "how deep is the Mariana Trench", "intent": "unsupported", "calls": []}
+{"utterance": "read me my latest email", "intent": "unsupported", "calls": []}
+{"utterance": "switch us to a cheaper electricity supplier", "intent": "unsupported", "calls": []}
+{"utterance": "let the cleaner in through the back door", "intent": "unsupported", "calls": []}
+{"utterance": "how long should I boil an egg", "intent": "unsupported", "calls": []}
+{"utterance": "renew my car insurance", "intent": "unsupported", "calls": []}
+{"utterance": "check if my library book is overdue", "intent": "unsupported", "calls": []}
+{"utterance": "record the football match tonight", "intent": "unsupported", "calls": []}
+{"utterance": "thanks, that's perfect", "intent": "none", "calls": []}
+{"utterance": "morning! the dog woke me up at five again", "intent": "none", "calls": []}
+{"utterance": "my cat is such a diva", "intent": "none", "calls": []}
+{"utterance": "I love the smell of fresh paint", "intent": "none", "calls": []}
+{"utterance": "the northern lights were amazing last winter", "intent": "none", "calls": []}
+{"utterance": "you've been really useful this week", "intent": "none", "calls": []}
+{"utterance": "ugh, Mondays", "intent": "none", "calls": []}
+{"utterance": "my guitar was a gift from my grandad", "intent": "none", "calls": []}
+{"utterance": "we finally finished painting the hallway", "intent": "none", "calls": []}
+{"utterance": "forget it, I figured it out", "intent": "none", "calls": []}
+{"utterance": "haha that's funny", "intent": "none", "calls": []}
+{"utterance": "my credit card bill was huge this month", "intent": "none", "calls": []}
+{"utterance": "the kids loved the story last night", "intent": "none", "calls": []}
+{"utterance": "it's so sunny today", "intent": "none", "calls": []}
+{"utterance": "I'm trying to sleep more these days", "intent": "none", "calls": []}
+{"utterance": "do you ever get bored of answering questions?", "intent": "none", "calls": []}
+{"utterance": "ok cool", "intent": "none", "calls": []}
+{"utterance": "lasagna is my favourite", "intent": "none", "calls": []}
+{"utterance": "oops, that was meant for my sister", "intent": "none", "calls": []}
+{"utterance": "the garage is such a mess", "intent": "none", "calls": []}
