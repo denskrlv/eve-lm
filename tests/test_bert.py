@@ -8,16 +8,24 @@ from torch import nn
 from torch.nn import functional as F
 
 from eve.api.toolbox import Dense
+from eve.config import preset
+from eve.data.render import Call, TaskCollator, TaskExample, render
 from eve.data.schema import Tool
-from eve.model.bert import BertBlock, import_minilm, read_safetensors
+from eve.model.bert import BertBlock, import_minilm, import_minilm_eve, read_safetensors
+from eve.model.build import load_init
 from eve.model.checkpoint import load_checkpoint, save_checkpoint
+from eve.model.eve import Eve
 from eve.model.retriever import Retriever, RetrieverConfig, padded
-from eve.tokenizer.bpe import BOS, EOS, SPECIAL_TOKENS, TOOL
-from eve.tokenizer.wordpiece import WordPieceTokenizer
+from eve.tasks.questions import joint_loss
+from eve.tokenizer import PairTokenizer, tokenizer_from_dict
+from eve.tokenizer.bpe import BOS, EOS, SPECIAL_TOKENS, TOOL, BPETokenizer
+from eve.tokenizer.wordpiece import TITLE, WordPieceTokenizer
+from eve.train.optim import param_groups
 
 PIECES = ["[UNK]", "[CLS]", "[SEP]", "[MASK]", "request", "tools", "tool", "argument"]
 PIECES += ["set", "the", "lights", "lock", "door", "play", "music", "_", ":", "on", "off"]
 D, HEADS, LAYERS, FFN = 16, 4, 2, 32
+POSITIONS = 128
 BERT = {
     "model_type": "bert",
     "hidden_act": "gelu",
@@ -26,7 +34,7 @@ BERT = {
     "intermediate_size": FFN,
     "num_attention_heads": HEADS,
     "num_hidden_layers": LAYERS,
-    "max_position_embeddings": 64,
+    "max_position_embeddings": POSITIONS,
     "hidden_dropout_prob": 0.1,
     "vocab_size": len(SPECIAL_TOKENS) + len(PIECES),
 }
@@ -56,9 +64,9 @@ def bert_weights() -> dict[str, torch.Tensor]:
         return torch.randn(*shape, generator=g) * 0.2
 
     w = {
-        "embeddings.position_ids": torch.arange(64)[None],
+        "embeddings.position_ids": torch.arange(POSITIONS)[None],
         "embeddings.word_embeddings.weight": r(BERT["vocab_size"], D),
-        "embeddings.position_embeddings.weight": r(64, D),
+        "embeddings.position_embeddings.weight": r(POSITIONS, D),
         "embeddings.token_type_embeddings.weight": r(2, D),
         "embeddings.LayerNorm.weight": 1 + r(D),
         "embeddings.LayerNorm.bias": r(D),
@@ -165,14 +173,14 @@ def test_import_pools_like_sentence_transformers(download: Path) -> None:
 
 def test_imported_retriever_saves_trains_and_scores(download: Path, tmp_path: Path) -> None:
     model, tokenizer = import_minilm(download)
-    assert model.cfg.arch == "bert" and model.cfg.embed_dim == D
+    assert model.cfg.encoder == "bert" and model.cfg.embed_dim == D
     assert torch.equal(
         model.embeddings.tok.weight[TOOL], model.embeddings.tok.weight[tokenizer.ids["tool"]]
     )
     save_checkpoint(tmp_path / "r.pt", model, tokenizer, {"task": "retrieval"})
     loaded = load_checkpoint(tmp_path / "r.pt")
     assert isinstance(loaded.tokenizer, WordPieceTokenizer)
-    assert isinstance(loaded.model, Retriever) and loaded.model.cfg.arch == "bert"
+    assert isinstance(loaded.model, Retriever) and loaded.model.cfg.encoder == "bert"
     with pytest.raises(TypeError, match="BPE"):
         _ = loaded.bpe  # an Eve model's paths refuse it
     started = Retriever.start(tmp_path / "r.pt", max_tool_len=32)  # the run's init
@@ -183,6 +191,91 @@ def test_imported_retriever_saves_trains_and_scores(download: Path, tmp_path: Pa
     assert len(scores) == 2 and all(-1.0 <= s <= 1.0 for s in scores)
 
 
-def test_unknown_arch_is_refused() -> None:
-    with pytest.raises(ValueError, match="arch"):
-        Retriever(RetrieverConfig(d_model=D, n_heads=HEADS, arch="gpt"))
+def test_unknown_encoder_is_refused() -> None:
+    with pytest.raises(ValueError, match="encoder"):
+        RetrieverConfig(d_model=D, n_heads=HEADS, encoder="gpt")
+
+
+# ---- an Eve with MiniLM as its encoder ---------------------------------------------------------
+
+
+@pytest.fixture
+def eve_base(tmp_path: Path, tokenizer: BPETokenizer) -> Path:
+    """A tiny Eve of the BERT's width, whose decoder the import copies."""
+    torch.manual_seed(0)
+    model = Eve(preset("tiny", d_model=D, n_heads=2, ffn_mult=FFN // D))
+    save_checkpoint(tmp_path / "base.pt", model, tokenizer)
+    return tmp_path / "base.pt"
+
+
+def test_eve_import_has_minilm_encoder_and_the_base_decoder(
+    download: Path, eve_base: Path, tmp_path: Path
+) -> None:
+    model, tokenizer = import_minilm_eve(download, eve_base)
+    model.eval()
+    assert model.cfg.encoder == "bert" and model.cfg.enc_heads == HEADS
+    assert isinstance(tokenizer, PairTokenizer) and tokenizer.vocab_size <= model.cfg.vocab_size
+    retriever, _ = import_minilm(download)
+    ids = torch.tensor([[BOS, *tokenizer.encoder.encode("lock the door"), EOS]])
+    mask = torch.ones_like(ids, dtype=torch.bool)
+    pooled = F.normalize(model.encode(ids, mask, torch.zeros_like(ids)).mean(1), dim=-1)
+    assert torch.allclose(pooled, retriever.eval()(ids, mask), atol=1e-5)  # MiniLM's, untouched
+    base = load_checkpoint(eve_base).model
+    key = base.decoder[0].cross_attn.W_key.weight
+    assert torch.equal(model.decoder[0].cross_attn.W_key.weight, key)
+    assert model.lm_head.weight is model.embeddings.tok.weight  # still tied
+    assert model.embeddings.enc_pos is None  # the encoder has its own positions
+    assert not model.enc_case.weight.any()  # case starts at zero: MiniLM reads as trained
+
+    fresh, _ = import_minilm_eve(download, eve_base, fresh_decoder=True)
+    assert not torch.equal(fresh.decoder[0].cross_attn.W_key.weight, key)
+
+    save_checkpoint(tmp_path / "eve-minilm.pt", model, tokenizer)
+    started = load_init(tmp_path / "eve-minilm.pt")  # what a fine-tune run starts from
+    assert isinstance(started.tokenizer, PairTokenizer) and started.model.cfg.encoder == "bert"
+    assert torch.equal(started.model.encoder[1].ff_in.weight, model.encoder[1].ff_in.weight)
+
+
+def test_eve_import_refuses_another_width(
+    download: Path, tmp_path: Path, tokenizer: BPETokenizer
+) -> None:
+    save_checkpoint(tmp_path / "wide.pt", Eve(preset("tiny")), tokenizer)  # d 64, not 16
+    with pytest.raises(ValueError, match="feed-forward"):
+        import_minilm_eve(download, tmp_path / "wide.pt")
+
+
+def test_minilm_eve_trains_on_a_task_batch_with_cases(
+    download: Path, eve_base: Path, library: dict[str, Tool]
+) -> None:
+    model, tokenizer = import_minilm_eve(download, eve_base)
+    tools = (library["set_lights"], library["lock_door"])
+    example = TaskExample(
+        "Lock the door", tools, "call", (Call("lock_door", {"door": "front", "locked": True}),)
+    )
+    rendered = render(example, tokenizer, model.cfg)
+    assert rendered.enc_case is not None and TITLE in rendered.enc_case  # "Lock"
+    assert rendered.dec_ids[1] == tokenizer.decoder.encode("<call>", specials=True)[0]  # BPE side
+    batch = TaskCollator(model.cfg)([rendered, rendered])
+    assert batch["enc_case"].shape == batch["enc_ids"].shape
+    loss = sum(joint_loss(model, batch).values())
+    loss.backward()  # type: ignore[union-attr]
+    assert torch.isfinite(loss) and model.enc_case.weight.grad is not None  # case gets learned
+    again = tokenizer_from_dict(tokenizer.to_dict())
+    assert isinstance(again, PairTokenizer) and again.to_dict() == tokenizer.to_dict()
+
+
+def test_bpe_batches_have_no_cases(library: dict[str, Tool], tokenizer: BPETokenizer) -> None:
+    cfg = preset("tiny")
+    example = TaskExample("Lock the door", (library["lock_door"],), "none")
+    assert "enc_case" not in TaskCollator(cfg)([render(example, tokenizer, cfg)])
+
+
+def test_encoder_lr_scale_groups_only_minilm(download: Path, eve_base: Path) -> None:
+    model, _ = import_minilm_eve(download, eve_base)
+    names = {id(p): n for n, p in model.named_parameters()}
+    groups = param_groups(model, 0.1, encoder_lr_scale=0.1)
+    scaled = {names[id(p)] for g in groups if "lr_scale" in g for p in g["params"]}
+    assert scaled and all(n.startswith(("enc_embeddings.", "encoder.")) for n in scaled)
+    assert not any(n.startswith("enc_case") for n in scaled)  # new: the full lr
+    assert sum(len(g["params"]) for g in groups) == len(names)
+    assert len(param_groups(model, 0.1)) == 2  # no scale: the groups as before

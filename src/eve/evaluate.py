@@ -94,7 +94,7 @@ def evaluate_set(
     """
     cfg = ckpt.model.cfg
     examples = load_examples(path, library)
-    data = TaskDataset(examples, ckpt.bpe, cfg, seed=SEEDS.get(path.stem, 0))
+    data = TaskDataset(examples, ckpt.task_tokenizer, cfg, seed=SEEDS.get(path.stem, 0))
     answers = outcomes(ckpt.model, in_batches(data, TaskCollator(cfg), batch_size))
     counts = tally(answers)
     confusion = {gold: {said: counts.answered[gold, said] for said in INTENTS} for gold in INTENTS}

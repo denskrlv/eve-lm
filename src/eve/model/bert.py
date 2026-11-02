@@ -14,15 +14,16 @@ here so its weights mean what they meant:
 
 Attention is Eve's ``MultiHeadAttention``: BERT's query, key, value and output layers have the
 same shapes and biases. ``import_minilm`` reads the sentence-transformers download (safetensors,
-read here without the library) into a ``Retriever`` checkpoint, so training and ``eve retriever
-eval`` use it like any other.
+read here without the library) into a ``Retriever``, and ``import_minilm_eve`` into an Eve with
+MiniLM as its encoder, so training and evaluation use them like any other checkpoint.
 """
 
 import json
 import math
 import struct
+from dataclasses import replace
 from pathlib import Path
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
 import torch
 from torch import nn
@@ -31,8 +32,13 @@ from torch.nn import functional as F
 from eve.config import ModelConfig
 from eve.model.attention import MultiHeadAttention
 from eve.model.blocks import LayerNorm
+from eve.tokenizer import PairTokenizer
 from eve.tokenizer.bpe import ARG, BOS, EOS, TOOL, TOOLS, UTT
 from eve.tokenizer.wordpiece import WordPieceTokenizer
+
+if TYPE_CHECKING:
+    from eve.model.eve import Eve
+    from eve.model.retriever import Retriever
 
 EPS = 1e-12  # BERT's LayerNorm eps
 SAFETENSORS_DTYPES = {
@@ -53,7 +59,7 @@ class BertEmbeddings(nn.Module):
 
     def __init__(self, cfg: ModelConfig):
         super().__init__()
-        self.tok = nn.Embedding(cfg.vocab_size, cfg.d_model)
+        self.tok = nn.Embedding(cfg.enc_vocab, cfg.d_model)
         self.pos = nn.Embedding(cfg.max_encoder_len, cfg.d_model)
         self.norm = LayerNorm(cfg.d_model, eps=EPS)
         self.drop = nn.Dropout(cfg.dropout)
@@ -76,7 +82,7 @@ class BertBlock(nn.Module):
     def __init__(self, cfg: ModelConfig):
         super().__init__()
         d = cfg.d_model
-        self.attn = MultiHeadAttention(d, cfg.n_heads, dropout=cfg.dropout)
+        self.attn = MultiHeadAttention(d, cfg.enc_heads, dropout=cfg.dropout)
         self.norm1 = LayerNorm(d, eps=EPS)
         self.ff_in = nn.Linear(d, cfg.ffn_mult * d)
         self.ff_out = nn.Linear(cfg.ffn_mult * d, d)
@@ -118,7 +124,7 @@ def minilm_config(bert: dict[str, Any], **fields: Any) -> dict[str, Any]:
     if bert["intermediate_size"] % d:
         raise ValueError(f"feed-forward size {bert['intermediate_size']} isn't a multiple of {d}")
     return {
-        "arch": "bert",
+        "encoder": "bert",
         "vocab_size": bert["vocab_size"],
         "max_encoder_len": bert["max_position_embeddings"],
         "d_model": d,
@@ -170,26 +176,85 @@ def minilm_state(
     return state
 
 
-def import_minilm(directory: str | Path, **fields: Any) -> tuple[nn.Module, WordPieceTokenizer]:
-    """A bert ``Retriever`` and its tokenizer from a sentence-transformers download
-    (``config.json``, ``model.safetensors``, ``vocab.txt``). Its projection is the identity and
-    it pools by the mean, so before any training it scores as the original model does.
-    ``fields`` set other config fields (``max_query_len``, ``dropout``)."""
-    from eve.model.retriever import SCALE, Retriever, RetrieverConfig
-
+def read_minilm(
+    directory: str | Path,
+) -> tuple[dict[str, Any], WordPieceTokenizer, dict[str, torch.Tensor]]:
+    """A sentence-transformers download (``config.json``, ``model.safetensors``, ``vocab.txt``):
+    its BERT config, its tokenizer and its weights as a bert ``Retriever``'s (``minilm_state``)."""
     directory = Path(directory)
     bert = json.loads((directory / "config.json").read_text())
     if bert.get("model_type") != "bert":
         raise ValueError(f"{directory} isn't a BERT model ({bert.get('model_type')})")
-    cfg = RetrieverConfig(**minilm_config(bert, **fields))
     tokenizer = WordPieceTokenizer.from_bert_vocab(directory / "vocab.txt")
-    if tokenizer.vocab_size != cfg.vocab_size:
-        raise ValueError(f"vocab.txt has {tokenizer.vocab_size} pieces, config {cfg.vocab_size}")
+    if tokenizer.vocab_size != bert["vocab_size"]:
+        raise ValueError(
+            f"vocab.txt has {tokenizer.vocab_size} pieces, config {bert['vocab_size']}"
+        )
+    weights = read_safetensors(directory / "model.safetensors")
+    return bert, tokenizer, minilm_state(weights, tokenizer, bert["num_hidden_layers"])
+
+
+def import_minilm(directory: str | Path, **fields: Any) -> tuple["Retriever", WordPieceTokenizer]:
+    """A bert ``Retriever`` and its tokenizer from a sentence-transformers download
+    (``read_minilm``). Its projection is the identity and it pools by the mean, so before any
+    training it scores as the original model does. ``fields`` set other config fields
+    (``max_query_len``, ``dropout``)."""
+    from eve.model.retriever import SCALE, Retriever, RetrieverConfig
+
+    bert, tokenizer, state = read_minilm(directory)
+    cfg = RetrieverConfig(**minilm_config(bert, **fields))
     model = Retriever(cfg)
-    state = minilm_state(
-        read_safetensors(directory / "model.safetensors"), tokenizer, cfg.n_encoder_layers
-    )
     state["project.weight"] = torch.eye(cfg.embed_dim, cfg.d_model)
     state["log_scale"] = torch.tensor(math.log(SCALE))
     model.load_state_dict(state)  # strict: every weight has a home
     return model, tokenizer
+
+
+DECODER = ("embeddings.tok.", "embeddings.dec_pos.", "decoder.", "decoder_norm.", "lm_head.")
+FRESH = ("questions.", "enc_case.")  # never trained before the fine-tune
+
+
+def import_minilm_eve(
+    directory: str | Path, decoder_from: str | Path, fresh_decoder: bool = False
+) -> tuple["Eve", PairTokenizer]:
+    """An Eve whose encoder is MiniLM (``read_minilm``) and whose decoder, its embeddings and LM
+    head come from the Eve checkpoint ``decoder_from`` (``eve-32m-pretrain``), with its BPE: it
+    already writes text, and only its cross-attention has to learn to read the new encoder. The
+    question block and the case embedding start new. ``fresh_decoder`` keeps only the
+    tokenizer of ``decoder_from``, for an A/B of what its decoder brings.
+
+    Loading is checked as in ``load_pretrained``: only the new parts may be missing."""
+    from eve.model.checkpoint import load_checkpoint
+    from eve.model.eve import Eve
+
+    bert, wordpiece, encoder_state = read_minilm(directory)
+    base = load_checkpoint(decoder_from)
+    if not isinstance(base.model, Eve) or base.model.cfg.encoder != "eve":
+        raise ValueError(f"{decoder_from} isn't an Eve with its own encoder")
+    d, ffn = base.model.cfg.d_model, base.model.cfg.ffn_mult * base.model.cfg.d_model
+    if (bert["hidden_size"], bert["intermediate_size"]) != (d, ffn):
+        raise ValueError(
+            f"MiniLM is d {bert['hidden_size']}, feed-forward {bert['intermediate_size']}; "
+            f"{decoder_from} is d {d}, feed-forward {ffn}"
+        )
+    cfg = replace(
+        base.model.cfg,
+        encoder="bert",
+        encoder_vocab_size=bert["vocab_size"],
+        encoder_heads=bert["num_attention_heads"],
+        n_encoder_layers=bert["num_hidden_layers"],
+        max_encoder_len=bert["max_position_embeddings"],
+    )
+    model = Eve(cfg)
+    state = {
+        ("enc_" + k if k.startswith("embeddings.") else k): v for k, v in encoder_state.items()
+    }
+    if not fresh_decoder:
+        state |= {k: v for k, v in base.model.state_dict().items() if k.startswith(DECODER)}
+    result = model.load_state_dict(state, strict=False)
+    new = FRESH + (DECODER if fresh_decoder else ())
+    if missing := [k for k in result.missing_keys if not k.startswith(new)]:
+        raise KeyError(f"no weights for {missing}")
+    if result.unexpected_keys:
+        raise KeyError(f"weights the model doesn't use: {result.unexpected_keys}")
+    return model, PairTokenizer(wordpiece, base.bpe)

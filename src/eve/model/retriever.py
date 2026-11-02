@@ -7,7 +7,7 @@ costs one encoder pass, however many tools there are. Eve's own encoder can't do
 the request together with at most 5 tools.
 
 It starts from a pretrained Eve's embeddings and encoder (``start``), or from MiniLM, a
-pretrained sentence encoder (``arch = "bert"``, ``eve.model.bert``), and learns, contrastively,
+pretrained sentence encoder (``encoder = "bert"``, ``eve.model.bert``), and learns, contrastively,
 to put each request close to the tools that serve it (``eve.tasks.retrieval``).
 """
 
@@ -32,7 +32,7 @@ from eve.model.embeddings import Embeddings
 from eve.model.eve import INIT_STD
 from eve.registry import register
 from eve.runtime import eval_mode
-from eve.tokenizer import Tokenizer, tokenizer_from_dict
+from eve.tokenizer import TextTokenizer, tokenizer_from_dict
 from eve.tokenizer.bpe import BOS, EOS, PAD, TOOLS, UTT
 
 BODY = ("embeddings.", "encoder.", "encoder_norm.")  # the weights a pretrained Eve gives it
@@ -49,15 +49,12 @@ class RetrieverConfig(ModelConfig):
     vectors requests and tools are compared by, and the most tokens of a request and of a tool
     schema it reads. Most are shorter; a long schema loses the end of its last arguments, while
     its name and description, which come first, are always read. Training pads every batch to
-    these lengths, so they bound its memory.
-
-    ``arch`` is the encoder: ``"eve"``, Eve's blocks, or ``"bert"``, BERT's (``eve.model.bert``),
-    which MiniLM's weights need."""
+    these lengths, so they bound its memory. ``encoder = "bert"`` reads MiniLM's weights
+    (``eve.model.bert``)."""
 
     embed_dim: int = 256
     max_query_len: int = 128
     max_tool_len: int = 128
-    arch: str = "eve"
 
     @property
     def query_len(self) -> int:
@@ -68,13 +65,13 @@ class RetrieverConfig(ModelConfig):
         return min(self.max_tool_len, self.max_encoder_len)
 
 
-def query_ids(tokenizer: Tokenizer, text: str, max_len: int) -> list[int]:
+def query_ids(tokenizer: TextTokenizer, text: str, max_len: int) -> list[int]:
     """A request as the encoder reads it: as in Eve's prompt, without the tools."""
     ids = tokenizer.encode(" " + text.strip())[: max_len - 3]
     return [BOS, UTT, *ids, EOS]
 
 
-def tool_ids(tokenizer: Tokenizer, tool: Tool, max_len: int) -> list[int]:
+def tool_ids(tokenizer: TextTokenizer, tool: Tool, max_len: int) -> list[int]:
     """A tool schema as the encoder reads it: as in Eve's prompt, without the request."""
     ids = [i for part in tool.render_parts() for i in tokenizer.encode(part, specials=True)]
     return [BOS, TOOLS, *ids[: max_len - 3], EOS]
@@ -103,16 +100,14 @@ class Retriever(nn.Module):
         self.cfg = cfg
         self.embeddings: Embeddings | BertEmbeddings
         self.encoder_norm: nn.Module
-        if cfg.arch == "eve":
+        if cfg.encoder == "eve":
             self.embeddings = Embeddings(cfg)
             self.encoder = nn.ModuleList(EncoderBlock(cfg) for _ in range(cfg.n_encoder_layers))
             self.encoder_norm = LayerNorm(cfg.d_model)
-        elif cfg.arch == "bert":
+        else:
             self.embeddings = BertEmbeddings(cfg)
             self.encoder = nn.ModuleList(BertBlock(cfg) for _ in range(cfg.n_encoder_layers))
             self.encoder_norm = nn.Identity()
-        else:
-            raise ValueError(f"arch must be 'eve' or 'bert', got {cfg.arch!r}")
         self.project = nn.Linear(cfg.d_model, cfg.embed_dim, bias=False)
         self.log_scale = nn.Parameter(torch.tensor(math.log(SCALE)))
         for module in self.modules():
@@ -195,10 +190,10 @@ class Retriever(nn.Module):
                 out[chunk] = self(ids.to(device), mask.to(device)).float().cpu()
         return out
 
-    def embed_queries(self, texts: Sequence[str], tokenizer: Tokenizer) -> torch.Tensor:
+    def embed_queries(self, texts: Sequence[str], tokenizer: TextTokenizer) -> torch.Tensor:
         """The vector of each request."""
         return self.embed([query_ids(tokenizer, text, self.cfg.query_len) for text in texts])
 
-    def embed_tools(self, tools: Sequence[Tool], tokenizer: Tokenizer) -> torch.Tensor:
+    def embed_tools(self, tools: Sequence[Tool], tokenizer: TextTokenizer) -> torch.Tensor:
         """The vector of each tool schema."""
         return self.embed([tool_ids(tokenizer, tool, self.cfg.tool_len) for tool in tools])

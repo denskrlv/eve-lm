@@ -1,0 +1,38 @@
+# eve-32m's joint fine-tune (M8) with all-MiniLM-L6-v2 as the encoder (eve.model.bert): MiniLM
+# reads the request and schemas in its WordPiece, the decoder and its BPE come from
+# eve-32m-pretrain, the question block starts new. Make the init once with
+# `eve import artifacts/base/all-MiniLM-L6-v2` (the files of sentence-transformers/all-MiniLM-L6-v2
+# on the Hugging Face Hub), then `eve run configs/experiments/eve-minilm.toml`.
+
+[components]
+data = "task"
+model = "eve"
+loss = "joint"
+metrics = "joint"
+report = "task_scores"
+optimizer = "adamw"
+schedule = "warmup_cosine"
+callbacks = ["train_log", "evaluate", "checkpoint"]
+
+[model]
+init = "artifacts/base/eve-minilm.pt"
+
+[data]
+path = "data/task"
+
+[train]
+epochs = 2.0  # steps = epochs * train examples / batch_size
+lr = 3e-4
+encoder_lr_scale = 0.1  # MiniLM at 3e-5: higher washes out what it knows
+warmup_steps = 200
+eval_batches = 10000  # all of val
+eval_every = 500
+save_every = 500
+compile = true  # about 2x faster than eager, and keeps fewer activations
+dtype = "bfloat16"  # halves the activations kept for the backward pass
+
+[run]
+out = "artifacts/runs/eve-minilm"
+
+[meta]
+task = "questions"

@@ -6,6 +6,10 @@ Text is cleaned, lowercased, stripped of accents and split at spaces and punctua
 left, continuations marked ``##`` ("thermostat" -> "the", "##rm", "##osta", "##t"). A word with
 no split becomes ``[UNK]``.
 
+Lowercasing loses what Eve's value decoder needs to write "John" rather than "john", so
+``encode_cased`` also gives each token the case of the word it came from (``CASES``), which
+Eve adds to the encoder's input.
+
 Eve's special tokens keep their BPE ids (``<pad>`` 0, ``<bos>`` 1 …): BERT's vocabulary has
 ``[PAD]`` at 0 and ~1,000 ``[unusedN]`` slots after it, so the specials take those slots and the
 code that builds Eve's prompts (``BOS``, ``TOOLS``, ``PAD``…) works with either tokenizer.
@@ -23,6 +27,8 @@ UNK = "[UNK]"
 CONTINUATION = "##"
 MAX_WORD_CHARS = 100  # a longer word is [UNK], as in BERT
 _CACHE_SIZE = 500_000
+LOWER, TITLE, UPPER, MIXED = range(4)  # a word's case; no letters counts as LOWER
+CASES = 4
 
 
 def _is_punctuation(char: str) -> bool:
@@ -65,12 +71,22 @@ def _clean(text: str) -> str:
     return "".join(out)
 
 
-def basic_words(text: str) -> list[str]:
-    """BERT's basic tokenizer, uncased: lowercase, no accents, split at spaces and around every
-    punctuation character. ``"Set the Café's lights!"`` -> ``set the cafe ' s lights !``."""
+def case_of(word: str) -> int:
+    """``LOWER`` ("lights", "50"), ``TITLE`` ("John"), ``UPPER`` ("NYC") or ``MIXED`` ("iPhone")."""
+    if word.islower() or not any(c.isupper() for c in word):
+        return LOWER
+    if word.isupper():
+        return UPPER if sum(c.isalpha() for c in word) > 1 else TITLE  # "A", "I": capitalized
+    if word[0].isupper() and (word[1:].islower() or not any(c.isalpha() for c in word[1:])):
+        return TITLE
+    return MIXED
+
+
+def cased_words(text: str) -> list[str]:
+    """``basic_words`` before lowercasing: ``"Set the Café's"`` -> ``Set the Cafe ' s``."""
     words = []
     for token in _clean(text).split():
-        token = unicodedata.normalize("NFD", token.lower())
+        token = unicodedata.normalize("NFD", token)
         token = "".join(c for c in token if unicodedata.category(c) != "Mn")
         word = ""
         for char in token:
@@ -84,6 +100,12 @@ def basic_words(text: str) -> list[str]:
         if word:
             words.append(word)
     return words
+
+
+def basic_words(text: str) -> list[str]:
+    """BERT's basic tokenizer, uncased: lowercase, no accents, split at spaces and around every
+    punctuation character. ``"Set the Café's lights!"`` -> ``set the cafe ' s lights !``."""
+    return [word.lower() for word in cased_words(text)]
 
 
 class WordPieceTokenizer:
@@ -113,26 +135,37 @@ class WordPieceTokenizer:
 
     def encode(self, text: str, specials: bool = False) -> list[int]:
         """Text -> token ids; ``specials`` as in ``BPETokenizer.encode``."""
+        return self.encode_cased(text, specials)[0]
+
+    def encode_cased(self, text: str, specials: bool = False) -> tuple[list[int], list[int]]:
+        """Token ids, and per token the case of its word (``case_of``; specials are LOWER)."""
         if not specials:
             return self._encode_ordinary(text)
         ids: list[int] = []
+        cases: list[int] = []
         for i, part in enumerate(_SPECIAL_SPLIT.split(text)):
             if i % 2:
                 ids.append(SPECIAL_IDS[part])
+                cases.append(LOWER)
             elif part:
-                ids.extend(self._encode_ordinary(part))
-        return ids
+                more, more_cases = self._encode_ordinary(part)
+                ids.extend(more)
+                cases.extend(more_cases)
+        return ids, cases
 
-    def _encode_ordinary(self, text: str) -> list[int]:
+    def _encode_ordinary(self, text: str) -> tuple[list[int], list[int]]:
         ids: list[int] = []
-        for word in basic_words(text):
-            cached = self._cache.get(word)
+        cases: list[int] = []
+        for word in cased_words(text):
+            lower = word.lower()
+            cached = self._cache.get(lower)
             if cached is None:
-                cached = self._encode_word(word)
+                cached = self._encode_word(lower)
                 if len(self._cache) < _CACHE_SIZE:
-                    self._cache[word] = cached
+                    self._cache[lower] = cached
             ids.extend(cached)
-        return ids
+            cases.extend([case_of(word)] * len(cached))
+        return ids, cases
 
     def _encode_word(self, word: str) -> tuple[int, ...]:
         """Greedy longest match from the left; ``[UNK]`` for the whole word if a part has no

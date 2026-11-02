@@ -13,6 +13,7 @@ class TrainConfig:
     steps: int
     batch_size: int = 32
     lr: float = 1e-3  # peak learning rate, reached at the end of warmup
+    encoder_lr_scale: float = 1.0  # the encoder's lr is lr * this: low for a pretrained MiniLM
     min_lr_ratio: float = 0.1  # cosine decay ends at lr * min_lr_ratio
     warmup_steps: int = 500
     weight_decay: float = 0.1

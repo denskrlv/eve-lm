@@ -9,6 +9,7 @@ from torch.utils.data import Dataset
 from eve.config import INTENTS, ModelConfig
 from eve.data.draw import shuffled
 from eve.data.schema import ASK_VALUE, MAX_ARGS, Arg, SchemaError, Tool
+from eve.tokenizer import TaskTokenizer, TextTokenizer, decoder_side, encoder_side
 from eve.tokenizer.bpe import (
     ABSENT,
     ARG,
@@ -25,6 +26,7 @@ from eve.tokenizer.bpe import (
     VAL,
     BPETokenizer,
 )
+from eve.tokenizer.wordpiece import LOWER, WordPieceTokenizer
 
 IGNORE = -100
 ENCODER_BUCKETS = (128, 256, 512)
@@ -115,28 +117,49 @@ class Rendered:
     dec_ids: list[int]  # decoder input
     dec_labels: list[int]  # next decoder token where it gets loss, else IGNORE
     tool_names: list[str]  # prompt order, for debugging
+    enc_case: list[int] | None = None  # per encoder token, its word's case (uncased encoders)
+
+
+def _cased(
+    tokenizer: TextTokenizer, text: str, specials: bool = False
+) -> tuple[list[int], list[int]]:
+    """Ids and each token's case: WordPiece lowercases, so it says (``encode_cased``); BPE keeps
+    the case in its tokens, so every token counts as LOWER."""
+    if isinstance(tokenizer, WordPieceTokenizer):
+        return tokenizer.encode_cased(text, specials)
+    ids = tokenizer.encode(text, specials)
+    return ids, [LOWER] * len(ids)
 
 
 def _encoder(
-    utterance: str, tools: Sequence[Tool], tokenizer: BPETokenizer, cfg: ModelConfig
-) -> tuple[list[int], list[int], list[list[int]]]:
-    """Encoder ids, the position of each ``<tool>`` marker, and each tool's ``<arg>`` positions.
+    utterance: str, tools: Sequence[Tool], tokenizer: TaskTokenizer, cfg: ModelConfig
+) -> tuple[list[int], list[int] | None, list[int], list[list[int]]]:
+    """Encoder ids, their cases (``None`` for BPE, which keeps case in its tokens), the position
+    of each ``<tool>`` marker, and each tool's ``<arg>`` positions.
 
     User text never gets special tokens. Every piece of text starts with a space, so a word is
     the same token in the utterance, the schema and a decoder value.
     """
-    enc = [BOS, UTT, *tokenizer.encode(" " + utterance), TOOLS]
+    text = encoder_side(tokenizer)
+    ids, cases = _cased(text, " " + utterance)
+    enc, case = [BOS, UTT, *ids, TOOLS], [LOWER, LOWER, *cases, LOWER]
     tool_pos, arg_pos = [], []
     for tool in tools:
-        ids = [i for part in tool.render_parts() for i in tokenizer.encode(part, specials=True)]
+        ids, cases = [], []
+        for part in tool.render_parts():
+            more, more_cases = _cased(text, part, specials=True)
+            ids += more
+            cases += more_cases
         tool_pos.append(len(enc))
         arg_pos.append([len(enc) + j for j, t in enumerate(ids) if t == ARG])
         assert ids[0] == TOOL and len(arg_pos[-1]) == len(tool.args)
         enc.extend(ids)
+        case.extend(cases)
     enc.append(EOS)
+    case.append(LOWER)
     if len(enc) > cfg.max_encoder_len:
         raise ValueError(f"encoder input is {len(enc)} tokens, max {cfg.max_encoder_len}")
-    return enc, tool_pos, arg_pos
+    return enc, case if isinstance(text, WordPieceTokenizer) else None, tool_pos, arg_pos
 
 
 def _slot_labels(example: TaskExample, tools: Sequence[Tool], cfg: ModelConfig) -> list[int]:
@@ -158,10 +181,11 @@ def _value_ids(arg: Arg, call: Call, intent: str, tokenizer: BPETokenizer) -> li
 
 
 def _decoder(
-    example: TaskExample, tools: Sequence[Tool], tokenizer: BPETokenizer, cfg: ModelConfig
+    example: TaskExample, tools: Sequence[Tool], tokenizer: TaskTokenizer, cfg: ModelConfig
 ) -> tuple[list[int], list[int]]:
     """Decoder input and labels (M8): structure copied from the schema (no loss), values
     predicted (loss)."""
+    bpe = decoder_side(tokenizer)
     seq, loss = [DEC], [False]
 
     def add(ids: Sequence[int], predicted: bool) -> None:
@@ -171,10 +195,10 @@ def _decoder(
     by_name = {t.name: t for t in tools}
     for call in example.calls:
         tool = by_name[call.tool]
-        add([CALL, *tokenizer.encode(" " + tool.name)], False)
+        add([CALL, *bpe.encode(" " + tool.name)], False)
         for arg in tool.args:
-            add([ARG, *tokenizer.encode(" " + arg.name), VAL], False)
-            add(_value_ids(arg, call, example.intent, tokenizer), True)
+            add([ARG, *bpe.encode(" " + arg.name), VAL], False)
+            add(_value_ids(arg, call, example.intent, bpe), True)
     add([EOS], False)
     dec_ids = seq[:-1]
     dec_labels = [
@@ -187,7 +211,7 @@ def _decoder(
 
 def render(
     example: TaskExample,
-    tokenizer: BPETokenizer,
+    tokenizer: TaskTokenizer,
     cfg: ModelConfig,
     rng: np.random.Generator | None = None,
 ) -> Rendered:
@@ -199,7 +223,7 @@ def render(
         raise ValueError(f"{len(tools)} tools, but the model takes at most {cfg.max_tools}")
     if len(example.calls) > cfg.n_slots:
         raise ValueError(f"{len(example.calls)} calls, but the model has {cfg.n_slots} slots")
-    enc, tool_pos, arg_pos = _encoder(example.utterance, tools, tokenizer, cfg)
+    enc, enc_case, tool_pos, arg_pos = _encoder(example.utterance, tools, tokenizer, cfg)
     slots = _slot_labels(example, tools, cfg)
     dec_ids, dec_labels = _decoder(example, tools, tokenizer, cfg)
     return Rendered(
@@ -211,6 +235,7 @@ def render(
         dec_ids=dec_ids,
         dec_labels=dec_labels,
         tool_names=[t.name for t in tools],
+        enc_case=enc_case,
     )
 
 
@@ -224,7 +249,7 @@ class TaskDataset(Dataset[Rendered]):
     def __init__(
         self,
         examples: Sequence[TaskExample],
-        tokenizer: BPETokenizer,
+        tokenizer: TaskTokenizer,
         cfg: ModelConfig,
         seed: int = 0,
         shuffle_tools: bool = True,
@@ -319,4 +344,7 @@ class TaskCollator:
             "intent": torch.tensor([item.intent for item in batch]),
             "slots": torch.tensor([item.slots for item in batch]),
         }
+        cases = [item.enc_case for item in batch if item.enc_case is not None]
+        if cases and len(cases) == len(batch):  # an uncased encoder's
+            out["enc_case"] = pad(cases, out["enc_ids"].shape[1], LOWER)
         return out

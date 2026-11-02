@@ -19,6 +19,7 @@ from eve.data.pretrain import SpanCorruptionDataset
 from eve.data.render import Rendered, TaskCollator, TaskDataset, TaskExample, collate_pretrain
 from eve.data.schema import Tool
 from eve.registry import register
+from eve.tokenizer import TaskTokenizer
 from eve.tokenizer.bpe import BPETokenizer
 
 VAL_SEED = 1  # val's tool shuffle: unlike train's (seed 0), and the same at every eval
@@ -99,7 +100,7 @@ class TaskData:
 
 @register("data", "task")
 def task(
-    tokenizer: BPETokenizer,
+    tokenizer: TaskTokenizer,
     model_cfg: ModelConfig,
     seed: int,
     path: str = defaults.TASK_DIR,

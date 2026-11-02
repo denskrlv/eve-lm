@@ -240,7 +240,7 @@ def _train_step(
     """One optimizer step at learning rate ``lr``. Returns the losses and the gradient norm
     before clipping."""
     for group in optimizer.param_groups:
-        group["lr"] = lr
+        group["lr"] = lr * group.get("lr_scale", 1.0)  # param_groups sets the encoder's
     with autocast():
         losses = loss_fn(runner, to_device(batch, device, non_blocking=True))  # train keeps batch
     loss = cast(torch.Tensor, sum(losses.values()))

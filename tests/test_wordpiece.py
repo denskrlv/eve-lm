@@ -6,7 +6,15 @@ from eve.data.schema import Tool
 from eve.model.retriever import query_ids, tool_ids
 from eve.tokenizer import tokenizer_from_dict
 from eve.tokenizer.bpe import BOS, EOS, SPECIAL_TOKENS, TOOL, TOOLS, UTT, BPETokenizer
-from eve.tokenizer.wordpiece import WordPieceTokenizer, basic_words
+from eve.tokenizer.wordpiece import (
+    LOWER,
+    MIXED,
+    TITLE,
+    UPPER,
+    WordPieceTokenizer,
+    basic_words,
+    case_of,
+)
 
 PIECES = ["[UNK]", "[CLS]", "[SEP]", "[MASK]", "set", "the", "lights", "light", "##s", "cafe"]
 PIECES += ["'", "!", "%", "to", "5", "##0", "thermo", "##stat", "東", "京", ":", "_", "room"]
@@ -77,3 +85,15 @@ def test_saves_and_loads_by_format(wordpiece: WordPieceTokenizer, tokenizer: BPE
 def test_a_vocab_without_room_for_the_specials_is_refused(tmp_path: Path) -> None:
     with pytest.raises(ValueError, match="unused"):
         WordPieceTokenizer.from_bert_vocab(bert_vocab(tmp_path, slots=3))
+
+
+def test_case_of_words() -> None:
+    assert [case_of(w) for w in ("lights", "50", "John", "I", "NYC", "iPhone", "R2D2")] == [
+        LOWER, LOWER, TITLE, TITLE, UPPER, MIXED, UPPER,
+    ]  # fmt: skip
+
+
+def test_every_piece_gets_its_words_case(wordpiece: WordPieceTokenizer) -> None:
+    ids, cases = wordpiece.encode_cased("<tool> Set THERMOSTAT lights", specials=True)
+    assert wordpiece.pieces(ids) == ["<tool>", "set", "thermo", "##stat", "lights"]
+    assert cases == [LOWER, TITLE, UPPER, UPPER, LOWER]

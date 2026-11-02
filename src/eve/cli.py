@@ -539,6 +539,20 @@ def retriever_import(args: argparse.Namespace) -> None:
     success(f"retriever ({params / 1e6:.1f}M parameters, WordPiece)", args.out)
 
 
+def import_minilm(args: argparse.Namespace) -> None:
+    """Fine-tune (M8): an Eve to fine-tune whose encoder is all-MiniLM-L6-v2 and whose decoder
+    comes from an Eve checkpoint (``eve.model.bert.import_minilm_eve``)."""
+    from eve.model.bert import import_minilm_eve
+    from eve.model.checkpoint import save_checkpoint
+
+    model, tokenizer = import_minilm_eve(args.directory, args.decoder, args.fresh_decoder)
+    meta = {"imported_from": str(args.directory), "decoder_from": str(args.decoder)}
+    meta["fresh_decoder"] = args.fresh_decoder
+    save_checkpoint(args.out, model, tokenizer, meta)
+    params = model.parameter_counts()
+    success(f"Eve with a MiniLM encoder ({params['total'] / 1e6:.1f}M parameters)", args.out)
+
+
 def fill(args: argparse.Namespace) -> None:
     """Learn (M4): ask a pretrained model to fill the <x0>, <x1>… holes in a sentence."""
     from eve import progress
@@ -1130,6 +1144,23 @@ def _add_finetune_command(commands: Subcommands) -> None:
     _add_run_args(parser)
 
 
+def _add_import_command(commands: Subcommands) -> None:
+    parser = commands.add_parser(
+        "import", help="an Eve to fine-tune with all-MiniLM-L6-v2 as its encoder (M8)"
+    )
+    parser.set_defaults(run=import_minilm)
+    parser.add_argument(
+        "directory", help="config.json, model.safetensors and vocab.txt, from the Hugging Face Hub"
+    )
+    parser.add_argument(
+        "--decoder", default=defaults.PRETRAINED_MODEL, help="the Eve checkpoint of the decoder"
+    )
+    parser.add_argument(
+        "--fresh-decoder", action="store_true", help="start the decoder random (an A/B)"
+    )
+    parser.add_argument("--out", default="artifacts/base/eve-minilm.pt")
+
+
 def _add_run_command(commands: Subcommands) -> None:
     parser = commands.add_parser("run", help="run an experiment file, e.g. a run's config.toml")
     parser.set_defaults(run=run_file)
@@ -1297,6 +1328,7 @@ def build_parser() -> argparse.ArgumentParser:
     _add_corpus_command(commands)
     _add_pretrain_command(commands)
     _add_finetune_command(commands)
+    _add_import_command(commands)
     _add_run_command(commands)
     _add_inspect_commands(commands)
     _add_data_commands(commands)

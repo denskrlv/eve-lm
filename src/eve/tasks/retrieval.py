@@ -42,7 +42,7 @@ from eve.data.schema import Tool
 from eve.model.checkpoint import RETRIEVAL_TASK
 from eve.model.retriever import Retriever, RetrieverConfig, padded, query_ids, tool_ids
 from eve.registry import register
-from eve.tokenizer import Tokenizer
+from eve.tokenizer import TextTokenizer
 from eve.tokenizer.bpe import BOS, EOS, TOOLS
 from eve.train.loop import Column, Report
 
@@ -261,7 +261,7 @@ class RetrievalData:
 class _Table:
     """Each distinct tool once, by schema, with its token ids."""
 
-    def __init__(self, tokenizer: Tokenizer, cfg: ModelConfig) -> None:
+    def __init__(self, tokenizer: TextTokenizer, cfg: ModelConfig) -> None:
         lengths = cfg if isinstance(cfg, RetrieverConfig) else RetrieverConfig(**cfg.to_dict())
         self.tokenizer = tokenizer
         self.query_len, self.tool_len = lengths.query_len, lengths.tool_len
@@ -293,7 +293,7 @@ def pairs(examples: Sequence[TaskExample], table: _Table) -> list[Pair]:
 
 @register("data", "retrieval")
 def retrieval(
-    tokenizer: Tokenizer,
+    tokenizer: TextTokenizer,
     model_cfg: ModelConfig,
     seed: int,
     path: str = defaults.TASK_DIR,
@@ -359,7 +359,7 @@ def _summary(results: dict[str, Any]) -> list[tuple[str, str]]:
 
 
 @register("report", "retrieval_scores")
-def retrieval_scores(data: DataModule, tokenizer: Tokenizer, batch_size: int) -> Report:
+def retrieval_scores(data: DataModule, tokenizer: TextTokenizer, batch_size: int) -> Report:
     """At each eval, ``measure`` of the model as a ``Dense`` scorer on the data's registries:
     val and held-out tools in registries of ``eval_size``, all of MASSIVE's 47."""
     del batch_size
