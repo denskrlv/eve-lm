@@ -1,0 +1,40 @@
+# M11 from MiniLM: all-MiniLM-L6-v2 (a pretrained sentence encoder, eve.model.bert) as the
+# retriever, fine-tuned contrastively on the task splits like eve-32m-retriever. Make its init
+# once with `eve retriever import artifacts/base/all-MiniLM-L6-v2` (the files of
+# sentence-transformers/all-MiniLM-L6-v2 on the Hugging Face Hub), then
+# `eve run configs/experiments/minilm-retriever.toml`; score it with `eve retriever eval`.
+
+[components]
+data = "retrieval"
+model = "retriever"
+loss = "retrieval"
+metrics = "retrieval"
+report = "retrieval_scores"
+optimizer = "adamw"
+schedule = "warmup_cosine"
+callbacks = ["train_log", "evaluate", "checkpoint"]
+
+[model]
+init = "artifacts/base/minilm-retriever.pt"
+max_tool_len = 128  # tokens of a tool schema; bounds training memory
+
+[data]
+path = "data/task"
+hard_negatives = 1  # of each example's distractors; more costs memory
+eval_size = 25
+
+[train]
+epochs = 1.0  # steps = epochs * train pairs / batch_size
+batch_size = 32
+dtype = "bfloat16"  # halves the activations kept for the backward pass
+lr = 2e-5  # sentence-transformers' fine-tuning rate: higher washes out what MiniLM knows
+warmup_steps = 100
+eval_batches = 10000  # all of val
+eval_every = 500
+save_every = 500
+
+[run]
+out = "artifacts/runs/minilm-retriever"
+
+[meta]
+task = "retrieval"

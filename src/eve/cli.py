@@ -525,6 +525,20 @@ def retriever_eval(args: argparse.Namespace) -> None:
             console.print(out)
 
 
+def retriever_import(args: argparse.Namespace) -> None:
+    """Retrieve (M11): turn a sentence-transformers BERT download (all-MiniLM-L6-v2) into a
+    retriever checkpoint to evaluate (``eve retriever eval``) or train from (``[model] init``)."""
+    from eve.model.bert import import_minilm
+    from eve.model.checkpoint import save_checkpoint
+    from eve.tasks.retrieval import TASK
+
+    model, tokenizer = import_minilm(args.directory)
+    meta = {"task": TASK, "imported_from": str(args.directory)}
+    save_checkpoint(args.out, model, tokenizer, meta)
+    params = sum(p.numel() for p in model.parameters())
+    success(f"retriever ({params / 1e6:.1f}M parameters, WordPiece)", args.out)
+
+
 def fill(args: argparse.Namespace) -> None:
     """Learn (M4): ask a pretrained model to fill the <x0>, <x1>… holes in a sentence."""
     from eve import progress
@@ -541,7 +555,7 @@ def fill(args: argparse.Namespace) -> None:
         filled = []
         for text in texts:
             bar.set_stats("decoding")
-            filled.append(fill_in(ckpt.model, ckpt.tokenizer, text, args.max_new))
+            filled.append(fill_in(ckpt.model, ckpt.bpe, text, args.max_new))
             bar.update()
 
     _print_fill_report(str(args.model), ckpt.meta, device, filled)
@@ -1169,6 +1183,14 @@ def _add_inspect_commands(commands: Subcommands) -> None:
     )
     parser.add_argument("--json", action="store_true", help="the results as one JSON object")
     parser.add_argument("--device", default=None)
+    parser = retriever_commands.add_parser(
+        "import", help="a retriever checkpoint from all-MiniLM-L6-v2 (or another BERT)"
+    )
+    parser.set_defaults(run=retriever_import)
+    parser.add_argument(
+        "directory", help="config.json, model.safetensors and vocab.txt, from the Hugging Face Hub"
+    )
+    parser.add_argument("--out", default="artifacts/base/minilm-retriever.pt")
 
     parser = commands.add_parser("fill", help="fill <x0> holes with a pretrained model (M4)")
     parser.set_defaults(run=fill)

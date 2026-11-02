@@ -9,6 +9,7 @@ from torch import nn
 from eve import registry
 from eve.config import ModelConfig
 from eve.model.eve import Eve
+from eve.tokenizer import Tokenizer, tokenizer_from_dict
 from eve.tokenizer.bpe import BPETokenizer
 
 FORMAT = "eve-ckpt-1"
@@ -33,15 +34,22 @@ class Checkpoint:
     """A loaded checkpoint: model, tokenizer, meta and, for resuming, train state."""
 
     model: Eve
-    tokenizer: BPETokenizer
+    tokenizer: Tokenizer  # BPE; WordPiece for a retriever started from MiniLM
     meta: dict[str, Any]
     train_state: dict[str, Any] | None = None  # optimizer, step and RNG states, for resuming (M4)
+
+    @property
+    def bpe(self) -> BPETokenizer:
+        """The tokenizer of an Eve model, which is always BPE."""
+        if not isinstance(self.tokenizer, BPETokenizer):
+            raise TypeError(f"expected a BPE tokenizer, got {type(self.tokenizer).__name__}")
+        return self.tokenizer
 
 
 def save_checkpoint(
     path: str | Path,
     model: nn.Module,
-    tokenizer: BPETokenizer,
+    tokenizer: Tokenizer,
     meta: dict[str, Any] | None = None,
     train_state: dict[str, Any] | None = None,
 ) -> None:
@@ -106,7 +114,7 @@ def load_checkpoint(path: str | Path, device: str | torch.device = "cpu") -> Che
     architecture = registry.get("model", data.get("model", "eve"))  # older files: all Eve
     model: Eve = architecture.from_config(data["config"])  # typed Eve: what every reader uses
     model.load_state_dict(data["state_dict"])
-    tokenizer = BPETokenizer.from_dict(data["tokenizer"])
+    tokenizer = tokenizer_from_dict(data["tokenizer"])
     return Checkpoint(model.to(device), tokenizer, data["meta"], data.get("train_state"))
 
 

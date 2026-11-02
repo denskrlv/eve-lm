@@ -31,7 +31,7 @@ from eve.data.schema import Tool
 
 if TYPE_CHECKING:
     from eve.model.retriever import Retriever
-    from eve.tokenizer.bpe import BPETokenizer
+    from eve.tokenizer import Tokenizer
 
 K1, B = 1.2, 0.75  # BM25's usual term-saturation and length-normalization constants
 _WORD = re.compile(r"[a-z0-9]+")  # snake_case names split at "_"
@@ -97,7 +97,7 @@ class Dense:
     """Cosine similarity of the request's and each tool's embedding from a trained
     ``Retriever``. Tool embeddings are cached, so a registry is embedded once."""
 
-    def __init__(self, retriever: "Retriever", tokenizer: "BPETokenizer") -> None:
+    def __init__(self, retriever: "Retriever", tokenizer: "Tokenizer") -> None:
         self.retriever = retriever  # embeds with dropout off and no gradients
         self.tokenizer = tokenizer
         self._tools: dict[Tool, torch.Tensor] = {}

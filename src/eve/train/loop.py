@@ -23,7 +23,7 @@ from eve.runtime import eval_mode, to_device
 from eve.train.config import DTYPES, TrainConfig
 
 if TYPE_CHECKING:
-    from eve.tokenizer.bpe import BPETokenizer
+    from eve.tokenizer import Tokenizer
 
 logger = logging.getLogger(__name__)
 
@@ -133,7 +133,7 @@ class Run:
     out_dir: Path
     model: nn.Module  # eager: for on_eval, whose generation changes shape, and for saving
     runner: nn.Module  # what the loss runs on: ``model``, or its torch.compile'd wrapper
-    tokenizer: "BPETokenizer"  # saved with every checkpoint
+    tokenizer: "Tokenizer"  # saved with every checkpoint
     optimizer: torch.optim.Optimizer
     data: DataModule
     eval_fn: LossFn
@@ -292,7 +292,7 @@ def train(
     data: DataModule,
     cfg: TrainConfig,
     out_dir: str | Path,
-    tokenizer: "BPETokenizer",
+    tokenizer: "Tokenizer",
     device: str | torch.device,
     report: Report | None = None,
     eval_fn: LossFn | None = None,
