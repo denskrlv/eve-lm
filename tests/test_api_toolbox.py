@@ -76,6 +76,10 @@ def test_save_and_load_keep_the_schemas(library: dict[str, Tool], tmp_path: Path
         ToolBox.load(tmp_path / "bad.json")
     (tmp_path / "list.json").write_text(json.dumps([library["set_timer"].to_dict()]))
     assert ToolBox.load(tmp_path / "list.json").names == ["set_timer"]
+    malformed = [{"name": "sum_list", "description": "Adds", "args": "nope"}]
+    (tmp_path / "malformed.json").write_text(json.dumps(malformed))
+    with pytest.raises(eve.ToolError, match="'sum_list'.*args must be a list"):
+        ToolBox.load(tmp_path / "malformed.json")
 
 
 @pytest.fixture
