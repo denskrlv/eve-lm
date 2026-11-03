@@ -33,12 +33,12 @@ import torch
 from torch.nn import functional as F
 
 from eve import defaults
-from eve.api.toolbox import Dense, Scorer
 from eve.components import Batch, DataModule
 from eve.config import ModelConfig
 from eve.data.modules import load_examples
 from eve.data.render import TaskExample
 from eve.data.schema import Tool
+from eve.infer.search import Dense, Scorer
 from eve.model.checkpoint import RETRIEVAL_TASK
 from eve.model.retriever import Retriever, RetrieverConfig, padded, query_ids, tool_ids
 from eve.registry import register

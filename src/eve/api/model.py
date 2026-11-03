@@ -7,10 +7,11 @@ import torch
 from eve.api.errors import CheckpointError, EveError, ToolError
 from eve.api.hub import companion, resolve
 from eve.api.response import Response
-from eve.api.toolbox import BM25, Dense, Scorer, ToolBox
+from eve.api.toolbox import ToolBox
 from eve.api.tools import ToolLike, to_tool
 from eve.data.schema import SchemaError, Tool
 from eve.infer.predict import Calibrations, answer_questions
+from eve.infer.search import BM25, Dense, Scorer
 from eve.model.checkpoint import FORMAT, RETRIEVAL_TASK, Checkpoint, load_checkpoint
 from eve.runtime import pick_device
 

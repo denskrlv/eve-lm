@@ -66,8 +66,8 @@ def retriever_eval(args: argparse.Namespace) -> None:
     """Retrieve (M11): how often each scorer puts every correct tool in the top 5 of a
     registry: BM25, and with a retriever checkpoint, the retriever (dense). Registries are
     filled with random tools, and with ``similar`` ones (the hard case)."""
-    from eve.api.toolbox import BM25, Dense, Scorer
     from eve.data.generate.build import Sources
+    from eve.infer.search import BM25, Dense, Scorer
     from eve.model.checkpoint import load_checkpoint
     from eve.tasks.retrieval import TOP, evaluate_scorers, load_splits, suite
 
