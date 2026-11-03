@@ -60,6 +60,13 @@ def hwu64(raw: Path, ctx: Context) -> Iterator[Doc]:
     return intent_docs(intents, ctx)
 
 
+def _grouped(groups: dict[str, list[str]], ctx: Context) -> Iterator[Doc]:
+    """The documents of requests grouped by intent label, the label in words as what they ask
+    for (``card_arrival`` -> "card arrival")."""
+    intents = (Intent(k, humanize(k), tuple(v)) for k, v in sorted(groups.items()))
+    return intent_docs(intents, ctx)
+
+
 def clinc150(raw: Path, ctx: Context) -> Iterator[Doc]:
     """CLINC150's in-scope requests from every split, without its travel intents."""
     data = json.loads((raw / "clinc150/data_full.json").read_text())
@@ -70,8 +77,7 @@ def clinc150(raw: Path, ctx: Context) -> Iterator[Doc]:
                 ctx.drop("travel intent")
             else:
                 groups.setdefault(label, []).append(text)
-    intents = (Intent(k, humanize(k), tuple(v)) for k, v in sorted(groups.items()))
-    return intent_docs(intents, ctx)
+    return _grouped(groups, ctx)
 
 
 def banking77(raw: Path, ctx: Context) -> Iterator[Doc]:
@@ -84,8 +90,7 @@ def banking77(raw: Path, ctx: Context) -> Iterator[Doc]:
                     ctx.drop("travel intent")
                 else:
                     groups.setdefault(row["category"], []).append(row["text"])
-    intents = (Intent(k, humanize(k), tuple(v)) for k, v in sorted(groups.items()))
-    return intent_docs(intents, ctx)
+    return _grouped(groups, ctx)
 
 
 def _read_text(path: Path) -> str:
@@ -104,8 +109,7 @@ def snips(raw: Path, ctx: Context) -> Iterator[Doc]:
         for label, examples in json.loads(_read_text(path)).items():
             for example in examples:
                 groups.setdefault(label, []).append("".join(p["text"] for p in example["data"]))
-    intents = (Intent(k, humanize(k), tuple(v)) for k, v in sorted(groups.items()))
-    return intent_docs(intents, ctx)
+    return _grouped(groups, ctx)
 
 
 def tapaco(raw: Path, ctx: Context) -> Iterator[Doc]:
