@@ -1,7 +1,7 @@
-"""The ``eve`` command line. Each command group lives in its own module: ``train`` (pretrain,
-finetune, run, compare), ``inspect`` (ask, evaluate, calibrate, fill), ``data`` (tokenizer,
-corpus, data) and ``publish`` (info, export, retriever); each module registers its commands
-and holds their handlers and tables."""
+"""The ``eve`` command line. Each command group lives in its own module: ``train`` (run,
+compare), ``inspect`` (ask, evaluate, calibrate, fill), ``data`` (tokenizer, corpus, data) and
+``publish`` (info, export, retriever); each module registers its commands and holds their
+handlers and tables."""
 
 import argparse
 import logging
@@ -42,8 +42,6 @@ def build_parser() -> argparse.ArgumentParser:
     publish.add_info(commands)
     data.add_tokenizer(commands)
     data.add_corpus(commands)
-    train.add_pretrain(commands)
-    train.add_finetune(commands)
     train.add_run(commands)
     inspect.add_ask(commands)
     inspect.add_evaluate(commands)

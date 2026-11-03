@@ -3,6 +3,7 @@ module runs. The checks are on exit status and a few stable facts, not on whole 
 
 import argparse
 import json
+import shlex
 from pathlib import Path
 
 import pytest
@@ -11,9 +12,12 @@ from helpers import examples, save_joint, save_retriever
 
 from eve.cli import build_parser, main
 from eve.config import preset
+from eve.experiment import Experiment, apply_sets, read
 from eve.model.checkpoint import save_checkpoint
 from eve.model.eve import Eve
 from eve.tokenizer.bpe import BPETokenizer
+
+ROOT = Path(__file__).parents[1]
 
 
 def command_paths(parser: argparse.ArgumentParser, prefix: tuple[str, ...] = ()) -> list[list[str]]:
@@ -128,3 +132,19 @@ def test_compare_reports_a_metrics_file_it_cannot_read(tmp_path: Path) -> None:
     (tmp_path / "run-a" / "metrics.jsonl").mkdir(parents=True)  # a directory, not a file
     with pytest.raises(SystemExit, match="metrics.jsonl"):
         main(["compare", str(tmp_path / "run-a")])
+
+
+def readme_commands() -> list[list[str]]:
+    """Each ``uv run eve …`` line of the README's code blocks, as ``eve``'s arguments."""
+    text = (ROOT / "README.md").read_text().replace("\\\n", " ")  # join continued lines
+    commands = [line.split("#")[0] for line in text.splitlines() if line.startswith("uv run eve ")]
+    return [shlex.split(command)[3:] for command in commands]
+
+
+def test_the_readme_commands_exist() -> None:
+    commands = readme_commands()
+    assert len(commands) >= 10
+    for argv in commands:
+        args = build_parser().parse_args(argv)
+        if args.command == "run":  # the experiment file exists and takes the overrides
+            Experiment.from_dict(apply_sets(read(ROOT / args.experiment), args.set))

@@ -228,10 +228,11 @@ T5-style span corruption: spans of the input are replaced with sentinels (`<x0>`
 ```bash
 uv run eve run configs/experiments/eve-32m-pretrain.toml   # 850M tokens, 46,682 steps
 uv run eve run configs/experiments/eve-32m-pretrain.toml --set run.resume=true   # continue after an interruption
-uv run eve pretrain --rope --qk-norm --lr 2e-3 --stop-after 2000 --out artifacts/runs/ab-lr2e-3
+uv run eve run configs/experiments/eve-32m-pretrain.toml --set train.lr=2e-3 \
+  --set run.stop_after=2000 --set run.out=artifacts/runs/ab-lr2e-3   # an A/B arm
 ```
 
-The recipe came out of A/B runs at ~12M parameters: no dropout, rotary positions and QK-norm, and `torch.compile` (about 2× faster on MPS). An A/B arm uses the full run's schedule and stops early, so the winner continues with `--resume`. The number to watch is `val_content`, the loss on the words inside the holes only.
+The recipe came out of A/B runs at ~12M parameters: no dropout, rotary positions and QK-norm, and `torch.compile` (about 2× faster on MPS). An A/B arm uses the full run's schedule and stops early, so the winner continues with `--set run.resume=true`. The number to watch is `val_content`, the loss on the words inside the holes only.
 
 ```bash
 uv run eve fill "Paris is the capital of <x0>."   # prompt a pretrained model
@@ -277,7 +278,7 @@ uv run eve data check batch-0001              # validate what it wrote
 
 ```bash
 uv run eve run configs/experiments/eve-32m.toml   # intents, tools and values: the main recipe
-uv run eve finetune --scratch eve-32m --out artifacts/runs/scratch   # no pretraining, for comparison
+uv run eve run configs/experiments/eve-32m-scratch.toml   # no pretraining, for comparison
 ```
 
 `eve evaluate` scores a model on whole eval sets: recall per intent and their mean, exact, value and full-call accuracy, and a confusion table of intents. `novel-tools` gets a row for requests that share a word with the tool's name and one for those that don't. `--by-tool` adds a row per tool, worst first.

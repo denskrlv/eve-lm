@@ -4,7 +4,6 @@ from typing import Any
 import torch
 
 from eve.config import ModelConfig
-from eve.data.pretrain import INPUT_LEN, raw_length
 from eve.experiment import Experiment, run
 from eve.train.config import TrainConfig
 
@@ -63,8 +62,3 @@ def pretrain(
         resume, stop_after,
     )  # fmt: skip
     return run(Experiment.from_dict(values))
-
-
-def steps_for(tokens: int, batch_size: int, input_len: int = INPUT_LEN) -> int:
-    """Optimizer steps to read ``tokens`` corpus tokens once."""
-    return tokens // (batch_size * raw_length(input_len))

@@ -11,7 +11,7 @@ from eve.model.eve import Eve
 from eve.tasks.span import SAMPLES, fill_in, prompt_ids, span_loss, span_metrics
 from eve.tokenizer.bpe import BYTE0, DEC, EOS, sentinel
 from eve.train.config import TrainConfig
-from eve.train.pretrain import pretrain, steps_for
+from eve.train.pretrain import pretrain
 
 
 def test_fill_in_keeps_the_text_and_fills_each_hole(tokenizer):
@@ -48,10 +48,6 @@ def test_content_metrics_skip_sentinels_and_eos():
     assert m["content"].item() == pytest.approx(expected.item(), rel=1e-5)
     assert m["lm"].item() == pytest.approx(span_loss(model, batch)["lm"].item(), rel=1e-5)
     assert 0.0 <= m["content_acc"].item() <= 1.0
-
-
-def test_steps_for_one_pass_over_the_corpus():
-    assert steps_for(250_000_000, 32) == 250_000_000 // (32 * 569)
 
 
 def test_pretrain_end_to_end(tokenizer, tmp_path):

@@ -193,4 +193,6 @@ class Checkpoint:
             progress.success(f"done in {took}", run.out_dir / MODEL_FILE)
         else:
             progress.console.print()
-            progress.warn(f"stopped at step {step:,} after {took} · continue with --resume")
+            progress.warn(
+                f"stopped at step {step:,} after {took} · continue with --set run.resume=true"
+            )

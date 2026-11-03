@@ -14,8 +14,7 @@ VOCAB_DIR = "data/vocab"  # everyday nouns and first names
 TOKENIZER_FILE = "artifacts/tokenizer/eve-8k.json"
 CONFIG_DIR = "configs"  # experiments/*.toml and the components' variant files
 RUNS_DIR = "artifacts/runs"
-PRETRAIN_RUN = f"{RUNS_DIR}/pretrain"  # where a run without --out writes
-FINETUNE_RUN = f"{RUNS_DIR}/finetune"
+FINETUNE_RUN = f"{RUNS_DIR}/finetune"  # where a run without run.out writes
 PRETRAINED_MODEL = f"{RUNS_DIR}/eve-32m-pretrain/model.pt"
 FINETUNED_MODEL = f"{RUNS_DIR}/eve-32m/model.pt"
 
