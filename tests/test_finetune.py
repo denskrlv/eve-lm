@@ -4,9 +4,10 @@ from pathlib import Path
 import pytest
 import torch
 import torch.nn.functional as F
+from helpers import examples, write_task
 
 from eve.config import INTENTS, preset
-from eve.data.render import IGNORE, Call, TaskCollator, TaskDataset, TaskExample, render
+from eve.data.render import IGNORE, TaskCollator, TaskDataset, render
 from eve.data.schema import Tool
 from eve.model.build import load_init
 from eve.model.checkpoint import load_checkpoint, save_checkpoint
@@ -27,36 +28,6 @@ from eve.train.config import TrainConfig
 from eve.train.finetune import finetune
 
 CFG = preset("tiny")
-
-
-def examples(library) -> list[TaskExample]:
-    def ex(utterance, tools, intent, *calls):
-        return TaskExample(utterance, tuple(library[t] for t in tools), intent, calls)
-
-    return [
-        ex(
-            "turn off the kitchen lights",
-            ["set_lights", "set_thermostat", "play_music"],
-            "call",
-            Call("set_lights", {"room": "kitchen", "on": False}),
-        ),
-        ex(
-            "dim the bedroom lights to 30% and play some jazz",
-            ["play_music", "lock_door", "set_lights"],
-            "call",
-            Call("set_lights", {"room": "bedroom", "on": True, "brightness": 30}),
-            Call("play_music", {"query": "jazz"}),
-        ),
-        ex(
-            "turn on the lights",
-            ["set_lights", "set_blinds"],
-            "ask",
-            Call("set_lights", {"room": "?", "on": True}),
-        ),
-        ex("can you change it", ["set_thermostat", "set_blinds"], "ask"),  # no slot labels
-        ex("order me a pizza", ["set_lights", "play_music", "lock_door"], "unsupported"),
-        ex("thanks, that's all", ["set_volume"], "none"),
-    ]
 
 
 def make(cfg=CFG, seed=0) -> Eve:
@@ -207,14 +178,6 @@ def test_describe_copies_its_batch_blocking(
 def test_scratch_needs_a_tokenizer_path(library: dict[str, Tool], tmp_path: Path) -> None:
     with pytest.raises(ValueError, match="scratch needs tokenizer_path"):
         finetune(TrainConfig(steps=1), tmp_path, tmp_path / "out", "cpu", library, scratch=CFG)
-
-
-def write_task(path, library) -> None:
-    """train.jsonl and the sets fine-tuning reads, all in ``path`` (its task and evals dir)."""
-    path.mkdir()
-    rows = [e.to_json() for e in examples(library)]
-    for name in ("train", "val", "heldout-templates"):
-        (path / f"{name}.jsonl").write_text("".join(json.dumps(r) + "\n" for r in rows))
 
 
 def test_finetune_then_train_on(library, tokenizer, tmp_path):

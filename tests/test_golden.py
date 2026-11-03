@@ -13,7 +13,7 @@ from typing import Any
 import numpy as np
 import pytest
 import torch
-from test_finetune import write_task
+from helpers import write_task
 
 from eve.config import preset
 from eve.model.checkpoint import load_checkpoint, save_checkpoint
