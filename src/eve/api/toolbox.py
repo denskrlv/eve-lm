@@ -40,6 +40,7 @@ class ToolBox:
             self._tools[tool.name] = (tool, function)
 
     def remove(self, name: str) -> None:
+        """Unregister the tool called ``name``; ``KeyError`` if there is none."""
         if name not in self._tools:
             raise KeyError(f"no tool called {name!r}")
         del self._tools[name]
@@ -58,6 +59,7 @@ class ToolBox:
 
     @property
     def names(self) -> list[str]:
+        """The registered tools' names, in registration order."""
         return list(self._tools)
 
     @property

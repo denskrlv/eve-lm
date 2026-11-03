@@ -49,7 +49,9 @@ def _document(tool: Tool) -> list[str]:
 class Scorer(Protocol):
     """Ranks tools for a request: one score per tool, higher is a better match."""
 
-    def scores(self, text: str, tools: Sequence[Tool]) -> list[float]: ...
+    def scores(self, text: str, tools: Sequence[Tool]) -> list[float]:
+        """One score per tool of ``tools`` for the request ``text``, in their order."""
+        ...
 
 
 class BM25:
@@ -64,6 +66,7 @@ class BM25:
         return self._docs[tool]
 
     def scores(self, text: str, tools: Sequence[Tool]) -> list[float]:
+        """The BM25 score of each tool for ``text``; word rarity is counted among ``tools``."""
         if not tools:
             return []
         query = set(words(text))
@@ -103,6 +106,7 @@ class Dense:
             self._queries.update(zip(texts, vectors, strict=True))
 
     def scores(self, text: str, tools: Sequence[Tool]) -> list[float]:
+        """The cosine of ``text``'s embedding with each tool's (a primed request's is reused)."""
         if not tools:
             return []
         self.prime(tools=tools)

@@ -40,6 +40,8 @@ class Eve:
         source: str,
         retriever: Checkpoint[Retriever] | None = None,
     ) -> None:
+        """Wrap an already loaded checkpoint; ``source`` is where it came from, for messages.
+        Use ``Eve.load`` to get a model: it finds, downloads and checks the files."""
         if not checkpoint.meta.get("joint"):
             raise CheckpointError(
                 f"{source} isn't a fine-tuned joint model: it can't write argument values"

@@ -445,6 +445,7 @@ def calibrate(args: argparse.Namespace) -> None:
 
 
 def add_ask(commands: Subcommands) -> None:
+    """Register ``eve ask``."""
     parser = commands.add_parser("ask", help="ask the model about a request (M7, M8)")
     parser.set_defaults(run=ask)
     parser.add_argument("text", nargs="*", help="requests; none: type them one by one")
@@ -458,6 +459,7 @@ def add_ask(commands: Subcommands) -> None:
 
 
 def add_evaluate(commands: Subcommands) -> None:
+    """Register ``eve evaluate``."""
     from eve.evaluate import SETS
 
     parser = commands.add_parser("evaluate", help="score a fine-tuned model on whole eval sets")
@@ -474,6 +476,7 @@ def add_evaluate(commands: Subcommands) -> None:
 
 
 def add_calibrate(commands: Subcommands) -> None:
+    """Register ``eve calibrate``."""
     from eve.evaluate import SETS
 
     parser = commands.add_parser("calibrate", help="fit the probabilities' temperatures (M9)")
@@ -495,6 +498,7 @@ def add_calibrate(commands: Subcommands) -> None:
 
 
 def add_fill(commands: Subcommands) -> None:
+    """Register ``eve fill``."""
     parser = commands.add_parser("fill", help="fill <x0> holes with a pretrained model (M4)")
     parser.set_defaults(run=fill)
     parser.add_argument("text", nargs="*", help='e.g. "Paris is the capital of <x0>."')

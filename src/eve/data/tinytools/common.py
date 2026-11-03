@@ -98,9 +98,11 @@ class Context:
         return True
 
     def drop(self, reason: str, count: int = 1) -> None:
+        """Count ``count`` items dropped for ``reason``, for the build report."""
         self.dropped[reason] += count
 
     def name(self) -> str:
+        """A random first name from the word lists."""
         return pick(self.rng, self.names)
 
 

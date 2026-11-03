@@ -15,10 +15,12 @@ class _StdoutHandler(logging.StreamHandler):  # type: ignore[type-arg]
     (pytest and redirects swap it). Warnings and errors start with their level: "warning: …"."""
 
     def emit(self, record: logging.LogRecord) -> None:
+        """Write to the current ``sys.stdout``, not the one there was at setup."""
         self.stream = sys.stdout
         super().emit(record)
 
     def format(self, record: logging.LogRecord) -> str:
+        """The message alone, prefixed with the level for warnings and errors."""
         message = record.getMessage()
         if record.levelno >= logging.WARNING:
             return f"{record.levelname.lower()}: {message}"

@@ -32,6 +32,7 @@ class _Window:
     start: float = field(default_factory=time.time)
 
     def add(self, losses: dict[str, torch.Tensor], tokens: int) -> None:
+        """Add one step's losses and tokens to the window."""
         # Summed as tensors: calling .item() every step would make the CPU wait for the GPU.
         for name, value in losses.items():
             self.losses[name] = self.losses.get(name, 0.0) + value.detach().float()

@@ -54,10 +54,12 @@ class RetrieverConfig(ModelConfig):
 
     @property
     def query_len(self) -> int:
+        """The most tokens of a request the encoder reads."""
         return min(self.max_query_len, self.max_encoder_len)
 
     @property
     def tool_len(self) -> int:
+        """The most tokens of a tool schema the encoder reads."""
         return min(self.max_tool_len, self.max_encoder_len)
 
 

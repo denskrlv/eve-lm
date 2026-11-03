@@ -251,6 +251,7 @@ def _rejects_table(rejects: list[tuple[dict[str, Any], list[str]]]) -> "Table":
 
 
 def add_tokenizer(commands: Subcommands) -> None:
+    """Register ``eve tokenizer train`` and ``eve tokenizer stats``."""
     tok = commands.add_parser("tokenizer", help="train or inspect the BPE tokenizer (M1)")
     tok_commands = tok.add_subparsers(dest="tokenizer_command", required=True)
     for name, run, help_ in [
@@ -279,6 +280,7 @@ def add_tokenizer(commands: Subcommands) -> None:
 
 
 def add_corpus(commands: Subcommands) -> None:
+    """Register ``eve corpus encode``, ``fetch`` and ``tinytools``."""
     group = commands.add_parser("corpus", help="the pretraining corpus")
     corpus_commands = group.add_subparsers(dest="corpus_command", required=True)
     parser = corpus_commands.add_parser("encode", help="encode parquet text to token ids (M1)")
@@ -336,6 +338,7 @@ def _add_data_build_command(data_commands: Subcommands) -> None:
 
 
 def add_data(commands: Subcommands) -> None:
+    """Register ``eve data build``, ``external``, ``batch`` and ``check``."""
     data = commands.add_parser("data", help="build the task dataset (M6)")
     data_commands = data.add_subparsers(dest="data_command", required=True)
     _add_data_build_command(data_commands)

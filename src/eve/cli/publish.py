@@ -95,6 +95,7 @@ def retriever_eval(args: argparse.Namespace) -> None:
 
 
 def add_info(commands: Subcommands) -> None:
+    """Register ``eve info``."""
     parser = commands.add_parser("info", help="the device, and the model presets' sizes (M3)")
     parser.set_defaults(run=info)
     parser.add_argument(
@@ -106,6 +107,7 @@ def add_info(commands: Subcommands) -> None:
 
 
 def add_export(commands: Subcommands) -> None:
+    """Register ``eve export``."""
     from eve.export import DTYPES as EXPORT_DTYPES
 
     parser = commands.add_parser("export", help="write a fine-tuned model for the Hub (M10)")
@@ -118,6 +120,7 @@ def add_export(commands: Subcommands) -> None:
 
 
 def add_retriever(commands: Subcommands) -> None:
+    """Register ``eve retriever eval``."""
     group = commands.add_parser("retriever", help="score tool retrieval (M11)")
     retriever_commands = group.add_subparsers(dest="retriever_command", required=True)
     parser = retriever_commands.add_parser("eval", help="top-5 recall of BM25 and a retriever")

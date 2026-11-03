@@ -163,3 +163,12 @@ def test_a_response_reads_as_one_line() -> None:
     assert repr(Response.from_answers("thanks", answers("none", {}), True, {})) == (
         "<Response none 90%>"
     )
+
+
+def test_intent_literal_matches_the_model_intents() -> None:
+    import typing
+
+    import eve
+    from eve.config import INTENTS
+
+    assert typing.get_args(eve.Intent) == INTENTS

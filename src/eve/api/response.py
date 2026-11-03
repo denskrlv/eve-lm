@@ -22,6 +22,8 @@ class Call:
 
     @classmethod
     def from_written(cls, call: WrittenCall) -> "Call":
+        """The public view of a call the decoder wrote: confidences by argument name, and why
+        each invalid value is invalid."""
         return cls(
             tool=call.tool,
             args=call.args,
@@ -41,6 +43,7 @@ class Call:
         return text
 
     def to_dict(self) -> dict[str, Any]:
+        """The call as plain values, ready for ``json.dumps``."""
         return {
             "tool": self.tool,
             "args": self.args,
@@ -81,6 +84,8 @@ class Response:
         functions: Mapping[str, Callable[..., Any]],
         considered: list[str] | None = None,
     ) -> "Response":
+        """The response to ``text`` from the model's ``answers``: the likeliest intent, and its
+        calls if that intent comes with calls (``ACTS``)."""
         intent = cast(Intent, max(answers.intent, key=answers.intent.__getitem__))
         calls = [Call.from_written(c) for c in answers.written] if intent in ACTS else []
         return cls(

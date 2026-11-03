@@ -276,6 +276,7 @@ def _add_set_arg(parser: argparse.ArgumentParser) -> None:
 
 
 def add_pretrain(commands: Subcommands) -> None:
+    """Register ``eve pretrain``."""
     parser = commands.add_parser("pretrain", help="span-corruption pretraining (M4)")
     parser.set_defaults(run=pretrain)
     parser.add_argument("--preset", choices=sorted(PRESETS), default="eve-32m")
@@ -293,6 +294,7 @@ def add_pretrain(commands: Subcommands) -> None:
 
 
 def add_finetune(commands: Subcommands) -> None:
+    """Register ``eve finetune``."""
     parser = commands.add_parser("finetune", help="fine-tune questions and values (M7, M8)")
     parser.set_defaults(run=finetune)
     start = parser.add_mutually_exclusive_group()  # one is required; finetune checks
@@ -310,6 +312,7 @@ def add_finetune(commands: Subcommands) -> None:
 
 
 def add_run(commands: Subcommands) -> None:
+    """Register ``eve run``."""
     parser = commands.add_parser("run", help="run an experiment file, e.g. a run's config.toml")
     parser.set_defaults(run=run_file)
     parser.add_argument("experiment", help="configs/experiments/*.toml, or <run>/config.toml")
@@ -317,6 +320,7 @@ def add_run(commands: Subcommands) -> None:
 
 
 def add_compare(commands: Subcommands) -> None:
+    """Register ``eve compare``."""
     parser = commands.add_parser("compare", help="val metrics of training runs side by side (M4)")
     parser.set_defaults(run=compare)
     parser.add_argument("runs", nargs="+", help="run directories, e.g. artifacts/runs/ab-*")
