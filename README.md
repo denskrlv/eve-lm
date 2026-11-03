@@ -34,7 +34,7 @@ turn on the lights
 The second request names no room, so Eve answers **ask** and marks `room` as the missing argument instead of guessing one.
 
 > [!NOTE]
-> Eve is under active development. Pretraining, fine-tuning, evaluation, calibration and the Python library work end to end; the PyPI release, published weights and the Raspberry Pi build are coming soon (see [Roadmap](#roadmap)).
+> Eve is under active development. Pretraining, fine-tuning, evaluation, calibration and the Python library work end to end; the PyPI release, published weights and the Raspberry Pi build are coming soon (see [Status](#status)).
 
 ## Overview
 
@@ -86,23 +86,18 @@ A request counts as *familiar* when every tool's schema fingerprint is in the tr
 - **It matches words, not meaning.** In 76% of training calls the request shares a content word with the tool's name. On new tools, Eve gets 71% of calls exact when they share a word and 30% when they don't. "20 plus 10" with an `add` tool is answered *unsupported*, and "make it warmer in here" doesn't find `set_thermostat`.
 - **So the next fix is data, not size.** TinyTools is a [TinyStories](https://arxiv.org/abs/2305.07759)-style pretraining corpus of the background knowledge new tools need: how everyday things work, many ways to say the same request, and assistant dialogues. The first round converts permissively licensed datasets (about 25–35M tokens); the next experiment pretrains with and without it on the same token budget and compares accuracy on tools the model never saw.
 
-## Roadmap
+## Status
 
-| Milestone | What | Status |
-|---|---|---|
-| M0 | Project setup, model presets | ✅ |
-| M1 | Tokenizer, pretraining corpus, span corruption, task renderer | ✅ |
-| M2 | Self, causal and cross attention | ✅ |
-| M3 | Encoder, value decoder, question block | ✅ |
-| M4 | Span-corruption pretraining | ✅ |
-| M5 | Checkpoints and loading pretrained weights | ✅ |
-| M6 | Tool library and task data | ✅ |
-| M7 | Classifier fine-tuning: the question heads | ✅ |
-| M8 | Instruction fine-tuning: value decoder, joint run | ✅ `eve-32m` |
-| M9 | Metrics and calibration | ✅ |
-| M10 | Python library (`Eve.load`, `eve.respond`) and inference on a Raspberry Pi 5 | 🚧 library done; PyPI release, weights and Pi coming soon |
-| M11 | Retriever that picks the 1–5 tools to show the model | ✅ `eve-32m-retriever` |
-| – | TinyTools pretraining corpus | 🚧 round 1: converting existing datasets |
+- ✅ Model presets; self, causal and cross attention; the encoder, value decoder and question block
+- ✅ Tokenizer, pretraining corpus, span corruption and the task renderer
+- ✅ Span-corruption pretraining
+- ✅ Checkpoints and loading pretrained weights
+- ✅ Tool library and task data
+- ✅ Fine-tuning the question heads, and the value decoder with them in one joint run (`eve-32m`)
+- ✅ Metrics and calibration
+- ✅ Retriever that picks the 1–5 tools to show the model (`eve-32m-retriever`)
+- 🚧 Python library (`Eve.load`, `eve.respond`) and inference on a Raspberry Pi 5: library done; PyPI release, weights and Pi coming soon
+- 🚧 TinyTools pretraining corpus: round 1, converting existing datasets
 
 ## Use it in Python
 

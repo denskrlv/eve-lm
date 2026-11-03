@@ -1,4 +1,4 @@
-# M11, eve-32m's retriever: eve-32m-pretrain's encoder as a bi-encoder, trained contrastively on
+# eve-32m's retriever: eve-32m-pretrain's encoder as a bi-encoder, trained contrastively on
 # the task splits' requests and their correct tools. Run it with
 # `eve run configs/experiments/eve-32m-retriever.toml`, score it with `eve retriever eval`.
 

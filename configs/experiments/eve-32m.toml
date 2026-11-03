@@ -1,4 +1,4 @@
-# eve-32m, fine-tuned (M8): question heads and argument values together, from the
+# eve-32m, fine-tuned: question heads and argument values together, from the
 # eve-32m-pretrain run. Run it with `eve run configs/experiments/eve-32m.toml`; swap a component
 # by changing its name under [components] (or `--set components.optimizer=...`).
 
