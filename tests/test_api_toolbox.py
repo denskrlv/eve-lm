@@ -117,3 +117,17 @@ def test_scorers_import_from_the_api_and_from_infer() -> None:
         search.Scorer,
         search.words,
     )
+
+
+def test_load_refuses_an_object_without_tools(tmp_path: Path) -> None:
+    path = tmp_path / "registry.json"
+    path.write_text(json.dumps({"x": 1}))
+    with pytest.raises(eve.ToolError, match=r"registry\.json.*tools"):
+        ToolBox.load(path)
+
+
+def test_load_refuses_json_that_is_not_a_list_or_object(tmp_path: Path) -> None:
+    path = tmp_path / "registry.json"
+    path.write_text(json.dumps("abc"))
+    with pytest.raises(eve.ToolError, match=r"registry\.json"):
+        ToolBox.load(path)

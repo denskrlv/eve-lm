@@ -88,3 +88,26 @@ def test_retriever_eval_scores_bm25_and_a_retriever(
 def test_corpus_fetch_refuses_unknown_sources() -> None:
     with pytest.raises(SystemExit, match="unknown sources"):
         main(["corpus", "fetch", "nope"])
+
+
+def test_ask_reports_a_bad_schema_file(tmp_path: Path) -> None:
+    (tmp_path / "broken.json").write_text("{not json")
+    (tmp_path / "no-tools.json").write_text(json.dumps({"x": 1}))
+    for name in ("missing.json", "broken.json", "no-tools.json"):
+        path = str(tmp_path / name)
+        with pytest.raises(SystemExit) as exit_:
+            main(["ask", "hi", "--schema", path])
+        assert str(exit_.value.code).startswith(path), name
+
+
+def test_data_check_reports_a_missing_batch(tmp_path: Path) -> None:
+    with pytest.raises(SystemExit, match="batch-9999"):
+        main(["data", "check", "batch-9999", "--dir", str(tmp_path)])
+
+
+def test_compare_reports_an_unreadable_metrics_file(tmp_path: Path) -> None:
+    run = tmp_path / "run-a"
+    run.mkdir()
+    (run / "metrics.jsonl").write_text('{"kind": "val", "step": 1}\nnot json\n')
+    with pytest.raises(SystemExit, match=r"metrics\.jsonl: line 2 "):
+        main(["compare", str(run)])

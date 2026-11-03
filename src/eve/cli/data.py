@@ -226,7 +226,10 @@ def data_check(args: argparse.Namespace) -> None:
     from eve.data.generate.build import Sources, check_written
     from eve.data.jsonl import read_jsonl
 
-    batch = json.loads((Path(args.dir) / "batches" / f"{args.batch}.json").read_text())
+    batch_path = Path(args.dir) / "batches" / f"{args.batch}.json"
+    if not batch_path.is_file():
+        raise SystemExit(f"no batch {args.batch} in {Path(args.dir) / 'batches'}")
+    batch = json.loads(batch_path.read_text())
     written_path = Path(args.dir) / "written" / f"{args.batch}.jsonl"
     written = read_jsonl(written_path) if written_path.exists() else []
     examples, rejects = check_written(batch, written, Sources.load(generation_dir=args.dir).library)

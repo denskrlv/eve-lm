@@ -90,7 +90,13 @@ class ToolBox:
             data = json.loads(Path(path).read_text())
         except (OSError, json.JSONDecodeError) as error:
             raise ToolError(f"can't read tools from {path}: {error}") from None
-        return cls(data["tools"] if isinstance(data, dict) else data)
+        if isinstance(data, dict):
+            if "tools" not in data:
+                raise ToolError(f'can\'t read tools from {path}: no "tools" list')
+            data = data["tools"]
+        elif not isinstance(data, list):
+            raise ToolError(f"can't read tools from {path}: give a list of tool schemas")
+        return cls(data)
 
     def __repr__(self) -> str:
         return f"ToolBox({len(self)} tools)"

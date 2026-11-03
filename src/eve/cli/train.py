@@ -198,7 +198,12 @@ def _read_runs(run_dirs: list[str]) -> Runs:
         path = Path(run) / "metrics.jsonl"
         if not path.exists():
             raise SystemExit(f"no metrics in {run}")
-        records = [json.loads(line) for line in path.read_text().splitlines()]
+        records = []
+        for n, line in enumerate(path.read_text().splitlines(), 1):
+            try:
+                records.append(json.loads(line))
+            except json.JSONDecodeError:
+                raise SystemExit(f"{path}: line {n} isn't JSON") from None
         start: dict[str, Any] = next((r for r in records if r["kind"] == "start"), {})
         vals = {r["step"]: r for r in records if r["kind"] == "val"}
         runs[Path(run).name] = (start, vals)

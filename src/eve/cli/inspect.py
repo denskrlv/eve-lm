@@ -99,7 +99,12 @@ def _tools(args: argparse.Namespace) -> list["Tool"]:
             raise SystemExit(f"unknown tools {unknown}; see data/tools/*.json or use --schema")
         tools += [library[name] for name in names]
     for path in args.schema or []:
-        data = json.loads(Path(path).read_text())
+        try:
+            data = json.loads(Path(path).read_text())
+        except (OSError, json.JSONDecodeError) as error:
+            raise SystemExit(f"{path}: {error}") from None
+        if isinstance(data, dict) and "tools" not in data:
+            raise SystemExit(f'{path}: no "tools" list')
         schemas = data["tools"] if isinstance(data, dict) else data  # a data/tools file, or a list
         try:
             tools += [to_tool(t)[0] for t in schemas]  # Eve, OpenAI or MCP schemas
