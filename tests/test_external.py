@@ -1,10 +1,14 @@
 import json
+from pathlib import Path
 
 import numpy as np
 
 from eve.data.generate.external import (
     HELD_OUT,
+    MASSIVE_FILE,
     MASSIVE_TOOLS,
+    XLAM_FILE,
+    convert_external,
     convert_massive,
     convert_xlam,
     short,
@@ -12,6 +16,7 @@ from eve.data.generate.external import (
     unsupported_variant,
     xlam_tool,
 )
+from eve.data.jsonl import read_jsonl, write_jsonl
 from eve.data.render import TaskExample
 
 WEATHER = {
@@ -180,3 +185,37 @@ def test_held_out_topics_in_the_request_are_dropped():
     ]
     parts, dropped = convert_massive(rows, rng)
     assert parts["train"] == [] and dropped["held-out topic in the request"] == 2
+
+
+LIGHTS_OFF = [
+    {
+        "partition": "train",
+        "intent": "iot_hue_lightoff",
+        "utt": f"lights off in the {room}",
+        "annot_utt": f"lights off in the [house_place : {room}]",
+    }
+    for room in ["kitchen", "hall", "bedroom", "office", "garage", "attic"]
+]
+
+
+def test_convert_external_writes_files_and_a_report(tmp_path: Path) -> None:
+    raw, out = tmp_path / "raw", tmp_path / "external"
+    answers = [{"name": "getWeatherForecast", "arguments": {"location": "Oslo"}}]
+    xlam = [xlam_row("Weather in Oslo?", answers), xlam_row("Sum these", [], (LISTY,))]
+    (raw / "xlam").mkdir(parents=True)
+    (raw / XLAM_FILE).write_text(json.dumps(xlam))
+    write_jsonl(raw / MASSIVE_FILE, LIGHTS_OFF)
+    out.mkdir()
+
+    report = convert_external(raw, out)
+
+    assert report["xlam"]["kept"] == 1 and sum(report["xlam"]["reasons"].values()) == 2
+    assert report["massive"]["examples"]["train"] == len(LIGHTS_OFF)
+    assert json.loads((out / "report.json").read_text()) == report
+    assert len(read_jsonl(out / "xlam.jsonl")) == 1 + report["xlam"]["unsupported_variants"]
+    assert {row["source"] for row in read_jsonl(out / "massive-train.jsonl")} == {"massive"}
+
+
+def test_convert_external_with_nothing_downloaded(tmp_path: Path) -> None:
+    assert convert_external(tmp_path / "raw", tmp_path) == {}
+    assert json.loads((tmp_path / "report.json").read_text()) == {}
