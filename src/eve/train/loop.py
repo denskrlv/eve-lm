@@ -19,7 +19,7 @@ from torch import nn
 from eve import progress, registry
 from eve.components import Callback, DataModule, LossFn, OptimizerFactory, Schedule
 from eve.model.checkpoint import load_checkpoint
-from eve.runtime import eval_mode, to_device
+from eve.runtime import config_of, eval_mode, to_device
 from eve.train.config import DTYPES, TrainConfig
 
 if TYPE_CHECKING:
@@ -108,7 +108,7 @@ class MetricsLog:
 
 def model_config(model: nn.Module) -> dict[str, Any]:
     """The model's config as plain values (``model.cfg.to_dict()``), for logs and checks."""
-    config: dict[str, Any] = getattr(model, "cfg").to_dict()  # noqa: B009 (hidden from mypy)
+    config: dict[str, Any] = config_of(model).to_dict()
     return config
 
 

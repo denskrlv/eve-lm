@@ -30,7 +30,7 @@ from typing import Any
 
 from eve import defaults, registry
 from eve.model.build import start_model
-from eve.runtime import pick_device, seed_everything
+from eve.runtime import config_of, pick_device, seed_everything
 from eve.train.config import TrainConfig
 from eve.train.loop import DEFAULT_CALLBACKS, DEFAULT_OPTIMIZER, DEFAULT_SCHEDULE
 
@@ -227,9 +227,8 @@ def run(experiment: Experiment, **data_args: Any) -> dict[str, float]:
     seed = train_cfg.seed
     seed_everything(seed)
     started = start_model(architecture=c.model, **params["model"])
-    model_cfg = getattr(started.model, "cfg")  # noqa: B009 (nn.Module hides it from mypy)
     data = registry.build("data", c.data, **params["data"])(
-        started.tokenizer, model_cfg, seed, **data_args
+        started.tokenizer, config_of(started.model), seed, **data_args
     )
     if experiment.epochs is not None:
         train_cfg = with_epochs(train_cfg, experiment.epochs, len(data.train))

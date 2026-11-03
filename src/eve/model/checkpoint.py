@@ -9,6 +9,7 @@ from torch import nn
 from eve import registry
 from eve.config import ModelConfig
 from eve.model.eve import Eve
+from eve.runtime import config_of
 from eve.tokenizer.bpe import BPETokenizer
 
 FORMAT = "eve-ckpt-1"
@@ -65,7 +66,7 @@ def save_checkpoint(
     The file is written to a temporary name and then renamed, so a crash during a save never
     leaves a half-written checkpoint behind.
     """
-    cfg = getattr(model, "cfg")  # noqa: B009 (nn.Module's __getattr__ hides it from mypy)
+    cfg = config_of(model)
     if tokenizer.vocab_size > cfg.vocab_size:
         raise ValueError(
             f"tokenizer has {tokenizer.vocab_size} tokens, model only {cfg.vocab_size}"
