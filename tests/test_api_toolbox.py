@@ -131,3 +131,11 @@ def test_load_refuses_json_that_is_not_a_list_or_object(tmp_path: Path) -> None:
     path.write_text(json.dumps("abc"))
     with pytest.raises(eve.ToolError, match=r"registry\.json"):
         ToolBox.load(path)
+
+
+def test_load_names_the_file_of_a_schema_it_cannot_read(tmp_path: Path) -> None:
+    path = tmp_path / "registry.json"
+    xs = {"type": "object", "properties": {"xs": {"type": "array"}}}  # a list: not a scalar
+    path.write_text(json.dumps([{"name": "sum_list", "description": "Adds", "parameters": xs}]))
+    with pytest.raises(eve.ToolError, match=r"registry\.json"):
+        ToolBox.load(path)

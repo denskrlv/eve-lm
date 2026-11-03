@@ -12,6 +12,7 @@ from helpers import examples, save_joint, save_retriever
 
 from eve.cli import build_parser, main
 from eve.config import preset
+from eve.data.schema import Tool
 from eve.experiment import Experiment, apply_sets, read
 from eve.model.checkpoint import save_checkpoint
 from eve.model.eve import Eve
@@ -97,11 +98,32 @@ def test_corpus_fetch_refuses_unknown_sources() -> None:
 def test_ask_reports_a_bad_schema_file(tmp_path: Path) -> None:
     (tmp_path / "broken.json").write_text("{not json")
     (tmp_path / "no-tools.json").write_text(json.dumps({"x": 1}))
-    for name in ("missing.json", "broken.json", "no-tools.json"):
+    xs = {"type": "object", "properties": {"xs": {"type": "array"}}}  # a list: not a scalar
+    bad = [{"name": "sum_list", "description": "Adds", "parameters": xs}]
+    (tmp_path / "bad-schema.json").write_text(json.dumps(bad))
+    for name in ("missing.json", "broken.json", "no-tools.json", "bad-schema.json"):
         path = str(tmp_path / name)
         with pytest.raises(SystemExit) as exit_:
             main(["ask", "hi", "--schema", path])
-        assert str(exit_.value.code).startswith(path), name
+        assert path in str(exit_.value.code), name
+
+
+def test_ask_schema_reads_lists_and_tool_files(
+    tmp_path: Path,
+    library: dict[str, Tool],
+    tokenizer: BPETokenizer,
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    lights, music = library["set_lights"].to_dict(), library["play_music"].to_dict()
+    (tmp_path / "a.json").write_text(json.dumps([lights]))  # a list of schemas
+    (tmp_path / "b.json").write_text(json.dumps({"tools": [music, lights]}))  # a data/tools file
+    model = save_joint(tmp_path / "model.pt", tokenizer)
+    schemas = ["--schema", str(tmp_path / "a.json"), "--schema", str(tmp_path / "b.json")]
+
+    main(["ask", "turn off the kitchen lights", *schemas, "--json", "--model", str(model)])
+
+    response = json.loads(capsys.readouterr().out)
+    assert response["considered"] == ["set_lights", "play_music"]  # the later set_lights won
 
 
 def test_data_check_reports_a_missing_batch(tmp_path: Path) -> None:

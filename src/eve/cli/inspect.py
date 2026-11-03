@@ -90,8 +90,7 @@ def fill(args: argparse.Namespace) -> None:
 
 def _tools(args: argparse.Namespace) -> list["Tool"]:
     """The tools for ``eve ask``: names from the library and/or schemas from JSON files."""
-    from eve.api import EveError
-    from eve.api.tools import to_tool
+    from eve.api import ToolBox, ToolError
     from eve.data.generate.build import Sources
 
     tools = []
@@ -102,17 +101,10 @@ def _tools(args: argparse.Namespace) -> list["Tool"]:
             raise SystemExit(f"unknown tools {unknown}; see data/tools/*.json or use --schema")
         tools += [library[name] for name in names]
     for path in args.schema or []:
-        try:
-            data = json.loads(Path(path).read_text())
-        except (OSError, json.JSONDecodeError) as error:
-            raise SystemExit(f"{path}: {error}") from None
-        if isinstance(data, dict) and "tools" not in data:
-            raise SystemExit(f'{path}: no "tools" list')
-        schemas = data["tools"] if isinstance(data, dict) else data  # a data/tools file, or a list
-        try:
-            tools += [to_tool(t)[0] for t in schemas]  # Eve, OpenAI or MCP schemas
-        except EveError as error:
-            raise SystemExit(f"{path}: {error}") from None
+        try:  # a data/tools file, or a list of Eve, OpenAI or MCP schemas
+            tools += ToolBox.load(path)
+        except ToolError as error:
+            raise SystemExit(str(error)) from None
     if not tools:
         raise SystemExit("give the tools with --tools a,b,c and/or --schema FILE")
     return tools

@@ -96,7 +96,10 @@ class ToolBox:
             data = data["tools"]
         elif not isinstance(data, list):
             raise ToolError(f"can't read tools from {path}: give a list of tool schemas")
-        return cls(data)
+        try:
+            return cls(data)
+        except ToolError as error:
+            raise ToolError(f"can't read tools from {path}: {error}") from None
 
     def __repr__(self) -> str:
         return f"ToolBox({len(self)} tools)"
