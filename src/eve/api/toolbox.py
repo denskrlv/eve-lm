@@ -16,9 +16,7 @@ from typing import Any
 from eve.api.errors import ToolError
 from eve.api.tools import ToolLike, to_tool
 from eve.data.schema import Tool
-from eve.infer.search import BM25, Dense, Scorer, words
-
-__all__ = ["BM25", "Dense", "Scorer", "ToolBox", "words"]  # the scorers' old home re-exports them
+from eve.infer.search import BM25, Scorer
 
 
 class ToolBox:

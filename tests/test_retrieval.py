@@ -5,10 +5,11 @@ import torch
 
 import eve
 from eve import Eve
-from eve.api.toolbox import BM25, Dense, ToolBox
+from eve.api.toolbox import ToolBox
 from eve.config import preset
 from eve.data.render import Call, TaskExample
 from eve.data.schema import ASK_VALUE, Tool
+from eve.infer.search import BM25, Dense
 from eve.model.checkpoint import save_checkpoint
 from eve.model.eve import Eve as EveModel
 from eve.model.retriever import (

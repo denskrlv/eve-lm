@@ -6,10 +6,10 @@ import torch
 
 import eve
 from eve import Eve, ToolBox
-from eve.api.toolbox import words
 from eve.cli import main
 from eve.config import preset
 from eve.data.schema import Tool
+from eve.infer.search import words
 from eve.model.checkpoint import save_checkpoint
 from eve.model.eve import Eve as EveModel
 from eve.tokenizer.bpe import BPETokenizer
@@ -105,18 +105,6 @@ def test_eve_ask_takes_more_tools_than_one_request_holds(
     main([*argv, "--model", str(tmp_path / "m.pt"), "--device", "cpu"])
     response = json.loads(capsys.readouterr().out.strip().splitlines()[-1])
     assert len(response["considered"]) == 5 and response["considered"][0] == "lock_door"
-
-
-def test_scorers_import_from_the_api_and_from_infer() -> None:
-    import eve.api.toolbox as api
-    import eve.infer.search as search
-
-    assert (api.BM25, api.Dense, api.Scorer, api.words) == (
-        search.BM25,
-        search.Dense,
-        search.Scorer,
-        search.words,
-    )
 
 
 def test_load_refuses_an_object_without_tools(tmp_path: Path) -> None:
