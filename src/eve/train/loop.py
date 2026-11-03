@@ -163,7 +163,7 @@ def batch_indices(step: int, n_items: int, cfg: TrainConfig) -> np.ndarray:
 
 
 def rng_state() -> dict[str, Any]:
-    """Every random generator's state (CPU, and MPS or CUDA if there), for a checkpoint to
+    """PyTorch's random generator states (CPU, and MPS or CUDA if there), for a checkpoint to
     resume from."""
     state: dict[str, Any] = {"torch": torch.get_rng_state()}
     if torch.backends.mps.is_available():
