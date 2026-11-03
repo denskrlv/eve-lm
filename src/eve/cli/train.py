@@ -198,8 +198,12 @@ def _read_runs(run_dirs: list[str]) -> Runs:
         path = Path(run) / "metrics.jsonl"
         if not path.exists():
             raise SystemExit(f"no metrics in {run}")
+        try:
+            lines = path.read_text().splitlines()
+        except OSError as error:
+            raise SystemExit(f"{path}: {error.strerror}") from None
         records = []
-        for n, line in enumerate(path.read_text().splitlines(), 1):
+        for n, line in enumerate(lines, 1):
             try:
                 records.append(json.loads(line))
             except json.JSONDecodeError:

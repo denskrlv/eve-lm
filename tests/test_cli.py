@@ -111,3 +111,20 @@ def test_compare_reports_an_unreadable_metrics_file(tmp_path: Path) -> None:
     (run / "metrics.jsonl").write_text('{"kind": "val", "step": 1}\nnot json\n')
     with pytest.raises(SystemExit, match=r"metrics\.jsonl: line 2 "):
         main(["compare", str(run)])
+
+
+def test_fill_and_retriever_eval_refuse_the_wrong_kind_of_model(
+    tmp_path: Path, tokenizer: BPETokenizer
+) -> None:
+    retriever = str(save_retriever(tmp_path / "retriever.pt", tokenizer))
+    joint = str(save_joint(tmp_path / "joint.pt", tokenizer))
+    with pytest.raises(SystemExit, match="not Eve"):
+        main(["fill", "a <x0>", "--model", retriever, "--device", "cpu"])
+    with pytest.raises(SystemExit, match="isn't a retriever"):
+        main(["retriever", "eval", joint, "--splits", "val", "--device", "cpu"])
+
+
+def test_compare_reports_a_metrics_file_it_cannot_read(tmp_path: Path) -> None:
+    (tmp_path / "run-a" / "metrics.jsonl").mkdir(parents=True)  # a directory, not a file
+    with pytest.raises(SystemExit, match="metrics.jsonl"):
+        main(["compare", str(tmp_path / "run-a")])

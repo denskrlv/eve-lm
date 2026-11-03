@@ -73,7 +73,10 @@ def retriever_eval(args: argparse.Namespace) -> None:
 
     scorers: dict[str, Scorer] = {"bm25": BM25()}
     if args.retriever:
-        ckpt = load_retriever(args.retriever, pick_device(args.device))
+        try:
+            ckpt = load_retriever(args.retriever, pick_device(args.device))
+        except ValueError as error:
+            raise SystemExit(str(error)) from None
         scorers["dense"] = Dense(ckpt.model, ckpt.tokenizer)
     examples = load_splits(Sources.load().library, args.evals, args.splits)
     suites = suite(examples, args.sizes, fills=args.fill)

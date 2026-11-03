@@ -75,7 +75,10 @@ def fill(args: argparse.Namespace) -> None:
     device = pick_device(args.device)
     with progress.bar(len(texts), "fill", "prompts", leave=False) as bar:
         bar.set_stats(f"loading {Path(args.model).name}")
-        ckpt = load_eve(args.model, device)
+        try:
+            ckpt = load_eve(args.model, device)
+        except ValueError as error:
+            raise SystemExit(str(error)) from None
         filled = []
         for text in texts:
             bar.set_stats("decoding")
