@@ -1,3 +1,6 @@
+"""What a request gets back: a ``Response`` with its ``Intent``, the ``Call``s to make and how
+sure the model is of each part, and ``run`` to call the registered functions."""
+
 from collections.abc import Callable, Mapping
 from dataclasses import dataclass, field
 from typing import Any, Literal, cast

@@ -1,3 +1,6 @@
+"""Finding a checkpoint: a local file or directory, or a Hugging Face Hub repo downloaded once
+into the Hub's cache, and the optional ``retriever.pt`` beside it."""
+
 import re
 from pathlib import Path
 

@@ -1,3 +1,7 @@
+"""The exceptions the library raises. All are ``EveError``s; the ones about bad input are also
+``ValueError``s, so either catches them."""
+
+
 class EveError(Exception):
     """Something the library can't do with what it was given."""
 

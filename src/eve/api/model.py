@@ -1,3 +1,6 @@
+"""``Eve``, the library's model: load it once (a file, a directory or a Hub repo), register
+the tools, then ``respond`` to each request with a ``Response``."""
+
 from collections.abc import Callable, Iterable, Sequence
 from pathlib import Path
 from typing import Any
