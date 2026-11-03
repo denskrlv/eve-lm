@@ -3,8 +3,15 @@
 import json
 from pathlib import Path
 
+import torch
+
+from eve.config import preset
 from eve.data.render import Call, TaskExample
 from eve.data.schema import Tool
+from eve.model.checkpoint import save_checkpoint
+from eve.model.eve import Eve
+from eve.model.retriever import Retriever, RetrieverConfig
+from eve.tokenizer.bpe import BPETokenizer
 
 
 def examples(library: dict[str, Tool]) -> list[TaskExample]:
@@ -45,3 +52,20 @@ def write_task(path: Path, library: dict[str, Tool]) -> None:
     rows = [e.to_json() for e in examples(library)]
     for name in ("train", "val", "heldout-templates"):
         (path / f"{name}.jsonl").write_text("".join(json.dumps(r) + "\n" for r in rows))
+
+
+JOINT = {"task": "questions", "joint": True, "val_intent_acc": 0.9}
+
+
+def save_joint(path: Path, tokenizer: BPETokenizer, meta: dict[str, object] = JOINT) -> Path:
+    """A tiny Eve checkpoint with ``meta`` (a fine-tuned joint model by default)."""
+    torch.manual_seed(0)
+    save_checkpoint(path, Eve(preset("tiny")), tokenizer, dict(meta))
+    return path
+
+
+def save_retriever(path: Path, tokenizer: BPETokenizer) -> Path:
+    """A tiny retriever checkpoint."""
+    config = RetrieverConfig(**preset("tiny").to_dict() | {"embed_dim": 16})
+    save_checkpoint(path, Retriever(config), tokenizer, {"task": "retrieval"})
+    return path

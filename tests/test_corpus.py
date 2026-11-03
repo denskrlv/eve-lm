@@ -172,3 +172,17 @@ def test_encode_corpus_logs_progress_when_the_bar_is_off(tokenizer, tmp_path, mo
         r"encoding [\d.,]+M/[\d.,]+M tokens \(\d+%\) \| [\d.]+M tok/s \| eta \S+", lines[-1]
     )
     assert "(100%)" in lines[-1]
+
+
+def test_tokenizer_train_and_stats_commands(tmp_path, capsys):
+    docs = [("The kitchen lights are on. Turn them off at night, please. " * 20)] * 8
+    write_parquet(tmp_path / "web.parquet", docs)
+    tokenizer = str(tmp_path / "tok.json")
+    web = ["--parquet", str(tmp_path / "*.parquet")]
+
+    main(["tokenizer", "train", *web, "--text", "2k", "--vocab-size", "600", "--out", tokenizer])
+    assert Path(tokenizer).is_file()
+
+    main(["tokenizer", "stats", *web, "--tokenizer", tokenizer, "--text", "1k", "--skip", "0"])
+    out = capsys.readouterr().out
+    assert "tokens/word" in out and "vocabulary" in out
