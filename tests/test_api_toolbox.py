@@ -6,10 +6,10 @@ import torch
 
 import eve
 from eve import Eve, ToolBox
-from eve.api.toolbox import words
 from eve.cli import main
 from eve.config import preset
 from eve.data.schema import Tool
+from eve.infer.search import words
 from eve.model.checkpoint import save_checkpoint
 from eve.model.eve import Eve as EveModel
 from eve.tokenizer.bpe import BPETokenizer
@@ -105,3 +105,25 @@ def test_eve_ask_takes_more_tools_than_one_request_holds(
     main([*argv, "--model", str(tmp_path / "m.pt"), "--device", "cpu"])
     response = json.loads(capsys.readouterr().out.strip().splitlines()[-1])
     assert len(response["considered"]) == 5 and response["considered"][0] == "lock_door"
+
+
+def test_load_refuses_an_object_without_tools(tmp_path: Path) -> None:
+    path = tmp_path / "registry.json"
+    path.write_text(json.dumps({"x": 1}))
+    with pytest.raises(eve.ToolError, match=r"registry\.json.*tools"):
+        ToolBox.load(path)
+
+
+def test_load_refuses_json_that_is_not_a_list_or_object(tmp_path: Path) -> None:
+    path = tmp_path / "registry.json"
+    path.write_text(json.dumps("abc"))
+    with pytest.raises(eve.ToolError, match=r"registry\.json"):
+        ToolBox.load(path)
+
+
+def test_load_names_the_file_of_a_schema_it_cannot_read(tmp_path: Path) -> None:
+    path = tmp_path / "registry.json"
+    xs = {"type": "object", "properties": {"xs": {"type": "array"}}}  # a list: not a scalar
+    path.write_text(json.dumps([{"name": "sum_list", "description": "Adds", "parameters": xs}]))
+    with pytest.raises(eve.ToolError, match=r"registry\.json"):
+        ToolBox.load(path)

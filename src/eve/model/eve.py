@@ -37,7 +37,7 @@ class QuestionBlock(nn.Module):
     queries and, through cross-attention, the whole encoder output. They are learned vectors,
     not text, because the questions never change: their meaning comes from the labels.
 
-    - Intent head: a linear layer on q_intent, like the book's ch. 6 classifier head.
+    - Intent head: a linear classifier on q_intent.
     - Slot head, a pointer: call #i's answer is a score against each tool in the prompt,
       ``(W_q·h_i) · (W_k·t_k) / √pointer_dim``, where t_k is the encoder output at the k-th
       ``<tool>`` marker, plus a learned STOP key. The answers are the prompt's own tools, so the
@@ -84,7 +84,7 @@ class QuestionBlock(nn.Module):
 
 @register("model", "eve")
 class Eve(nn.Module):
-    """The whole model (book ch. 4.6, `GPTModel`, turned into an encoder-decoder):
+    """The whole model, a pre-LN encoder-decoder transformer:
 
     embeddings -> encoder blocks -> final norm = ``memory``, one vector per encoder token. Then:
     - the question block reads ``memory`` (the Jev part);
@@ -92,7 +92,7 @@ class Eve(nn.Module):
       next-token logits (the Needle part, and span corruption in pretraining).
 
     The LM head is tied to the token embeddings: the same (vocab, d) matrix maps token -> vector
-    at the input and vector -> logits at the output. GPT-2 does this (book ch. 4.6); for us it
+    at the input and vector -> logits at the output. GPT-2 does this too; for us it
     saves 2M of ~12M parameters.
     """
 
@@ -182,8 +182,8 @@ class Eve(nn.Module):
         set_sdpa(self, enabled)
 
     def parameter_counts(self) -> dict[str, int]:
-        """Parameters per part, like the book's count in ch. 4.6. The LM head has none of its
-        own: it reuses the token embeddings."""
+        """Parameters per part, and the total. The LM head has none of its own: it reuses the
+        token embeddings."""
 
         def count(*modules: nn.Module) -> int:
             return sum(p.numel() for m in modules for p in m.parameters())

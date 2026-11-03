@@ -1,4 +1,4 @@
-"""The retriever (M11): picks which of many registered tools a request is shown.
+"""The retriever: picks which of many registered tools a request is shown.
 
 A bi-encoder: Eve's encoder reads a request or a tool schema on its own, the mean of its output
 vectors goes through a linear layer and is normalized to length 1. A request and a tool match
@@ -25,7 +25,7 @@ from eve.data.render import bucket
 from eve.data.schema import Tool
 from eve.model.attention import set_sdpa
 from eve.model.blocks import EncoderBlock, LayerNorm
-from eve.model.checkpoint import Checkpoint, _read
+from eve.model.checkpoint import Checkpoint, _read, load_checkpoint
 from eve.model.embeddings import Embeddings
 from eve.model.eve import INIT_STD
 from eve.registry import register
@@ -54,10 +54,12 @@ class RetrieverConfig(ModelConfig):
 
     @property
     def query_len(self) -> int:
+        """The most tokens of a request the encoder reads."""
         return min(self.max_query_len, self.max_encoder_len)
 
     @property
     def tool_len(self) -> int:
+        """The most tokens of a tool schema the encoder reads."""
         return min(self.max_tool_len, self.max_encoder_len)
 
 
@@ -110,7 +112,7 @@ class Retriever(nn.Module):
     @classmethod
     def start(
         cls, path: str | Path, device: str | torch.device = "cpu", **overrides: Any
-    ) -> Checkpoint:
+    ) -> Checkpoint["Retriever"]:
         """The retriever to train, from a checkpoint at ``path``:
 
         - an Eve checkpoint (pretrained or fine-tuned): its embeddings and encoder, with a new
@@ -143,7 +145,7 @@ class Retriever(nn.Module):
                 f"{path} has weights the retriever doesn't use: {result.unexpected_keys}"
             )
         tokenizer = BPETokenizer.from_dict(data["tokenizer"])
-        return Checkpoint(model.to(device), tokenizer, data["meta"])  # type: ignore[arg-type]
+        return Checkpoint(model.to(device), tokenizer, data["meta"])
 
     def set_sdpa(self, enabled: bool) -> None:
         """Switch every attention layer to PyTorch's fused kernel (fast) or the manual path."""
@@ -185,3 +187,12 @@ class Retriever(nn.Module):
     def embed_tools(self, tools: Sequence[Tool], tokenizer: BPETokenizer) -> torch.Tensor:
         """The vector of each tool schema."""
         return self.embed([tool_ids(tokenizer, tool, self.cfg.tool_len) for tool in tools])
+
+
+def load_retriever(path: str | Path, device: str | torch.device = "cpu") -> Checkpoint[Retriever]:
+    """``load_checkpoint`` for a file that must hold a ``Retriever``; any other model's file is
+    refused."""
+    ckpt = load_checkpoint(path, device)
+    if not isinstance(model := ckpt.model, Retriever):
+        raise ValueError(f"{path} isn't a retriever")
+    return Checkpoint(model, ckpt.tokenizer, ckpt.meta, ckpt.train_state)

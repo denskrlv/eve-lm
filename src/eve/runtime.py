@@ -2,6 +2,7 @@ import os
 import random
 from collections.abc import Iterator
 from contextlib import contextmanager
+from typing import Any
 
 import numpy as np
 import torch
@@ -18,6 +19,12 @@ def pick_device(name: str | None = None) -> torch.device:
     if torch.backends.mps.is_available():
         return torch.device("mps")
     return torch.device("cpu")
+
+
+def config_of(model: nn.Module) -> Any:
+    """A model's config (``model.cfg``). Every registered architecture has one, but
+    ``nn.Module.__getattr__`` hides it from mypy, so it is read here, once."""
+    return getattr(model, "cfg")  # noqa: B009
 
 
 def seed_everything(seed: int) -> None:

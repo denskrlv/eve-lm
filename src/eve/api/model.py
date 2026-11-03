@@ -1,17 +1,24 @@
-from collections.abc import Iterable, Sequence
+"""``Eve``, the library's model: load it once (a file, a directory or a Hub repo), register
+the tools, then ``respond`` to each request with a ``Response``."""
+
+from collections.abc import Callable, Iterable, Sequence
 from pathlib import Path
 from typing import Any
 
 import torch
+from torch import nn
 
 from eve.api.errors import CheckpointError, EveError, ToolError
 from eve.api.hub import companion, resolve
 from eve.api.response import Response
-from eve.api.toolbox import BM25, Dense, Scorer, ToolBox
+from eve.api.toolbox import ToolBox
 from eve.api.tools import ToolLike, to_tool
 from eve.data.schema import SchemaError, Tool
 from eve.infer.predict import Calibrations, answer_questions
-from eve.model.checkpoint import FORMAT, RETRIEVAL_TASK, Checkpoint, load_checkpoint
+from eve.infer.search import BM25, Dense, Scorer
+from eve.model.checkpoint import FORMAT, RETRIEVAL_TASK, Checkpoint, load_eve, require_joint
+from eve.model.eve import Eve as EveModel
+from eve.model.retriever import Retriever, load_retriever
 from eve.runtime import pick_device
 
 
@@ -32,14 +39,16 @@ class Eve:
 
     def __init__(
         self,
-        checkpoint: Checkpoint,
+        checkpoint: Checkpoint[EveModel],
         source: str,
-        retriever: Checkpoint | None = None,
+        retriever: Checkpoint[Retriever] | None = None,
     ) -> None:
-        if not checkpoint.meta.get("joint"):
-            raise CheckpointError(
-                f"{source} isn't a fine-tuned joint model: it can't write argument values"
-            )
+        """Wrap an already loaded checkpoint; ``source`` is where it came from, for messages.
+        Use ``Eve.load`` to get a model: it finds, downloads and checks the files."""
+        try:
+            require_joint(checkpoint.meta, source)
+        except ValueError as error:
+            raise CheckpointError(str(error)) from None
         self._model = checkpoint.model.eval().requires_grad_(False)
         self._tokenizer = checkpoint.tokenizer
         self._meta = checkpoint.meta
@@ -68,9 +77,9 @@ class Eve:
         """
         torch_device = pick_device(None if device == "auto" else device)
         path = resolve(source, revision)
-        checkpoint = _load(path, torch_device)
+        checkpoint = _load(load_eve, path, torch_device)
         found = companion(source, revision) if retriever == "auto" else retriever
-        extra = None if found is None else _load(resolve(found), torch_device)
+        extra = None if found is None else _load(load_retriever, resolve(found), torch_device)
         if extra is not None and extra.meta.get("task") != RETRIEVAL_TASK:
             raise CheckpointError(f"{found} isn't a retriever")
         return cls(checkpoint, str(source), extra)
@@ -139,19 +148,22 @@ class Eve:
         return f"Eve({self.source!r})"
 
 
-def _load(path: Path, device: torch.device) -> Checkpoint:
+def _load[M: nn.Module](
+    load: Callable[[Path, torch.device], Checkpoint[M]], path: Path, device: torch.device
+) -> Checkpoint[M]:
+    """``load(path, device)``, with any failure raised as a ``CheckpointError``."""
     try:
-        return load_checkpoint(path, device)
+        return load(path, device)
     except Exception as error:  # torch.load raises many kinds for a file that isn't one
         raise CheckpointError(f"can't load {path}: {error}") from error
 
 
-def _scorer(retriever: Checkpoint | None) -> Scorer:
+def _scorer(retriever: Checkpoint[Retriever] | None) -> Scorer:
     """What ``tools.search`` ranks by: the retriever (``Dense``), else BM25."""
     if retriever is None:
         return BM25()
     model = retriever.model.eval().requires_grad_(False)
-    return Dense(model, retriever.tokenizer)  # type: ignore[arg-type]
+    return Dense(model, retriever.tokenizer)
 
 
 def _check(tools: Sequence[Tool], max_tools: int) -> None:

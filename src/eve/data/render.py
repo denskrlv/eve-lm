@@ -41,7 +41,8 @@ class Call:
 
 @dataclass(frozen=True)
 class TaskExample:
-    """One line of ``data/task/*.jsonl`` (written in M6), with the tools resolved to schemas."""
+    """One line of ``data/task/*.jsonl`` (written by ``eve data build``), with the tools
+    resolved to schemas."""
 
     utterance: str
     tools: tuple[Tool, ...]
@@ -140,7 +141,7 @@ def _encoder(
 
 
 def _slot_labels(example: TaskExample, tools: Sequence[Tool], cfg: ModelConfig) -> list[int]:
-    """Question labels (M7): per slot, the index of its call's tool in the prompt, then STOP."""
+    """Question labels: per slot, the index of its call's tool in the prompt, then STOP."""
     if example.intent == "ask" and not example.calls:
         return [IGNORE] * cfg.n_slots  # the tool itself is unclear: no slot loss
     index = {t.name: k for k, t in enumerate(tools)}
@@ -160,7 +161,7 @@ def _value_ids(arg: Arg, call: Call, intent: str, tokenizer: BPETokenizer) -> li
 def _decoder(
     example: TaskExample, tools: Sequence[Tool], tokenizer: BPETokenizer, cfg: ModelConfig
 ) -> tuple[list[int], list[int]]:
-    """Decoder input and labels (M8): structure copied from the schema (no loss), values
+    """Decoder input and labels: structure copied from the schema (no loss), values
     predicted (loss)."""
     seq, loss = [DEC], [False]
 

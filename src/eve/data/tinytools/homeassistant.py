@@ -83,6 +83,7 @@ class Grammar:
         return Grammar(rules, lists, self.fills)
 
     def node(self, template: str) -> Node:
+        """``template`` parsed, once: later calls reuse the parse."""
         if template not in self._parsed:
             self._parsed[template] = parse(template)
         return self._parsed[template]

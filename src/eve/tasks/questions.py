@@ -1,4 +1,4 @@
-"""The question task (boxes 8 and 9): the losses, val metrics, whole-set scores and eval
+"""The question task: the losses, val metrics, whole-set scores and eval
 report of fine-tuning the question heads and the decoder's argument values."""
 
 from collections import Counter
@@ -35,8 +35,8 @@ SCORED = {"val": "val", "heldout": "held-out"}  # on_eval's score groups and the
 
 
 def _losses(questions: Questions, batch: dict[str, torch.Tensor]) -> dict[str, torch.Tensor]:
-    """Box 8, the classifier fine-tuning loss (book ch. 6.7, ``calc_loss_batch``), for two
-    questions at once:
+    """The classifier loss of the question heads: a cross-entropy for each of two questions at
+    once:
 
     - ``intent``: cross-entropy of the 4-way CALL / ASK / UNSUPPORTED / NONE answer;
     - ``slots``: the mean cross-entropy of every "what is call #i?" answer over {the prompt's
@@ -77,13 +77,13 @@ def forward_batch(model: Eve, batch: dict[str, torch.Tensor]) -> Output:
 
 @register("loss", "joint")
 def joint_loss(model: Eve, batch: dict[str, torch.Tensor]) -> dict[str, torch.Tensor]:
-    """Boxes 8 and 9, the joint run: the question heads' losses (``_losses``) plus the
-    instruction fine-tuning loss of book ch. 7, on the decoder.
+    """The joint run: the question heads' losses (``_losses``) plus a sequence loss on the
+    decoder for the argument values.
 
     - ``values``: the mean cross-entropy of the decoder's next tokens where it writes an
       argument value (the value's tokens then ``<end>``, or ``<absent>``, or ``<ask>``). The
       structure around them (``<call> name <arg> room <val>``) is copied from the schema, so
-      its labels are IGNORE, like the instruction tokens the book masks in ch. 7.5's exercise.
+      its labels are IGNORE: the model is only scored on what it has to decide.
 
     The decoder reads the gold calls in order (teacher forcing): at inference the slot head
     picks the tools and the decoder only writes their values. Each term is a mean over its own
@@ -159,10 +159,10 @@ def _ratio(right: torch.Tensor, total: torch.Tensor) -> torch.Tensor:
 
 @register("metrics", "joint")
 def joint_metrics(model: Eve, batch: dict[str, torch.Tensor]) -> dict[str, torch.Tensor]:
-    """The val metrics (box 6): the losses and their sum ``loss``, plus what they mean for
+    """The val metrics: the losses and their sum ``loss``, plus what they mean for
     answers.
 
-    - ``intent_acc``: the most likely intent is the right one (book ch. 6.6's accuracy).
+    - ``intent_acc``: the most likely intent is the right one.
     - ``slot_acc``: the share of labelled slots answered right, STOPs included.
     - ``tools_acc``: every slot of an example right: the right tools in the right order, and
       STOP after the last one. Only examples with slot labels count.

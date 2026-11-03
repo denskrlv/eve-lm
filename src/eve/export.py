@@ -1,6 +1,6 @@
-"""Publish a fine-tuned model (M10): ``eve export`` writes a directory for a Hugging Face Hub
+"""Publish a fine-tuned model: ``eve export`` writes a directory for a Hugging Face Hub
 model repo, a ``model.pt`` that ``eve.Eve.load`` reads and a ``README.md`` model card, and with
-``retriever``, a ``retriever.pt`` that ``Eve.load`` finds beside it (M11).
+``retriever``, a ``retriever.pt`` that ``Eve.load`` finds beside it.
 
 The exported checkpoint keeps the architecture, config, tokenizer and meta (calibration
 included) but no training state, and stores the weights in ``dtype``: float16 halves the
@@ -16,7 +16,8 @@ from eve.model.checkpoint import (
     MODEL_FILE,
     RETRIEVAL_TASK,
     RETRIEVER_FILE,
-    load_checkpoint,
+    load_eve,
+    require_joint,
     save_checkpoint,
 )
 
@@ -40,9 +41,8 @@ def export_model(
     ``out/retriever.pt`` from the ``retriever`` checkpoint if given."""
     if dtype not in DTYPES:
         raise ValueError(f"dtype must be one of {sorted(DTYPES)}, got {dtype!r}")
-    checkpoint = load_checkpoint(model)
-    if not checkpoint.meta.get("joint"):
-        raise ValueError(f"{model} isn't a fine-tuned joint model; only those can be published")
+    checkpoint = load_eve(model)
+    require_joint(checkpoint.meta, model)  # only a joint model can be published
     out = Path(out)
     meta = checkpoint.meta | {"dtype": dtype, "exported_from": str(model)}
     save_checkpoint(
@@ -50,7 +50,9 @@ def export_model(
     )
     params = sum(p.numel() for p in checkpoint.model.parameters())
     if retriever is not None:
-        found = load_checkpoint(retriever)
+        from eve.model.retriever import load_retriever  # only exports with a retriever need it
+
+        found = load_retriever(retriever)
         if found.meta.get("task") != RETRIEVAL_TASK:
             raise ValueError(f"{retriever} isn't a retriever")
         extra = found.meta | {"dtype": dtype, "exported_from": str(retriever)}

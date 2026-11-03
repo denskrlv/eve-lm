@@ -9,12 +9,12 @@ STOP = "STOP"  # the slot answer after the last call
 class ModelConfig:
     """Sizes and options of an Eve model; the defaults are ``eve-32m``'s (``PRESETS``)."""
 
-    # Box 1: tokens and positions
+    # Tokens and positions
     vocab_size: int = 8192
     max_encoder_len: int = 512  # utterance + up to 5 tool schemas
     max_decoder_len: int = 256  # argument values of up to 5 calls
 
-    # Box 3: transformer body
+    # Transformer body
     d_model: int = 384
     n_heads: int = 6
     n_encoder_layers: int = 8

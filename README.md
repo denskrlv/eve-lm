@@ -34,7 +34,7 @@ turn on the lights
 The second request names no room, so Eve answers **ask** and marks `room` as the missing argument instead of guessing one.
 
 > [!NOTE]
-> Eve is under active development. Pretraining, fine-tuning, evaluation, calibration and the Python library work end to end; the PyPI release, published weights and the Raspberry Pi build are coming soon (see [Roadmap](#roadmap)).
+> Eve is under active development. Pretraining, fine-tuning, evaluation, calibration and the Python library work end to end; the PyPI release, published weights and the Raspberry Pi build are coming soon (see [Status](#status)).
 
 ## Overview
 
@@ -86,23 +86,18 @@ A request counts as *familiar* when every tool's schema fingerprint is in the tr
 - **It matches words, not meaning.** In 76% of training calls the request shares a content word with the tool's name. On new tools, Eve gets 71% of calls exact when they share a word and 30% when they don't. "20 plus 10" with an `add` tool is answered *unsupported*, and "make it warmer in here" doesn't find `set_thermostat`.
 - **So the next fix is data, not size.** TinyTools is a [TinyStories](https://arxiv.org/abs/2305.07759)-style pretraining corpus of the background knowledge new tools need: how everyday things work, many ways to say the same request, and assistant dialogues. The first round converts permissively licensed datasets (about 25–35M tokens); the next experiment pretrains with and without it on the same token budget and compares accuracy on tools the model never saw.
 
-## Roadmap
+## Status
 
-| Milestone | What | Status |
-|---|---|---|
-| M0 | Project setup, model presets | ✅ |
-| M1 | Tokenizer, pretraining corpus, span corruption, task renderer | ✅ |
-| M2 | Self, causal and cross attention | ✅ |
-| M3 | Encoder, value decoder, question block | ✅ |
-| M4 | Span-corruption pretraining | ✅ |
-| M5 | Checkpoints and loading pretrained weights | ✅ |
-| M6 | Tool library and task data | ✅ |
-| M7 | Classifier fine-tuning: the question heads | ✅ |
-| M8 | Instruction fine-tuning: value decoder, joint run | ✅ `eve-32m` |
-| M9 | Metrics and calibration | ✅ |
-| M10 | Python library (`Eve.load`, `eve.respond`) and inference on a Raspberry Pi 5 | 🚧 library done; PyPI release, weights and Pi coming soon |
-| M11 | Retriever that picks the 1–5 tools to show the model | ✅ `eve-32m-retriever` |
-| – | TinyTools pretraining corpus | 🚧 round 1: converting existing datasets |
+- ✅ Model presets; self, causal and cross attention; the encoder, value decoder and question block
+- ✅ Tokenizer, pretraining corpus, span corruption and the task renderer
+- ✅ Span-corruption pretraining
+- ✅ Checkpoints and loading pretrained weights
+- ✅ Tool library and task data
+- ✅ Fine-tuning the question heads, and the value decoder with them in one joint run (`eve-32m`)
+- ✅ Metrics and calibration
+- ✅ Retriever that picks the 1–5 tools to show the model (`eve-32m-retriever`)
+- 🚧 Python library (`Eve.load`, `eve.respond`) and inference on a Raspberry Pi 5: library done; PyPI release, weights and Pi coming soon
+- 🚧 TinyTools pretraining corpus: round 1, converting existing datasets
 
 ## Use it in Python
 
@@ -228,10 +223,11 @@ T5-style span corruption: spans of the input are replaced with sentinels (`<x0>`
 ```bash
 uv run eve run configs/experiments/eve-32m-pretrain.toml   # 850M tokens, 46,682 steps
 uv run eve run configs/experiments/eve-32m-pretrain.toml --set run.resume=true   # continue after an interruption
-uv run eve pretrain --rope --qk-norm --lr 2e-3 --stop-after 2000 --out artifacts/runs/ab-lr2e-3
+uv run eve run configs/experiments/eve-32m-pretrain.toml --set train.lr=2e-3 \
+  --set run.stop_after=2000 --set run.out=artifacts/runs/ab-lr2e-3   # an A/B arm
 ```
 
-The recipe came out of A/B runs at ~12M parameters: no dropout, rotary positions and QK-norm, and `torch.compile` (about 2× faster on MPS). An A/B arm uses the full run's schedule and stops early, so the winner continues with `--resume`. The number to watch is `val_content`, the loss on the words inside the holes only.
+The recipe came out of A/B runs at ~12M parameters: no dropout, rotary positions and QK-norm, and `torch.compile` (about 2× faster on MPS). An A/B arm uses the full run's schedule and stops early, so the winner continues with `--set run.resume=true`. The number to watch is `val_content`, the loss on the words inside the holes only.
 
 ```bash
 uv run eve fill "Paris is the capital of <x0>."   # prompt a pretrained model
@@ -277,7 +273,7 @@ uv run eve data check batch-0001              # validate what it wrote
 
 ```bash
 uv run eve run configs/experiments/eve-32m.toml   # intents, tools and values: the main recipe
-uv run eve finetune --scratch eve-32m --out artifacts/runs/scratch   # no pretraining, for comparison
+uv run eve run configs/experiments/eve-32m-scratch.toml   # no pretraining, for comparison
 ```
 
 `eve evaluate` scores a model on whole eval sets: recall per intent and their mean, exact, value and full-call accuracy, and a confusion table of intents. `novel-tools` gets a row for requests that share a word with the tool's name and one for those that don't. `--by-tool` adds a row per tool, worst first.

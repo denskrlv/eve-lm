@@ -46,14 +46,17 @@ def taskmaster(paths: list[Path], ctx: Context) -> Iterator[Doc]:
 
 
 def taskmaster_1(raw: Path, ctx: Context) -> Iterator[Doc]:
+    """Taskmaster-1's dialogs (2019), from ``raw/taskmaster``."""
     return taskmaster(sorted((raw / "taskmaster/TM-1-2019").glob("*-dialogs.json")), ctx)
 
 
 def taskmaster_2(raw: Path, ctx: Context) -> Iterator[Doc]:
+    """Taskmaster-2's dialogs (2020), from ``raw/taskmaster``."""
     return taskmaster(sorted((raw / "taskmaster/TM-2-2020/data").glob("*.json")), ctx)
 
 
 def taskmaster_3(raw: Path, ctx: Context) -> Iterator[Doc]:
+    """Taskmaster-3's dialogs (2020), from ``raw/taskmaster``."""
     return taskmaster(sorted((raw / "taskmaster/TM-3-2020/data").glob("data_*.json")), ctx)
 
 

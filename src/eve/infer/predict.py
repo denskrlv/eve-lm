@@ -18,7 +18,7 @@ KINDS = ("value", "absent", "ask", "invalid")  # what the decoder can write for 
 
 @dataclass(frozen=True)
 class Calibration:
-    """One temperature per answer (M9): its logits are divided by it before the softmax.
+    """One temperature per answer: its logits are divided by it before the softmax.
 
     A temperature above 1 makes the probabilities less sure, below 1 more sure; 1 leaves them as
     trained. The most likely answer never changes. ``eve calibrate`` fits them on a held-out
@@ -36,7 +36,7 @@ class Calibration:
 
 @dataclass(frozen=True)
 class Calibrations:
-    """Two sets of temperatures (M9): one for requests whose tools the model trained on, one
+    """Two sets of temperatures: one for requests whose tools the model trained on, one
     for requests with a tool it never saw. A model is about as sure of itself on new tools,
     but right far less often, so one temperature can't fit both.
 
@@ -111,7 +111,7 @@ class WrittenCall:
 @dataclass
 class Answers:
     """What the question heads say about one request, as probabilities, and the calls with
-    their argument values (M8)."""
+    their argument values."""
 
     intent: dict[str, float]  # CALL / ASK / UNSUPPORTED / NONE, in INTENTS order
     slots: list[dict[str, float]]  # per "what is call #i?": tool name (or STOP) -> probability
@@ -201,7 +201,7 @@ def write_values(
     tools: Sequence[Tool],
     temperature: float = 1.0,
 ) -> list[dict[str, Value]]:
-    """The decoder's values for a call to each of ``tools``, in order (M8).
+    """The decoder's values for a call to each of ``tools``, in order.
 
     The decoder sequence is built as in training (``render._decoder``): the structure is copied
     from the schema, ``<call> set_lights <arg> room <val>``, and the decoder writes only each
@@ -232,10 +232,10 @@ def answer_questions(
     tools: Sequence[Tool],
     calibration: Calibration | None = None,
 ) -> Answers:
-    """One encoder pass and one question pass for a typed request, as at inference (M9), then
-    the decoder writes the arguments of each call the slot head picked (M8): a model from the
-    joint run, whose decoder learned to. ``calibration`` sets the temperatures of the
-    probabilities (M9); by default they are as trained.
+    """One encoder pass and one question pass for a typed request, then the decoder writes the
+    arguments of each call the slot head picked: a model from the joint run, whose decoder
+    learned to. ``calibration`` sets the temperatures of the probabilities; by default they are
+    as trained.
 
     The tools stay in the given order. The example's intent is a placeholder: render needs one
     to build the labels, which aren't used here.

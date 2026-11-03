@@ -8,7 +8,7 @@ from eve.model.attention import MultiHeadAttention
 
 
 class LayerNorm(nn.Module):
-    """Layer normalization (book ch. 4.2, `LayerNorm`): give each token's vector mean 0 and
+    """Layer normalization: give each token's vector mean 0 and
     variance 1 across its d features, then let the model rescale it with a learned ``scale``
     and ``shift``. Same result as ``nn.LayerNorm(d)``; written out to show the steps.
     """
@@ -27,18 +27,18 @@ class LayerNorm(nn.Module):
 
 
 class GELU(nn.Module):
-    """GELU with the tanh approximation GPT-2 used (book ch. 4.3). Like ReLU for large |x|, but
+    """GELU with the tanh approximation GPT-2 used. Like ReLU for large |x|, but
     smooth around 0 and slightly negative there, so small negative inputs still get a gradient.
     Same result as ``F.gelu(x, approximate="tanh")``.
     """
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
-        """GELU with the tanh approximation, as in the book's ch. 4.3."""
+        """GELU of ``x``, elementwise."""
         return 0.5 * x * (1 + torch.tanh(math.sqrt(2 / math.pi) * (x + 0.044715 * x**3)))
 
 
 class FeedForward(nn.Module):
-    """The per-token MLP (book ch. 4.3, `FeedForward`): widen to ``ffn_mult · d``, GELU, narrow
+    """The per-token MLP: widen to ``ffn_mult · d``, GELU, narrow
     back. Attention mixes information between tokens; this layer works on each token alone.
     """
 
@@ -70,11 +70,11 @@ def attention(cfg: ModelConfig, causal: bool = False, rope: bool = False) -> Mul
 
 
 class EncoderBlock(nn.Module):
-    """The book's `TransformerBlock` (ch. 4.5) with the causal mask off: every token sees every
-    other token, before and after it.
+    """A transformer block without a causal mask: every token sees every other token, before
+    and after it.
 
     Pre-LN, as in GPT-2: each sublayer reads a normalized copy of ``x`` and adds its output back
-    onto ``x`` (the shortcut of ch. 4.4), so the residual stream itself is never normalized
+    onto ``x`` (the residual shortcut), so the residual stream itself is never normalized
     until the final norm after the last block.
     """
 
@@ -84,7 +84,7 @@ class EncoderBlock(nn.Module):
         self.attn = attention(cfg, rope=True)
         self.norm2 = LayerNorm(cfg.d_model)
         self.ff = FeedForward(cfg)
-        self.drop = nn.Dropout(cfg.dropout)  # the book's drop_shortcut
+        self.drop = nn.Dropout(cfg.dropout)  # on each sublayer's output, before the shortcut
 
     def forward(self, x: torch.Tensor, mask: torch.Tensor | None = None) -> torch.Tensor:
         """``x`` (B, n, d); ``mask`` (B, n) is True for real tokens. Returns (B, n, d)."""
@@ -96,7 +96,7 @@ class EncoderBlock(nn.Module):
 class DecoderBlock(nn.Module):
     """An encoder block with a cross-attention sublayer between self-attention and the
     feed-forward layer. Cross-attention is how the decoder reads the encoder: queries come from
-    the decoder, keys and values from the encoder output (``memory``). The book's GPT-2 has no
+    the decoder, keys and values from the encoder output (``memory``). A GPT-style model has no
     encoder, so it has no such sublayer; the original Transformer (Vaswani et al.) does.
 
     ``causal=True`` is the value decoder: token i sees tokens 0..i of its own sequence.

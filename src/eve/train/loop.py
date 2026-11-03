@@ -19,7 +19,7 @@ from torch import nn
 from eve import progress, registry
 from eve.components import Callback, DataModule, LossFn, OptimizerFactory, Schedule
 from eve.model.checkpoint import load_checkpoint
-from eve.runtime import eval_mode, to_device
+from eve.runtime import config_of, eval_mode, to_device
 from eve.train.config import DTYPES, TrainConfig
 
 if TYPE_CHECKING:
@@ -108,7 +108,7 @@ class MetricsLog:
 
 def model_config(model: nn.Module) -> dict[str, Any]:
     """The model's config as plain values (``model.cfg.to_dict()``), for logs and checks."""
-    config: dict[str, Any] = getattr(model, "cfg").to_dict()  # noqa: B009 (hidden from mypy)
+    config: dict[str, Any] = config_of(model).to_dict()
     return config
 
 
@@ -163,6 +163,8 @@ def batch_indices(step: int, n_items: int, cfg: TrainConfig) -> np.ndarray:
 
 
 def rng_state() -> dict[str, Any]:
+    """PyTorch's random generator states (CPU, and MPS or CUDA if there), for a checkpoint to
+    resume from."""
     state: dict[str, Any] = {"torch": torch.get_rng_state()}
     if torch.backends.mps.is_available():
         state["mps"] = torch.mps.get_rng_state()
@@ -187,7 +189,7 @@ def evaluate(
     device: torch.device,
     autocast: Autocast,
 ) -> dict[str, float]:
-    """Mean of each loss over the val batches, with dropout off (book ch. 5.1.3)."""
+    """Mean of each loss over the val batches, with dropout off."""
     totals: dict[str, torch.Tensor] = {}
     with eval_mode(model):
         for batch in batches:  # kept alive by the caller, so the copy may run in the background
@@ -304,8 +306,8 @@ def train(
     callbacks: Sequence[Callback] | None = None,
     experiment: dict[str, Any] | None = None,
 ) -> dict[str, float]:
-    """The training loop for pretraining and fine-tuning (book ch. 5.2 ``train_model_simple``
-    plus App. D's warmup, cosine decay and gradient clipping).
+    """The training loop for pretraining and fine-tuning, with warmup, cosine decay and
+    gradient clipping.
 
     Each step: a batch of ``data`` -> ``loss_fn`` gives named losses -> their sum is
     backpropagated -> gradients are clipped to norm ``grad_clip`` -> ``optimizer`` step at
@@ -315,8 +317,7 @@ def train(
     resolved run config, if given), then one JSON line per log, eval and sample set. The
     callbacks (default: ``train_log``, ``evaluate``, ``checkpoint``) write those and the
     checkpoints: ``last.pt`` (model + optimizer + step + RNG states) every ``save_every``
-    steps, and ``model.pt``, the final weights without the optimizer, for ``load_pretrained``
-    (box 7).
+    steps, and ``model.pt``, the final weights without the optimizer, for ``load_pretrained``.
 
     Evals run ``eval_fn`` (default: ``loss_fn``) on the first val batches. It may return extra
     metrics (e.g. an accuracy) that are logged with a ``val_`` prefix but never trained on.
@@ -379,7 +380,7 @@ def _resume(
 ) -> int:
     """Restore the model, optimizer and RNG states from ``last.pt`` and return its step."""
     ckpt = load_checkpoint(out_dir / "last.pt")
-    if ckpt.model.cfg.to_dict() != model_config(model):
+    if model_config(ckpt.model) != model_config(model):
         raise ValueError(f"{out_dir}/last.pt has a different model config")
     saved, given = ckpt.meta["train_config"], cfg.to_dict()
     if changed := [k for k in given if k not in RUN_FIELDS and saved.get(k) != given[k]]:

@@ -13,15 +13,13 @@ from typing import Any
 import numpy as np
 import pytest
 import torch
-from test_finetune import write_task
+from helpers import finetune, pretrain, write_task
 
 from eve.config import preset
 from eve.model.checkpoint import load_checkpoint, save_checkpoint
 from eve.model.eve import Eve
 from eve.tokenizer.bpe import BYTE0
 from eve.train.config import TrainConfig
-from eve.train.finetune import finetune
-from eve.train.pretrain import pretrain
 
 GOLDEN = Path(__file__).parent / "golden"
 TIMING = {"tok_s", "s_per_step"}  # depend on the machine, not the code

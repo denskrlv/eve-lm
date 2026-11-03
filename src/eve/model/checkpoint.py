@@ -9,17 +9,25 @@ from torch import nn
 from eve import registry
 from eve.config import ModelConfig
 from eve.model.eve import Eve
+from eve.runtime import config_of
 from eve.tokenizer.bpe import BPETokenizer
 
 FORMAT = "eve-ckpt-1"
 MODEL_FILE = "model.pt"  # a run directory's final model, and an exported model's checkpoint
-RETRIEVER_FILE = "retriever.pt"  # an exported model's retriever (M11), beside its model.pt
+RETRIEVER_FILE = "retriever.pt"  # an exported model's retriever, beside its model.pt
 QUESTIONS_TASK = "questions"  # meta["task"] of a question run's checkpoints (tasks.questions)
 RETRIEVAL_TASK = "retrieval"  # meta["task"] of a retriever run's checkpoints (tasks.retrieval)
 FRESH = "questions."  # the question block: pretraining never trains it, fine-tuning starts it new
 QUESTION_FIELDS = frozenset(  # config fields that change no pretrained weight's shape
     {"n_question_layers", "n_slots", "max_tools", "pointer_dim", "dropout"}
 )
+
+
+def require_joint(meta: dict[str, Any], source: str | Path) -> None:
+    """Refuse a checkpoint not trained with the joint loss (``meta["joint"]``): only that run
+    teaches the decoder to write argument values, so only it can make calls."""
+    if not meta.get("joint"):
+        raise ValueError(f"{source} isn't a fine-tuned joint model: it can't write argument values")
 
 
 def model_file(path: str | Path) -> Path:
@@ -29,13 +37,13 @@ def model_file(path: str | Path) -> Path:
 
 
 @dataclass
-class Checkpoint:
+class Checkpoint[M: nn.Module]:
     """A loaded checkpoint: model, tokenizer, meta and, for resuming, train state."""
 
-    model: Eve
+    model: M
     tokenizer: BPETokenizer
     meta: dict[str, Any]
-    train_state: dict[str, Any] | None = None  # optimizer, step and RNG states, for resuming (M4)
+    train_state: dict[str, Any] | None = None  # optimizer, step and RNG states, for resuming
 
 
 def save_checkpoint(
@@ -46,10 +54,9 @@ def save_checkpoint(
     train_state: dict[str, Any] | None = None,
 ) -> None:
     """Save everything needed to rebuild the model: ``{format, model, config, state_dict,
-    tokenizer, meta}``, where ``model`` is the architecture's registered name. The book
-    (ch. 5.4) saves only ``model.state_dict()`` and rebuilds the model from a config it keeps
-    in code; storing the architecture, config and tokenizer too means a checkpoint file can't
-    be paired with the wrong ones, and loads without knowing the code path that made it.
+    tokenizer, meta}``, where ``model`` is the architecture's registered name. Storing the
+    architecture, config and tokenizer beside the weights means a checkpoint file can't be
+    paired with the wrong ones, and loads without knowing the code path that made it.
 
     ``meta`` is for things like the step, tokens seen and val loss. Keep it to plain Python
     values (numbers, strings, lists, dicts): files are loaded with ``weights_only=True``,
@@ -59,7 +66,7 @@ def save_checkpoint(
     The file is written to a temporary name and then renamed, so a crash during a save never
     leaves a half-written checkpoint behind.
     """
-    cfg = getattr(model, "cfg")  # noqa: B009 (nn.Module's __getattr__ hides it from mypy)
+    cfg = config_of(model)
     if tokenizer.vocab_size > cfg.vocab_size:
         raise ValueError(
             f"tokenizer has {tokenizer.vocab_size} tokens, model only {cfg.vocab_size}"
@@ -99,27 +106,37 @@ def _read(path: str | Path) -> dict[str, Any]:
     return data
 
 
-def load_checkpoint(path: str | Path, device: str | torch.device = "cpu") -> Checkpoint:
-    """Rebuild the exact model that was saved (strict: every key must match). For resuming a
-    run and for inference. The model comes back in train mode, like a new ``Eve``."""
+def load_checkpoint(path: str | Path, device: str | torch.device = "cpu") -> Checkpoint[nn.Module]:
+    """Rebuild the exact model that was saved, whatever its registered architecture (strict:
+    every key must match). For resuming a run, or for any registered model; ``load_eve`` and
+    ``load_retriever`` also check which one it is. The model comes back in train mode, like a
+    new one."""
     data = _read(path)
     architecture = registry.get("model", data.get("model", "eve"))  # older files: all Eve
-    model: Eve = architecture.from_config(data["config"])  # typed Eve: what every reader uses
+    model: nn.Module = architecture.from_config(data["config"])
     model.load_state_dict(data["state_dict"])
     tokenizer = BPETokenizer.from_dict(data["tokenizer"])
     return Checkpoint(model.to(device), tokenizer, data["meta"], data.get("train_state"))
 
 
+def load_eve(path: str | Path, device: str | torch.device = "cpu") -> Checkpoint[Eve]:
+    """``load_checkpoint`` for a file that must hold an ``Eve`` (pretrained or fine-tuned);
+    any other architecture's file is refused."""
+    ckpt = load_checkpoint(path, device)
+    if not isinstance(model := ckpt.model, Eve):
+        raise ValueError(f"{path} holds a {type(model).__name__} model, not Eve")
+    return Checkpoint(model, ckpt.tokenizer, ckpt.meta, ckpt.train_state)
+
+
 def load_pretrained(
     path: str | Path, device: str | torch.device = "cpu", **overrides: Any
-) -> Checkpoint:
-    """Box 7: start fine-tuning from the M4 pretraining checkpoint.
+) -> Checkpoint[Eve]:
+    """Start fine-tuning from a pretraining checkpoint.
 
-    The book (ch. 5.5) copies OpenAI's GPT-2 weights into a fresh ``GPTModel``, and ch. 6 then
-    swaps the output layer for a new, random classifier head. Here the encoder, decoder and
-    embeddings come from span-corruption pretraining, and the question block (``questions.*``)
-    starts random: pretraining has no labels for it, so its saved weights are only the
-    initialization. Seed before calling to make that initialization repeatable.
+    The encoder, decoder and embeddings come from span-corruption pretraining, and the
+    question block (``questions.*``) starts random: pretraining has no labels for it, so its
+    saved weights are only the initialization. Seed before calling to make that
+    initialization repeatable.
 
     ``overrides`` may change the question block's config (e.g. ``n_slots=8``, ``dropout=0.0``)
     because its weights aren't loaded anyway; changing the body (``d_model``, layer counts…)

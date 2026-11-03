@@ -123,6 +123,7 @@ class _Progress:
         self.start = self.last = time.monotonic()
 
     def update(self, n: int) -> None:
+        """Count ``n`` more tokens done; log a line if the bar is off and one is due."""
         self.bar.update(n)
         self.done += n
         now = time.monotonic()
@@ -138,6 +139,7 @@ class _Progress:
             )
 
     def close(self) -> None:
+        """Close the bar."""
         self.bar.close()
 
 

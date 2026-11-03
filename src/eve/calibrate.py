@@ -1,4 +1,4 @@
-"""M9: make the probabilities mean what they say.
+"""Make the probabilities mean what they say.
 
 A model trained with cross-entropy is usually too sure of itself: of the answers it gives 95%,
 far fewer than 95% are right. Temperature scaling (Guo et al., 2017, "On Calibration of Modern
@@ -74,7 +74,7 @@ class TaskSet:
 
 
 def load_set(
-    ckpt: Checkpoint,
+    ckpt: Checkpoint[Eve],
     path: Path,
     library: dict[str, Tool],
     batch_size: int,

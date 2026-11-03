@@ -31,7 +31,7 @@ def batch_tokens(batch: Batch) -> int:
 
 @dataclass(frozen=True)
 class SpanCorruptionData:
-    """Span-corruption windows of a token corpus (box 4). Batches have ``enc_*`` and ``dec_*``
+    """Span-corruption windows of a token corpus. Batches have ``enc_*`` and ``dec_*``
     keys, no tool or question keys."""
 
     train: SpanCorruptionDataset
@@ -79,7 +79,7 @@ def in_batches(
 
 @dataclass(frozen=True)
 class TaskData:
-    """The task splits (M6) rendered for the question heads and the value decoder: train, val
+    """The task splits rendered for the question heads and the value decoder: train, val
     and the held-out-tool set, which only the eval report scores. Batches have every key."""
 
     train: TaskDataset

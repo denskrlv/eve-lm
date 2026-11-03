@@ -13,7 +13,7 @@ from typing import Any
 import numpy as np
 import pytest
 import torch
-from test_finetune import write_task
+from helpers import write_task
 from torch import nn
 
 from eve import defaults, registry

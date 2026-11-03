@@ -7,7 +7,8 @@ import torch
 from eve import defaults
 from eve.cli import build_parser, main
 from eve.config import INTENTS, PRESETS, ModelConfig, preset
-from eve.runtime import eval_mode, pick_device, seed_everything
+from eve.model.eve import Eve
+from eve.runtime import config_of, eval_mode, pick_device, seed_everything
 
 
 def test_presets_are_valid():
@@ -99,3 +100,8 @@ def test_data_build_sizes_default_to_the_shared_defaults() -> None:
         defaults.HELDOUT_EXAMPLES,
     )
     assert build_parser().parse_args(["data", "build", "--templates", "5k"]).templates == 5000
+
+
+def test_config_of_is_the_models_own_config():
+    cfg = preset("tiny")
+    assert config_of(Eve(cfg)) == cfg

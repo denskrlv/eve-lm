@@ -3,6 +3,7 @@ import json
 import numpy as np
 import pytest
 import torch
+from helpers import pretrain
 
 from eve.config import preset
 from eve.data.render import collate_pretrain
@@ -11,7 +12,6 @@ from eve.model.eve import Eve
 from eve.tasks.span import SAMPLES, fill_in, prompt_ids, span_loss, span_metrics
 from eve.tokenizer.bpe import BYTE0, DEC, EOS, sentinel
 from eve.train.config import TrainConfig
-from eve.train.pretrain import pretrain, steps_for
 
 
 def test_fill_in_keeps_the_text_and_fills_each_hole(tokenizer):
@@ -50,10 +50,6 @@ def test_content_metrics_skip_sentinels_and_eos():
     assert 0.0 <= m["content_acc"].item() <= 1.0
 
 
-def test_steps_for_one_pass_over_the_corpus():
-    assert steps_for(250_000_000, 32) == 250_000_000 // (32 * 569)
-
-
 def test_pretrain_end_to_end(tokenizer, tmp_path):
     rng = np.random.default_rng(0)
     for name, n in [("train", 3000), ("val", 1000)]:
@@ -68,7 +64,9 @@ def test_pretrain_end_to_end(tokenizer, tmp_path):
     samples = [r for r in records if r["kind"] == "samples"]
     assert [r["step"] for r in samples] == [0, 2, 4]
     assert len(samples[-1]["samples"]) == len(SAMPLES)
-    ckpt = load_pretrained(tmp_path / "run" / "model.pt")  # box 7 reads what box 4 wrote
+    ckpt = load_pretrained(
+        tmp_path / "run" / "model.pt"
+    )  # fine-tuning reads what pretraining wrote
     assert ckpt.meta["val_lm"] == val["val_lm"]
     assert {"val_lm", "val_content", "val_content_acc"} <= set(val)
     assert ckpt.model.cfg == cfg

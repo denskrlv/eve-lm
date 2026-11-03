@@ -97,7 +97,8 @@ class SpanCorruptionDataset(Dataset[dict[str, list[int]]]):
 
     Item i is always the same sample (seeded by ``(seed, i)``), so runs can be repeated and
     resumed. Returns ``enc_ids`` (input_len tokens), ``dec_ids`` = <dec> + target and
-    ``dec_labels`` = target + <eos>: the decoder input shifted by one, as in book ch. 2.6.
+    ``dec_labels`` = target + <eos>: the decoder input shifted by one, so each position
+    predicts the next token.
     """
 
     def __init__(
