@@ -129,3 +129,13 @@ def test_eve_schemas_and_tools_pass_through(library: dict[str, Tool]) -> None:
         to_tool(lamp.to_dict() | {"colour": "red"})
     with pytest.raises(eve.ToolError, match="is not a tool"):
         to_tool(42)  # type: ignore[arg-type]
+
+
+def test_malformed_eve_schemas_say_why() -> None:
+    bad = {"name": "sum_list", "description": "Adds", "args": "nope"}
+    with pytest.raises(eve.ToolError, match="'sum_list'.*args must be a list of argument objects"):
+        to_tool(bad)
+    with pytest.raises(eve.ToolError, match="'sum_list'.*args must be a list"):
+        eve.ToolBox([bad])
+    with pytest.raises(eve.ToolError, match="missing keys"):
+        to_tool({"description": "Adds", "args": []})

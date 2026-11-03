@@ -2,6 +2,7 @@ import hashlib
 import json
 import math
 import re
+from collections.abc import Mapping
 from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any
@@ -22,6 +23,8 @@ class SchemaError(ValueError):
 
 def _check_text(what: str, text: str) -> None:
     """Free text must not contain a special token, or it would add a fake <tool>/<arg> marker."""
+    if not isinstance(text, str):
+        raise SchemaError(f"{what} must be text, got {text!r}")
     for special in SPECIAL_TOKENS:
         if special in text:
             raise SchemaError(f"{what} contains the special token {special}: {text!r}")
@@ -52,6 +55,8 @@ class Arg:
     def __post_init__(self) -> None:
         _check_name("argument name", self.name)
         _check_text(f"argument {self.name}", self.description)
+        if not isinstance(self.required, bool):
+            raise SchemaError(f"argument {self.name}: required must be true or false")
         if self.type not in ARG_TYPES:
             raise SchemaError(f"argument {self.name}: type must be one of {ARG_TYPES}")
 
@@ -59,7 +64,8 @@ class Arg:
             if len(self.options) < 2 or len(set(self.options)) != len(self.options):
                 raise SchemaError(f"argument {self.name}: an enum needs 2+ distinct options")
             for option in self.options:
-                if not option or option != option.strip() or "|" in option:
+                bad = not isinstance(option, str) or not option.strip() or "|" in option
+                if bad or option != option.strip():
                     raise SchemaError(f"argument {self.name}: bad enum option {option!r}")
                 _check_text(f"argument {self.name}", option)
         elif self.options:
@@ -67,6 +73,8 @@ class Arg:
 
         if self.type in ("int", "float"):
             for bound in (self.min, self.max):
+                if isinstance(bound, bool) or not isinstance(bound, int | float | None):
+                    raise SchemaError(f"argument {self.name}: bounds must be numbers: {bound!r}")
                 if bound is not None and self.type == "int" and not float(bound).is_integer():
                     raise SchemaError(f"argument {self.name}: int bounds must be whole numbers")
             if self.min is not None and self.max is not None and self.min > self.max:
@@ -77,10 +85,17 @@ class Arg:
     @classmethod
     def from_dict(cls, data: dict[str, Any]) -> "Arg":
         """An argument from its JSON form, as in ``data/tools``."""
+        if not isinstance(data, Mapping):
+            raise SchemaError(f"args must be a list of argument objects, got {data!r}")
         unknown = set(data) - {"name", "type", "required", "options", "min", "max", "description"}
         if unknown:
             raise SchemaError(f"argument {data.get('name')!r}: unknown keys {sorted(unknown)}")
-        return cls(**{**data, "options": tuple(data.get("options", ()))})
+        if missing := sorted({"name", "type"} - set(data)):
+            raise SchemaError(f"argument {data.get('name')!r}: missing keys {missing}")
+        options = data.get("options", ())
+        if not isinstance(options, list | tuple):
+            raise SchemaError(f"argument {data['name']!r}: options must be a list, got {options!r}")
+        return cls(**{**data, "options": tuple(options)})
 
     def to_dict(self) -> dict[str, Any]:
         """The JSON form, without the fields that have their default."""
@@ -174,9 +189,9 @@ class Tool:
 
     def __post_init__(self) -> None:
         _check_name("tool name", self.name)
+        _check_text(f"tool {self.name} description", self.description)
         if not self.description.strip():
             raise SchemaError(f"tool {self.name}: description is empty")
-        _check_text(f"tool {self.name}", self.description)
         names = [a.name for a in self.args]
         if len(set(names)) != len(names):
             raise SchemaError(f"tool {self.name}: duplicate argument names")
@@ -189,7 +204,12 @@ class Tool:
         unknown = set(data) - {"name", "description", "args"}
         if unknown:
             raise SchemaError(f"tool {data.get('name')!r}: unknown keys {sorted(unknown)}")
-        args = tuple(Arg.from_dict(a) for a in data.get("args", ()))
+        if missing := sorted({"name", "description"} - set(data)):
+            raise SchemaError(f"tool {data.get('name')!r}: missing keys {missing}")
+        raw = data.get("args", ())
+        if not isinstance(raw, list | tuple):
+            raise SchemaError(f"args must be a list of argument objects, got {raw!r}")
+        args = tuple(Arg.from_dict(a) for a in raw)
         return cls(data["name"], data["description"], args, domain)
 
     def to_dict(self) -> dict[str, Any]:

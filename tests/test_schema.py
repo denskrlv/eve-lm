@@ -55,6 +55,34 @@ def test_invalid_schemas_are_rejected(make):
         make()
 
 
+TOOL = {"name": "sum_list", "description": "Adds"}
+
+
+@pytest.mark.parametrize(
+    ("data", "reason"),
+    [
+        (TOOL | {"args": "nope"}, "args must be a list of argument objects"),
+        (TOOL | {"args": {"name": "n", "type": "int"}}, "args must be a list of argument objects"),
+        (TOOL | {"args": ["n"]}, "args must be a list of argument objects"),
+        ({"description": "Adds"}, "missing keys \\['name'\\]"),
+        ({"name": "sum_list"}, "missing keys \\['description'\\]"),
+        ({"name": "sum_list", "description": 5}, "description must be text"),
+        (TOOL | {"args": [{"type": "int"}]}, "missing keys \\['name'\\]"),
+        (TOOL | {"args": [{"name": "n"}]}, "missing keys \\['type'\\]"),
+        (TOOL | {"args": [{"name": "n", "type": 5}]}, "type must be one of"),
+        (TOOL | {"args": [{"name": "n", "type": ["int"]}]}, "type must be one of"),
+        (TOOL | {"args": [{"name": "n", "type": "int", "description": 5}]}, "must be text"),
+        (TOOL | {"args": [{"name": "n", "type": "int", "required": "no"}]}, "required must be"),
+        (TOOL | {"args": [{"name": "n", "type": "int", "min": "0"}]}, "bounds must be numbers"),
+        (TOOL | {"args": [{"name": "n", "type": "enum", "options": "ab"}]}, "options must be"),
+        (TOOL | {"args": [{"name": "n", "type": "enum", "options": [1, 2]}]}, "bad enum option"),
+    ],
+)
+def test_malformed_tool_dicts_are_refused(data, reason):
+    with pytest.raises(SchemaError, match=reason):
+        Tool.from_dict(data)
+
+
 def test_check_call(library):
     lights = library["set_lights"]
     assert lights.check_call({"room": "kitchen", "on": False}) == []
