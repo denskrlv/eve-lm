@@ -64,7 +64,6 @@ def _value_loss(lm: torch.Tensor, labels: torch.Tensor) -> torch.Tensor:
 
 def forward_batch(model: Eve, batch: dict[str, torch.Tensor]) -> Output:
     """One encoder pass of a task batch for both the question block and the decoder."""
-    cased = {"enc_case": batch["enc_case"]} if "enc_case" in batch else {}  # uncased encoders
     out: Output = model(
         batch["enc_ids"],
         batch["enc_mask"],
@@ -72,7 +71,6 @@ def forward_batch(model: Eve, batch: dict[str, torch.Tensor]) -> Output:
         batch["dec_mask"],
         batch["tool_pos"],
         batch["tool_mask"],
-        **cased,
     )
     return out
 

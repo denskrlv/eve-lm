@@ -41,7 +41,7 @@ class Eve:
                 f"{source} isn't a fine-tuned joint model: it can't write argument values"
             )
         self._model = checkpoint.model.eval().requires_grad_(False)
-        self._tokenizer = checkpoint.task_tokenizer
+        self._tokenizer = checkpoint.tokenizer
         self._meta = checkpoint.meta
         self._calibrations = Calibrations.from_meta(checkpoint.meta)
         self.source = source

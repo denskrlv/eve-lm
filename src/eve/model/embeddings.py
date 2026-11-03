@@ -6,18 +6,16 @@ from eve.config import ModelConfig
 
 class Embeddings(nn.Module):
     """Token embeddings plus learned position embeddings (book ch. 2.8). With ``cfg.rope`` there
-    are no position tables: attention rotates its queries and keys by position instead. Without
-    ``encoder`` (an Eve whose encoder has its own, ``eve.model.bert``), only the decoder's."""
+    are no position tables: attention rotates its queries and keys by position instead."""
 
-    def __init__(self, cfg: ModelConfig, encoder: bool = True):
+    def __init__(self, cfg: ModelConfig):
         super().__init__()
         self.tok = nn.Embedding(cfg.vocab_size, cfg.d_model)
         self.max_len = {"encoder": cfg.max_encoder_len, "decoder": cfg.max_decoder_len}
-        self.enc_pos: nn.Embedding | None = None
-        self.dec_pos: nn.Embedding | None = None
-        if not cfg.rope:
-            if encoder:
-                self.enc_pos = nn.Embedding(cfg.max_encoder_len, cfg.d_model)
+        if cfg.rope:
+            self.enc_pos = self.dec_pos = None
+        else:
+            self.enc_pos = nn.Embedding(cfg.max_encoder_len, cfg.d_model)
             self.dec_pos = nn.Embedding(cfg.max_decoder_len, cfg.d_model)
         self.drop = nn.Dropout(cfg.dropout)
 

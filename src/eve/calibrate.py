@@ -83,7 +83,7 @@ def load_set(
     """One task file's examples in batches, with the tool shuffle ``eve evaluate`` uses."""
     cfg = ckpt.model.cfg
     examples = load_examples(path, library)
-    data = TaskDataset(examples, ckpt.task_tokenizer, cfg, seed=SEEDS.get(path.stem, 0))
+    data = TaskDataset(examples, ckpt.tokenizer, cfg, seed=SEEDS.get(path.stem, 0))
     familiar = torch.tensor([calibrations.is_familiar(e.tools) for e in examples])
     return TaskSet(
         in_batches(data, TaskCollator(cfg), batch_size), list(familiar.split(batch_size))

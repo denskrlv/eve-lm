@@ -18,7 +18,6 @@ from eve.model.checkpoint import (
     load_pretrained,
 )
 from eve.model.eve import Eve
-from eve.tokenizer import Tokenizer
 from eve.tokenizer.bpe import BPETokenizer
 
 
@@ -27,7 +26,7 @@ class Started:
     """A model ready to train, its tokenizer, and how many of its parameters train."""
 
     model: nn.Module
-    tokenizer: Tokenizer
+    tokenizer: BPETokenizer
     trainable: int
 
 

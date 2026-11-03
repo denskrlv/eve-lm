@@ -3,7 +3,6 @@ from typing import Any
 
 INTENTS = ("call", "ask", "unsupported", "none")
 STOP = "STOP"  # the slot answer after the last call
-ENCODERS = ("eve", "bert")
 
 
 @dataclass(frozen=True)
@@ -28,12 +27,6 @@ class ModelConfig:
     rope_base: float = 10000.0
     qk_norm: bool = False  # RMS-normalize each head's queries and keys before the dot product
 
-    # The encoder: Eve's own blocks, or "bert" to start from MiniLM (eve.model.bert), which reads
-    # its own WordPiece tokens with its own head count; the decoder keeps vocab_size and n_heads
-    encoder: str = "eve"
-    encoder_vocab_size: int | None = None  # None: vocab_size
-    encoder_heads: int | None = None  # None: n_heads
-
     # Question block (Jev part): 1 intent question + n_slots "what is call #i?" questions
     n_question_layers: int = 2
     n_slots: int = 8  # up to 8 calls: "lights off everywhere" is one call per room
@@ -41,11 +34,8 @@ class ModelConfig:
     pointer_dim: int = 64  # size of the query/key vectors the slot head compares
 
     def __post_init__(self) -> None:
-        for heads in (self.n_heads, self.enc_heads):
-            if self.d_model % heads:
-                raise ValueError(f"d_model={self.d_model} is not divisible by {heads} heads")
-        if self.encoder not in ENCODERS:
-            raise ValueError(f"encoder must be one of {ENCODERS}, got {self.encoder!r}")
+        if self.d_model % self.n_heads:
+            raise ValueError(f"d_model={self.d_model} is not divisible by n_heads={self.n_heads}")
         if not 0.0 <= self.dropout < 1.0:
             raise ValueError(f"dropout must be in [0, 1), got {self.dropout}")
 
@@ -53,16 +43,6 @@ class ModelConfig:
     def head_dim(self) -> int:
         """Width of each attention head: ``d_model / n_heads``."""
         return self.d_model // self.n_heads
-
-    @property
-    def enc_vocab(self) -> int:
-        """The encoder's vocabulary size."""
-        return self.vocab_size if self.encoder_vocab_size is None else self.encoder_vocab_size
-
-    @property
-    def enc_heads(self) -> int:
-        """The encoder's attention heads."""
-        return self.n_heads if self.encoder_heads is None else self.encoder_heads
 
     @property
     def n_intents(self) -> int:
@@ -74,7 +54,7 @@ class ModelConfig:
         return asdict(self)
 
     def approx_params(self) -> int:
-        """The parameter count, from the config alone (of Eve's own encoder)."""
+        """The parameter count, from the config alone."""
         d, ffn = self.d_model, self.ffn_mult * self.d_model
         attention = 4 * d * d + 4 * d  # W_q, W_k, W_v, W_out with biases
         if self.qk_norm:

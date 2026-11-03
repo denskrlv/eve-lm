@@ -9,7 +9,6 @@ from torch import nn
 from eve import registry
 from eve.config import ModelConfig
 from eve.model.eve import Eve
-from eve.tokenizer import PairTokenizer, TaskTokenizer, Tokenizer, tokenizer_from_dict
 from eve.tokenizer.bpe import BPETokenizer
 
 FORMAT = "eve-ckpt-1"
@@ -34,29 +33,15 @@ class Checkpoint:
     """A loaded checkpoint: model, tokenizer, meta and, for resuming, train state."""
 
     model: Eve
-    tokenizer: Tokenizer  # BPE; WordPiece for a MiniLM retriever, a pair for a MiniLM Eve
+    tokenizer: BPETokenizer
     meta: dict[str, Any]
     train_state: dict[str, Any] | None = None  # optimizer, step and RNG states, for resuming (M4)
-
-    @property
-    def bpe(self) -> BPETokenizer:
-        """The tokenizer of an Eve model with its own encoder: BPE on both sides."""
-        if not isinstance(self.tokenizer, BPETokenizer):
-            raise TypeError(f"expected a BPE tokenizer, got {type(self.tokenizer).__name__}")
-        return self.tokenizer
-
-    @property
-    def task_tokenizer(self) -> TaskTokenizer:
-        """The tokenizer an Eve model's prompts are rendered with: BPE, or a pair (MiniLM)."""
-        if not isinstance(self.tokenizer, BPETokenizer | PairTokenizer):
-            raise TypeError(f"{type(self.tokenizer).__name__} isn't an Eve model's tokenizer")
-        return self.tokenizer
 
 
 def save_checkpoint(
     path: str | Path,
     model: nn.Module,
-    tokenizer: Tokenizer,
+    tokenizer: BPETokenizer,
     meta: dict[str, Any] | None = None,
     train_state: dict[str, Any] | None = None,
 ) -> None:
@@ -78,11 +63,6 @@ def save_checkpoint(
     if tokenizer.vocab_size > cfg.vocab_size:
         raise ValueError(
             f"tokenizer has {tokenizer.vocab_size} tokens, model only {cfg.vocab_size}"
-        )
-    if isinstance(tokenizer, PairTokenizer) and tokenizer.encoder.vocab_size > cfg.enc_vocab:
-        raise ValueError(
-            f"encoder tokenizer has {tokenizer.encoder.vocab_size} tokens, model only "
-            f"{cfg.enc_vocab}"
         )
     data = {
         "format": FORMAT,
@@ -126,7 +106,7 @@ def load_checkpoint(path: str | Path, device: str | torch.device = "cpu") -> Che
     architecture = registry.get("model", data.get("model", "eve"))  # older files: all Eve
     model: Eve = architecture.from_config(data["config"])  # typed Eve: what every reader uses
     model.load_state_dict(data["state_dict"])
-    tokenizer = tokenizer_from_dict(data["tokenizer"])
+    tokenizer = BPETokenizer.from_dict(data["tokenizer"])
     return Checkpoint(model.to(device), tokenizer, data["meta"], data.get("train_state"))
 
 
@@ -159,4 +139,4 @@ def load_pretrained(
         raise KeyError(f"{path} has no weights for {not_loaded}")
     if result.unexpected_keys:
         raise KeyError(f"{path} has weights the model doesn't use: {result.unexpected_keys}")
-    return Checkpoint(model.to(device), tokenizer_from_dict(data["tokenizer"]), data["meta"])
+    return Checkpoint(model.to(device), BPETokenizer.from_dict(data["tokenizer"]), data["meta"])

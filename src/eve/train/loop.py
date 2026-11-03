@@ -23,7 +23,7 @@ from eve.runtime import eval_mode, to_device
 from eve.train.config import DTYPES, TrainConfig
 
 if TYPE_CHECKING:
-    from eve.tokenizer import Tokenizer
+    from eve.tokenizer.bpe import BPETokenizer
 
 logger = logging.getLogger(__name__)
 
@@ -133,7 +133,7 @@ class Run:
     out_dir: Path
     model: nn.Module  # eager: for on_eval, whose generation changes shape, and for saving
     runner: nn.Module  # what the loss runs on: ``model``, or its torch.compile'd wrapper
-    tokenizer: "Tokenizer"  # saved with every checkpoint
+    tokenizer: "BPETokenizer"  # saved with every checkpoint
     optimizer: torch.optim.Optimizer
     data: DataModule
     eval_fn: LossFn
@@ -240,7 +240,7 @@ def _train_step(
     """One optimizer step at learning rate ``lr``. Returns the losses and the gradient norm
     before clipping."""
     for group in optimizer.param_groups:
-        group["lr"] = lr * group.get("lr_scale", 1.0)  # param_groups sets the encoder's
+        group["lr"] = lr
     with autocast():
         losses = loss_fn(runner, to_device(batch, device, non_blocking=True))  # train keeps batch
     loss = cast(torch.Tensor, sum(losses.values()))
@@ -292,7 +292,7 @@ def train(
     data: DataModule,
     cfg: TrainConfig,
     out_dir: str | Path,
-    tokenizer: "Tokenizer",
+    tokenizer: "BPETokenizer",
     device: str | torch.device,
     report: Report | None = None,
     eval_fn: LossFn | None = None,

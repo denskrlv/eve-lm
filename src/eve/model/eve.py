@@ -6,11 +6,9 @@ from torch import nn
 
 from eve.config import ModelConfig
 from eve.model.attention import set_sdpa
-from eve.model.bert import BertBlock, BertEmbeddings
 from eve.model.blocks import DecoderBlock, EncoderBlock, LayerNorm
 from eve.model.embeddings import Embeddings
 from eve.registry import register
-from eve.tokenizer.wordpiece import CASES
 
 INIT_STD = 0.02  # GPT-2's initialization: small normal weights
 
@@ -96,35 +94,19 @@ class Eve(nn.Module):
     The LM head is tied to the token embeddings: the same (vocab, d) matrix maps token -> vector
     at the input and vector -> logits at the output. GPT-2 does this (book ch. 4.6); for us it
     saves 2M of ~12M parameters.
-
-    With ``cfg.encoder = "bert"`` the encoder is MiniLM's (``eve.model.bert``): its own WordPiece
-    embeddings (``enc_embeddings``) and post-LN blocks, which normalize their own output, so
-    there is no final norm. MiniLM is uncased, so each token also gets the case of its word
-    (``enc_case``, added to its embedding; zero at the start, so MiniLM reads as trained): the
-    decoder can't write "John" from "john". The decoder keeps Eve's BPE, tied to its LM head.
     """
 
     def __init__(self, cfg: ModelConfig):
         super().__init__()
         self.cfg = cfg
-        bert = cfg.encoder == "bert"
-        self.embeddings = Embeddings(cfg, encoder=not bert)
-        self.encoder_norm: nn.Module
-        if bert:
-            self.enc_embeddings = BertEmbeddings(cfg)
-            self.enc_case = nn.Embedding(CASES, cfg.d_model)
-            self.encoder = nn.ModuleList(BertBlock(cfg) for _ in range(cfg.n_encoder_layers))
-            self.encoder_norm = nn.Identity()
-        else:
-            self.encoder = nn.ModuleList(EncoderBlock(cfg) for _ in range(cfg.n_encoder_layers))
-            self.encoder_norm = LayerNorm(cfg.d_model)
+        self.embeddings = Embeddings(cfg)
+        self.encoder = nn.ModuleList(EncoderBlock(cfg) for _ in range(cfg.n_encoder_layers))
+        self.encoder_norm = LayerNorm(cfg.d_model)
         self.decoder = nn.ModuleList(DecoderBlock(cfg) for _ in range(cfg.n_decoder_layers))
         self.decoder_norm = LayerNorm(cfg.d_model)
         self.lm_head = nn.Linear(cfg.d_model, cfg.vocab_size, bias=False)
         self.questions = QuestionBlock(cfg)
         self.apply(self._init_weights)
-        if bert:
-            nn.init.zeros_(self.enc_case.weight)
         self.lm_head.weight = self.embeddings.tok.weight  # weight tying
 
     @classmethod
@@ -141,17 +123,9 @@ class Eve(nn.Module):
         if isinstance(module, nn.Linear) and module.bias is not None:
             nn.init.zeros_(module.bias)
 
-    def encode(
-        self, enc_ids: torch.Tensor, enc_mask: torch.Tensor, enc_case: torch.Tensor | None = None
-    ) -> torch.Tensor:
-        """(B, n) token ids and mask -> (B, n, d) ``memory``. ``enc_case`` (B, n): each token's
-        case, for a ``"bert"`` encoder (``eve.tokenizer.wordpiece.CASES``)."""
-        if self.cfg.encoder == "bert":
-            x = self.enc_embeddings.encoder(enc_ids)
-            if enc_case is not None:
-                x = x + self.enc_case(enc_case)
-        else:
-            x = self.embeddings.encoder(enc_ids)
+    def encode(self, enc_ids: torch.Tensor, enc_mask: torch.Tensor) -> torch.Tensor:
+        """(B, n) token ids and mask -> (B, n, d) ``memory``."""
+        x = self.embeddings.encoder(enc_ids)
         for block in self.encoder:
             x = block(x, enc_mask)
         memory: torch.Tensor = self.encoder_norm(x)
@@ -192,10 +166,9 @@ class Eve(nn.Module):
         dec_mask: torch.Tensor | None = None,
         tool_pos: torch.Tensor | None = None,
         tool_mask: torch.Tensor | None = None,
-        enc_case: torch.Tensor | None = None,
     ) -> Output:
         """Takes the tensors the collators make; labels stay in the batch for the loss."""
-        memory = self.encode(enc_ids, enc_mask, enc_case)
+        memory = self.encode(enc_ids, enc_mask)
         questions = lm = None
         if tool_pos is not None:
             assert tool_mask is not None, "tool_pos comes with tool_mask"
@@ -215,9 +188,8 @@ class Eve(nn.Module):
         def count(*modules: nn.Module) -> int:
             return sum(p.numel() for m in modules for p in m.parameters())
 
-        bert = (self.enc_embeddings, self.enc_case) if self.cfg.encoder == "bert" else ()
         return {
-            "embeddings": count(self.embeddings, *bert),
+            "embeddings": count(self.embeddings),
             "encoder": count(self.encoder, self.encoder_norm),
             "decoder": count(self.decoder, self.decoder_norm),
             "questions": count(self.questions),
@@ -227,5 +199,5 @@ class Eve(nn.Module):
 
 def ask(model: Eve, batch: dict[str, torch.Tensor]) -> Questions:
     """Encoder + question block only: the decoder isn't needed for the questions."""
-    memory = model.encode(batch["enc_ids"], batch["enc_mask"], batch.get("enc_case"))
+    memory = model.encode(batch["enc_ids"], batch["enc_mask"])
     return model.ask_questions(memory, batch["enc_mask"], batch["tool_pos"], batch["tool_mask"])

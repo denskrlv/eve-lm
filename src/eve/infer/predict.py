@@ -10,7 +10,6 @@ from eve.data.render import TaskCollator, TaskExample, render
 from eve.data.schema import Arg, SchemaError, Tool
 from eve.model.eve import Eve
 from eve.runtime import eval_mode, to_device
-from eve.tokenizer import TaskTokenizer, decoder_side
 from eve.tokenizer.bpe import ABSENT, ARG, ASK, BYTE0, CALL, DEC, END, VAL, BPETokenizer
 
 MAX_VALUE_TOKENS = 32  # a value longer than this is cut off and marked invalid
@@ -228,7 +227,7 @@ def write_values(
 @torch.no_grad()
 def answer_questions(
     model: Eve,
-    tokenizer: TaskTokenizer,
+    tokenizer: BPETokenizer,
     utterance: str,
     tools: Sequence[Tool],
     calibration: Calibration | None = None,
@@ -246,7 +245,7 @@ def answer_questions(
     cal = calibration or Calibration()
     with eval_mode(model) as device:
         batch = to_device(TaskCollator(model.cfg)([rendered]), device)
-        memory = model.encode(batch["enc_ids"], batch["enc_mask"], batch.get("enc_case"))
+        memory = model.encode(batch["enc_ids"], batch["enc_mask"])
         questions = model.ask_questions(
             memory, batch["enc_mask"], batch["tool_pos"], batch["tool_mask"]
         )
@@ -259,9 +258,7 @@ def answer_questions(
         )
         by_name = {t.name: t for t in tools}
         called = [by_name[name] for name in answers.calls]
-        written = write_values(
-            model, decoder_side(tokenizer), memory, batch["enc_mask"], called, cal.values
-        )
+        written = write_values(model, tokenizer, memory, batch["enc_mask"], called, cal.values)
         answers.written = [
             WrittenCall(name, answers.slots[i][name], vals)
             for i, (name, vals) in enumerate(zip(answers.calls, written, strict=True))
