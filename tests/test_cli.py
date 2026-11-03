@@ -8,7 +8,7 @@ from pathlib import Path
 
 import pytest
 import torch
-from helpers import examples, save_joint, save_retriever
+from helpers import examples, save_joint, save_retriever, write_task
 
 from eve.cli import build_parser, main
 from eve.config import preset
@@ -124,6 +124,18 @@ def test_ask_schema_reads_lists_and_tool_files(
 
     response = json.loads(capsys.readouterr().out)
     assert response["considered"] == ["set_lights", "play_music"]  # the later set_lights won
+
+
+def test_calibrate_refuses_a_model_without_the_joint_loss(
+    tmp_path: Path, library: dict[str, Tool], tokenizer: BPETokenizer
+) -> None:
+    write_task(tmp_path / "task", library)
+    model = save_joint(tmp_path / "model.pt", tokenizer, {"task": "questions"})
+    sets = ["--task", "--evals"]
+    argv = [a for flag in sets for a in (flag, str(tmp_path / "task"))]
+    argv += ["--fit-familiar", "val", "--fit-new", "val", "--sets", "val", "--device", "cpu"]
+    with pytest.raises(SystemExit, match="isn't a fine-tuned joint model"):
+        main(["calibrate", str(model), *argv])
 
 
 def test_data_check_reports_a_missing_batch(tmp_path: Path) -> None:

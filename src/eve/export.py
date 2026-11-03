@@ -17,6 +17,7 @@ from eve.model.checkpoint import (
     RETRIEVAL_TASK,
     RETRIEVER_FILE,
     load_eve,
+    require_joint,
     save_checkpoint,
 )
 
@@ -41,8 +42,7 @@ def export_model(
     if dtype not in DTYPES:
         raise ValueError(f"dtype must be one of {sorted(DTYPES)}, got {dtype!r}")
     checkpoint = load_eve(model)
-    if not checkpoint.meta.get("joint"):
-        raise ValueError(f"{model} isn't a fine-tuned joint model; only those can be published")
+    require_joint(checkpoint.meta, model)  # only a joint model can be published
     out = Path(out)
     meta = checkpoint.meta | {"dtype": dtype, "exported_from": str(model)}
     save_checkpoint(

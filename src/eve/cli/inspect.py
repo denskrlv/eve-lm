@@ -416,7 +416,7 @@ def calibrate(args: argparse.Namespace) -> None:
     probabilities are before and after on each set; ``--save`` writes them into the model."""
     from eve.calibrate import save_calibration
     from eve.evaluate import load_questions_model, set_files
-    from eve.model.checkpoint import model_file
+    from eve.model.checkpoint import model_file, require_joint
 
     device = pick_device(args.device)
     fit_on = {"familiar": args.fit_familiar, "new": args.fit_new}
@@ -424,10 +424,9 @@ def calibrate(args: argparse.Namespace) -> None:
     try:
         paths = set_files(args.evals, sets) | set_files(args.task, ["train"])
         ckpt = load_questions_model(args.model, device)
+        require_joint(ckpt.meta, args.model)
     except (FileNotFoundError, ValueError) as error:
         raise SystemExit(str(error)) from error
-    if not ckpt.meta.get("joint"):
-        raise SystemExit(f"{args.model} is not from a joint run: its decoder writes no values")
     cal, tasks, results = _fit_and_check(ckpt, paths, sets, fit_on, args.batch_size)
     if args.save:
         save_calibration(model_file(args.model), cal, fit_on)

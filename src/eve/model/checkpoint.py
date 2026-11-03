@@ -22,6 +22,13 @@ QUESTION_FIELDS = frozenset(  # config fields that change no pretrained weight's
 )
 
 
+def require_joint(meta: dict[str, Any], source: str | Path) -> None:
+    """Refuse a checkpoint not trained with the joint loss (``meta["joint"]``): only that run
+    teaches the decoder to write argument values, so only it can make calls."""
+    if not meta.get("joint"):
+        raise ValueError(f"{source} isn't a fine-tuned joint model: it can't write argument values")
+
+
 def model_file(path: str | Path) -> Path:
     """A checkpoint path as given, or the final model of a run directory."""
     path = Path(path)

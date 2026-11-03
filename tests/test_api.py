@@ -12,7 +12,7 @@ from eve import Eve, EveError, Response
 from eve.config import INTENTS, preset
 from eve.data.schema import Tool
 from eve.infer.predict import Answers, Value, WrittenCall
-from eve.model.checkpoint import save_checkpoint
+from eve.model.checkpoint import load_eve, save_checkpoint
 from eve.model.eve import Eve as EveModel
 from eve.tokenizer.bpe import BPETokenizer
 
@@ -71,6 +71,14 @@ def test_load_refuses_a_model_that_cant_write_calls(
         Eve.load(tmp_path / "junk.pt")
     with pytest.raises(eve.CheckpointError, match="no checkpoint at"):
         Eve.load(tmp_path / "missing" / "model.pt")
+
+
+def test_constructing_eve_from_a_non_joint_checkpoint_is_a_checkpoint_error(
+    tmp_path: Path, tokenizer: BPETokenizer
+) -> None:
+    save_checkpoint(tmp_path / "pre.pt", EveModel(preset("tiny")), tokenizer, {"task": "span"})
+    with pytest.raises(eve.CheckpointError, match="isn't a fine-tuned joint model"):
+        Eve(load_eve(tmp_path / "pre.pt"), "pre.pt")
 
 
 def test_a_hub_repo_id_is_downloaded(checkpoint: Path, monkeypatch: pytest.MonkeyPatch) -> None:

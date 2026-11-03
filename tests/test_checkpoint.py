@@ -7,7 +7,13 @@ from helpers import save_joint, save_retriever
 from eve.config import preset
 from eve.data.pretrain import SpanCorruptionDataset
 from eve.data.render import IGNORE, collate_pretrain
-from eve.model.checkpoint import load_checkpoint, load_eve, load_pretrained, save_checkpoint
+from eve.model.checkpoint import (
+    load_checkpoint,
+    load_eve,
+    load_pretrained,
+    require_joint,
+    save_checkpoint,
+)
 from eve.model.eve import Eve
 from eve.model.retriever import Retriever, load_retriever
 
@@ -147,3 +153,10 @@ def test_load_eve_refuses_a_retriever(tmp_path, tokenizer):
 def test_load_retriever_refuses_an_eve_model(tmp_path, tokenizer):
     with pytest.raises(ValueError, match="isn't a retriever"):
         load_retriever(save_joint(tmp_path / "joint.pt", tokenizer))
+
+
+def test_require_joint_refuses_a_checkpoint_without_the_joint_loss():
+    for meta in ({}, {"joint": False}):
+        with pytest.raises(ValueError, match="pre.pt isn't a fine-tuned joint model"):
+            require_joint(meta, "pre.pt")
+    require_joint({"joint": True}, "joint.pt")

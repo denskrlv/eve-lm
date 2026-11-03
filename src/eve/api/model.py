@@ -13,7 +13,7 @@ from eve.api.tools import ToolLike, to_tool
 from eve.data.schema import SchemaError, Tool
 from eve.infer.predict import Calibrations, answer_questions
 from eve.infer.search import BM25, Dense, Scorer
-from eve.model.checkpoint import FORMAT, RETRIEVAL_TASK, Checkpoint, load_eve
+from eve.model.checkpoint import FORMAT, RETRIEVAL_TASK, Checkpoint, load_eve, require_joint
 from eve.model.eve import Eve as EveModel
 from eve.model.retriever import Retriever, load_retriever
 from eve.runtime import pick_device
@@ -42,10 +42,10 @@ class Eve:
     ) -> None:
         """Wrap an already loaded checkpoint; ``source`` is where it came from, for messages.
         Use ``Eve.load`` to get a model: it finds, downloads and checks the files."""
-        if not checkpoint.meta.get("joint"):
-            raise CheckpointError(
-                f"{source} isn't a fine-tuned joint model: it can't write argument values"
-            )
+        try:
+            require_joint(checkpoint.meta, source)
+        except ValueError as error:
+            raise CheckpointError(str(error)) from None
         self._model = checkpoint.model.eval().requires_grad_(False)
         self._tokenizer = checkpoint.tokenizer
         self._meta = checkpoint.meta
