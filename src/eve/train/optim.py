@@ -12,7 +12,7 @@ from eve.train.config import TrainConfig
 
 @register("schedule", "warmup_cosine")
 def lr_at(step: int, cfg: TrainConfig) -> float:
-    """Book App. D: linear warmup to ``lr``, then cosine decay to ``lr * min_lr_ratio``.
+    """Linear warmup to ``lr``, then cosine decay to ``lr * min_lr_ratio``.
 
     Warmup: early gradients come from random weights and are large and noisy, and Adam's
     running averages are still empty, so big steps would throw the weights around. Cosine:

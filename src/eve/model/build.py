@@ -35,7 +35,7 @@ def load_init(
 ) -> Checkpoint[Eve]:
     """The model to fine-tune, from either kind of checkpoint:
 
-    - a pretraining checkpoint (box 7): ``load_pretrained``, so the question block starts new;
+    - a pretraining checkpoint: ``load_pretrained``, so the question block starts new;
     - a checkpoint of an earlier question run (``meta["task"] == "questions"``), to train it
       further: everything is loaded, the trained question block too.
 

@@ -189,7 +189,7 @@ def evaluate(
     device: torch.device,
     autocast: Autocast,
 ) -> dict[str, float]:
-    """Mean of each loss over the val batches, with dropout off (book ch. 5.1.3)."""
+    """Mean of each loss over the val batches, with dropout off."""
     totals: dict[str, torch.Tensor] = {}
     with eval_mode(model):
         for batch in batches:  # kept alive by the caller, so the copy may run in the background
@@ -306,8 +306,8 @@ def train(
     callbacks: Sequence[Callback] | None = None,
     experiment: dict[str, Any] | None = None,
 ) -> dict[str, float]:
-    """The training loop for pretraining and fine-tuning (book ch. 5.2 ``train_model_simple``
-    plus App. D's warmup, cosine decay and gradient clipping).
+    """The training loop for pretraining and fine-tuning, with warmup, cosine decay and
+    gradient clipping.
 
     Each step: a batch of ``data`` -> ``loss_fn`` gives named losses -> their sum is
     backpropagated -> gradients are clipped to norm ``grad_clip`` -> ``optimizer`` step at
@@ -317,8 +317,7 @@ def train(
     resolved run config, if given), then one JSON line per log, eval and sample set. The
     callbacks (default: ``train_log``, ``evaluate``, ``checkpoint``) write those and the
     checkpoints: ``last.pt`` (model + optimizer + step + RNG states) every ``save_every``
-    steps, and ``model.pt``, the final weights without the optimizer, for ``load_pretrained``
-    (box 7).
+    steps, and ``model.pt``, the final weights without the optimizer, for ``load_pretrained``.
 
     Evals run ``eval_fn`` (default: ``loss_fn``) on the first val batches. It may return extra
     metrics (e.g. an accuracy) that are logged with a ``val_`` prefix but never trained on.

@@ -51,7 +51,7 @@ def pretrain(
     resume: bool = False,
     stop_after: int | None = None,
 ) -> dict[str, float]:
-    """Box 4: span-corruption pretraining of the whole encoder-decoder on ``data_dir``'s
+    """Span-corruption pretraining of the whole encoder-decoder on ``data_dir``'s
     ``train.bin``, evaluated on ``val.bin``. Each eval logs fill-in-the-blank samples; the
     last eval's are shown when the run ends.
 

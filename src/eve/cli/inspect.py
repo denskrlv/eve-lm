@@ -64,7 +64,7 @@ def _print_fill_report(
 
 
 def fill(args: argparse.Namespace) -> None:
-    """Learn (M4): ask a pretrained model to fill the <x0>, <x1>… holes in a sentence."""
+    """Ask a pretrained model to fill the <x0>, <x1>… holes in a sentence."""
     from eve import progress
     from eve.model.checkpoint import load_eve
     from eve.tasks.span import SAMPLES, fill_in
@@ -175,7 +175,7 @@ def _ask_interactively(show: Callable[[str], None]) -> None:
 
 
 def ask(args: argparse.Namespace) -> None:
-    """Learn (M7–M9): what a fine-tuned model decides for a typed request, through the public
+    """What a fine-tuned model decides for a typed request, through the public
     API (``eve.Eve``): the intent, each call with its argument values, and the probabilities,
     calibrated if ``eve calibrate --save`` wrote temperatures (familiar or new tools, chosen
     per request)."""
@@ -412,7 +412,7 @@ def _calibration_panel(
 
 
 def calibrate(args: argparse.Namespace) -> None:
-    """Fit temperatures for familiar and for new tools (M9) and show how calibrated the
+    """Fit temperatures for familiar and for new tools and show how calibrated the
     probabilities are before and after on each set; ``--save`` writes them into the model."""
     from eve.calibrate import save_calibration
     from eve.evaluate import load_questions_model, set_files
@@ -446,7 +446,7 @@ def calibrate(args: argparse.Namespace) -> None:
 
 def add_ask(commands: Subcommands) -> None:
     """Register ``eve ask``."""
-    parser = commands.add_parser("ask", help="ask the model about a request (M7, M8)")
+    parser = commands.add_parser("ask", help="ask the model about a request")
     parser.set_defaults(run=ask)
     parser.add_argument("text", nargs="*", help="requests; none: type them one by one")
     parser.add_argument("--tools", help="tool names from data/tools: set_lights,set_thermostat")
@@ -479,7 +479,7 @@ def add_calibrate(commands: Subcommands) -> None:
     """Register ``eve calibrate``."""
     from eve.evaluate import SETS
 
-    parser = commands.add_parser("calibrate", help="fit the probabilities' temperatures (M9)")
+    parser = commands.add_parser("calibrate", help="fit the probabilities' temperatures")
     parser.set_defaults(run=calibrate)
     add_model_arg(parser)
     parser.add_argument("--task", default=defaults.TASK_DIR, help="where train.jsonl is")
@@ -499,7 +499,7 @@ def add_calibrate(commands: Subcommands) -> None:
 
 def add_fill(commands: Subcommands) -> None:
     """Register ``eve fill``."""
-    parser = commands.add_parser("fill", help="fill <x0> holes with a pretrained model (M4)")
+    parser = commands.add_parser("fill", help="fill <x0> holes with a pretrained model")
     parser.set_defaults(run=fill)
     parser.add_argument("text", nargs="*", help='e.g. "Paris is the capital of <x0>."')
     parser.add_argument("--model", default=defaults.PRETRAINED_MODEL)

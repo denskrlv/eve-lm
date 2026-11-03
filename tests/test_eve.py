@@ -71,7 +71,7 @@ def forward(model, batch):
 
 
 def task_losses(out, batch) -> dict[str, torch.Tensor]:
-    """The fine-tuning loss of M7–M8: one cross-entropy per question family."""
+    """The fine-tuning loss: one cross-entropy per question family."""
     q = out.questions
     return {
         "intent": F.cross_entropy(q.intent, batch["intent"]),
@@ -187,15 +187,15 @@ def test_gradients_reach_every_parameter(batch, overrides):
 
 
 def test_tiny_model_overfits_eight_examples(batch):
-    """The end-to-end wiring check of M3: if every part is connected right, a tiny model can
-    memorize 8 examples. Book ch. 5 does the same with one short text before real training."""
+    """The end-to-end wiring check: if every part is connected right, a tiny model can
+    memorize 8 examples."""
     model = make().train()
     optimizer = torch.optim.AdamW(model.parameters(), lr=2e-3, weight_decay=0.0)
     for _ in range(200):
         losses = task_losses(forward(model, batch), batch)
         optimizer.zero_grad()
         sum(losses.values()).backward()
-        # Without clipping, some seeds spike back up at lr 2e-3 (App. D clips at 1.0 too).
+        # Without clipping, some seeds spike back up at lr 2e-3.
         torch.nn.utils.clip_grad_norm_(model.parameters(), 1.0)
         optimizer.step()
 

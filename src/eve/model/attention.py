@@ -50,10 +50,10 @@ def apply_rope(x: torch.Tensor, cos: torch.Tensor, sin: torch.Tensor) -> torch.T
 
 
 class MultiHeadAttention(nn.Module):
-    """Multi-head attention, used three ways (book ch. 3.6, `MultiHeadAttention`):
+    """Multi-head attention, used three ways:
 
     - bidirectional self-attention: the encoder and the question block (``causal=False``);
-    - causal self-attention: the decoder (``causal=True``), as in the book;
+    - causal self-attention: the decoder (``causal=True``);
     - cross-attention: decoder and question block reading the encoder (``kv`` given).
 
     Contract the tests check:
@@ -93,7 +93,7 @@ class MultiHeadAttention(nn.Module):
         self.W_query = nn.Linear(d_model, d_model)
         self.W_key = nn.Linear(d_model, d_model)
         self.W_value = nn.Linear(d_model, d_model)
-        self.out_proj = nn.Linear(d_model, d_model)  # mixes the heads' outputs, as in the book
+        self.out_proj = nn.Linear(d_model, d_model)  # mixes the heads' outputs
         self.drop = nn.Dropout(dropout)
         if qk_norm:
             self.q_norm: RMSNorm | None = RMSNorm(self.head_dim)
@@ -118,7 +118,7 @@ class MultiHeadAttention(nn.Module):
 
         ``causal=True`` with ``kv`` given is a ``ValueError``: cross-attention is never causal.
 
-        The book's steps: project to Q, K, V -> split into heads -> scores = Q·Kᵀ / √head_dim ->
+        The steps: project to Q, K, V -> split into heads -> scores = Q·Kᵀ / √head_dim ->
         mask (future positions if causal, padding keys) with -inf -> softmax -> dropout ->
         weights·V -> merge heads -> out_proj.
         """
@@ -155,7 +155,7 @@ class MultiHeadAttention(nn.Module):
         """Steps 1 and 1b: queries from ``x``, keys and values from ``kv``, each split into
         heads, (B, heads, n, head_dim); then the optional norms and rotary positions."""
         # 1. Project, then split d into n_heads × head_dim: (B, n, d) -> (B, heads, n, head_dim).
-        #    Each head works on its own head_dim-sized slice, like the book's view + transpose.
+        #    Each head works on its own head_dim-sized slice (a view and a transpose, no copy).
         q = self._split(self.W_query(x))
         k = self._split(self.W_key(kv))
         v = self._split(self.W_value(kv))
@@ -173,14 +173,14 @@ class MultiHeadAttention(nn.Module):
     ) -> tuple[torch.Tensor, torch.Tensor]:
         """Steps 3 to 5, written out: the heads' outputs (B, heads, n_q, head_dim) and the
         attention weights (B, heads, n_q, n_kv)."""
-        # 3. Scaled dot-product scores (ch. 3.5): how well each query matches each key.
+        # 3. Scaled dot-product scores: how well each query matches each key.
         #    Dividing by √head_dim keeps the scores from growing with the vector size.
         scores = q @ k.transpose(-2, -1) / self.head_dim**0.5  # (B, heads, n_q, n_kv)
         # 4. Forbidden pairs get -inf, so softmax gives them exactly zero weight.
         if allowed is not None:
             scores = scores.masked_fill(~allowed, float("-inf"))
         weights = torch.softmax(scores, dim=-1)  # each row sums to 1
-        # 5. Each query's output is a weighted average of the values (dropout as in ch. 3.5.2).
+        # 5. Each query's output is a weighted average of the values (dropout on the weights).
         out: torch.Tensor = self.drop(weights) @ v  # (B, heads, n_q, head_dim)
         return out, weights
 
@@ -193,9 +193,8 @@ class MultiHeadAttention(nn.Module):
     ) -> torch.Tensor | None:
         """(B, 1, n_q, n_kv) boolean mask, or None when every query may see every key.
 
-        The book builds the causal mask with ``torch.triu`` and marks *forbidden* positions.
-        Here True means *allowed* (the convention of ``scaled_dot_product_attention``), so the
-        causal part is the lower triangle: query i sees keys 0..i.
+        True means *allowed* (the convention of ``scaled_dot_product_attention``), so the causal
+        part is the lower triangle: query i sees keys 0..i.
         """
         allowed = None
         if key_mask is not None:

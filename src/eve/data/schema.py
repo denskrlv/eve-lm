@@ -133,7 +133,7 @@ class Arg:
         return None
 
     def format(self, value: Any) -> str:
-        """The value as the decoder writes it (M8): true/false, 21.5, kitchen."""
+        """The value as the decoder writes it: true/false, 21.5, kitchen."""
         if self.type == "bool":
             return "true" if value else "false"
         if self.type in ("int", "float"):
@@ -243,7 +243,7 @@ class Tool:
         return errors
 
 
-GENERATION_KEYS = ("templates", "values", "overlaps")  # task-data generation only (M6)
+GENERATION_KEYS = ("templates", "values", "overlaps")  # task-data generation only
 
 
 def load_tools(path: str | Path) -> list[Tool]:

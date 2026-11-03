@@ -14,8 +14,8 @@ from eve.runtime import pick_device
 
 
 def info(args: argparse.Namespace) -> None:
-    """Print the torch version, the device, each preset's size, and (M3) its parameters per
-    part and memory size, like the book's count in ch. 4.6."""
+    """Print the torch version, the device, each preset's size, and its parameters per part
+    and memory size."""
     from eve.config import preset
     from eve.model.eve import Eve
 
@@ -48,7 +48,7 @@ def info(args: argparse.Namespace) -> None:
 
 
 def export(args: argparse.Namespace) -> None:
-    """Publish (M10): write a fine-tuned model and its model card for a Hugging Face Hub repo."""
+    """Write a fine-tuned model and its model card for a Hugging Face Hub repo."""
     from eve.export import export_model
     from eve.model.checkpoint import MODEL_FILE, RETRIEVER_FILE
 
@@ -63,7 +63,7 @@ def export(args: argparse.Namespace) -> None:
 
 
 def retriever_eval(args: argparse.Namespace) -> None:
-    """Retrieve (M11): how often each scorer puts every correct tool in the top 5 of a
+    """How often each scorer puts every correct tool in the top 5 of a
     registry: BM25, and with a retriever checkpoint, the retriever (dense). Registries are
     filled with random tools, and with ``similar`` ones (the hard case)."""
     from eve.data.generate.build import Sources
@@ -96,7 +96,7 @@ def retriever_eval(args: argparse.Namespace) -> None:
 
 def add_info(commands: Subcommands) -> None:
     """Register ``eve info``."""
-    parser = commands.add_parser("info", help="the device, and the model presets' sizes (M3)")
+    parser = commands.add_parser("info", help="the device, and the model presets' sizes")
     parser.set_defaults(run=info)
     parser.add_argument(
         "--preset",
@@ -110,7 +110,7 @@ def add_export(commands: Subcommands) -> None:
     """Register ``eve export``."""
     from eve.export import DTYPES as EXPORT_DTYPES
 
-    parser = commands.add_parser("export", help="write a fine-tuned model for the Hub (M10)")
+    parser = commands.add_parser("export", help="write a fine-tuned model for the Hub")
     parser.set_defaults(run=export)
     parser.add_argument("model", nargs="?", default=defaults.FINETUNED_MODEL)
     parser.add_argument("--out", default="dist/model", help="the directory to write")
@@ -121,7 +121,7 @@ def add_export(commands: Subcommands) -> None:
 
 def add_retriever(commands: Subcommands) -> None:
     """Register ``eve retriever eval``."""
-    group = commands.add_parser("retriever", help="score tool retrieval (M11)")
+    group = commands.add_parser("retriever", help="score tool retrieval")
     retriever_commands = group.add_subparsers(dest="retriever_command", required=True)
     parser = retriever_commands.add_parser("eval", help="top-5 recall of BM25 and a retriever")
     parser.set_defaults(run=retriever_eval)

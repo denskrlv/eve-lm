@@ -68,7 +68,9 @@ def test_pretrain_end_to_end(tokenizer, tmp_path):
     samples = [r for r in records if r["kind"] == "samples"]
     assert [r["step"] for r in samples] == [0, 2, 4]
     assert len(samples[-1]["samples"]) == len(SAMPLES)
-    ckpt = load_pretrained(tmp_path / "run" / "model.pt")  # box 7 reads what box 4 wrote
+    ckpt = load_pretrained(
+        tmp_path / "run" / "model.pt"
+    )  # fine-tuning reads what pretraining wrote
     assert ckpt.meta["val_lm"] == val["val_lm"]
     assert {"val_lm", "val_content", "val_content_acc"} <= set(val)
     assert ckpt.model.cfg == cfg

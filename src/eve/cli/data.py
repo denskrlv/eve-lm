@@ -76,7 +76,7 @@ def _pieces(pieces: list[str]) -> Text:
 
 
 def tokenizer_stats(args: argparse.Namespace) -> None:
-    """Learn (M1): tokens per word on unseen web text, on commands and on tool schemas."""
+    """Tokens per word on unseen web text, on commands and on tool schemas."""
     from eve.data.corpus import iter_documents, take_bytes
     from eve.data.jsonl import read_lines
     from eve.data.schema import load_library
@@ -252,7 +252,7 @@ def _rejects_table(rejects: list[tuple[dict[str, Any], list[str]]]) -> "Table":
 
 def add_tokenizer(commands: Subcommands) -> None:
     """Register ``eve tokenizer train`` and ``eve tokenizer stats``."""
-    tok = commands.add_parser("tokenizer", help="train or inspect the BPE tokenizer (M1)")
+    tok = commands.add_parser("tokenizer", help="train or inspect the BPE tokenizer")
     tok_commands = tok.add_subparsers(dest="tokenizer_command", required=True)
     for name, run, help_ in [
         ("train", tokenizer_train, "train the BPE on web text, tool schemas and commands"),
@@ -283,7 +283,7 @@ def add_corpus(commands: Subcommands) -> None:
     """Register ``eve corpus encode``, ``fetch`` and ``tinytools``."""
     group = commands.add_parser("corpus", help="the pretraining corpus")
     corpus_commands = group.add_subparsers(dest="corpus_command", required=True)
-    parser = corpus_commands.add_parser("encode", help="encode parquet text to token ids (M1)")
+    parser = corpus_commands.add_parser("encode", help="encode parquet text to token ids")
     parser.set_defaults(run=corpus_encode)
     parser.add_argument("--parquet", default=defaults.PARQUET_GLOB)
     parser.add_argument("--tokenizer", default=defaults.TOKENIZER_FILE)
@@ -339,7 +339,7 @@ def _add_data_build_command(data_commands: Subcommands) -> None:
 
 def add_data(commands: Subcommands) -> None:
     """Register ``eve data build``, ``external``, ``batch`` and ``check``."""
-    data = commands.add_parser("data", help="build the task dataset (M6)")
+    data = commands.add_parser("data", help="build the task dataset")
     data_commands = data.add_subparsers(dest="data_command", required=True)
     _add_data_build_command(data_commands)
     parser = data_commands.add_parser("external", help="convert xLAM and MASSIVE -> data/external")

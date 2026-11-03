@@ -70,12 +70,12 @@ def finetune(
     stop_after: int | None = None,
     evals_dir: str | Path = defaults.EVALS_DIR,
 ) -> dict[str, float]:
-    """Boxes 8 and 9: fine-tune the question heads and the decoder's argument values together
+    """Fine-tune the question heads and the decoder's argument values together
     (``joint_loss``) on ``task_dir``'s ``train.jsonl``, evaluated on ``evals_dir``'s
     ``val.jsonl``, with held-out-tool accuracy from its ``heldout-templates.jsonl`` at each eval.
 
     Start from ``init`` (a pretraining checkpoint or an earlier question run, see ``load_init``)
-    or, for the "what does pretraining buy?" experiment (E1), from a random ``scratch`` config
+    or, to measure what pretraining buys, from a random ``scratch`` config
     and the tokenizer at ``tokenizer_path``.
     """
     values = finetune_experiment(

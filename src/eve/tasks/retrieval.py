@@ -1,4 +1,4 @@
-"""Retrieval (M11): how often a scorer puts every tool a request needs in the top 5 of a
+"""Retrieval: how often a scorer puts every tool a request needs in the top 5 of a
 registry, and the components that train a ``Retriever`` to do it.
 
 Eve reads 5 tools per request, so a tool the scorer ranks 6th is never called. The test: for

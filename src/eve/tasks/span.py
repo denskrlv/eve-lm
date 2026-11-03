@@ -1,4 +1,4 @@
-"""The span-corruption task (box 4): the pretraining loss, val metrics and fill-in samples."""
+"""The span-corruption task: the pretraining loss, val metrics and fill-in samples."""
 
 from collections.abc import Sequence
 from typing import Any
@@ -34,8 +34,8 @@ HIGHLIGHTS = ((r"\[[^\]]*\]", "bold cyan"),)  # fill_in's [filled-in spans]
 
 @register("loss", "span")
 def span_loss(model: Eve, batch: dict[str, torch.Tensor]) -> dict[str, torch.Tensor]:
-    """Box 4: cross-entropy of the decoder's next-token predictions against the missing spans
-    (book ch. 5.1.2, ``calc_loss_batch``). Padding positions are labelled IGNORE."""
+    """Cross-entropy of the decoder's next-token predictions against the missing spans.
+    Padding positions are labelled IGNORE."""
     out = model(batch["enc_ids"], batch["enc_mask"], batch["dec_ids"], batch["dec_mask"])
     logits = out.lm.flatten(0, 1).float()  # (B * n_dec, vocab)
     return {"lm": F.cross_entropy(logits, batch["dec_labels"].flatten(), ignore_index=IGNORE)}
@@ -58,7 +58,7 @@ def prompt_ids(tokenizer: BPETokenizer, text: str) -> list[int]:
 
 @register("metrics", "span")
 def span_metrics(model: Eve, batch: dict[str, torch.Tensor]) -> dict[str, torch.Tensor]:
-    """Box 6, the val metrics: the training loss ``lm`` plus the loss and top-1 accuracy on
+    """The val metrics: the training loss ``lm`` plus the loss and top-1 accuracy on
     *content* tokens only, the words inside the holes.
 
     About a quarter of the labels are sentinels and ``<eos>``: they only mark where spans
@@ -86,8 +86,8 @@ def fill_in(
     text: str,
     max_new: int = defaults.MAX_NEW_TOKENS,
 ) -> str:
-    """Fill the ``<x0>``, ``<x1>``… holes of ``text`` by greedy decoding (book ch. 5.1.1's
-    ``generate_text_simple``, but the decoder also reads the encoder).
+    """Fill the ``<x0>``, ``<x1>``… holes of ``text`` by greedy decoding: the decoder writes
+    one most-likely token at a time, reading the encoded ``text`` as it goes.
 
     The decoder writes ``<x0> span <x1> span … <eos>``, the same format as the pretraining
     targets. Returns ``text`` with each hole replaced by ``[its span]``, or ``[?]`` if the

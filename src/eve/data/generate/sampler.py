@@ -39,7 +39,7 @@ class ToolBank:
     """The tools examples are drawn from, with how similar each pair is.
 
     Similarity is word overlap of names and descriptions (Jaccard), plus 0.3 for the same
-    domain: a rough stand-in for what a retriever (M11) would rank close.
+    domain: a rough stand-in for what a retriever would rank close.
     """
 
     def __init__(self, specs: Sequence[ToolSpec]):

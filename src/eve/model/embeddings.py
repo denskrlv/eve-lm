@@ -5,7 +5,7 @@ from eve.config import ModelConfig
 
 
 class Embeddings(nn.Module):
-    """Token embeddings plus learned position embeddings (book ch. 2.8). With ``cfg.rope`` there
+    """Token embeddings plus learned position embeddings. With ``cfg.rope`` there
     are no position tables: attention rotates its queries and keys by position instead."""
 
     def __init__(self, cfg: ModelConfig):

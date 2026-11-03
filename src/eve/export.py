@@ -1,6 +1,6 @@
-"""Publish a fine-tuned model (M10): ``eve export`` writes a directory for a Hugging Face Hub
+"""Publish a fine-tuned model: ``eve export`` writes a directory for a Hugging Face Hub
 model repo, a ``model.pt`` that ``eve.Eve.load`` reads and a ``README.md`` model card, and with
-``retriever``, a ``retriever.pt`` that ``Eve.load`` finds beside it (M11).
+``retriever``, a ``retriever.pt`` that ``Eve.load`` finds beside it.
 
 The exported checkpoint keeps the architecture, config, tokenizer and meta (calibration
 included) but no training state, and stores the weights in ``dtype``: float16 halves the

@@ -13,7 +13,7 @@ from eve.tokenizer.bpe import BPETokenizer
 
 FORMAT = "eve-ckpt-1"
 MODEL_FILE = "model.pt"  # a run directory's final model, and an exported model's checkpoint
-RETRIEVER_FILE = "retriever.pt"  # an exported model's retriever (M11), beside its model.pt
+RETRIEVER_FILE = "retriever.pt"  # an exported model's retriever, beside its model.pt
 QUESTIONS_TASK = "questions"  # meta["task"] of a question run's checkpoints (tasks.questions)
 RETRIEVAL_TASK = "retrieval"  # meta["task"] of a retriever run's checkpoints (tasks.retrieval)
 FRESH = "questions."  # the question block: pretraining never trains it, fine-tuning starts it new
@@ -35,7 +35,7 @@ class Checkpoint[M: nn.Module]:
     model: M
     tokenizer: BPETokenizer
     meta: dict[str, Any]
-    train_state: dict[str, Any] | None = None  # optimizer, step and RNG states, for resuming (M4)
+    train_state: dict[str, Any] | None = None  # optimizer, step and RNG states, for resuming
 
 
 def save_checkpoint(
@@ -46,10 +46,9 @@ def save_checkpoint(
     train_state: dict[str, Any] | None = None,
 ) -> None:
     """Save everything needed to rebuild the model: ``{format, model, config, state_dict,
-    tokenizer, meta}``, where ``model`` is the architecture's registered name. The book
-    (ch. 5.4) saves only ``model.state_dict()`` and rebuilds the model from a config it keeps
-    in code; storing the architecture, config and tokenizer too means a checkpoint file can't
-    be paired with the wrong ones, and loads without knowing the code path that made it.
+    tokenizer, meta}``, where ``model`` is the architecture's registered name. Storing the
+    architecture, config and tokenizer beside the weights means a checkpoint file can't be
+    paired with the wrong ones, and loads without knowing the code path that made it.
 
     ``meta`` is for things like the step, tokens seen and val loss. Keep it to plain Python
     values (numbers, strings, lists, dicts): files are loaded with ``weights_only=True``,
@@ -124,13 +123,12 @@ def load_eve(path: str | Path, device: str | torch.device = "cpu") -> Checkpoint
 def load_pretrained(
     path: str | Path, device: str | torch.device = "cpu", **overrides: Any
 ) -> Checkpoint[Eve]:
-    """Box 7: start fine-tuning from the M4 pretraining checkpoint.
+    """Start fine-tuning from a pretraining checkpoint.
 
-    The book (ch. 5.5) copies OpenAI's GPT-2 weights into a fresh ``GPTModel``, and ch. 6 then
-    swaps the output layer for a new, random classifier head. Here the encoder, decoder and
-    embeddings come from span-corruption pretraining, and the question block (``questions.*``)
-    starts random: pretraining has no labels for it, so its saved weights are only the
-    initialization. Seed before calling to make that initialization repeatable.
+    The encoder, decoder and embeddings come from span-corruption pretraining, and the
+    question block (``questions.*``) starts random: pretraining has no labels for it, so its
+    saved weights are only the initialization. Seed before calling to make that
+    initialization repeatable.
 
     ``overrides`` may change the question block's config (e.g. ``n_slots=8``, ``dropout=0.0``)
     because its weights aren't loaded anyway; changing the body (``d_model``, layer counts…)

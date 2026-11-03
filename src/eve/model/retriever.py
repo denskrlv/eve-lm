@@ -1,4 +1,4 @@
-"""The retriever (M11): picks which of many registered tools a request is shown.
+"""The retriever: picks which of many registered tools a request is shown.
 
 A bi-encoder: Eve's encoder reads a request or a tool schema on its own, the mean of its output
 vectors goes through a linear layer and is normalized to length 1. A request and a tool match

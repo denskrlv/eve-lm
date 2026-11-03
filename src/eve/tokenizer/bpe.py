@@ -24,7 +24,7 @@ SPECIAL_TOKENS: tuple[str, ...] = (
     "<tool>",  # one tool: its name, description and arguments follow
     "<arg>",  # one argument of a tool
     "<dec>",  # start of the decoder sequence
-    "<call>",  # decoder: one call starts (the tool name is copied in, M8)
+    "<call>",  # decoder: one call starts (the tool name is copied in)
     "<val>",  # decoder: an argument value follows
     "<end>",  # decoder: end of an argument value
     "<absent>",  # decoder: an optional argument the user didn't give
@@ -172,7 +172,7 @@ def _merge_pair(ids: list[int], pair: tuple[int, int], new_id: int) -> list[int]
 
 
 class BPETokenizer:
-    """Byte-level BPE with special tokens (book ch. 2.5); ``train`` learns it."""
+    """Byte-level BPE with special tokens; ``train`` learns it."""
 
     def __init__(self, merges: Iterable[tuple[int, int]]):
         self.merges: list[tuple[int, int]] = [(a, b) for a, b in merges]

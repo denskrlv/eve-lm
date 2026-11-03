@@ -46,7 +46,7 @@ def test_dataset_items():
     item = ds[3]
     assert len(item["enc_ids"]) == 512
     assert item["dec_ids"][0] == DEC and item["dec_labels"][-1] == EOS
-    assert item["dec_ids"][1:] == item["dec_labels"][:-1]  # shifted by one, as in the book
+    assert item["dec_ids"][1:] == item["dec_labels"][:-1]  # shifted by one
     assert len(item["dec_ids"]) == len(ds[0]["dec_ids"])  # every sample has the same shape
     window = tokens[3 * ds.window : 4 * ds.window].tolist()
     assert uncorrupt(item["enc_ids"], item["dec_labels"]) == window

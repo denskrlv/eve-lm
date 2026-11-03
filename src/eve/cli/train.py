@@ -234,7 +234,7 @@ def _compare_table(runs: Runs, metrics: list[str]) -> "Table":
 
 
 def compare(args: argparse.Namespace) -> None:
-    """Learn (M4): val metrics of several runs side by side, one row per eval step."""
+    """Val metrics of several runs side by side, one row per eval step."""
     console.print(_compare_table(_read_runs(args.runs), args.metric))
 
 
@@ -277,7 +277,7 @@ def _add_set_arg(parser: argparse.ArgumentParser) -> None:
 
 def add_pretrain(commands: Subcommands) -> None:
     """Register ``eve pretrain``."""
-    parser = commands.add_parser("pretrain", help="span-corruption pretraining (M4)")
+    parser = commands.add_parser("pretrain", help="span-corruption pretraining")
     parser.set_defaults(run=pretrain)
     parser.add_argument("--preset", choices=sorted(PRESETS), default="eve-32m")
     parser.add_argument("--data", default=defaults.BIN_DIR)
@@ -295,11 +295,13 @@ def add_pretrain(commands: Subcommands) -> None:
 
 def add_finetune(commands: Subcommands) -> None:
     """Register ``eve finetune``."""
-    parser = commands.add_parser("finetune", help="fine-tune questions and values (M7, M8)")
+    parser = commands.add_parser("finetune", help="fine-tune questions and values")
     parser.set_defaults(run=finetune)
     start = parser.add_mutually_exclusive_group()  # one is required; finetune checks
     start.add_argument("--init", help="a pretraining checkpoint or an earlier finetune's model.pt")
-    start.add_argument("--scratch", choices=sorted(PRESETS), help="random init (experiment E1)")
+    start.add_argument(
+        "--scratch", choices=sorted(PRESETS), help="random init, to measure what pretraining buys"
+    )
     parser.add_argument("--task", default=defaults.TASK_DIR, help="where train.jsonl is")
     parser.add_argument("--evals", default=defaults.EVALS_DIR, help="where val and held-out are")
     parser.add_argument("--tokenizer", default=defaults.TOKENIZER_FILE, help="for --scratch")
@@ -321,7 +323,7 @@ def add_run(commands: Subcommands) -> None:
 
 def add_compare(commands: Subcommands) -> None:
     """Register ``eve compare``."""
-    parser = commands.add_parser("compare", help="val metrics of training runs side by side (M4)")
+    parser = commands.add_parser("compare", help="val metrics of training runs side by side")
     parser.set_defaults(run=compare)
     parser.add_argument("runs", nargs="+", help="run directories, e.g. artifacts/runs/ab-*")
     parser.add_argument("--metric", nargs="+", default=["val_content", "val_content_acc", "val_lm"])
