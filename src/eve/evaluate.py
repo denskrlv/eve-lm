@@ -60,7 +60,7 @@ class SetResult:
     """How a model did on one set."""
 
     examples: int
-    scores: dict[str, float]  # as fine-tuning's evals log them, see finetune.score
+    scores: dict[str, float]  # as fine-tuning's evals log them, see ``eve.tasks.questions.score``
     confusion: dict[str, dict[str, int]]  # gold intent -> answered intent -> examples
     by_tool: list[ToolResult]  # worst exact accuracy first
     groups: dict[str, tuple[int, dict[str, float]]] = field(default_factory=dict)

@@ -4,7 +4,7 @@ from pathlib import Path
 import pytest
 import torch
 import torch.nn.functional as F
-from helpers import examples, write_task
+from helpers import examples, finetune, write_task
 
 from eve.config import INTENTS, preset
 from eve.data.render import IGNORE, TaskCollator, TaskDataset, render
@@ -25,7 +25,6 @@ from eve.tasks.questions import (
 )
 from eve.tokenizer.bpe import BPETokenizer
 from eve.train.config import TrainConfig
-from eve.train.finetune import finetune
 
 CFG = preset("tiny")
 

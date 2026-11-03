@@ -3,6 +3,7 @@ import json
 import numpy as np
 import pytest
 import torch
+from helpers import pretrain
 
 from eve.config import preset
 from eve.data.render import collate_pretrain
@@ -11,7 +12,6 @@ from eve.model.eve import Eve
 from eve.tasks.span import SAMPLES, fill_in, prompt_ids, span_loss, span_metrics
 from eve.tokenizer.bpe import BYTE0, DEC, EOS, sentinel
 from eve.train.config import TrainConfig
-from eve.train.pretrain import pretrain
 
 
 def test_fill_in_keeps_the_text_and_fills_each_hole(tokenizer):
