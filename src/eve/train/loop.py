@@ -379,7 +379,7 @@ def _resume(
 ) -> int:
     """Restore the model, optimizer and RNG states from ``last.pt`` and return its step."""
     ckpt = load_checkpoint(out_dir / "last.pt")
-    if ckpt.model.cfg.to_dict() != model_config(model):
+    if model_config(ckpt.model) != model_config(model):
         raise ValueError(f"{out_dir}/last.pt has a different model config")
     saved, given = ckpt.meta["train_config"], cfg.to_dict()
     if changed := [k for k in given if k not in RUN_FIELDS and saved.get(k) != given[k]]:

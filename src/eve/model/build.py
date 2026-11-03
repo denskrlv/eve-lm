@@ -14,7 +14,7 @@ from eve.model.checkpoint import (
     QUESTION_FIELDS,
     QUESTIONS_TASK,
     Checkpoint,
-    load_checkpoint,
+    load_eve,
     load_pretrained,
 )
 from eve.model.eve import Eve
@@ -30,7 +30,9 @@ class Started:
     trainable: int
 
 
-def load_init(path: str | Path, device: str | torch.device = "cpu", **overrides: Any) -> Checkpoint:
+def load_init(
+    path: str | Path, device: str | torch.device = "cpu", **overrides: Any
+) -> Checkpoint[Eve]:
     """The model to fine-tune, from either kind of checkpoint:
 
     - a pretraining checkpoint (box 7): ``load_pretrained``, so the question block starts new;
@@ -42,7 +44,7 @@ def load_init(path: str | Path, device: str | torch.device = "cpu", **overrides:
     """
     if bad := set(overrides) - QUESTION_FIELDS:
         raise ValueError(f"can't change {sorted(bad)} of a pretrained body")
-    ckpt = load_checkpoint(path)
+    ckpt = load_eve(path)
     if ckpt.meta.get("task") != QUESTIONS_TASK:
         return load_pretrained(path, device, **overrides)
     model = Eve(replace(ckpt.model.cfg, **overrides))

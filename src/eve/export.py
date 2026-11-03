@@ -16,7 +16,7 @@ from eve.model.checkpoint import (
     MODEL_FILE,
     RETRIEVAL_TASK,
     RETRIEVER_FILE,
-    load_checkpoint,
+    load_eve,
     save_checkpoint,
 )
 
@@ -40,7 +40,7 @@ def export_model(
     ``out/retriever.pt`` from the ``retriever`` checkpoint if given."""
     if dtype not in DTYPES:
         raise ValueError(f"dtype must be one of {sorted(DTYPES)}, got {dtype!r}")
-    checkpoint = load_checkpoint(model)
+    checkpoint = load_eve(model)
     if not checkpoint.meta.get("joint"):
         raise ValueError(f"{model} isn't a fine-tuned joint model; only those can be published")
     out = Path(out)
@@ -50,7 +50,9 @@ def export_model(
     )
     params = sum(p.numel() for p in checkpoint.model.parameters())
     if retriever is not None:
-        found = load_checkpoint(retriever)
+        from eve.model.retriever import load_retriever  # only exports with a retriever need it
+
+        found = load_retriever(retriever)
         if found.meta.get("task") != RETRIEVAL_TASK:
             raise ValueError(f"{retriever} isn't a retriever")
         extra = found.meta | {"dtype": dtype, "exported_from": str(retriever)}

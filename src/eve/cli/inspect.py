@@ -25,6 +25,7 @@ if TYPE_CHECKING:
     from eve.evaluate import SetResult
     from eve.infer.predict import Calibrations
     from eve.model.checkpoint import Checkpoint
+    from eve.model.eve import Eve
 
 
 INTENTS_SHOWN, TOOLS_SHOWN = 4, 3  # answers eve ask shows for the intent and per call
@@ -65,7 +66,7 @@ def _print_fill_report(
 def fill(args: argparse.Namespace) -> None:
     """Learn (M4): ask a pretrained model to fill the <x0>, <x1>… holes in a sentence."""
     from eve import progress
-    from eve.model.checkpoint import load_checkpoint
+    from eve.model.checkpoint import load_eve
     from eve.tasks.span import SAMPLES, fill_in
 
     texts = args.text or list(SAMPLES)
@@ -74,7 +75,7 @@ def fill(args: argparse.Namespace) -> None:
     device = pick_device(args.device)
     with progress.bar(len(texts), "fill", "prompts", leave=False) as bar:
         bar.set_stats(f"loading {Path(args.model).name}")
-        ckpt = load_checkpoint(args.model, device)
+        ckpt = load_eve(args.model, device)
         filled = []
         for text in texts:
             bar.set_stats("decoding")
@@ -342,7 +343,7 @@ def _calibration_table(
 
 
 def _fit_and_check(
-    ckpt: "Checkpoint",
+    ckpt: "Checkpoint[Eve]",
     paths: dict[str, Path],
     sets: list[str],
     fit_on: dict[str, str],

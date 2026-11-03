@@ -68,13 +68,13 @@ def retriever_eval(args: argparse.Namespace) -> None:
     filled with random tools, and with ``similar`` ones (the hard case)."""
     from eve.data.generate.build import Sources
     from eve.infer.search import BM25, Dense, Scorer
-    from eve.model.checkpoint import load_checkpoint
+    from eve.model.retriever import load_retriever
     from eve.tasks.retrieval import TOP, evaluate_scorers, load_splits, suite
 
     scorers: dict[str, Scorer] = {"bm25": BM25()}
     if args.retriever:
-        ckpt = load_checkpoint(args.retriever, pick_device(args.device))
-        scorers["dense"] = Dense(ckpt.model, ckpt.tokenizer)  # type: ignore[arg-type]
+        ckpt = load_retriever(args.retriever, pick_device(args.device))
+        scorers["dense"] = Dense(ckpt.model, ckpt.tokenizer)
     examples = load_splits(Sources.load().library, args.evals, args.splits)
     suites = suite(examples, args.sizes, fills=args.fill)
     results = evaluate_scorers(scorers, suites)

@@ -74,7 +74,7 @@ class TaskSet:
 
 
 def load_set(
-    ckpt: Checkpoint,
+    ckpt: Checkpoint[Eve],
     path: Path,
     library: dict[str, Tool],
     batch_size: int,

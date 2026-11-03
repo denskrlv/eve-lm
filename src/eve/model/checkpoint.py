@@ -29,10 +29,10 @@ def model_file(path: str | Path) -> Path:
 
 
 @dataclass
-class Checkpoint:
+class Checkpoint[M: nn.Module]:
     """A loaded checkpoint: model, tokenizer, meta and, for resuming, train state."""
 
-    model: Eve
+    model: M
     tokenizer: BPETokenizer
     meta: dict[str, Any]
     train_state: dict[str, Any] | None = None  # optimizer, step and RNG states, for resuming (M4)
@@ -99,20 +99,31 @@ def _read(path: str | Path) -> dict[str, Any]:
     return data
 
 
-def load_checkpoint(path: str | Path, device: str | torch.device = "cpu") -> Checkpoint:
-    """Rebuild the exact model that was saved (strict: every key must match). For resuming a
-    run and for inference. The model comes back in train mode, like a new ``Eve``."""
+def load_checkpoint(path: str | Path, device: str | torch.device = "cpu") -> Checkpoint[nn.Module]:
+    """Rebuild the exact model that was saved, whatever its registered architecture (strict:
+    every key must match). For resuming a run, or for any registered model; ``load_eve`` and
+    ``load_retriever`` also check which one it is. The model comes back in train mode, like a
+    new one."""
     data = _read(path)
     architecture = registry.get("model", data.get("model", "eve"))  # older files: all Eve
-    model: Eve = architecture.from_config(data["config"])  # typed Eve: what every reader uses
+    model: nn.Module = architecture.from_config(data["config"])
     model.load_state_dict(data["state_dict"])
     tokenizer = BPETokenizer.from_dict(data["tokenizer"])
     return Checkpoint(model.to(device), tokenizer, data["meta"], data.get("train_state"))
 
 
+def load_eve(path: str | Path, device: str | torch.device = "cpu") -> Checkpoint[Eve]:
+    """``load_checkpoint`` for a file that must hold an ``Eve`` (pretrained or fine-tuned);
+    any other architecture's file is refused."""
+    ckpt = load_checkpoint(path, device)
+    if not isinstance(model := ckpt.model, Eve):
+        raise ValueError(f"{path} holds a {type(model).__name__} model, not Eve")
+    return Checkpoint(model, ckpt.tokenizer, ckpt.meta, ckpt.train_state)
+
+
 def load_pretrained(
     path: str | Path, device: str | torch.device = "cpu", **overrides: Any
-) -> Checkpoint:
+) -> Checkpoint[Eve]:
     """Box 7: start fine-tuning from the M4 pretraining checkpoint.
 
     The book (ch. 5.5) copies OpenAI's GPT-2 weights into a fresh ``GPTModel``, and ch. 6 then

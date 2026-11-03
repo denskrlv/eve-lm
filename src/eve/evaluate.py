@@ -11,7 +11,8 @@ from eve.data.jsonl import read_jsonl
 from eve.data.modules import VAL_SEED, in_batches, load_examples
 from eve.data.render import TaskCollator, TaskDataset, TaskExample
 from eve.data.schema import Tool
-from eve.model.checkpoint import Checkpoint, load_checkpoint, model_file
+from eve.model.checkpoint import Checkpoint, load_eve, model_file
+from eve.model.eve import Eve
 from eve.tasks.questions import (
     TASK,
     Outcome,
@@ -73,16 +74,16 @@ class SetResult:
         return out | ({"by_tool": [vars(r) for r in self.by_tool]} if by_tool else {})
 
 
-def load_questions_model(path: str | Path, device: str | torch.device = "cpu") -> Checkpoint:
+def load_questions_model(path: str | Path, device: str | torch.device = "cpu") -> Checkpoint[Eve]:
     """A fine-tuned checkpoint; a pretraining one is refused, its question heads are random."""
-    ckpt = load_checkpoint(model_file(path), device)
+    ckpt = load_eve(model_file(path), device)
     if ckpt.meta.get("task") != TASK:
         raise ValueError(f"{path} is a pretraining checkpoint: its question heads are untrained")
     return ckpt
 
 
 def evaluate_set(
-    ckpt: Checkpoint, path: Path, library: dict[str, Tool], batch_size: int
+    ckpt: Checkpoint[Eve], path: Path, library: dict[str, Tool], batch_size: int
 ) -> SetResult:
     """Score the heads and the decoder's argument values on every example of one set, in
     order, and on each group of its rows (a row's ``group``, if it has one). A checkpoint from

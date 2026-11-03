@@ -2,12 +2,14 @@ import numpy as np
 import pytest
 import torch
 import torch.nn.functional as F
+from helpers import save_joint, save_retriever
 
 from eve.config import preset
 from eve.data.pretrain import SpanCorruptionDataset
 from eve.data.render import IGNORE, collate_pretrain
-from eve.model.checkpoint import load_checkpoint, load_pretrained, save_checkpoint
+from eve.model.checkpoint import load_checkpoint, load_eve, load_pretrained, save_checkpoint
 from eve.model.eve import Eve
+from eve.model.retriever import Retriever, load_retriever
 
 CFG = preset("tiny")
 TEXT = "Turn the kitchen lights off when you leave, and set the thermostat to 20 degrees. "
@@ -128,3 +130,20 @@ def test_save_refuses_a_tokenizer_bigger_than_the_vocab(tokenizer, tmp_path):
     model = Eve(preset("tiny", vocab_size=100))
     with pytest.raises(ValueError, match="tokenizer"):
         save_checkpoint(tmp_path / "x.pt", model, tokenizer)
+
+
+def test_load_checkpoint_rebuilds_any_architecture(tmp_path, tokenizer):
+    retriever = save_retriever(tmp_path / "retriever.pt", tokenizer)
+    joint = save_joint(tmp_path / "joint.pt", tokenizer)
+    assert isinstance(load_checkpoint(retriever).model, Retriever)
+    assert isinstance(load_checkpoint(joint).model, Eve)
+
+
+def test_load_eve_refuses_a_retriever(tmp_path, tokenizer):
+    with pytest.raises(ValueError, match="not Eve"):
+        load_eve(save_retriever(tmp_path / "retriever.pt", tokenizer))
+
+
+def test_load_retriever_refuses_an_eve_model(tmp_path, tokenizer):
+    with pytest.raises(ValueError, match="isn't a retriever"):
+        load_retriever(save_joint(tmp_path / "joint.pt", tokenizer))

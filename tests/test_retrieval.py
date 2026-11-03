@@ -9,9 +9,16 @@ from eve.api.toolbox import BM25, Dense, ToolBox
 from eve.config import preset
 from eve.data.render import Call, TaskExample
 from eve.data.schema import ASK_VALUE, Tool
-from eve.model.checkpoint import load_checkpoint, save_checkpoint
+from eve.model.checkpoint import save_checkpoint
 from eve.model.eve import Eve as EveModel
-from eve.model.retriever import Retriever, RetrieverConfig, padded, query_ids, tool_ids
+from eve.model.retriever import (
+    Retriever,
+    RetrieverConfig,
+    load_retriever,
+    padded,
+    query_ids,
+    tool_ids,
+)
 from eve.tasks.retrieval import (
     Case,
     RetrievalData,
@@ -93,7 +100,7 @@ def test_start_copies_the_encoder_of_an_eve_checkpoint(
     assert torch.equal(again.model.project.weight, model.project.weight)  # all of it loads
     with pytest.raises(ValueError, match="embed_dim"):
         Retriever.start(tmp_path / "retriever.pt", embed_dim=4)
-    assert isinstance(load_checkpoint(tmp_path / "retriever.pt").model, Retriever)
+    assert isinstance(load_retriever(tmp_path / "retriever.pt").model, Retriever)
 
 
 # ---- training ---------------------------------------------------------------------------------
