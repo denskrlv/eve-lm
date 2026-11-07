@@ -1,0 +1,3 @@
+# The splitter: an Eve checkpoint's embeddings and encoder, plus an action head that points at
+# each action's words. Start it from `init`, an Eve checkpoint (or a splitter one, to train on).
+sdpa = true  # PyTorch's fused attention kernel

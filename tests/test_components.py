@@ -159,6 +159,9 @@ def test_models_rebuild_from_their_config(name):
     if name == "retriever":
         assert rebuilt(ids, mask).shape == (2, model.cfg.embed_dim)
         return
+    if name == "splitter":
+        assert rebuilt(ids, mask).members.shape == (2, model.cfg.n_actions, 8)
+        return
     out = rebuilt(ids, mask, ids, mask)
     assert out.lm.shape == (2, 8, model.cfg.vocab_size)
 

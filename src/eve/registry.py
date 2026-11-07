@@ -18,7 +18,7 @@ KINDS = (
 )  # fmt: skip
 BUILTIN = {  # kind -> the modules that register its built-in components
     "data": ("eve.data.modules",),
-    "model": ("eve.model.eve", "eve.model.retriever"),
+    "model": ("eve.model.eve", "eve.model.retriever", "eve.model.splitter"),
     "callback": ("eve.train.callbacks",),
     "trainer": ("eve.train.loop",),
     "optimizer": ("eve.train.optim",),

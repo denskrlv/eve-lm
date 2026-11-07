@@ -17,6 +17,7 @@ MODEL_FILE = "model.pt"  # a run directory's final model, and an exported model'
 RETRIEVER_FILE = "retriever.pt"  # an exported model's retriever, beside its model.pt
 QUESTIONS_TASK = "questions"  # meta["task"] of a question run's checkpoints (tasks.questions)
 RETRIEVAL_TASK = "retrieval"  # meta["task"] of a retriever run's checkpoints (tasks.retrieval)
+SPLIT_TASK = "split"  # meta["task"] of a splitter run's checkpoints (tasks.split)
 FRESH = "questions."  # the question block: pretraining never trains it, fine-tuning starts it new
 QUESTION_FIELDS = frozenset(  # config fields that change no pretrained weight's shape
     {"n_question_layers", "n_slots", "max_tools", "pointer_dim", "dropout"}
