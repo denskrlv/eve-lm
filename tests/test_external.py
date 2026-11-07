@@ -285,3 +285,14 @@ def test_hold_out_leaves_the_shared_rng_alone(
         external._convert_xlam_file(tmp_path / "x.json", tmp_path, rng, seed=0)
         after.append(rng.random())
     assert after[0] == after[1]
+
+
+def test_xlam_rows_carry_their_actions(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setattr(external, "XLAM_TEST_MULTI", 2)
+    monkeypatch.setattr(external, "XLAM_TEST_SINGLE", 2)
+    monkeypatch.setattr(external, "UNSUPPORTED_SHARE", 1.0)
+    out = _convert(tmp_path, _weather_rows(6, 6))
+    rows = read_jsonl(out / "xlam.jsonl") + read_jsonl(out / "xlam-test.jsonl")
+    calls = [r for r in rows if r["intent"] == "call"]
+    assert all(len(r["actions"]) == len(r["calls"]) for r in calls)
+    assert all("actions" not in r for r in rows if r["intent"] == "unsupported")

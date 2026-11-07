@@ -8,6 +8,7 @@ import numpy as np
 
 from eve import defaults
 from eve.data.draw import pick, shuffled
+from eve.data.generate.actions import xlam_actions
 from eve.data.generate.library import ToolSpec
 from eve.data.generate.sampler import ToolBank, prompt_size
 from eve.data.generate.templates import MAX_CALLS, MAX_PROMPT_TOOLS
@@ -452,12 +453,23 @@ def _convert_xlam_file(
         and (v := unsupported_variant(ex, pool, rng))
         and id(ex) in in_train
     ]
+    labeled = 0
     for name, part in (("xlam", train + variants), ("xlam-test", test)):
-        rows = [{**ex.to_json(inline=True), "source": "xlam"} for ex in part]
+        rows = []
+        for ex in part:
+            row = {**ex.to_json(inline=True), "source": "xlam"}
+            if ex.intent == "call" and (actions := xlam_actions(ex)) is not None:
+                row["actions"] = [[list(span) for span in action] for action in actions]
+                labeled += len(actions) > 1
+            rows.append(row)
         write_jsonl(out_dir / f"{name}.jsonl", rows)
     return {
         "kept": len(examples),
         "test": len(test),
+        "split_labels": {
+            "multi_call": sum(len(ex.calls) > 1 for ex in examples),
+            "labeled": labeled,
+        },
         "unsupported_variants": len(variants),
         "reasons": dict(reasons),
     }

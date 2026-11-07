@@ -7,7 +7,7 @@ import argparse
 import logging
 import sys
 
-from eve.cli import data, inspect, publish, train
+from eve.cli import data, inspect, publish, split, train
 
 
 class _StdoutHandler(logging.StreamHandler):  # type: ignore[type-arg]
@@ -51,6 +51,7 @@ def build_parser() -> argparse.ArgumentParser:
     publish.add_retriever(commands)
     inspect.add_fill(commands)
     data.add_data(commands)
+    split.add_split(commands)
     return parser
 
 
