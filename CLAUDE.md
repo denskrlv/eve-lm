@@ -36,6 +36,11 @@ both `PYTORCH_MPS_HIGH_WATERMARK_RATIO` and `PYTORCH_MPS_LOW_WATERMARK_RATIO` (e
 The joint fine-tune (`eve-32m.toml`) OOMs in eager fp32: launch it with
 `--set train.compile=true --set train.dtype=bfloat16` and ratios of about 0.45 / 0.35.
 
+Who runs it: run short jobs yourself (a smoke test, a few steps, an eval). If a training run
+will take more than about 30 minutes, don't run it: give the user the exact command to run in
+their own terminal, so they can watch its output and progress. If one you started turns out to
+take that long, stop it and hand over the command.
+
 ## Working style
 
 - Small changes (a fix, a rename, a doc edit): skip brainstorming and written plans.
