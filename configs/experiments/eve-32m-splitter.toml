@@ -1,0 +1,36 @@
+# eve-32m's splitter: eve-32m's encoder plus an action head that marks each action's words
+# (md/2026-11-07-splitter-design.md). Run it with
+# `eve run configs/experiments/eve-32m-splitter.toml`, then `eve split tune` and `eve split
+# evaluate` on the run.
+
+[components]
+data = "split"
+model = "splitter"
+loss = "split"
+metrics = "split"
+report = "split_scores"
+optimizer = "adamw"
+schedule = "warmup_cosine"
+callbacks = ["train_log", "evaluate", "checkpoint"]
+
+[model]
+init = "artifacts/runs/eve-32m/model.pt"
+
+[data]
+path = "data/task"
+
+[train]
+epochs = 2.0  # steps = epochs * train items / batch_size
+batch_size = 64
+dtype = "bfloat16"
+lr = 1e-4
+warmup_steps = 100
+eval_batches = 10000  # all of val
+eval_every = 500
+save_every = 500
+
+[run]
+out = "artifacts/runs/eve-32m-splitter"
+
+[meta]
+task = "split"

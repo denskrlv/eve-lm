@@ -49,15 +49,19 @@ KIND_ARGS = {  # the runtime arguments before a component's config params, per k
     "trainer": 0,  # its params are all keywords
 }
 DATA_FOR = {  # loss/metrics -> the data they read
-    "span": "span_corruption", "joint": "task", "retrieval": "retrieval"
+    "span": "span_corruption", "joint": "task", "retrieval": "retrieval", "split": "split"
 }  # fmt: skip
 BATCH_KEYS = {  # data -> keys every batch has (the first one's rows are the items)
     "span_corruption": {"enc_ids", "enc_mask", "dec_ids", "dec_mask", "dec_labels"},
     "task": {"enc_ids", "enc_mask", "dec_ids", "dec_mask", "dec_labels"},
     "retrieval": {"q_ids", "q_mask", "t_ids", "t_mask", "positive", "allowed"},
+    "split": {"enc_ids", "enc_mask", "word_mask", "exists", "members"},
 }
-ROWS = {"span_corruption": "enc_ids", "task": "enc_ids", "retrieval": "q_ids"}
-MODEL_FOR = {"retrieval": "retriever"}  # data -> the model its losses take (default: eve)
+ROWS = {"span_corruption": "enc_ids", "task": "enc_ids", "retrieval": "q_ids", "split": "enc_ids"}
+MODEL_FOR = {
+    "retrieval": "retriever",
+    "split": "splitter",
+}  # data -> the model its losses take (default: eve)
 TINY = {"preset": "tiny", "max_encoder_len": 128}  # the smallest encoder bucket
 TIMING = {"tok_s", "s_per_step"}
 
@@ -92,7 +96,8 @@ def span_dir(tmp_path, tokenizer) -> Path:
 @pytest.fixture
 def data_dirs(span_dir, library) -> dict[str, Path]:
     write_task(span_dir / "task", library)
-    return {"span_corruption": span_dir, "task": span_dir / "task", "retrieval": span_dir / "task"}
+    task = span_dir / "task"
+    return {"span_corruption": span_dir, "task": task, "retrieval": task, "split": task}
 
 
 def _tiny_config(architecture: str = "eve") -> dict[str, Any]:
@@ -169,7 +174,8 @@ def test_models_rebuild_from_their_config(name):
 @pytest.mark.parametrize("name", registry.names("report"))
 def test_reports_evaluate_a_model(name, data_dirs, tokenizer, library, model):
     data_name = {
-        "span_samples": "span_corruption", "task_scores": "task", "retrieval_scores": "retrieval"
+        "span_samples": "span_corruption", "task_scores": "task", "retrieval_scores": "retrieval",
+        "split_scores": "split",
     }[name]  # fmt: skip
     data = build_data(data_name, data_dirs, tokenizer, library)
     report = registry.build("report", name)(data, tokenizer, 4)

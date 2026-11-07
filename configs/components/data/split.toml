@@ -1,0 +1,5 @@
+# The splitter's items: <path>/train.jsonl rows whose actions are known (eve.tasks.split).
+# Single-action items are cut to at most `single_share`; `val_share` of the texts go to val.
+path = "data/task"
+single_share = 0.5
+val_share = 0.1
