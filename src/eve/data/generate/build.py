@@ -9,6 +9,7 @@ import numpy as np
 
 from eve import defaults
 from eve.config import ModelConfig
+from eve.data.generate.actions import part_actions
 from eve.data.generate.library import ToolSpec, load_specs
 from eve.data.generate.novel import novel_examples
 from eve.data.generate.sampler import INTENT_MIX, Sample, ToolBank, sample
@@ -87,7 +88,10 @@ def template_examples(
         if key in seen or check_example(ex, drawn.implied):
             continue
         seen.add(key)
-        rows.append({**ex.to_json(), "source": "template"})
+        row = {**ex.to_json(), "source": "template"}
+        if drawn.parts and (actions := part_actions(ex.utterance, drawn.parts)) is not None:
+            row["actions"] = [[list(span) for span in action] for action in actions]
+        rows.append(row)
     return rows
 
 

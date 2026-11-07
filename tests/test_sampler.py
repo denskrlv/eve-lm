@@ -121,3 +121,26 @@ def test_fan_out_examples(bank):
     rooms = bank.specs[bank.index["set_lights"]].tool.arg("room").options
     for ex in fanned:
         assert [c.args["room"] for c in ex.calls[: len(rooms)]] == list(rooms)
+
+
+def test_sample_call_parts(bank: ToolBank) -> None:
+    from eve.data.generate.actions import part_actions
+
+    rng = np.random.default_rng(5)
+    multi = 0
+    for _ in range(200):
+        drawn = sample(bank, rng, intent="call")
+        assert drawn.parts
+        actions = part_actions(drawn.example.utterance, drawn.parts)
+        assert actions is not None and len(actions) == len(drawn.parts)
+        multi += len(drawn.parts) > 1
+    assert multi > 0
+
+
+def test_template_rows_have_actions(sources: Sources) -> None:
+    from eve.data.generate.build import template_examples
+
+    rows = template_examples(ToolBank(sources.train), 100, np.random.default_rng(0), sources)
+    calls = [r for r in rows if r["intent"] == "call"]
+    assert calls and all("actions" in r and r["actions"] for r in calls)
+    assert any(len(r["actions"]) > 1 for r in calls)

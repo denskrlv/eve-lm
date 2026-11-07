@@ -109,6 +109,7 @@ class Sample:
     meaning: str | None  # the template text before decoration; what chat writers rephrase
     missing: list[str] = field(default_factory=list)  # ASK: the required arguments left out
     implied: set[tuple[int, str]] = field(default_factory=set)  # (call, argument) set by a template
+    parts: list[str] = field(default_factory=list)  # CALL: each part's text, before joining
 
 
 def _decorate(text: str, rng: np.random.Generator) -> str:
@@ -225,7 +226,7 @@ def sample_call(
     example = TaskExample(
         _decorate(text, rng), tuple(bank.specs[i].tool for i in tools), "call", tuple(calls)
     )
-    return Sample(example, text, implied=implied)
+    return Sample(example, text, implied=implied, parts=parts)
 
 
 def sample_ask(
