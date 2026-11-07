@@ -240,6 +240,7 @@ DEDUP_ORDER = (
     ("probe-candidates", "train"),
     ("massive-test", "val"),
     ("massive-test", "train"),
+    ("xlam-test", "train"),
     ("val", "train"),
 )
 
@@ -272,6 +273,7 @@ def _assemble(
         "probe-candidates": chat["probe"],
         "heldout-templates": template_examples(all_bank, n_heldout, rng, sources, heldout_pool),
         "massive-test": _external(external_dir, "massive-test"),
+        "xlam-test": _external(external_dir, "xlam-test"),
         "novel-tools": novel_examples(rng, sources.library, novel_dir),
     }
 
@@ -328,6 +330,7 @@ def build(
     - probe-candidates: chat-written probe batches, to be checked by hand into evals/probe-v1
     - heldout-templates: template examples whose correct tool is from a held-out domain
     - massive-test: MASSIVE's test partition, human-written
+    - xlam-test: xLAM requests held out by ``eve data external`` (most with 2+ calls)
     - novel-tools: made-up tools with hand-written requests, from ``novel_dir`` (see
       ``eve.data.generate.novel``)
     External data is read from ``external_dir`` (see ``eve data external``) if present.

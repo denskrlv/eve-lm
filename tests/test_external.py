@@ -2,7 +2,9 @@ import json
 from pathlib import Path
 
 import numpy as np
+import pytest
 
+from eve.data.generate import external
 from eve.data.generate.external import (
     HELD_OUT,
     MASSIVE_FILE,
@@ -198,7 +200,11 @@ LIGHTS_OFF = [
 ]
 
 
-def test_convert_external_writes_files_and_a_report(tmp_path: Path) -> None:
+def test_convert_external_writes_files_and_a_report(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    monkeypatch.setattr(external, "XLAM_TEST_MULTI", 0)
+    monkeypatch.setattr(external, "XLAM_TEST_SINGLE", 0)
     raw, out = tmp_path / "raw", tmp_path / "external"
     answers = [{"name": "getWeatherForecast", "arguments": {"location": "Oslo"}}]
     xlam = [xlam_row("Weather in Oslo?", answers), xlam_row("Sum these", [], (LISTY,))]
@@ -219,3 +225,63 @@ def test_convert_external_writes_files_and_a_report(tmp_path: Path) -> None:
 def test_convert_external_with_nothing_downloaded(tmp_path: Path) -> None:
     assert convert_external(tmp_path / "raw", tmp_path) == {}
     assert json.loads((tmp_path / "report.json").read_text()) == {}
+
+
+def _weather_rows(n_multi: int, n_single: int) -> list[dict[str, str]]:
+    def call(city: str) -> dict[str, object]:
+        return {"name": "getWeatherForecast", "arguments": {"location": city}}
+
+    multi = [
+        xlam_row(
+            f"Weather in Town{i}a and also in Town{i}b?", [call(f"Town{i}a"), call(f"Town{i}b")]
+        )
+        for i in range(n_multi)
+    ]
+    single = [xlam_row(f"Weather in Village{i}?", [call(f"Village{i}")]) for i in range(n_single)]
+    return multi + single
+
+
+def _convert(tmp_path: Path, rows: list[dict[str, str]]) -> Path:
+    raw, out = tmp_path / "raw", tmp_path / "external"
+    (raw / "xlam").mkdir(parents=True)
+    (raw / XLAM_FILE).write_text(json.dumps(rows))
+    out.mkdir()
+    convert_external(raw, out)
+    return out
+
+
+def test_xlam_test_split_sizes(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setattr(external, "XLAM_TEST_MULTI", 4)
+    monkeypatch.setattr(external, "XLAM_TEST_SINGLE", 2)
+    out = _convert(tmp_path, _weather_rows(10, 10))
+    test = read_jsonl(out / "xlam-test.jsonl")
+    assert sum(len(r["calls"]) >= 2 for r in test) == 4
+    assert sum(len(r["calls"]) == 1 for r in test) == 2
+    train = {r["utterance"] for r in read_jsonl(out / "xlam.jsonl")}
+    assert not train & {r["utterance"] for r in test}
+
+
+def test_unsupported_variants_only_from_train(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    monkeypatch.setattr(external, "XLAM_TEST_MULTI", 4)
+    monkeypatch.setattr(external, "XLAM_TEST_SINGLE", 2)
+    monkeypatch.setattr(external, "UNSUPPORTED_SHARE", 1.0)
+    out = _convert(tmp_path, _weather_rows(10, 10))
+    assert {r["intent"] for r in read_jsonl(out / "xlam-test.jsonl")} == {"call"}
+
+
+def test_hold_out_leaves_the_shared_rng_alone(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """MASSIVE is split with the same rng after xLAM: the hold-out must not change its draws."""
+    rows = _weather_rows(10, 10)
+    (tmp_path / "x.json").write_text(json.dumps(rows))
+    after = []
+    for multi, single in ((0, 0), (4, 2)):
+        monkeypatch.setattr(external, "XLAM_TEST_MULTI", multi)
+        monkeypatch.setattr(external, "XLAM_TEST_SINGLE", single)
+        rng = np.random.default_rng(0)
+        external._convert_xlam_file(tmp_path / "x.json", tmp_path, rng, seed=0)
+        after.append(rng.random())
+    assert after[0] == after[1]

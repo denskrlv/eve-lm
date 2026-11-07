@@ -11,7 +11,7 @@ from eve.data.draw import pick, shuffled
 from eve.data.generate.library import ToolSpec
 from eve.data.generate.sampler import ToolBank, prompt_size
 from eve.data.generate.templates import MAX_CALLS, MAX_PROMPT_TOOLS
-from eve.data.generate.validate import check_example, mentions, value_forms
+from eve.data.generate.validate import check_example, mentions, normalize, value_forms
 from eve.data.jsonl import read_jsonl, write_jsonl
 from eve.data.render import Call, TaskExample
 from eve.data.schema import MAX_ARGS, Arg, SchemaError, Tool
@@ -30,6 +30,8 @@ XLAM_FILE = "xlam/xlam_function_calling_60k.json"  # where convert_external find
 MASSIVE_FILE = "massive/1.1/data/en-US.jsonl"
 UNSUPPORTED_SHARE = 0.1  # extra UNSUPPORTED copies, made by removing the correct tools
 VARIANT_TRIES = 30  # random tools tried for an UNSUPPORTED variant
+XLAM_TEST_MULTI, XLAM_TEST_SINGLE = 3000, 1000  # xlam-test: requests with 2+ calls, with one
+HOLD_OUT_STREAM = 1  # the hold-out's generator is seeded with (seed, HOLD_OUT_STREAM)
 MIN_SLOT_COUNT, MIN_SLOT_SHARE = 5, 0.03  # how often a MASSIVE slot must appear to be an arg
 
 
@@ -400,8 +402,39 @@ def convert_massive(
 # ---- both ------------------------------------------------------------------------------------
 
 
-def _convert_xlam_file(path: Path, out_dir: Path, rng: np.random.Generator) -> dict[str, Any]:
-    """Convert xLAM into ``out_dir/xlam.jsonl``, plus UNSUPPORTED variants; return its report."""
+def _hold_out(
+    examples: list[TaskExample], rng: np.random.Generator
+) -> tuple[list[TaskExample], list[TaskExample]]:
+    """(train, test): ``XLAM_TEST_MULTI`` examples with 2+ calls and ``XLAM_TEST_SINGLE`` with
+    one, drawn at random, are the test; train keeps the rest, minus any request whose text is
+    also a test one's."""
+    wanted = {True: XLAM_TEST_MULTI, False: XLAM_TEST_SINGLE}
+    test_ids: set[int] = set()
+    for i in rng.permutation(len(examples)):
+        multi = len(examples[i].calls) >= 2
+        if wanted[multi]:
+            wanted[multi] -= 1
+            test_ids.add(int(i))
+    test = [ex for i, ex in enumerate(examples) if i in test_ids]
+    texts = {normalize(ex.utterance) for ex in test}
+    train = [
+        ex
+        for i, ex in enumerate(examples)
+        if i not in test_ids and normalize(ex.utterance) not in texts
+    ]
+    return train, test
+
+
+def _convert_xlam_file(
+    path: Path, out_dir: Path, rng: np.random.Generator, seed: int = 0
+) -> dict[str, Any]:
+    """Convert xLAM into ``out_dir/xlam.jsonl`` (train, plus UNSUPPORTED variants) and
+    ``out_dir/xlam-test.jsonl`` (held out, see ``_hold_out``); return its report.
+
+    The hold-out draws from its own generator (from ``seed``), and variants are drawn for
+    every example as before the hold-out existed, then kept only for train: ``rng`` is left
+    exactly where it was, so MASSIVE, converted after this with the same ``rng``, keeps its
+    splits."""
     reasons: Counter[str] = Counter()
     examples: list[TaskExample] = []
     for row in json.loads(path.read_text()):
@@ -409,15 +442,25 @@ def _convert_xlam_file(path: Path, out_dir: Path, rng: np.random.Generator) -> d
         reasons[reason] += 1
         if example is not None:
             examples.append(example)
+    train, test = _hold_out(examples, np.random.default_rng((seed, HOLD_OUT_STREAM)))
+    in_train = {id(ex) for ex in train}
     pool = list({t.name: t for ex in examples for t in ex.tools}.values())
     variants = [
         v
         for ex in examples
-        if rng.random() < UNSUPPORTED_SHARE and (v := unsupported_variant(ex, pool, rng))
+        if rng.random() < UNSUPPORTED_SHARE
+        and (v := unsupported_variant(ex, pool, rng))
+        and id(ex) in in_train
     ]
-    rows = [{**ex.to_json(inline=True), "source": "xlam"} for ex in examples + variants]
-    write_jsonl(out_dir / "xlam.jsonl", rows)
-    return {"kept": len(examples), "unsupported_variants": len(variants), "reasons": dict(reasons)}
+    for name, part in (("xlam", train + variants), ("xlam-test", test)):
+        rows = [{**ex.to_json(inline=True), "source": "xlam"} for ex in part]
+        write_jsonl(out_dir / f"{name}.jsonl", rows)
+    return {
+        "kept": len(examples),
+        "test": len(test),
+        "unsupported_variants": len(variants),
+        "reasons": dict(reasons),
+    }
 
 
 def _convert_massive_file(path: Path, out_dir: Path, rng: np.random.Generator) -> dict[str, Any]:
@@ -445,7 +488,7 @@ def convert_external(
 
     xlam_path = raw_dir / XLAM_FILE
     if xlam_path.exists():
-        report["xlam"] = _convert_xlam_file(xlam_path, out_dir, rng)
+        report["xlam"] = _convert_xlam_file(xlam_path, out_dir, rng, seed)
     massive_path = raw_dir / MASSIVE_FILE
     if massive_path.exists():
         report["massive"] = _convert_massive_file(massive_path, out_dir, rng)

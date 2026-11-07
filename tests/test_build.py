@@ -11,7 +11,7 @@ from eve.data.generate.build import (
     make_batch,
     next_batch_name,
 )
-from eve.data.jsonl import read_jsonl
+from eve.data.jsonl import read_jsonl, write_jsonl
 
 ROOT = Path(__file__).parents[1]
 
@@ -131,3 +131,44 @@ def test_check_rejects_a_conversion_no_one_asks_for(sources: Sources) -> None:
     line = {"id": scenario["id"], "utterance": "what's 70 USD worth in USD"}
     _, rejects = check_written({"scenarios": [scenario]}, [line], sources.library)
     assert len(rejects) == 1 and "no one asks for" in rejects[0][1][-1]
+
+
+def test_xlam_test_texts_not_in_train(tmp_path: Path, sources: Sources) -> None:
+    gen = tmp_path / "generation"
+    (gen / "batches").mkdir(parents=True)
+    (gen / "written").mkdir()
+    for name in ("chitchat.txt", "unsupported.txt"):
+        (gen / name).write_text((ROOT / "data/generation" / name).read_text())
+    tool = sources.library["set_lights"].to_dict()
+
+    def row(text: str) -> dict[str, Any]:
+        call = {"tool": "set_lights", "args": {"room": "kitchen", "on": False}}
+        return {
+            "utterance": text,
+            "tools": [tool],
+            "intent": "call",
+            "calls": [call],
+            "source": "xlam",
+        }
+
+    external = tmp_path / "external"
+    external.mkdir()
+    shared, own = "kitchen lights off please", "switch the kitchen lights off"
+    write_jsonl(external / "xlam.jsonl", [row(shared), row("kitchen lights out")])
+    write_jsonl(external / "xlam-test.jsonl", [row(shared), row(own)])
+
+    build(
+        tmp_path / "task",
+        tmp_path / "evals",
+        20,
+        5,
+        seed=0,
+        tools_dir=ROOT / "data/tools",
+        generation_dir=gen,
+        external_dir=external,
+        novel_dir=ROOT / "data/novel-tools",
+    )
+    test = {r["utterance"] for r in read_jsonl(tmp_path / "evals/xlam-test.jsonl")}
+    train = {r["utterance"] for r in read_jsonl(tmp_path / "task/train.jsonl")}
+    assert test == {shared, own}
+    assert not test & train

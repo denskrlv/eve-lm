@@ -21,7 +21,8 @@ from eve.tasks.questions import (
     tally,
 )
 
-SETS = ("val", "heldout-templates", "massive-test", "novel-tools")  # the sets scored by default
+# The sets scored by default.
+SETS = ("xlam-test", "val", "heldout-templates", "massive-test", "novel-tools")
 SEEDS = {"val": VAL_SEED}  # tool-shuffle seeds that differ from TaskDataset's default
 
 
