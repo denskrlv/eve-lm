@@ -82,13 +82,23 @@ def load_questions_model(path: str | Path, device: str | torch.device = "cpu") -
     return ckpt
 
 
+def calls_group(n_calls: int) -> str:
+    """The group of an example with ``n_calls`` gold calls: "0", "1", "2" or "3+"."""
+    return str(n_calls) if n_calls < 3 else "3+"
+
+
 def evaluate_set(
-    ckpt: Checkpoint[Eve], path: Path, library: dict[str, Tool], batch_size: int
+    ckpt: Checkpoint[Eve],
+    path: Path,
+    library: dict[str, Tool],
+    batch_size: int,
+    by_calls: bool = False,
 ) -> SetResult:
     """Score the heads and the decoder's argument values on every example of one set, in
     order, and on each group of its rows (a row's ``group``, if it has one). A checkpoint from
     before the joint run (``meta["joint"]`` unset) has an untrained decoder: its values are
-    scored anyway, and show it.
+    scored anyway, and show it. With ``by_calls``, rows are grouped by their number of gold
+    calls (``calls_group``) instead.
 
     Each file keeps the tool shuffle fine-tuning's evals used (``SEEDS``), so a model's val
     and held-out scores here are the ones its run logged at its last eval.
@@ -101,7 +111,8 @@ def evaluate_set(
     confusion = {gold: {said: counts.answered[gold, said] for said in INTENTS} for gold in INTENTS}
     groups: defaultdict[str, list[Outcome]] = defaultdict(list)
     for row, outcome in zip(read_jsonl(path), answers, strict=True):
-        if group := row.get("group"):
+        group = calls_group(len(row.get("calls", ()))) if by_calls else row.get("group")
+        if group:
             groups[group].append(outcome)
     return SetResult(
         len(examples),

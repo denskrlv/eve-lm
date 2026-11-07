@@ -9,7 +9,7 @@ from eve.config import INTENTS, preset
 from eve.data.modules import VAL_SEED, in_batches, load_examples
 from eve.data.render import Call, TaskCollator, TaskDataset, TaskExample
 from eve.data.schema import Tool
-from eve.evaluate import by_tool, evaluate_set, load_questions_model, set_files
+from eve.evaluate import by_tool, calls_group, evaluate_set, load_questions_model, set_files
 from eve.model.checkpoint import model_file, save_checkpoint
 from eve.model.eve import Eve
 from eve.tasks.questions import TASK, Outcome, score
@@ -125,3 +125,38 @@ def test_evaluate_prints_json(
 
     main([*argv, "--by-tool"])
     assert "val by tool" in capsys.readouterr().out
+
+
+def test_calls_group() -> None:
+    assert [calls_group(n) for n in (0, 1, 2, 3, 7)] == ["0", "1", "2", "3+", "3+"]
+
+
+def test_evaluate_set_by_calls(
+    tmp_path: Path, library: dict[str, Tool], tokenizer: BPETokenizer
+) -> None:
+    rows = [
+        TaskExample(
+            "turn off the kitchen lights",
+            (library["set_lights"],),
+            "call",
+            (Call("set_lights", {"room": "kitchen", "on": False}),),
+        ),
+        TaskExample(
+            "turn off the kitchen lights and the bedroom lights",
+            (library["set_lights"],),
+            "call",
+            (
+                Call("set_lights", {"room": "kitchen", "on": False}),
+                Call("set_lights", {"room": "bedroom", "on": False}),
+            ),
+        ),
+        TaskExample("order me a pizza", (library["set_lights"],), "unsupported"),
+    ]
+    task = tmp_path / "task"
+    task.mkdir()
+    lines = [r.to_json() | {"group": "ignored"} for r in rows]
+    (task / "val.jsonl").write_text("".join(json.dumps(line) + "\n" for line in lines))
+    ckpt = load_questions_model(_write_run(tmp_path / "run", tokenizer))
+    result = evaluate_set(ckpt, task / "val.jsonl", library, batch_size=2, by_calls=True)
+    assert set(result.groups) == {"0", "1", "2"}
+    assert sum(n for n, _ in result.groups.values()) == 3

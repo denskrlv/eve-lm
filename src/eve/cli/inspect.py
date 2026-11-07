@@ -315,7 +315,7 @@ def evaluate(args: argparse.Namespace) -> None:
     with progress.bar(len(paths), "evaluate", "sets", leave=False) as bar:
         for name, path in paths.items():
             bar.set_stats(name)
-            results[name] = evaluate_set(ckpt, path, library, args.batch_size)
+            results[name] = evaluate_set(ckpt, path, library, args.batch_size, args.by_calls)
             bar.update()
     _print_evaluation(results, args.json, args.by_tool)
 
@@ -470,6 +470,9 @@ def add_evaluate(commands: Subcommands) -> None:
     )
     parser.add_argument("--batch-size", type=int, default=TRAIN_DEFAULTS.batch_size)
     parser.add_argument("--by-tool", action="store_true", help="also a row per gold tool")
+    parser.add_argument(
+        "--by-calls", action="store_true", help="group examples by their number of gold calls"
+    )
     add_json_arg(parser, "the results as one JSON object")
     add_device_arg(parser)
 
