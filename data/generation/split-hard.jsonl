@@ -1,0 +1,60 @@
+{"utterance": "turn off the lights in the bathroom and the hallway", "actions": ["turn off the lights in the bathroom", "turn off the lights in the hallway"], "kind": "shared"}
+{"utterance": "play jazz in the kitchen and the living room", "actions": ["play jazz in the kitchen", "play jazz in the living room"], "kind": "shared"}
+{"utterance": "what is the weather in Berlin and Madrid", "actions": ["what is the weather in Berlin", "what is the weather in Madrid"], "kind": "shared"}
+{"utterance": "add milk to my shopping list and to my notes", "actions": ["add milk to my shopping list", "add milk to my notes"], "kind": "shared"}
+{"utterance": "set the bedroom and the office thermostat to 20 degrees", "actions": ["set the bedroom thermostat to 20 degrees", "set the office thermostat to 20 degrees"], "kind": "shared"}
+{"utterance": "lock the front door and the back door", "actions": ["lock the front door", "lock the back door"], "kind": "shared"}
+{"utterance": "remind me to call mom at 6 and to buy bread at 7", "actions": ["remind me to call mom at 6", "remind me to buy bread at 7"], "kind": "shared"}
+{"utterance": "what is 12 times 4 and 9 times 7", "actions": ["what is 12 times 4", "what is 9 times 7"], "kind": "shared"}
+{"utterance": "turn on the fan in the office and in the bedroom", "actions": ["turn on the fan in the office", "turn on the fan in the bedroom"], "kind": "shared"}
+{"utterance": "play the news on the kitchen speaker and the bedroom speaker", "actions": ["play the news on the kitchen speaker", "play the news on the bedroom speaker"], "kind": "shared"}
+{"utterance": "set a timer for 10 minutes and for 20 minutes", "actions": ["set a timer for 10 minutes", "set a timer for 20 minutes"], "kind": "shared"}
+{"utterance": "open the blinds in the living room and the bedroom", "actions": ["open the blinds in the living room", "open the blinds in the bedroom"], "kind": "shared"}
+{"utterance": "open the bathroom window and close it in 5 minutes", "actions": ["open the bathroom window", "the bathroom window close it in 5 minutes"], "kind": "it"}
+{"utterance": "turn on the kitchen lights and dim them to 40 percent", "actions": ["turn on the kitchen lights", "the kitchen lights dim them to 40 percent"], "kind": "it"}
+{"utterance": "play my workout playlist and shuffle it", "actions": ["play my workout playlist", "my workout playlist shuffle it"], "kind": "it"}
+{"utterance": "create a note called groceries and add eggs to it", "actions": ["create a note called groceries", "a note called groceries add eggs to it"], "kind": "it"}
+{"utterance": "unlock the front door and lock it again at 10 pm", "actions": ["unlock the front door", "the front door lock it again at 10 pm"], "kind": "it"}
+{"utterance": "turn on the porch light and turn it off at midnight", "actions": ["turn on the porch light", "the porch light turn it off at midnight"], "kind": "it"}
+{"utterance": "start the bedroom fan and set it to high", "actions": ["start the bedroom fan", "the bedroom fan set it to high"], "kind": "it"}
+{"utterance": "find the song Yesterday and play it in the kitchen", "actions": ["find the song Yesterday", "the song Yesterday play it in the kitchen"], "kind": "it"}
+{"utterance": "open the garage door and close it after 2 minutes", "actions": ["open the garage door", "the garage door close it after 2 minutes"], "kind": "it"}
+{"utterance": "turn up the living room heater and switch it off at 11", "actions": ["turn up the living room heater", "the living room heater switch it off at 11"], "kind": "it"}
+{"utterance": "make a list called chores and share it with Anna", "actions": ["make a list called chores", "a list called chores share it with Anna"], "kind": "it"}
+{"utterance": "lower the office blinds and raise them at 8 am", "actions": ["lower the office blinds", "the office blinds raise them at 8 am"], "kind": "it"}
+{"utterance": "play rock and roll in the kitchen", "actions": ["play rock and roll in the kitchen"], "kind": "inner-and"}
+{"utterance": "add salt and pepper to the shopping list", "actions": ["add salt and pepper to the shopping list"], "kind": "inner-and"}
+{"utterance": "play songs by Simon and Garfunkel", "actions": ["play songs by Simon and Garfunkel"], "kind": "inner-and"}
+{"utterance": "add a note about the pros and cons of solar panels", "actions": ["add a note about the pros and cons of solar panels"], "kind": "inner-and"}
+{"utterance": "play the album Sweet and Sour", "actions": ["play the album Sweet and Sour"], "kind": "inner-and"}
+{"utterance": "what is the sum of 3 and 5", "actions": ["what is the sum of 3 and 5"], "kind": "inner-and"}
+{"utterance": "find the difference between 100 and 37", "actions": ["find the difference between 100 and 37"], "kind": "inner-and"}
+{"utterance": "remind me to bring bread and butter tomorrow", "actions": ["remind me to bring bread and butter tomorrow"], "kind": "inner-and"}
+{"utterance": "play music by Earth Wind and Fire", "actions": ["play music by Earth Wind and Fire"], "kind": "inner-and"}
+{"utterance": "is it going to be cold and rainy in Oslo tomorrow", "actions": ["is it going to be cold and rainy in Oslo tomorrow"], "kind": "inner-and"}
+{"utterance": "multiply 6 and 7", "actions": ["multiply 6 and 7"], "kind": "inner-and"}
+{"utterance": "what is the weather between Monday and Wednesday", "actions": ["what is the weather between Monday and Wednesday"], "kind": "inner-and"}
+{"utterance": "turn off the kitchen lights", "actions": ["turn off the kitchen lights"], "kind": "no-split"}
+{"utterance": "what is the weather in Paris tomorrow", "actions": ["what is the weather in Paris tomorrow"], "kind": "no-split"}
+{"utterance": "play some jazz", "actions": ["play some jazz"], "kind": "no-split"}
+{"utterance": "set the thermostat to 21 degrees", "actions": ["set the thermostat to 21 degrees"], "kind": "no-split"}
+{"utterance": "add eggs to my shopping list", "actions": ["add eggs to my shopping list"], "kind": "no-split"}
+{"utterance": "what is 7 times 8", "actions": ["what is 7 times 8"], "kind": "no-split"}
+{"utterance": "lock the front door", "actions": ["lock the front door"], "kind": "no-split"}
+{"utterance": "remind me to water the plants at 6 pm", "actions": ["remind me to water the plants at 6 pm"], "kind": "no-split"}
+{"utterance": "create a note called ideas", "actions": ["create a note called ideas"], "kind": "no-split"}
+{"utterance": "turn up the volume in the living room", "actions": ["turn up the volume in the living room"], "kind": "no-split"}
+{"utterance": "is it going to rain in London today", "actions": ["is it going to rain in London today"], "kind": "no-split"}
+{"utterance": "pause the music", "actions": ["pause the music"], "kind": "no-split"}
+{"utterance": "turn off the fan and lock the door", "actions": ["turn off the fan", "lock the door"], "kind": "plain"}
+{"utterance": "play some jazz and set the lights to 50 percent", "actions": ["play some jazz", "set the lights to 50 percent"], "kind": "plain"}
+{"utterance": "what is 5 plus 3, then add a note called math", "actions": ["what is 5 plus 3", "add a note called math"], "kind": "plain"}
+{"utterance": "lock the back door. Also turn off the porch light", "actions": ["lock the back door", "turn off the porch light"], "kind": "plain"}
+{"utterance": "set an alarm for 7 am and play the news", "actions": ["set an alarm for 7 am", "play the news"], "kind": "plain"}
+{"utterance": "close the blinds and turn on the tv", "actions": ["close the blinds", "turn on the tv"], "kind": "plain"}
+{"utterance": "what is the weather in Rome and remind me to take an umbrella", "actions": ["what is the weather in Rome", "remind me to take an umbrella"], "kind": "plain"}
+{"utterance": "mute the speaker, then dim the bedroom lights", "actions": ["mute the speaker", "dim the bedroom lights"], "kind": "plain"}
+{"utterance": "add bread to my shopping list and call Anna", "actions": ["add bread to my shopping list", "call Anna"], "kind": "plain"}
+{"utterance": "turn on the heater and play some podcasts", "actions": ["turn on the heater", "play some podcasts"], "kind": "plain"}
+{"utterance": "what is 9 squared and what is the square root of 81", "actions": ["what is 9 squared", "what is the square root of 81"], "kind": "plain"}
+{"utterance": "open the garage, turn on the driveway lights and lock the front door", "actions": ["open the garage", "turn on the driveway lights", "lock the front door"], "kind": "plain"}
