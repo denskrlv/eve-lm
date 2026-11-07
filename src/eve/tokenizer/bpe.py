@@ -59,6 +59,14 @@ SPLIT_PATTERN = (
     r"""|\s+"""
 )
 _SPLIT = regex.compile(SPLIT_PATTERN)
+
+
+def split_pieces(text: str) -> list[str]:
+    """``text`` cut the way the tokenizer cuts it before merging: words with their leading
+    space, single digits, punctuation runs and whitespace. Joined, they are ``text``."""
+    return list(_SPLIT.findall(text))
+
+
 _SPECIAL_SPLIT = regex.compile("(" + "|".join(regex.escape(t) for t in SPECIAL_TOKENS) + ")")
 _CACHE_SIZE = 500_000
 
