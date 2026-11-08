@@ -4,6 +4,7 @@ A builder takes ``tokenizer``, ``model_cfg`` and ``seed`` at run time, and its c
 keywords. The batches' keys are in ``eve.components``.
 """
 
+import json
 from collections.abc import Sequence
 from dataclasses import dataclass, field
 from pathlib import Path
@@ -54,6 +55,16 @@ def span_corruption(
     so every encoder position that fine-tuning uses has been trained (learned positions only
     learn where they are used). Train's corruption is seeded by ``seed``, val's is fixed."""
     data_dir = Path(path)
+    if (meta_file := data_dir / "meta.json").exists():
+        meta = json.loads(meta_file.read_text())
+        made_by = meta.get(
+            "tokenizer_fingerprint", tokenizer.fingerprint()
+        )  # older files: size only
+        if meta.get("vocab_size") != tokenizer.vocab_size or made_by != tokenizer.fingerprint():
+            raise ValueError(
+                f"{data_dir} was encoded with another tokenizer ({meta.get('tokenizer')}, "
+                f"{meta.get('vocab_size')} tokens): run `eve corpus encode` again"
+            )
     return SpanCorruptionData(
         train=SpanCorruptionDataset(
             load_tokens(data_dir / "train.bin"), model_cfg.max_encoder_len, seed=seed

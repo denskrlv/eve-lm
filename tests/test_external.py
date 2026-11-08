@@ -58,7 +58,7 @@ def test_helpers():
 def test_xlam_tool():
     tool, names, defaults = xlam_tool(WEATHER)
     assert tool.render() == (
-        "<tool> get_weather_forecast : Get the forecast for a city <arg> location : str : City name"
+        "<tool> get weather forecast : Get the forecast for a city <arg> location : str : City name"
         " <arg> days ? : int : Days ahead <arg> units ? : str : metric or imperial"
     )
     assert names["location"] == "location" and defaults["days"] == 3

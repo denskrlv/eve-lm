@@ -10,7 +10,7 @@ class ModelConfig:
     """Sizes and options of an Eve model; the defaults are ``eve-32m``'s (``PRESETS``)."""
 
     # Tokens and positions
-    vocab_size: int = 8192
+    vocab_size: int = 16384
     max_encoder_len: int = 512  # utterance + up to 5 tool schemas
     max_decoder_len: int = 256  # argument values of up to 5 calls
 
@@ -96,8 +96,9 @@ PRESETS: dict[str, ModelConfig] = {
         n_question_layers=1,
         pointer_dim=16,
         dropout=0.0,
+        vocab_size=8192,  # keeps test models small; the tests' tokenizers have far fewer tokens
     ),
-    # The model, ~32M parameters.
+    # The model, ~35M parameters (3.1M more than its name since the 16k vocabulary).
     "eve-32m": ModelConfig(),
 }
 

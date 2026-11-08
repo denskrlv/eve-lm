@@ -2,7 +2,7 @@ import json
 import logging
 import os
 import time
-from collections.abc import Iterable, Iterator
+from collections.abc import Iterable, Iterator, Sequence
 from itertools import chain, islice
 from multiprocessing import Pool
 from multiprocessing.pool import Pool as PoolType
@@ -25,6 +25,21 @@ def iter_documents(paths: Iterable[str | Path]) -> Iterator[str]:
             batch_size=PARQUET_BATCH_ROWS, columns=["text"]
         ):
             yield from batch.column(0).to_pylist()
+
+
+def mix_documents(sources: Sequence[Iterable[str]]) -> Iterator[str]:
+    """Documents from every source in equal shares of UTF-8 bytes: the next one comes from the
+    source with the fewest bytes so far. Stops when any source runs out, so the shares stay
+    equal."""
+    streams = [iter(source) for source in sources]
+    seen = [0] * len(streams)
+    while True:
+        i = seen.index(min(seen))
+        doc = next(streams[i], None)
+        if doc is None:
+            return
+        seen[i] += len(doc.encode("utf-8"))
+        yield doc
 
 
 def take_bytes(docs: Iterable[str], n_bytes: int, skip_bytes: int = 0) -> Iterator[str]:
@@ -151,7 +166,7 @@ def _encode_into(
 
 
 def _encode_splits(
-    paths: list[str | Path],
+    sources: list[list[Path]],
     tokenizer_path: str | Path,
     out_dir: Path,
     train_tokens: int,
@@ -161,7 +176,7 @@ def _encode_splits(
 ) -> dict[str, int]:
     """Encode documents with ``workers`` processes into ``val.bin``, then ``train.bin``.
     Returns the tokens written to each."""
-    web = iter_documents(paths)
+    web = mix_documents([iter_documents(paths) for paths in sources])
     bar = _Progress(val_tokens + train_tokens)
     with (
         Pool(workers, initializer=_init_worker, initargs=(str(tokenizer_path),)) as pool,
@@ -179,7 +194,7 @@ def _encode_splits(
 
 
 def encode_corpus(
-    paths: Iterable[str | Path],
+    sources: Iterable[Iterable[str | Path]],
     tokenizer_path: str | Path,
     out_dir: str | Path,
     train_tokens: int,
@@ -188,8 +203,10 @@ def encode_corpus(
     docs_per_chunk: int = 256,
 ) -> dict[str, Any]:
     """Encode documents into ``val.bin`` (whole documents, at least ``val_tokens``) and then
-    ``train.bin`` (exactly ``train_tokens``). Returns what it writes to ``meta.json``."""
-    paths = list(paths)
+    ``train.bin`` (exactly ``train_tokens``). Each source is one dataset's parquet files; the
+    datasets are mixed in equal shares of bytes (see ``mix_documents``). Returns what it writes
+    to ``meta.json``."""
+    groups = [[Path(p) for p in paths] for paths in sources]
     tokenizer = BPETokenizer.load(tokenizer_path)
     if tokenizer.vocab_size > np.iinfo(np.uint16).max:
         raise ValueError("vocabulary too large for uint16")
@@ -198,7 +215,7 @@ def encode_corpus(
     workers = workers or max(1, (os.cpu_count() or 2) - 1)
 
     counts = _encode_splits(
-        paths,
+        groups,
         tokenizer_path,
         out_dir,
         train_tokens,
@@ -210,10 +227,11 @@ def encode_corpus(
     meta = {
         "tokenizer": str(tokenizer_path),
         "vocab_size": tokenizer.vocab_size,
+        "tokenizer_fingerprint": tokenizer.fingerprint(),
         "dtype": "uint16",
         "val_tokens": counts["val"],
         "train_tokens": counts["train"],
-        "sources": [str(p) for p in paths],
+        "sources": [[str(p) for p in paths] for paths in groups],
     }
     (out_dir / "meta.json").write_text(json.dumps(meta, indent=2))
     if counts["train"] < train_tokens:

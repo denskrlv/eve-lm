@@ -14,7 +14,7 @@ callbacks = ["train_log", "evaluate", "checkpoint"]
 
 [model]
 preset = "eve-32m"  # random weights of this size
-tokenizer = "artifacts/tokenizer/eve-8k.json"  # a random model has none of its own
+tokenizer = "artifacts/tokenizer/eve-16k.json"  # a random model has none of its own
 
 [data]
 path = "data/task"

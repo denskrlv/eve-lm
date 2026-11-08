@@ -8,7 +8,7 @@ from torch.utils.data import Dataset
 
 from eve.config import INTENTS, ModelConfig
 from eve.data.draw import shuffled
-from eve.data.schema import ASK_VALUE, MAX_ARGS, Arg, SchemaError, Tool
+from eve.data.schema import ASK_VALUE, MAX_ARGS, Arg, SchemaError, Tool, spoken
 from eve.tokenizer.bpe import (
     ABSENT,
     ARG,
@@ -158,6 +158,16 @@ def _value_ids(arg: Arg, call: Call, intent: str, tokenizer: BPETokenizer) -> li
     return [*tokenizer.encode(" " + arg.format(call.args[arg.name])), END]
 
 
+def call_ids(tool: Tool, tokenizer: BPETokenizer) -> list[int]:
+    """``<call> name``: the decoder's copy of a call's tool, in training and inference alike."""
+    return [CALL, *tokenizer.encode(" " + spoken(tool.name))]
+
+
+def arg_ids(arg: Arg, tokenizer: BPETokenizer) -> list[int]:
+    """``<arg> name <val>``: the decoder's copy of an argument, before the value it writes."""
+    return [ARG, *tokenizer.encode(" " + spoken(arg.name)), VAL]
+
+
 def _decoder(
     example: TaskExample, tools: Sequence[Tool], tokenizer: BPETokenizer, cfg: ModelConfig
 ) -> tuple[list[int], list[int]]:
@@ -172,9 +182,9 @@ def _decoder(
     by_name = {t.name: t for t in tools}
     for call in example.calls:
         tool = by_name[call.tool]
-        add([CALL, *tokenizer.encode(" " + tool.name)], False)
+        add(call_ids(tool, tokenizer), False)
         for arg in tool.args:
-            add([ARG, *tokenizer.encode(" " + arg.name), VAL], False)
+            add(arg_ids(arg, tokenizer), False)
             add(_value_ids(arg, call, example.intent, tokenizer), True)
     add([EOS], False)
     dec_ids = seq[:-1]

@@ -35,6 +35,15 @@ def _check_name(what: str, name: str) -> None:
         raise SchemaError(f"{what} must be snake_case, got {name!r}")
 
 
+def spoken(name: str) -> str:
+    """A snake_case name as the model reads it: "get_vaccine_record" -> "get vaccine record".
+
+    The tokenizer splits text at "_", and a word after it has no leading space, so in the raw name
+    "record" would share no token with " record" in a request.
+    """
+    return name.replace("_", " ")
+
+
 def _number(value: float) -> str:
     """16 -> "16", 21.5 -> "21.5" (never "16.0" or "2e+01")."""
     return str(int(value)) if float(value).is_integer() else repr(float(value))
@@ -118,7 +127,7 @@ class Arg:
             lo = "" if self.min is None else _number(self.min)
             hi = "" if self.max is None else _number(self.max)
             spec += f" {lo}..{hi}"
-        text = f"<arg> {self.name}{'' if self.required else ' ?'} : {spec}"
+        text = f"<arg> {spoken(self.name)}{'' if self.required else ' ?'} : {spec}"
         return text + (f" : {self.description}" if self.description else "")
 
     def check(self, value: Any) -> str | None:
@@ -226,7 +235,8 @@ class Tool:
         The renderer encodes the parts one by one. Encoding the joined text would turn the space
         before each ``<arg>`` into a token of its own.
         """
-        return [f"<tool> {self.name} : {self.description}"] + [a.render() for a in self.args]
+        header = f"<tool> {spoken(self.name)} : {self.description}"
+        return [header] + [a.render() for a in self.args]
 
     def render(self) -> str:
         """The whole schema as one string (see ``render_parts``)."""

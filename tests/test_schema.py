@@ -2,26 +2,35 @@ import json
 
 import pytest
 
-from eve.data.schema import Arg, SchemaError, Tool, load_library, load_tools
+from eve.data.schema import Arg, SchemaError, Tool, load_library, load_tools, spoken
 
 
 def test_library_loads(library):
     assert len(library) >= 15
     assert {t.domain for t in library.values()} >= {"home", "media", "time"}
     for tool in library.values():
-        assert tool.render().startswith(f"<tool> {tool.name} : ")
+        assert tool.render().startswith(f"<tool> {spoken(tool.name)} : ")
 
 
 def test_render(library):
     assert library["set_lights"].render() == (
-        "<tool> set_lights : Turn the lights in a room on or off"
+        "<tool> set lights : Turn the lights in a room on or off"
         " <arg> room : enum kitchen | bedroom | living room | bathroom | office | hallway"
         " <arg> on : bool"
         " <arg> brightness ? : int 0..100 : percent"
     )
     assert Arg("t", "float", min=10, max=30.5).render() == "<arg> t : float 10..30.5"
     assert Arg("n", "int", min=1).render() == "<arg> n : int 1.."
-    assert library["pause_media"].render() == "<tool> pause_media : Pause whatever is playing"
+    assert library["pause_media"].render() == "<tool> pause media : Pause whatever is playing"
+    # names read as the words a request uses: "lights" here is the token " lights" in "turn off
+    # the lights", not the "lights" after "_" that web text almost never has
+    assert Arg("start_time", "str", required=False).render() == "<arg> start time ? : str"
+
+
+def test_spoken():
+    assert spoken("set_lights") == "set lights"
+    assert spoken("get_vaccine_record_2") == "get vaccine record 2"
+    assert spoken("play") == "play"
 
 
 def test_round_trip_through_dict(library):

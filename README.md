@@ -7,12 +7,12 @@
 <p align="center">
   <img src="https://img.shields.io/badge/python-3.12%2B-3776AB?logo=python&logoColor=white" alt="Python 3.12+" />
   <img src="https://img.shields.io/badge/PyTorch-from%20scratch-EE4C2C?logo=pytorch&logoColor=white" alt="PyTorch, from scratch" />
-  <img src="https://img.shields.io/badge/params-~32M-informational" alt="~32M parameters" />
+  <img src="https://img.shields.io/badge/params-~35M-informational" alt="~35M parameters" />
   <img src="https://img.shields.io/badge/status-work%20in%20progress-orange" alt="Work in progress" />
   <a href="LICENSE"><img src="https://img.shields.io/badge/license-Apache%202.0-green" alt="Apache 2.0 License" /></a>
 </p>
 
-Eve reads a request and the schemas of 1–5 tools, then answers with whole tool calls: which tools, in what order, with which argument values, and how sure it is of each. It is a ~32M-parameter encoder-decoder written in plain PyTorch, with its own tokenizer, pretrained from random weights and fine-tuned on tool-calling data, and it is meant to run on a Raspberry Pi 5.
+Eve reads a request and the schemas of 1–5 tools, then answers with whole tool calls: which tools, in what order, with which argument values, and how sure it is of each. It is a ~35M-parameter encoder-decoder written in plain PyTorch, with its own tokenizer, pretrained from random weights and fine-tuned on tool-calling data, and it is meant to run on a Raspberry Pi 5.
 
 ```console
 $ uv run eve ask --tools set_lights,lock_door,play_music \
@@ -40,7 +40,7 @@ The second request names no room, so Eve answers **ask** and marks `room` as the
 
 - **One pass for the decisions.** Eve doesn't generate its answer as text. A question block of learned queries reads the encoded request once and answers fixed questions: the intent (**call**, **ask**, **unsupported** or **none**) and "what is call #*i*?" for up to 8 calls.
 - **Tools by pointer, not by name.** Each call slot scores the encoder's vector at every `<tool>` marker, plus a STOP key. Eve can only pick a tool it was given, so it can't invent a tool name, and the same head works for tools it never saw in training.
-- **Values by a constrained decoder.** For each chosen tool, the call structure (`<call> set_lights <arg> room <val>`) is copied from the schema and the decoder writes only the values, which are then parsed into each argument's type. A required argument the user left out becomes `<ask>`, an optional one `<absent>`.
+- **Values by a constrained decoder.** For each chosen tool, the call structure (`<call> set lights <arg> room <val>`) is copied from the schema and the decoder writes only the values, which are then parsed into each argument's type. A required argument the user left out becomes `<ask>`, an optional one `<absent>`.
 - **Calibrated probabilities.** Intent, tool and value probabilities are temperature-scaled, with separate temperatures for tools seen in training and new ones, since one temperature can't fit both.
 - **Built from scratch.** Byte-level BPE tokenizer, attention, transformer blocks, T5-style span-corruption pretraining, training loop, checkpoints and evaluation are all in this repo; PyTorch is the only ML dependency.
 
@@ -173,7 +173,7 @@ The whole pipeline, from raw text to a calibrated model. Each command writes whe
 
 | Step | Command |
 |---|---|
-| 1. Tokenizer: 8k byte-level BPE on web text, tool schemas and commands | `uv run eve tokenizer train` |
+| 1. Tokenizer: 16k byte-level BPE on web text, tool schemas and commands | `uv run eve tokenizer train` |
 | 2. Pretraining corpus: FineWeb-Edu to token ids | `uv run eve corpus encode` |
 | 3. Pretrain with span corruption | `uv run eve run configs/experiments/eve-32m-pretrain.toml` |
 | 4. Task data: hand-written tools, templates, xLAM, MASSIVE | `uv run eve data external && uv run eve data build` |
@@ -187,15 +187,15 @@ The whole pipeline, from raw text to a calibrated model. Each command writes whe
 
 <br/>
 
-Pretraining uses two [FineWeb-Edu](https://huggingface.co/datasets/HuggingFaceFW/fineweb-edu) shards (about 700M tokens each).
+Pretraining mixes one [FineWeb-Edu](https://huggingface.co/datasets/HuggingFaceFW/fineweb-edu) shard and one [FineWeb](https://huggingface.co/datasets/HuggingFaceFW/fineweb) shard (about 700M tokens each) in equal shares: Edu's textbook-style text, plus everyday web text closer to how people phrase requests.
 
 ```bash
-mkdir -p data/raw/fineweb-edu
+mkdir -p data/raw/fineweb-edu data/raw/fineweb
 curl -L -o data/raw/fineweb-edu/000_00000.parquet \
   https://huggingface.co/datasets/HuggingFaceFW/fineweb-edu/resolve/main/sample/10BT/000_00000.parquet
-curl -L -o data/raw/fineweb-edu/001_00000.parquet \
-  https://huggingface.co/datasets/HuggingFaceFW/fineweb-edu/resolve/main/sample/10BT/001_00000.parquet
-uv run eve tokenizer train                  # -> artifacts/tokenizer/eve-8k.json
+curl -L -o data/raw/fineweb/000_00000.parquet \
+  https://huggingface.co/datasets/HuggingFaceFW/fineweb/resolve/main/sample/10BT/000_00000.parquet
+uv run eve tokenizer train                  # -> artifacts/tokenizer/eve-16k.json
 uv run eve corpus encode                    # 900M train + 2M val tokens -> data/bin/
 ```
 
@@ -326,11 +326,11 @@ Presets from [`src/eve/config.py`](src/eve/config.py):
 | Preset | d_model | Heads | Encoder | Decoder | Question block | Parameters |
 |---|---|---|---|---|---|---|
 | `tiny` (tests) | 64 | 2 | 2 | 1 | 1 | 0.8M |
-| `eve-32m` | 384 | 6 | 8 | 4 | 2 | 31.9M |
+| `eve-32m` | 384 | 6 | 8 | 4 | 2 | 35.0M |
 
 | Component | Configuration |
 |---|---|
-| Tokenizer | byte-level BPE, 8,192 tokens, trained with tool schemas and commands weighted 50× |
+| Tokenizer | byte-level BPE, 16,384 tokens, trained with tool schemas and commands weighted 50× |
 | Input | up to 512 encoder tokens (request + 5 schemas), 256 decoder tokens, up to 8 calls |
 | Body | pre-norm transformer blocks, rotary positions and QK-norm, LM head tied to the embeddings |
 | Question block | 1 + 8 learned queries, non-causal decoder blocks; linear intent head; pointer slot head (64-d) over `<tool>` vectors + STOP |

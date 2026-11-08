@@ -62,7 +62,7 @@
   <text class="t" x="346" y="202">8 transformer blocks</text>
   <text class="t" x="346" y="222">bidirectional self-attention</text>
   <text class="t" x="346" y="242">RoPE · QK-norm</text>
-  <text class="t" x="346" y="262">8k byte-level BPE</text>
+  <text class="t" x="346" y="262">16k byte-level BPE</text>
   <text class="m" x="346" y="296">→ memory: one vector</text>
   <text class="m" x="346" y="312">   per input token, read</text>
   <text class="m" x="346" y="328">   once by both heads</text>

@@ -1,3 +1,4 @@
+import hashlib
 import heapq
 import json
 from collections import Counter, defaultdict
@@ -184,6 +185,10 @@ class BPETokenizer:
             self.ranks[pair] = len(self.vocab)
             self.vocab.append(self.vocab[pair[0]] + self.vocab[pair[1]])
         self._cache: dict[str, tuple[int, ...]] = {}
+
+    def fingerprint(self) -> str:
+        """A short hash of the merges: two tokenizers share it only if they encode alike."""
+        return hashlib.sha1(json.dumps(self.merges).encode()).hexdigest()[:16]
 
     @property
     def vocab_size(self) -> int:

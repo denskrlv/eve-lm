@@ -1,5 +1,6 @@
 # Where the data and artifacts live, relative to the repository root.
-PARQUET_GLOB = "data/raw/fineweb-edu/*.parquet"
+# Pretraining text: one glob per dataset, mixed in equal shares of bytes.
+PARQUET_GLOBS = ["data/raw/fineweb-edu/*.parquet", "data/raw/fineweb/*.parquet"]
 RAW_DIR = "data/raw"
 TOOLS_DIR = "data/tools"
 COMMANDS_FILE = "data/tokenizer/commands.txt"
@@ -9,7 +10,7 @@ TASK_DIR = "data/task"  # what fine-tuning trains on: train.jsonl
 EVALS_DIR = "data/evals"  # every set a model is scored on, never trained on
 NOVEL_TOOLS_DIR = "data/novel-tools"  # the novel-tools benchmark's tools and requests
 BIN_DIR = "data/bin"
-TOKENIZER_FILE = "artifacts/tokenizer/eve-8k.json"
+TOKENIZER_FILE = "artifacts/tokenizer/eve-16k.json"
 CONFIG_DIR = "configs"  # experiments/*.toml and the components' variant files
 RUNS_DIR = "artifacts/runs"
 FINETUNE_RUN = f"{RUNS_DIR}/finetune"  # where a run without run.out writes

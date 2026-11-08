@@ -6,11 +6,11 @@ from typing import Any
 import torch
 
 from eve.config import INTENTS, STOP
-from eve.data.render import TaskCollator, TaskExample, render
+from eve.data.render import TaskCollator, TaskExample, arg_ids, call_ids, render
 from eve.data.schema import Arg, SchemaError, Tool
 from eve.model.eve import Eve
 from eve.runtime import eval_mode, to_device
-from eve.tokenizer.bpe import ABSENT, ARG, ASK, BYTE0, CALL, DEC, END, VAL, BPETokenizer
+from eve.tokenizer.bpe import ABSENT, ASK, BYTE0, DEC, END, BPETokenizer
 
 MAX_VALUE_TOKENS = 32  # a value longer than this is cut off and marked invalid
 KINDS = ("value", "absent", "ask", "invalid")  # what the decoder can write for an argument
@@ -204,17 +204,17 @@ def write_values(
     """The decoder's values for a call to each of ``tools``, in order.
 
     The decoder sequence is built as in training (``render._decoder``): the structure is copied
-    from the schema, ``<call> set_lights <arg> room <val>``, and the decoder writes only each
+    from the schema, ``<call> set lights <arg> room <val>``, and the decoder writes only each
     value, by greedy decoding up to ``<end>``, ``<absent>`` or ``<ask>``. Each value reads the
     calls and values before it. ``memory`` and ``enc_mask`` are one example's (batch of 1).
     ``temperature`` is the values' (see ``Calibration``).
     """
     seq, out = [DEC], []
     for tool in tools:
-        seq += [CALL, *tokenizer.encode(" " + tool.name)]
+        seq += call_ids(tool, tokenizer)
         values = {}
         for arg in tool.args:
-            seq += [ARG, *tokenizer.encode(" " + arg.name), VAL]
+            seq += arg_ids(arg, tokenizer)
             ids, prob = _write_value(
                 model, memory, enc_mask, seq, arg, tokenizer.vocab_size, temperature
             )
