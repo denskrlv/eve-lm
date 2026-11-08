@@ -13,6 +13,7 @@ from eve.data.corpus import (
     encode_corpus,
     iter_documents,
     load_tokens,
+    mix_documents,
     take_bytes,
     tokenizer_texts,
 )
@@ -29,6 +30,14 @@ def test_take_bytes():
     docs = ["aaaa", "bbbb", "cccc", "dddd"]
     assert list(take_bytes(docs, 8)) == ["aaaa", "bbbb"]
     assert list(take_bytes(docs, 4, skip_bytes=8)) == ["cccc"]
+
+
+def test_mix_documents_balances_bytes_and_stops_with_the_shortest_source():
+    long, short = ["x" * 10] * 5, ["y"] * 100
+    mixed = list(mix_documents([long, short]))
+    assert mixed[:12] == ["x" * 10] + ["y"] * 10 + ["x" * 10]
+    assert mixed.count("x" * 10) == 5 and mixed.count("y") == 50  # stops when x runs out
+    assert list(mix_documents([["a", "b"]])) == ["a", "b"]
 
 
 def test_tokenizer_texts_add_weighted_schemas():
@@ -50,7 +59,7 @@ def test_encode_corpus(tokenizer, tmp_path):
     tokenizer.save(tmp_path / "tok.json")
 
     meta = encode_corpus(
-        paths,
+        [paths],
         tmp_path / "tok.json",
         tmp_path / "bin",
         train_tokens=3000,
@@ -79,7 +88,7 @@ def test_encode_corpus_logs_progress_when_the_bar_is_off(tokenizer, tmp_path, mo
     tokenizer.save(tmp_path / "tok.json")
     try:
         encode_corpus(
-            [tmp_path / "web.parquet"],
+            [[tmp_path / "web.parquet"]],
             tmp_path / "tok.json",
             tmp_path / "bin",
             train_tokens=3000,

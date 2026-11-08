@@ -187,14 +187,14 @@ The whole pipeline, from raw text to a calibrated model. Each command writes whe
 
 <br/>
 
-Pretraining uses two [FineWeb-Edu](https://huggingface.co/datasets/HuggingFaceFW/fineweb-edu) shards (about 700M tokens each).
+Pretraining mixes one [FineWeb-Edu](https://huggingface.co/datasets/HuggingFaceFW/fineweb-edu) shard and one [FineWeb](https://huggingface.co/datasets/HuggingFaceFW/fineweb) shard (about 700M tokens each) in equal shares: Edu's textbook-style text, plus everyday web text closer to how people phrase requests.
 
 ```bash
-mkdir -p data/raw/fineweb-edu
+mkdir -p data/raw/fineweb-edu data/raw/fineweb
 curl -L -o data/raw/fineweb-edu/000_00000.parquet \
   https://huggingface.co/datasets/HuggingFaceFW/fineweb-edu/resolve/main/sample/10BT/000_00000.parquet
-curl -L -o data/raw/fineweb-edu/001_00000.parquet \
-  https://huggingface.co/datasets/HuggingFaceFW/fineweb-edu/resolve/main/sample/10BT/001_00000.parquet
+curl -L -o data/raw/fineweb/000_00000.parquet \
+  https://huggingface.co/datasets/HuggingFaceFW/fineweb/resolve/main/sample/10BT/000_00000.parquet
 uv run eve tokenizer train                  # -> artifacts/tokenizer/eve-8k.json
 uv run eve corpus encode                    # 900M train + 2M val tokens -> data/bin/
 ```

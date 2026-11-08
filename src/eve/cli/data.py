@@ -3,7 +3,7 @@
 import argparse
 import glob
 import time
-from collections.abc import Sequence
+from collections.abc import Iterator, Sequence
 from pathlib import Path
 from typing import TYPE_CHECKING, Any
 
@@ -33,12 +33,19 @@ def _parquet_files(pattern: str) -> list[str]:
     return paths
 
 
+def _web_text(patterns: list[str]) -> Iterator[str]:
+    """The documents of every glob's dataset, mixed in equal shares of bytes."""
+    from eve.data.corpus import iter_documents, mix_documents
+
+    return mix_documents([iter_documents(_parquet_files(p)) for p in patterns])
+
+
 def tokenizer_train(args: argparse.Namespace) -> None:
     """Train the BPE tokenizer on web text plus weighted schemas and commands."""
-    from eve.data.corpus import iter_documents, take_bytes, tokenizer_texts
+    from eve.data.corpus import take_bytes, tokenizer_texts
     from eve.tokenizer.bpe import BPETokenizer
 
-    corpus = take_bytes(iter_documents(_parquet_files(args.parquet)), count(args.text))
+    corpus = take_bytes(_web_text(args.parquet), count(args.text))
     start = time.time()
     tokenizer = BPETokenizer.train(
         tokenizer_texts(corpus, args.tools, args.commands, args.weight),
@@ -76,15 +83,13 @@ def _pieces(pieces: list[str]) -> Text:
 
 def tokenizer_stats(args: argparse.Namespace) -> None:
     """Tokens per word on unseen web text, on commands and on tool schemas."""
-    from eve.data.corpus import iter_documents, take_bytes
+    from eve.data.corpus import take_bytes
     from eve.data.jsonl import read_lines
     from eve.data.schema import load_library
     from eve.tokenizer.bpe import BPETokenizer
 
     tokenizer = BPETokenizer.load(args.tokenizer)
-    docs = list(
-        take_bytes(iter_documents(_parquet_files(args.parquet)), count(args.text), count(args.skip))
-    )
+    docs = list(take_bytes(_web_text(args.parquet), count(args.text), count(args.skip)))
     commands = read_lines(args.commands)
     schemas = [t.render_parts() for t in load_library(args.tools).values()]
     samples: dict[str, Sequence[Sample]] = {
@@ -104,7 +109,7 @@ def corpus_encode(args: argparse.Namespace) -> None:
     from eve.data.corpus import encode_corpus
 
     meta = encode_corpus(
-        _parquet_files(args.parquet),
+        [_parquet_files(p) for p in args.parquet],
         args.tokenizer,
         args.out,
         train_tokens=count(args.train_tokens),
@@ -169,7 +174,9 @@ def add_tokenizer(commands: Subcommands) -> None:
     ]:
         parser = tok_commands.add_parser(name, help=help_)
         parser.set_defaults(run=run)
-        parser.add_argument("--parquet", default=defaults.PARQUET_GLOB)
+        parser.add_argument(
+            "--parquet", nargs="+", default=defaults.PARQUET_GLOBS, help="one glob per dataset"
+        )
         parser.add_argument("--tools", default=defaults.TOOLS_DIR)
         parser.add_argument("--commands", default=defaults.COMMANDS_FILE)
         if name == "train":
@@ -194,7 +201,9 @@ def add_corpus(commands: Subcommands) -> None:
     corpus_commands = group.add_subparsers(dest="corpus_command", required=True)
     parser = corpus_commands.add_parser("encode", help="encode parquet text to token ids")
     parser.set_defaults(run=corpus_encode)
-    parser.add_argument("--parquet", default=defaults.PARQUET_GLOB)
+    parser.add_argument(
+        "--parquet", nargs="+", default=defaults.PARQUET_GLOBS, help="one glob per dataset"
+    )
     parser.add_argument("--tokenizer", default=defaults.TOKENIZER_FILE)
     parser.add_argument("--out", default=defaults.BIN_DIR)
     parser.add_argument("--train-tokens", default="900M")

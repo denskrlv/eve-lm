@@ -1,5 +1,6 @@
 # Where the data and artifacts live, relative to the repository root.
-PARQUET_GLOB = "data/raw/fineweb-edu/*.parquet"
+# Pretraining text: one glob per dataset, mixed in equal shares of bytes.
+PARQUET_GLOBS = ["data/raw/fineweb-edu/*.parquet", "data/raw/fineweb/*.parquet"]
 RAW_DIR = "data/raw"
 TOOLS_DIR = "data/tools"
 COMMANDS_FILE = "data/tokenizer/commands.txt"
