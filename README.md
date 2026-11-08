@@ -40,7 +40,7 @@ The second request names no room, so Eve answers **ask** and marks `room` as the
 
 - **One pass for the decisions.** Eve doesn't generate its answer as text. A question block of learned queries reads the encoded request once and answers fixed questions: the intent (**call**, **ask**, **unsupported** or **none**) and "what is call #*i*?" for up to 8 calls.
 - **Tools by pointer, not by name.** Each call slot scores the encoder's vector at every `<tool>` marker, plus a STOP key. Eve can only pick a tool it was given, so it can't invent a tool name, and the same head works for tools it never saw in training.
-- **Values by a constrained decoder.** For each chosen tool, the call structure (`<call> set_lights <arg> room <val>`) is copied from the schema and the decoder writes only the values, which are then parsed into each argument's type. A required argument the user left out becomes `<ask>`, an optional one `<absent>`.
+- **Values by a constrained decoder.** For each chosen tool, the call structure (`<call> set lights <arg> room <val>`) is copied from the schema and the decoder writes only the values, which are then parsed into each argument's type. A required argument the user left out becomes `<ask>`, an optional one `<absent>`.
 - **Calibrated probabilities.** Intent, tool and value probabilities are temperature-scaled, with separate temperatures for tools seen in training and new ones, since one temperature can't fit both.
 - **Built from scratch.** Byte-level BPE tokenizer, attention, transformer blocks, T5-style span-corruption pretraining, training loop, checkpoints and evaluation are all in this repo; PyTorch is the only ML dependency.
 

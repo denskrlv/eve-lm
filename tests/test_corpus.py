@@ -45,7 +45,7 @@ def test_tokenizer_texts_add_weighted_schemas():
         tokenizer_texts(["web text"], ROOT / "data/tools", ROOT / "data/tokenizer/commands.txt", 7)
     )
     assert texts[0] == ("web text", 1)
-    assert any(t.startswith("<tool> set_lights") and w == 7 for t, w in texts)
+    assert any(t.startswith("<tool> set lights") and w == 7 for t, w in texts)
     assert (" turn off the kitchen lights", 7) in texts
     assert not any(t.startswith(" #") for t, _ in texts)
 

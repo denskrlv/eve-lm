@@ -13,7 +13,7 @@ from eve.data.render import (
     collate_pretrain,
     render,
 )
-from eve.data.schema import MAX_ARGS, SchemaError
+from eve.data.schema import MAX_ARGS, SchemaError, spoken
 from eve.tokenizer.bpe import ARG, BOS, DEC, EOS, PAD, TOOL, TOOLS, UTT
 
 CFG = preset("tiny")
@@ -36,12 +36,12 @@ def test_encoder_input_and_markers(library, tokenizer):
     assert tokenizer.decode(r.enc_ids[2 : r.enc_ids.index(TOOLS)]) == " turn off the kitchen lights"
     assert [r.enc_ids[p] for p in r.tool_pos] == [TOOL] * 3
     for name, tool_pos, arg_pos in zip(r.tool_names, r.tool_pos, r.arg_pos, strict=True):
-        assert tokenizer.decode(r.enc_ids[tool_pos + 1 :]).startswith(f" {name} :")
+        assert tokenizer.decode(r.enc_ids[tool_pos + 1 :]).startswith(f" {spoken(name)} :")
         tool = library[name]
         assert len(arg_pos) == len(tool.args)
         for arg, p in zip(tool.args, arg_pos, strict=True):
             assert r.enc_ids[p] == ARG
-            assert tokenizer.decode(r.enc_ids[p + 1 :]).startswith(f" {arg.name} ")
+            assert tokenizer.decode(r.enc_ids[p + 1 :]).startswith(f" {spoken(arg.name)} ")
 
 
 def test_labels_for_a_call(library, tokenizer):
@@ -51,7 +51,7 @@ def test_labels_for_a_call(library, tokenizer):
     assert r.dec_ids[0] == DEC and len(r.dec_ids) == len(r.dec_labels)
     full = tokenizer.decode(r.dec_ids + [EOS])
     assert full == (
-        "<dec><call> set_lights<arg> room<val> kitchen<end><arg> on<val> false<end>"
+        "<dec><call> set lights<arg> room<val> kitchen<end><arg> on<val> false<end>"
         "<arg> brightness<val><absent><eos>"
     )
     # Only the values, <end> and <absent> are predicted; names and keys are copied.
@@ -72,7 +72,8 @@ def test_shuffled_tools_keep_targets_consistent(library, tokenizer):
         orders.add(tuple(r.tool_names))
         for call, slot in zip(calls, r.slots, strict=False):
             assert r.tool_names[slot] == call.tool
-            assert tokenizer.decode(r.enc_ids[r.tool_pos[slot] + 1 :]).startswith(f" {call.tool} ")
+            header = tokenizer.decode(r.enc_ids[r.tool_pos[slot] + 1 :])
+            assert header.startswith(f" {spoken(call.tool)} ")
         assert r.slots[3:] == [STOP] * (CFG.n_slots - 3)
         # Calls stay in their own order: the decoder doesn't depend on the tool order.
         assert r.dec_ids == render(ex, tokenizer, CFG).dec_ids
