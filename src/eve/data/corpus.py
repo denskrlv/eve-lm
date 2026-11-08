@@ -227,6 +227,7 @@ def encode_corpus(
     meta = {
         "tokenizer": str(tokenizer_path),
         "vocab_size": tokenizer.vocab_size,
+        "tokenizer_fingerprint": tokenizer.fingerprint(),
         "dtype": "uint16",
         "val_tokens": counts["val"],
         "train_tokens": counts["train"],

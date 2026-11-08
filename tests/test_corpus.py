@@ -6,8 +6,10 @@ from pathlib import Path
 import numpy as np
 import pyarrow as pa
 import pyarrow.parquet as pq
+import pytest
 
 from eve.cli import main
+from eve.config import preset
 from eve.data import corpus
 from eve.data.corpus import (
     encode_corpus,
@@ -17,7 +19,8 @@ from eve.data.corpus import (
     take_bytes,
     tokenizer_texts,
 )
-from eve.tokenizer.bpe import EOS
+from eve.data.modules import span_corruption
+from eve.tokenizer.bpe import EOS, BPETokenizer
 
 ROOT = Path(__file__).parents[1]
 
@@ -118,3 +121,17 @@ def test_tokenizer_train_and_stats_commands(tmp_path, capsys):
     main(["tokenizer", "stats", *web, "--tokenizer", tokenizer, "--text", "1k", "--skip", "0"])
     out = capsys.readouterr().out
     assert "tokens/word" in out and "vocabulary" in out
+
+
+def test_pretraining_refuses_token_files_from_another_tokenizer(tokenizer, tmp_path):
+    write_parquet(tmp_path / "web.parquet", [f"Document {i}: lights on." for i in range(300)])
+    tokenizer.save(tmp_path / "tok.json")
+    meta = encode_corpus(
+        [[tmp_path / "web.parquet"]], tmp_path / "tok.json", tmp_path / "bin", 3000, 500, workers=1
+    )
+    assert meta["tokenizer_fingerprint"] == tokenizer.fingerprint()
+    span_corruption(tokenizer, preset("tiny"), 0, path=str(tmp_path / "bin"))  # its own: fine
+
+    other = BPETokenizer.train([("some other text entirely", 3)], vocab_size=400)
+    with pytest.raises(ValueError, match="eve corpus encode"):
+        span_corruption(other, preset("tiny"), 0, path=str(tmp_path / "bin"))
