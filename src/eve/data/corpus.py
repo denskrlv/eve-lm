@@ -2,8 +2,7 @@ import json
 import logging
 import os
 import time
-from collections.abc import Iterable, Iterator, Sequence
-from dataclasses import dataclass
+from collections.abc import Iterable, Iterator
 from itertools import chain, islice
 from multiprocessing import Pool
 from multiprocessing.pool import Pool as PoolType
@@ -38,48 +37,6 @@ def take_bytes(docs: Iterable[str], n_bytes: int, skip_bytes: int = 0) -> Iterat
         if seen >= skip_bytes:
             yield doc
         seen += size
-
-
-@dataclass
-class Mixed:
-    """What ``mix_documents`` has yielded so far."""
-
-    web_bytes: int = 0
-    extra_bytes: int = 0
-    extra_documents: int = 0
-
-    @property
-    def share(self) -> float:
-        """The share of the bytes that came from the extra documents."""
-        total = self.web_bytes + self.extra_bytes
-        return self.extra_bytes / total if total else 0.0
-
-
-def mix_documents(
-    web: Iterable[str],
-    extra: Sequence[str],
-    share: float,
-    seed: int = 0,
-    counts: Mixed | None = None,
-) -> Iterator[str]:
-    """``web`` with ``extra`` spread through it, so the extra documents make about ``share`` of
-    the UTF-8 bytes. The extra documents come in a shuffled order; when they run out they are
-    shuffled again and repeat. ``counts`` (if given) is updated as documents are yielded."""
-    if not 0 <= share < 1:
-        raise ValueError(f"share must be in [0, 1), got {share}")
-    counts = counts if counts is not None else Mixed()
-    rng = np.random.default_rng(seed)
-    queue: list[int] = []
-    for doc in web:
-        counts.web_bytes += len(doc.encode("utf-8"))
-        yield doc
-        while extra and counts.extra_bytes < share * (counts.web_bytes + counts.extra_bytes):
-            if not queue:
-                queue = rng.permutation(len(extra)).tolist()
-            doc = extra[queue.pop()]
-            counts.extra_bytes += len(doc.encode("utf-8"))
-            counts.extra_documents += 1
-            yield doc
 
 
 def tokenizer_texts(
@@ -201,12 +158,9 @@ def _encode_splits(
     val_tokens: int,
     workers: int,
     docs_per_chunk: int,
-    mix: tuple[Sequence[str], float, int, Mixed] | None = None,
 ) -> dict[str, int]:
     """Encode documents with ``workers`` processes into ``val.bin``, then ``train.bin``.
-    ``mix`` (documents, share, seed, counts) is spread through the train documents only, so
-    the val tokens stay comparable between runs with and without it. Returns the tokens
-    written to each."""
+    Returns the tokens written to each."""
     web = iter_documents(paths)
     bar = _Progress(val_tokens + train_tokens)
     with (
@@ -217,12 +171,8 @@ def _encode_splits(
         val, ahead = _encode_into(
             pool, web, val_file, val_tokens, True, workers, docs_per_chunk, bar
         )
-        docs: Iterator[str] = chain(ahead, web)
-        if mix is not None:
-            extra, share, seed, counts = mix
-            docs = mix_documents(docs, extra, share, seed, counts)
         train, _ = _encode_into(
-            pool, docs, train_file, train_tokens, False, workers, docs_per_chunk, bar
+            pool, chain(ahead, web), train_file, train_tokens, False, workers, docs_per_chunk, bar
         )
     bar.close()
     return {"val": val, "train": train}
@@ -236,20 +186,10 @@ def encode_corpus(
     val_tokens: int,
     workers: int | None = None,
     docs_per_chunk: int = 256,
-    mix: Iterable[str | Path] = (),
-    mix_share: float = 0.0,
-    seed: int = 0,
 ) -> dict[str, Any]:
     """Encode documents into ``val.bin`` (whole documents, at least ``val_tokens``) and then
-    ``train.bin`` (exactly ``train_tokens``). Returns what it writes to ``meta.json``.
-
-    ``mix`` are parquet files (TinyTools) spread through the train documents to make about
-    ``mix_share`` of their text; ``val.bin`` stays web text only."""
-    paths, mix = list(paths), list(mix)
-    extra = list(iter_documents(mix))
-    if mix and not extra:
-        raise ValueError(f"no documents in {[str(p) for p in mix]}")
-    mixed = Mixed()
+    ``train.bin`` (exactly ``train_tokens``). Returns what it writes to ``meta.json``."""
+    paths = list(paths)
     tokenizer = BPETokenizer.load(tokenizer_path)
     if tokenizer.vocab_size > np.iinfo(np.uint16).max:
         raise ValueError("vocabulary too large for uint16")
@@ -265,7 +205,6 @@ def encode_corpus(
         val_tokens,
         workers,
         docs_per_chunk,
-        (extra, mix_share, seed, mixed) if extra else None,
     )
 
     meta = {
@@ -276,21 +215,6 @@ def encode_corpus(
         "train_tokens": counts["train"],
         "sources": [str(p) for p in paths],
     }
-    if extra:
-        # read ahead of train.bin's end, so the counts are a little high
-        passes = mixed.extra_documents / len(extra)
-        meta["mix"] = {
-            "sources": [str(p) for p in mix],
-            "share": mix_share,
-            "byte_share": round(mixed.share, 4),
-            "documents": len(extra),
-            "passes": round(passes, 2),
-        }
-        if passes > 1:
-            logger.warning(
-                f"the {len(extra):,} mixed documents repeat about {passes:.1f} times; "
-                "write more or lower --mix-share"
-            )
     (out_dir / "meta.json").write_text(json.dumps(meta, indent=2))
     if counts["train"] < train_tokens:
         logger.warning(f"the corpus ran out after {counts['train']:,} train tokens")

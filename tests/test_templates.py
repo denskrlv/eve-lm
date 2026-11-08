@@ -102,6 +102,12 @@ def test_tidy():
     assert tidy("  set it  to 40 % , please ") == "set it to 40%, please"
 
 
+def test_tidy_drops_a_word_said_twice():
+    # a value that already has the template's word: "the {name} sprint" with "the cleanup sprint"
+    assert tidy("get rid of the the cleanup sprint sprint") == "get rid of the cleanup sprint"
+    assert tidy("set the book Dune to To read") == "set the book Dune to read"
+
+
 def test_fan_out_repeats_the_call_per_option():
     f = fill(LIGHTS, "turn {on:on|off} the lights everywhere{room=*}", {}, np.random.default_rng(0))
     assert f.fanout == "room" and "room" not in f.args

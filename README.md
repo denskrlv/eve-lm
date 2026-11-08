@@ -52,7 +52,7 @@ The second request names no room, so Eve answers **ask** and marks `room` as the
 
 ## Results
 
-`eve-32m`, first training run: ~32M parameters, pretrained on 850M tokens, then fine-tuned for 8,038 steps on intents, tools and argument values together. A run on the current data, with math trained on and TinyTools, comes next.
+`eve-32m`, first training run: ~32M parameters, pretrained on 850M tokens, then fine-tuned for 8,038 steps on intents, tools and argument values together. A run on the current data, with math trained on, comes next.
 
 | Eval set | What it measures | Exact ↑ | Macro recall ↑ | Values ↑ | Full call ↑ |
 |---|---|---|---|---|---|
@@ -84,7 +84,7 @@ A request counts as *familiar* when every tool's schema fingerprint is in the tr
 
 - **New tools are the hard part.** On familiar tools the model is accurate and, after calibration, honest about it. On held-out tools it is confidently wrong: before calibration it was 99% sure of the intent and right 64% of the time.
 - **It matches words, not meaning.** In 76% of training calls the request shares a content word with the tool's name. On new tools, Eve gets 71% of calls exact when they share a word and 30% when they don't. "20 plus 10" with an `add` tool is answered *unsupported*, and "make it warmer in here" doesn't find `set_thermostat`.
-- **So the next fix is data, not size.** TinyTools is a [TinyStories](https://arxiv.org/abs/2305.07759)-style pretraining corpus of the background knowledge new tools need: how everyday things work, many ways to say the same request, and assistant dialogues. The first round converts permissively licensed datasets (about 25–35M tokens); the next experiment pretrains with and without it on the same token budget and compares accuracy on tools the model never saw.
+- **So the next fix is data, not size.** Fine-tuning needs more variety: more tools, more ways to say each request, and more requests that leave an argument out.
 
 ## Status
 
@@ -97,7 +97,6 @@ A request counts as *familiar* when every tool's schema fingerprint is in the tr
 - ✅ Metrics and calibration
 - ✅ Retriever that picks the 1–5 tools to show the model (`eve-32m-retriever`)
 - 🚧 Python library (`Eve.load`, `eve.respond`) and inference on a Raspberry Pi 5: library done; PyPI release, weights and Pi coming soon
-- 🚧 TinyTools pretraining corpus: round 1, converting existing datasets
 
 ## Use it in Python
 
@@ -177,7 +176,7 @@ The whole pipeline, from raw text to a calibrated model. Each command writes whe
 | 1. Tokenizer: 8k byte-level BPE on web text, tool schemas and commands | `uv run eve tokenizer train` |
 | 2. Pretraining corpus: FineWeb-Edu to token ids | `uv run eve corpus encode` |
 | 3. Pretrain with span corruption | `uv run eve run configs/experiments/eve-32m-pretrain.toml` |
-| 4. Task data: hand-written tools, templates, chat-written requests, xLAM, MASSIVE | `uv run eve data external && uv run eve data build` |
+| 4. Task data: hand-written tools, templates, xLAM, MASSIVE | `uv run eve data external && uv run eve data build` |
 | 5. Fine-tune intents, tools and values together | `uv run eve run configs/experiments/eve-32m.toml` |
 | 6. Evaluate | `uv run eve evaluate artifacts/runs/eve-32m` |
 | 7. Fit and save the temperatures | `uv run eve calibrate artifacts/runs/eve-32m --save` |
@@ -245,24 +244,17 @@ uv run eve compare artifacts/runs/ab-*            # val metrics of several runs 
 
 - **Hand-written tools.** 46 tools in 12 everyday domains (home, media, calendar, car, math, …) in [`data/tools/`](data/tools), each with request templates. [`data/tools/heldout/`](data/tools/heldout) holds 4 more, travel, that the model never trains on. Until 2026-10-28 math was held out too (the models in [Results](#results) never saw it).
 - **Generated tools.** 1,042 more tools are generated in code, so the model learns to read schemas rather than memorise names.
-- **Chat-written requests.** Code picks the answer for each scenario (intent, calls, missing arguments) and an LLM writes only the request, following [`data/generation/README.md`](data/generation/README.md); `eve data check` rejects any request that doesn't lead to exactly those calls.
 - **External data.** xLAM and MASSIVE, converted.
 - **Splits.** `data/task/` holds `train`, the only split trained on. Every set a model is scored on is in `data/evals/`, and anything trained on is deduplicated against all of them:
 
   | Set | What it measures |
   |---|---|
-  | `val` | tools seen in training; picks checkpoints and fits the familiar-tool temperatures |
-  | `heldout-templates` | the 4 held-out travel tools, in template requests |
+  | `val` | MASSIVE dev: tools seen in training; picks checkpoints and fits the familiar-tool temperatures |
+  | `heldout-templates` | the 4 held-out travel tools, in template requests; also fits the new-tool temperatures |
   | `massive-test` | MASSIVE's human-written test requests |
-  | `probe-candidates` | a small mixed set for fitting the new-tool temperatures |
   | `novel-tools` | 41 made-up tools in 12 domains, with 243 hand-written requests; it scores the requests that share a word with the tool's name and those that don't separately |
 
   The novel-tools benchmark is built from [`data/novel-tools/`](data/novel-tools).
-
-```bash
-uv run eve data batch --split val --ask 0.4   # scenarios for a chat to write requests for
-uv run eve data check batch-0001              # validate what it wrote
-```
 
 </details>
 
@@ -360,7 +352,7 @@ eve-lm/
 │   └── experiments/       # Whole experiments for `eve run`: pretraining, joint, retriever
 ├── data/
 │   ├── tools/             # Hand-written tool schemas; heldout/ is never trained on
-│   ├── generation/        # Scenario batches and the chat-written requests
+│   ├── generation/        # Small talk and unsupported requests for the templates
 │   └── novel-tools/       # The novel-tools benchmark: made-up tools and their requests
 ├── notebooks/             # Pretraining on Kaggle
 ├── src/eve/
@@ -381,7 +373,6 @@ eve-lm/
 ## Acknowledgements
 
 - Sebastian Raschka, [*Build a Large Language Model (From Scratch)*](https://www.manning.com/books/build-a-large-language-model-from-scratch), a reference for the from-scratch implementation.
-- Eldan & Li, [*TinyStories*](https://arxiv.org/abs/2305.07759), the idea behind TinyTools.
 - [FineWeb-Edu](https://huggingface.co/datasets/HuggingFaceFW/fineweb-edu), [MASSIVE](https://github.com/alexa/massive) and [xLAM function-calling 60k](https://huggingface.co/datasets/Salesforce/xlam-function-calling-60k) for the data.
 
 ## Citation

@@ -319,6 +319,8 @@ def _fill(
 
 
 def tidy(text: str) -> str:
-    """Collapse spaces and remove spaces before punctuation."""
+    """Collapse spaces, remove spaces before punctuation and say a word said twice in a row once
+    (a value that already holds the template's word: "the {name} sprint", "the cleanup sprint")."""
     text = re.sub(r"\s+", " ", text).strip()
+    text = re.sub(r"\b(\w+) \1\b", r"\1", text, flags=re.IGNORECASE)
     return re.sub(r"\s+([,.?!%])", r"\1", text)

@@ -465,9 +465,7 @@ def add_evaluate(commands: Subcommands) -> None:
     parser.set_defaults(run=evaluate)
     add_model_arg(parser)
     parser.add_argument("--evals", default=defaults.EVALS_DIR, help="where the sets are")
-    parser.add_argument(
-        "--sets", nargs="+", default=list(SETS), help="set names, e.g. probe-candidates"
-    )
+    parser.add_argument("--sets", nargs="+", default=list(SETS), help="set names, e.g. novel-tools")
     parser.add_argument("--batch-size", type=int, default=TRAIN_DEFAULTS.batch_size)
     parser.add_argument("--by-tool", action="store_true", help="also a row per gold tool")
     add_json_arg(parser, "the results as one JSON object")
@@ -487,7 +485,7 @@ def add_calibrate(commands: Subcommands) -> None:
         "--fit-familiar", default="val", help="set whose familiar-tool examples fit those"
     )
     parser.add_argument(
-        "--fit-new", default="probe-candidates", help="set whose new-tool examples fit those"
+        "--fit-new", default="heldout-templates", help="set whose new-tool examples fit those"
     )
     parser.add_argument("--sets", nargs="+", default=list(SETS), help="sets to check them on")
     parser.add_argument("--save", action="store_true", help="write them into the model file")

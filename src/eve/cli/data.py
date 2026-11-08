@@ -2,7 +2,6 @@
 
 import argparse
 import glob
-import json
 import time
 from collections.abc import Sequence
 from pathlib import Path
@@ -104,8 +103,6 @@ def corpus_encode(args: argparse.Namespace) -> None:
     """Encode the pretraining corpus into train and val token files."""
     from eve.data.corpus import encode_corpus
 
-    if args.mix and not 0 < args.mix_share < 1:
-        raise SystemExit(f"--mix-share must be between 0 and 1, got {args.mix_share}")
     meta = encode_corpus(
         _parquet_files(args.parquet),
         args.tokenizer,
@@ -113,50 +110,8 @@ def corpus_encode(args: argparse.Namespace) -> None:
         train_tokens=count(args.train_tokens),
         val_tokens=count(args.val_tokens),
         workers=args.workers,
-        mix=_parquet_files(args.mix) if args.mix else (),
-        mix_share=args.mix_share,
-        seed=args.seed,
     )
-    mixed = ""
-    if mix := meta.get("mix"):
-        mixed = f" ({mix['byte_share']:.0%} mixed in from {mix['documents']:,} documents)"
-    success(
-        f"train {meta['train_tokens']:,}{mixed} and val {meta['val_tokens']:,} tokens", args.out
-    )
-
-
-def _tinytools_names(names: list[str]) -> list[str]:
-    """The named TinyTools sources, or all of them; exits on an unknown name."""
-    from eve.data.tinytools.build import SOURCES
-
-    if unknown := [n for n in names if n not in SOURCES]:
-        raise SystemExit(f"unknown sources {unknown}; choose from {sorted(SOURCES)}")
-    return names or list(SOURCES)
-
-
-def corpus_fetch(args: argparse.Namespace) -> None:
-    """Download the TinyTools sources into the raw folder."""
-    from eve.data.tinytools.build import SOURCES
-    from eve.data.tinytools.fetch import fetch
-
-    for name in _tinytools_names(args.sources):
-        saved = fetch(SOURCES[name].downloads, Path(args.raw), args.force)
-        success(f"{name}: {len(saved)} downloaded" if saved else f"{name}: already here")
-
-
-def corpus_tinytools(args: argparse.Namespace) -> None:
-    """Convert the downloaded TinyTools sources into one parquet file each."""
-    from eve.data.tinytools.build import build_tinytools
-
-    names = _tinytools_names(args.sources)
-    report = build_tinytools(names, args.raw, args.out, args.tokenizer, args.seed)
-    built = {n: report["sources"][n] for n in names}
-    if lacking := [n for n, r in built.items() if "missing" in r]:
-        warn(f"not downloaded yet: {', '.join(lacking)} (run `eve corpus fetch`)")
-    console.print(tree("TinyTools", {n: r for n, r in built.items() if "missing" not in r}))
-    if not report["eval_sets"]:
-        warn("no eval sets found to dedupe against: run `eve data build` first")
-    success(f"{report['tokens']:,} tokens in all", Path(args.out) / "report.json")
+    success(f"train {meta['train_tokens']:,} and val {meta['val_tokens']:,} tokens", args.out)
 
 
 def data_build(args: argparse.Namespace) -> None:
@@ -178,8 +133,6 @@ def data_build(args: argparse.Namespace) -> None:
         preset("eve-32m"),
     )
     console.print(_splits_table(report["splits"]))
-    if rejected := report["rejected_chat_lines"]:
-        warn(f"{rejected} chat-written lines rejected (see `eve data check`)")
     success("built", Path(args.out) / "report.json")
 
 
@@ -204,53 +157,6 @@ def data_external(args: argparse.Namespace) -> None:
         return
     console.print(tree("external data", report))
     success("converted", Path(args.out) / "report.json")
-
-
-def data_batch(args: argparse.Namespace) -> None:
-    """Write new scenario batches for chat writers to fill in."""
-    from eve.data.generate.build import Sources, make_batch, next_batch_name
-
-    batches = Path(args.dir) / "batches"
-    batches.mkdir(parents=True, exist_ok=True)
-    for _ in range(args.count):
-        name = next_batch_name(batches)
-        seed = int(name.split("-")[1])
-        sources = Sources.load(generation_dir=args.dir)
-        batch = make_batch(sources, name, args.n, args.split, seed, args.ask)
-        (batches / f"{name}.json").write_text(json.dumps(batch, indent=1, ensure_ascii=False))
-        success(f"{args.n} {args.split} scenarios", batches / f"{name}.json")
-
-
-def data_check(args: argparse.Namespace) -> None:
-    """Validate a chat-written batch; exit with 1 if a line is rejected or missing."""
-    from eve.data.generate.build import Sources, check_written
-    from eve.data.jsonl import read_jsonl
-
-    batch_path = Path(args.dir) / "batches" / f"{args.batch}.json"
-    if not batch_path.is_file():
-        raise SystemExit(f"no batch {args.batch} in {Path(args.dir) / 'batches'}")
-    batch = json.loads(batch_path.read_text())
-    written_path = Path(args.dir) / "written" / f"{args.batch}.jsonl"
-    written = read_jsonl(written_path) if written_path.exists() else []
-    examples, rejects = check_written(batch, written, Sources.load(generation_dir=args.dir).library)
-    missing = {s["id"] for s in batch["scenarios"]} - {line.get("id") for line in written}
-    if rejects:
-        console.print(_rejects_table(rejects))
-    counts = f"{len(examples)} ok · {len(rejects)} rejected · {len(missing)} scenarios not written"
-    if rejects or missing:
-        console.print(Text(f"✗ {counts}", style="bold red"))
-        raise SystemExit(1)
-    success(counts)
-
-
-def _rejects_table(rejects: list[tuple[dict[str, Any], list[str]]]) -> "Table":
-    """One row per rejected line: its id, its utterance and why it was rejected."""
-    out = table("id", "utterance", "errors", first_style="dim")
-    for column in out.columns[1:]:  # text, not numbers: left-aligned and wrapped
-        column.justify, column.no_wrap = "left", False
-    for line, errors in rejects:
-        out.add_row(str(line.get("id")), str(line.get("utterance")), Text("\n".join(errors), "red"))
-    return out
 
 
 def add_tokenizer(commands: Subcommands) -> None:
@@ -283,7 +189,7 @@ def add_tokenizer(commands: Subcommands) -> None:
 
 
 def add_corpus(commands: Subcommands) -> None:
-    """Register ``eve corpus encode``, ``fetch`` and ``tinytools``."""
+    """Register ``eve corpus encode``."""
     group = commands.add_parser("corpus", help="the pretraining corpus")
     corpus_commands = group.add_subparsers(dest="corpus_command", required=True)
     parser = corpus_commands.add_parser("encode", help="encode parquet text to token ids")
@@ -294,32 +200,11 @@ def add_corpus(commands: Subcommands) -> None:
     parser.add_argument("--train-tokens", default="900M")
     parser.add_argument("--val-tokens", default="2M")
     parser.add_argument("--workers", type=int, default=None)
-    parser.add_argument(
-        "--mix", help="a glob of parquet files (a text column) to spread through the train tokens"
-    )
-    parser.add_argument(
-        "--mix-share", type=float, default=0.3, help="their share of the train text (with --mix)"
-    )
-    parser.add_argument("--seed", type=int, default=0, help="the order of the mixed documents")
-    parser = corpus_commands.add_parser("fetch", help="download the TinyTools sources")
-    parser.set_defaults(run=corpus_fetch)
-    parser.add_argument("sources", nargs="*", help="default: all")
-    parser.add_argument("--raw", default=defaults.RAW_DIR)
-    parser.add_argument("--force", action="store_true", help="download again what is there")
-    parser = corpus_commands.add_parser(
-        "tinytools", help="convert the TinyTools sources -> data/tinytools/*.parquet"
-    )
-    parser.set_defaults(run=corpus_tinytools)
-    parser.add_argument("sources", nargs="*", help="default: all")
-    parser.add_argument("--raw", default=defaults.RAW_DIR)
-    parser.add_argument("--out", default=defaults.TINYTOOLS_DIR)
-    parser.add_argument("--tokenizer", default=defaults.TOKENIZER_FILE, help="counts the tokens")
-    parser.add_argument("--seed", type=int, default=0)
 
 
 def _add_data_build_command(data_commands: Subcommands) -> None:
     parser = data_commands.add_parser(
-        "build", help="templates + chat-written -> data/task/train.jsonl, data/evals/*.jsonl"
+        "build", help="templates + external -> data/task/train.jsonl, data/evals/*.jsonl"
     )
     parser.set_defaults(run=data_build)
     parser.add_argument("--out", default=defaults.TASK_DIR, help="where train.jsonl goes")
@@ -341,7 +226,7 @@ def _add_data_build_command(data_commands: Subcommands) -> None:
 
 
 def add_data(commands: Subcommands) -> None:
-    """Register ``eve data build``, ``external``, ``batch`` and ``check``."""
+    """Register ``eve data build`` and ``external``."""
     data = commands.add_parser("data", help="build the task dataset")
     data_commands = data.add_subparsers(dest="data_command", required=True)
     _add_data_build_command(data_commands)
@@ -350,14 +235,3 @@ def add_data(commands: Subcommands) -> None:
     parser.add_argument("--raw", default=defaults.RAW_DIR)
     parser.add_argument("--out", default=defaults.EXTERNAL_DIR)
     parser.add_argument("--seed", type=int, default=0)
-    parser = data_commands.add_parser("batch", help="new scenario batches for chat writers")
-    parser.set_defaults(run=data_batch)
-    parser.add_argument("--split", choices=["train", "val", "probe"], default="train")
-    parser.add_argument("--n", type=int, default=50, help="scenarios per batch")
-    parser.add_argument("--count", type=int, default=1, help="how many batches")
-    parser.add_argument("--ask", type=float, default=None, help="share of ASK scenarios, e.g. 0.3")
-    parser.add_argument("--dir", default=defaults.GENERATION_DIR)
-    parser = data_commands.add_parser("check", help="validate a chat-written batch")
-    parser.set_defaults(run=data_check)
-    parser.add_argument("batch", help="e.g. batch-0001")
-    parser.add_argument("--dir", default=defaults.GENERATION_DIR)

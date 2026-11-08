@@ -14,7 +14,7 @@ probability is the product of its tokens'.
 And two regimes (``Calibrations``): requests whose tools all appear in the training data
 (familiar), and requests with a tool the model never saw (new). On new tools the model is as
 sure as on familiar ones but right far less often, so each regime gets its own temperatures,
-fitted on its own examples: familiar ones of val, new ones of the probe split.
+fitted on its own examples: familiar ones of val, new ones of heldout-templates.
 """
 
 from collections.abc import Iterator, Sequence

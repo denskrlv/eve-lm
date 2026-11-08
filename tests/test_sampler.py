@@ -1,10 +1,11 @@
+import re
 from pathlib import Path
 
 import numpy as np
 import pytest
 
 from eve.data.generate.build import Sources
-from eve.data.generate.sampler import ToolBank, sample
+from eve.data.generate.sampler import ToolBank, _decorate, sample
 from eve.data.generate.validate import check_example
 from eve.data.render import IGNORE, render
 
@@ -32,7 +33,7 @@ def test_samples_are_valid(bank, sources, intent):
         caps = [bank.specs[bank.index[t.name]].capability for t in ex.tools]
         assert len(set(caps)) == len(caps)  # never two tools that do the same thing
         if intent == "ask":
-            assert s.missing and all(ex.calls[0].args[m] == "?" for m in s.missing)
+            assert "?" in ex.calls[0].args.values()
 
 
 def test_unsupported_never_offers_a_tool_that_could_serve_it(bank, sources):
@@ -91,7 +92,8 @@ def test_conversions_are_sensible(sources):
     missing = {name: set() for name in sides}
     for _ in range(300):
         s = sample(bank, rng, "ask", pool=pool)
-        missing[s.example.calls[0].tool] |= set(s.missing)
+        call = s.example.calls[0]
+        missing[call.tool] |= {k for k, v in call.args.items() if v == "?"}
     assert missing == {
         "convert_units": {"value", "to_unit"},  # "convert km to miles", "convert 5 km"
         "convert_currency": {"amount", "to_currency"},
@@ -121,3 +123,20 @@ def test_fan_out_examples(bank):
     rooms = bank.specs[bank.index["set_lights"]].tool.arg("room").options
     for ex in fanned:
         assert [c.args["room"] for c in ex.calls[: len(rooms)]] == list(rooms)
+
+
+def test_decorations_read_right(bank, sources):
+    """No prefix that needs a verb before a number or a noun ("can you 81 less 95"), and no
+    suffix the request already ends with ("open now now")."""
+    rng = np.random.default_rng(3)
+    for _ in range(2000):
+        drawn = sample(bank, rng, chitchat=sources.chitchat, unsupported=sources.unsupported)
+        utterance = drawn.example.utterance
+        assert not re.match(r"(?i)(please|can you|could you|i want to) (\d|the |a |my )", utterance)
+        assert not re.search(r"(?i)\b(\w+) \1\b", utterance), utterance
+
+
+def test_a_suffix_is_never_said_twice():
+    rng = np.random.default_rng(0)
+    texts = {_decorate("the shop is open now", rng) for _ in range(200)}
+    assert not any(re.search(r"(?i)\bnow now\b", t) for t in texts), texts
