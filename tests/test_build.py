@@ -11,9 +11,11 @@ from eve.data.generate.build import (
     make_batch,
     next_batch_name,
 )
+from eve.data.generate.validate import normalize
 from eve.data.jsonl import read_jsonl
 
 ROOT = Path(__file__).parents[1]
+LINE_FILES = [f"{d}{n}.txt" for d in ("", "heldout/") for n in ("chitchat", "unsupported")]
 
 
 @pytest.fixture(scope="module")
@@ -59,8 +61,8 @@ def test_probe_batches_use_held_out_tools(sources):
 
 def test_build(tmp_path, sources):
     gen = tmp_path / "generation"
-    for name in ("chitchat.txt", "unsupported.txt"):
-        (gen / name).parent.mkdir(exist_ok=True)
+    for name in LINE_FILES:
+        (gen / name).parent.mkdir(parents=True, exist_ok=True)
         (gen / name).write_text((ROOT / "data/generation" / name).read_text())
     (gen / "batches").mkdir()
     (gen / "written").mkdir()
@@ -89,8 +91,9 @@ def test_build(tmp_path, sources):
     assert report["splits"]["val"]["examples"] == 10
     assert report["rejected_chat_lines"] == 1
     assert sorted(p.name for p in (tmp_path / "task").iterdir()) == ["report.json", "train.jsonl"]
-    val = {r["utterance"] for r in read_jsonl(tmp_path / "evals/val.jsonl")}
-    assert not val & {r["utterance"] for r in read_jsonl(tmp_path / "task/train.jsonl")}
+    train = {normalize(r["utterance"]) for r in read_jsonl(tmp_path / "task/train.jsonl")}
+    for path in (tmp_path / "evals").glob("*.jsonl"):  # every scored set stays unseen
+        assert not train & {normalize(r["utterance"]) for r in read_jsonl(path)}, path.name
     heldout = read_jsonl(tmp_path / "evals/heldout-templates.jsonl")
     assert len(heldout) == 50
     novel = read_jsonl(tmp_path / "evals/novel-tools.jsonl")

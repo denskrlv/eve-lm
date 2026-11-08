@@ -1,0 +1,18 @@
+# Small talk for the held-out set only (heldout-templates, intent "none"): never trained on,
+# so its NONE recall isn't memorized. ../chitchat.txt has the training lines.
+thank you so much
+cancel that, I changed my mind
+you always make me laugh
+okay cool
+nope, nothing
+do you like music
+I love the new blinds in the bedroom
+the thermostat in this house is ancient
+I should drink more water
+I made banana bread yesterday
+I think the fan is making a weird noise
+coffee is the best part of the morning
+see you later
+hmm
+I'm leaving for work
+life is good today
