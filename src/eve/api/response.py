@@ -120,12 +120,15 @@ class Response:
     def run(self, min_confidence: float = 0.0) -> list[Any]:
         """Call the Python function of each call, in order, and return their results.
 
-        Nothing runs unless all of it can: the intent is ``"call"``, every call is to a tool
-        given as a function and has every argument it needs, and the intent and every tool
-        choice are at least ``min_confidence`` likely. Otherwise this raises ``EveError``.
+        Nothing runs unless all of it can: the intent is ``"call"`` with at least one call,
+        every call is to a tool given as a function and has every argument it needs, and the
+        intent and every tool choice are at least ``min_confidence`` likely. Otherwise this
+        raises ``EveError``.
         """
         if self.intent != "call":
             raise EveError(f"the intent is {self.intent!r}, so there is nothing to run")
+        if not self.calls:  # the intent head says call, but the first slot says STOP
+            raise EveError("the intent is 'call', but no tool was picked")
         if self.confidence < min_confidence:
             raise EveError(f"intent confidence {self.confidence:.0%} < {min_confidence:.0%}")
         for call in self.calls:

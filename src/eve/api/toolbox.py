@@ -31,7 +31,10 @@ class ToolBox:
         """Register tools: functions, JSON schema dicts or ``Tool`` objects, or lists of them.
         A tool with the name of a registered one takes its place."""
         for item in tools:
-            if isinstance(item, list | tuple | ToolBox):
+            if isinstance(item, ToolBox):  # its entries, functions included: iterating gives Tools
+                self._tools.update(item._tools)
+                continue
+            if isinstance(item, list | tuple):
                 self.add(*item)
                 continue
             tool, function = to_tool(item)  # type: ignore[arg-type]
