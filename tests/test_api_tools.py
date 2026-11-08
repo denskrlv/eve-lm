@@ -120,6 +120,22 @@ def test_json_schemas_eve_cant_read_say_why(prop: dict[str, object], reason: str
         from_json_schema(data)
 
 
+@pytest.mark.parametrize(
+    ("parameters", "reason"),
+    [
+        ("an object", "parameters must be an object schema"),
+        ({"properties": ["x"]}, "properties must be an object"),
+        ({"properties": {"x": "string"}}, "argument 'x' must be a schema object"),
+        ({"properties": {"x": {"type": "string"}}, "required": "x"}, "required must be a list"),
+        ({"properties": {"x": {"type": "string", "enum": "ab"}}}, "enums hold strings"),
+    ],
+)
+def test_malformed_json_schemas_say_why(parameters: object, reason: str) -> None:
+    data = {"name": "f", "description": "Do it.", "parameters": parameters}
+    with pytest.raises(eve.ToolError, match=f"'f'.*{reason}"):
+        from_json_schema(data)
+
+
 def test_eve_schemas_and_tools_pass_through(library: dict[str, Tool]) -> None:
     lamp = library["set_lights"]
     assert to_tool(lamp) == (lamp, None)

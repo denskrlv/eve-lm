@@ -170,8 +170,9 @@ def _json_arg(name: str, spec: Mapping[str, Any], required: bool) -> Arg:
     required = required and not nullable
     description = _one_line(str(spec.get("description", "")))
     if "enum" in spec:
-        values = [v for v in spec["enum"] if v is not None]
-        if kind != "string" or not all(isinstance(v, str) for v in values):
+        listed = isinstance(spec["enum"], list | tuple)  # a string would be read as its letters
+        values = [v for v in spec["enum"] if v is not None] if listed else []
+        if not listed or kind != "string" or not all(isinstance(v, str) for v in values):
             raise ToolError(f"argument {name!r}: Eve's enums hold strings, got {spec['enum']}")
         return Arg(name, "enum", required, tuple(values), description=description)
     if kind not in JSON_TYPES:
@@ -187,12 +188,18 @@ def from_json_schema(data: Mapping[str, Any]) -> Tool:
         data = data["function"]
     name = str(data.get("name", ""))
     schema = data.get("parameters") or data.get("input_schema") or data.get("inputSchema") or {}
-    if schema.get("type", "object") != "object":
+    if not isinstance(schema, Mapping) or schema.get("type", "object") != "object":
         raise ToolError(f"tool {name!r}: its parameters must be an object schema")
-    required = set(schema.get("required", ()))
+    properties, required = schema.get("properties", {}), schema.get("required", [])
+    if not isinstance(properties, Mapping):
+        raise ToolError(f"tool {name!r}: its properties must be an object of argument schemas")
+    if not isinstance(required, list | tuple):  # a string would be read as a set of letters
+        raise ToolError(f"tool {name!r}: required must be a list of argument names")
     args = []
-    for arg_name, spec in schema.get("properties", {}).items():
+    for arg_name, spec in properties.items():
         try:
+            if not isinstance(spec, Mapping):
+                raise ToolError(f"argument {arg_name!r} must be a schema object, got {spec!r}")
             args.append(_json_arg(arg_name, spec, arg_name in required))
         except (SchemaError, ToolError) as error:
             raise ToolError(f"tool {name!r}: {error}") from None
