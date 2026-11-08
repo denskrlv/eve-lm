@@ -18,7 +18,7 @@ def test_presets_are_valid():
 
 
 def test_preset_sizes_match_the_plan():
-    assert 29e6 < preset("eve-32m").approx_params() < 34e6
+    assert 33e6 < preset("eve-32m").approx_params() < 37e6
     assert preset("tiny").approx_params() < 1e6
 
 

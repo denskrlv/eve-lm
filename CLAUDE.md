@@ -1,6 +1,6 @@
 # eve-lm
 
-A ~32M-parameter on-device model that turns requests into tool calls with calibrated
+A ~35M-parameter on-device model that turns requests into tool calls with calibrated
 confidences. Python 3.12+, PyTorch, managed with uv. Package code is in `src/eve/`, the CLI entry
 point is `eve` (`src/eve/cli.py`).
 
