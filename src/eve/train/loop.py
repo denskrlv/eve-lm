@@ -18,7 +18,7 @@ from torch import nn
 
 from eve import progress, registry
 from eve.components import Callback, DataModule, LossFn, OptimizerFactory, Schedule
-from eve.model.checkpoint import load_checkpoint
+from eve.model.checkpoint import MODEL_FILE, load_checkpoint
 from eve.runtime import config_of, eval_mode, to_device
 from eve.train.config import DTYPES, TrainConfig
 
@@ -277,7 +277,20 @@ def _start_step(
         return _resume(model, optimizer, out_dir, cfg)
     if resume:
         logger.info(f"nothing to resume in {out_dir}: starting a new run")
+    check_new_run(out_dir, resume)
     return 0
+
+
+def check_new_run(out_dir: Path, resume: bool) -> None:
+    """Refuse to start a new run where one already saved checkpoints: it would overwrite
+    them (and the calibration ``eve calibrate --save`` wrote into ``model.pt``)."""
+    if resume:
+        return
+    if found := [name for name in ("last.pt", MODEL_FILE) if (out_dir / name).exists()]:
+        raise FileExistsError(
+            f"{out_dir} already has {' and '.join(found)}: continue it with "
+            "--set run.resume=true, or start a new one with another --set run.out"
+        )
 
 
 def _timed(run: Run, hook: Callable[[Run, int], None], step: int) -> None:
@@ -328,9 +341,11 @@ def train(
 
     ``resume=True`` continues from ``last.pt`` exactly: the same batches, dropout masks and
     optimizer state, so the losses match an uninterrupted run. ``stop_after`` ends the run
-    early at that step (saving ``last.pt``), as if it had been interrupted.
+    early at that step (saving ``last.pt``), as if it had been interrupted. Resuming a run
+    that is already there trains and saves nothing. A new run (no ``resume``) refuses an
+    ``out_dir`` that already has ``last.pt`` or ``model.pt``.
 
-    Returns the last val metrics.
+    Returns the last val metrics (none if there was nothing left to train).
     """
     optimizer = optimizer or registry.build("optimizer", DEFAULT_OPTIMIZER)
     schedule = schedule or registry.build("schedule", DEFAULT_SCHEDULE)
@@ -342,6 +357,9 @@ def train(
     runner, opt, autocast = _prepare(model, cfg, device, optimizer)
     step = _start_step(model, opt, out_dir, cfg, resume)
     end = cfg.steps if stop_after is None else min(stop_after, cfg.steps)
+    if step >= end:  # resumed where it stops: saving again would drop model.pt's calibration
+        progress.warn(f"{out_dir} is already at step {step:,}: nothing to train")
+        return {}
     bar = progress.bar(end, out_dir.name, "steps", initial=step)  # to where this run stops
     log = MetricsLog(out_dir / "metrics.jsonl")
     run = Run(
