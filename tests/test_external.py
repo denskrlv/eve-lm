@@ -49,6 +49,10 @@ def test_helpers():
     assert short("Get the forecast. Uses an API.", 100) == "Get the forecast"
     assert short("word " * 40, 20) == "word word word word"
     assert HELD_OUT.search("Search for hotels") and not HELD_OUT.search("multiple items")
+    # money stays held out; converting units, dates or colors is trained (convert_units)
+    assert HELD_OUT.search("convert 100 USD to EUR") and HELD_OUT.search("convert my this money")
+    assert not HELD_OUT.search("Convert 20 liters to gallons")
+    assert not HELD_OUT.search("convert the date to DD-MM-YYYY with format_conversion")
 
 
 def test_xlam_tool():
@@ -115,6 +119,12 @@ def test_convert_massive():
             "annot_utt": "turn off the [house_place : kitchen] lights",
         },
         {"partition": "dev", "intent": "general_greet", "utt": "hi there", "annot_utt": "hi there"},
+        {  # "quirky" holds requests too: not small talk, so not NONE
+            "partition": "dev",
+            "intent": "general_quirky",
+            "utt": "what is the recipe for chocolate chips",
+            "annot_utt": "what is the recipe for chocolate chips",
+        },
         {
             "partition": "test",
             "intent": "transport_taxi",
@@ -140,10 +150,10 @@ def test_convert_massive():
     first = parts["train"][0]
     assert first.intent == "call" and first.calls[0].tool == MASSIVE_TOOLS["iot_hue_lightoff"][0]
     assert first.calls[0].args == {"house_place": "kitchen"}
-    assert parts["dev"][0].intent == "none" and parts["test"] == []
+    assert [ex.intent for ex in parts["dev"]] == ["none"] and parts["test"] == []
     assert (
         dropped["the same slot twice"] == 1
-        and dropped["intent left out (held-out topic or too rare)"] == 1
+        and dropped["intent left out (held-out topic or too rare)"] == 2
     )
     for ex in parts["train"]:
         if ex.intent == "unsupported":  # never offers another lights tool

@@ -3,10 +3,8 @@ module runs. The checks are on exit status and a few stable facts, not on whole 
 
 import argparse
 import functools
-import gzip
 import json
 import shlex
-import shutil
 from pathlib import Path
 
 import pytest
@@ -26,7 +24,7 @@ ROOT = Path(__file__).parents[1]
 
 
 def command_paths(parser: argparse.ArgumentParser, prefix: tuple[str, ...] = ()) -> list[list[str]]:
-    """Every command path under ``parser``: ``["data"]``, ``["data", "check"]``…"""
+    """Every command path under ``parser``: ``["data"]``, ``["data", "build"]``…"""
     paths = []
     for action in parser._actions:
         if isinstance(action, argparse._SubParsersAction):
@@ -38,7 +36,7 @@ def command_paths(parser: argparse.ArgumentParser, prefix: tuple[str, ...] = ())
 
 def test_every_subcommand_has_help(capsys: pytest.CaptureFixture[str]) -> None:
     paths = command_paths(build_parser())
-    assert len(paths) >= 20
+    assert len(paths) >= 18
     for path in paths:
         with pytest.raises(SystemExit) as exit_:
             main([*path, "--help"])
@@ -94,11 +92,6 @@ def test_retriever_eval_scores_bm25_and_a_retriever(
     assert "eve retriever eval" in capsys.readouterr().out
 
 
-def test_corpus_fetch_refuses_unknown_sources() -> None:
-    with pytest.raises(SystemExit, match="unknown sources"):
-        main(["corpus", "fetch", "nope"])
-
-
 def test_ask_reports_a_bad_schema_file(tmp_path: Path) -> None:
     (tmp_path / "broken.json").write_text("{not json")
     (tmp_path / "no-tools.json").write_text(json.dumps({"x": 1}))
@@ -142,11 +135,6 @@ def test_calibrate_refuses_a_model_without_the_joint_loss(
         main(["calibrate", str(model), *argv])
 
 
-def test_data_check_reports_a_missing_batch(tmp_path: Path) -> None:
-    with pytest.raises(SystemExit, match="batch-9999"):
-        main(["data", "check", "batch-9999", "--dir", str(tmp_path)])
-
-
 def test_compare_reports_an_unreadable_metrics_file(tmp_path: Path) -> None:
     run = tmp_path / "run-a"
     run.mkdir()
@@ -170,37 +158,6 @@ def test_compare_reports_a_metrics_file_it_cannot_read(tmp_path: Path) -> None:
     (tmp_path / "run-a" / "metrics.jsonl").mkdir(parents=True)  # a directory, not a file
     with pytest.raises(SystemExit, match="metrics.jsonl"):
         main(["compare", str(tmp_path / "run-a")])
-
-
-def test_corpus_fetch_says_what_it_downloaded(
-    monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
-) -> None:
-    import eve.data.tinytools.fetch
-
-    saved: list[list[str]] = [[], ["abcd/abcd_v1.1.json.gz"]]
-    monkeypatch.setattr(eve.data.tinytools.fetch, "fetch", lambda *args: saved.pop(0))
-
-    main(["corpus", "fetch", "abcd"])
-    main(["corpus", "fetch", "abcd", "--force"])
-
-    out = capsys.readouterr().out
-    assert "abcd: already here" in out and "abcd: 1 downloaded" in out
-
-
-def test_corpus_tinytools_converts_a_downloaded_source(
-    tmp_path: Path, capsys: pytest.CaptureFixture[str]
-) -> None:
-    convo = {"original": [["customer", "I need to return a shirt."], ["agent", "Sure."]] * 2}
-    (tmp_path / "raw/abcd").mkdir(parents=True)
-    with gzip.open(tmp_path / "raw/abcd/abcd_v1.1.json.gz", "wt") as f:
-        json.dump({"train": [convo], "dev": [], "test": []}, f)
-    out = tmp_path / "tinytools"
-    sources = ["abcd", "clinc150", "--raw", str(tmp_path / "raw"), "--out", str(out)]
-
-    main(["corpus", "tinytools", *sources, "--tokenizer", str(tmp_path / "none.json")])
-
-    assert "not downloaded yet: clinc150" in capsys.readouterr().out
-    assert (out / "abcd.parquet").is_file() and (out / "report.json").is_file()
 
 
 def test_data_external_converts_what_is_downloaded(
@@ -242,23 +199,6 @@ def test_data_build_writes_the_splits(
     assert "no tokenizer at" in capsys.readouterr().out
     assert read_jsonl(task / "train.jsonl") and (task / "report.json").is_file()
     assert (evals / "val.jsonl").is_file() and (evals / "heldout-templates.jsonl").is_file()
-
-
-def test_data_batch_then_check_a_batch_nobody_wrote(
-    tmp_path: Path, capsys: pytest.CaptureFixture[str]
-) -> None:
-    for name in ("chitchat.txt", "unsupported.txt", "heldout"):
-        source = ROOT / "data/generation" / name
-        (shutil.copytree if source.is_dir() else shutil.copy)(source, tmp_path / name)
-
-    main(["data", "batch", "--n", "3", "--dir", str(tmp_path)])
-    batch = json.loads((tmp_path / "batches/batch-0001.json").read_text())
-    assert len(batch["scenarios"]) == 3
-
-    with pytest.raises(SystemExit) as exit_:
-        main(["data", "check", "batch-0001", "--dir", str(tmp_path)])
-    assert exit_.value.code == 1
-    assert "3 scenarios not written" in capsys.readouterr().out
 
 
 def readme_commands() -> list[list[str]]:

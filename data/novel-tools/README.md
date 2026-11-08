@@ -15,8 +15,8 @@ second group is the real test. `eve evaluate` scores the groups separately.
 
 Rules when adding requests:
 - Tool names must not be in `data/tools` or the generated tools; the build refuses them.
-- Values follow `data/generation/README.md`: every text and number value appears in the request
-  as written; ASK leaves the `"?"` values out.
+- Every text and number value appears in the request as written (numbers may be words); ASK
+  leaves the `"?"` values out.
 - Keep a tool's capability distinct from every other tool here, so a distractor never fits.
-- Don't reuse a phrasing from training data or TinyTools: the build removes duplicates from
-  `train` and `val`, and TinyTools drops any request in `data/evals`. Rebuild both after changes.
+- Don't reuse a phrasing from training data: the build removes duplicates from `train` and
+  `val`. Rebuild after changes.

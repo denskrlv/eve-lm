@@ -11,19 +11,15 @@ from eve import defaults
 from eve.config import ModelConfig
 from eve.data.generate.library import ToolSpec, load_specs
 from eve.data.generate.novel import novel_examples
-from eve.data.generate.sampler import INTENT_MIX, Sample, ToolBank, sample
-from eve.data.generate.templates import sensible
+from eve.data.generate.sampler import ToolBank, sample
 from eve.data.generate.toolgen import generated_specs
 from eve.data.generate.validate import check_example, normalize
 from eve.data.jsonl import read_jsonl, read_lines, write_jsonl
 from eve.data.render import TaskExample, render
-from eve.data.schema import SchemaError, Tool
+from eve.data.schema import Tool
 from eve.tokenizer.bpe import BPETokenizer
 
-CHAT_SPLITS = ("train", "val", "probe")
-Reject = tuple[dict[str, Any], list[str]]  # a written line and why it was rejected
 TEMPLATE_TRIES = 3  # samples drawn per template example wanted (repeats are skipped)
-PROBE_HELDOUT_SHARE = 0.5  # probe scenarios whose correct tool is from a held-out domain
 
 
 @dataclass
@@ -62,11 +58,9 @@ class Sources:
         return {s.name: s.tool for s in self.train + self.heldout}
 
     def source_of(self, name: str) -> str:
-        """Where a tool comes from: "hand", "generated", "heldout" or "older generated"."""
+        """Where a tool comes from: "hand", "generated" or "heldout"."""
         if any(s.name == name for s in self.heldout):
             return "heldout"
-        if name not in self.library:
-            return "older generated"  # a tool from an earlier generator, kept in a chat batch
         return "generated" if self.library[name].domain.startswith("generated") else "hand"
 
 
@@ -89,129 +83,14 @@ def template_examples(
             break
         drawn = sample(bank, rng, pool=pool, chitchat=chitchat, unsupported=unsupported)
         ex = drawn.example
-        key = (normalize(ex.utterance), tuple(sorted(t.name for t in ex.tools)), ex.intent)
+        # small talk comes from a short list: new tools alone don't make it a new example
+        tools = () if ex.intent == "none" else tuple(sorted(t.name for t in ex.tools))
+        key = (normalize(ex.utterance), tools, ex.intent)
         if key in seen or check_example(ex, drawn.implied):
             continue
         seen.add(key)
         rows.append({**ex.to_json(), "source": "template"})
     return rows
-
-
-# ---- chat-written examples ------------------------------------------------------------------
-
-
-def _intent_mix(ask: float | None) -> dict[str, float]:
-    """``INTENT_MIX``, or with ASK at ``ask`` and the other intents scaled to share the rest."""
-    mix = dict(INTENT_MIX)
-    if ask is not None:
-        rest = 1 - mix.pop("ask")
-        mix = {k: v / rest * (1 - ask) for k, v in mix.items()} | {"ask": ask}
-    return mix
-
-
-def _scenario(drawn: Sample, scenario_id: str) -> dict[str, Any]:
-    """A drawn example as a scenario for chat writers: everything but the utterance."""
-    row = drawn.example.to_json(inline=True)  # whole schemas: valid even if tools change
-    del row["utterance"]
-    return {
-        "id": scenario_id,
-        **row,
-        "meaning": drawn.meaning,
-        "missing": drawn.missing,
-        "implied": sorted(drawn.implied),
-    }
-
-
-def make_batch(
-    sources: Sources, name: str, count: int, split: str, seed: int, ask: float | None = None
-) -> dict[str, Any]:
-    """Scenarios for a chat to write requests for (see data/generation/README.md).
-
-    ``probe`` batches take the correct tool from the held-out domains half of the time.
-    ``ask`` sets the share of ASK scenarios; the other intents keep their relative mix.
-    """
-    if split not in CHAT_SPLITS:
-        raise ValueError(f"split must be one of {CHAT_SPLITS}")
-    rng = np.random.default_rng(seed)
-    specs = sources.train + (sources.heldout if split == "probe" else [])
-    bank = ToolBank(specs)
-    heldout = [bank.index[spec.name] for spec in sources.heldout] if split == "probe" else None
-    mix = _intent_mix(ask)
-    scenarios = []
-    for i in range(count):
-        pool = heldout if heldout and rng.random() < PROBE_HELDOUT_SHARE else None
-        intent = str(rng.choice(list(mix), p=list(mix.values())))
-        drawn = sample(
-            bank, rng, intent, pool, chitchat=sources.chitchat, unsupported=sources.unsupported
-        )
-        scenarios.append(_scenario(drawn, f"{name}-{i:03d}"))
-    used = {t["name"]: Tool.from_dict(t) for scenario in scenarios for t in scenario["tools"]}
-    schemas = {name: used[name].render() for name in sorted(used)}
-    return {"batch": name, "split": split, "seed": seed, "schemas": schemas, "scenarios": scenarios}
-
-
-def next_batch_name(batches_dir: str | Path) -> str:
-    """The next unused ``batch-NNNN`` name in ``batches_dir``."""
-    numbers = [int(p.stem.split("-")[1]) for p in Path(batches_dir).glob("batch-*.json")]
-    return f"batch-{max(numbers, default=0) + 1:04d}"
-
-
-def _scenario_errors(utterance: str, scenario: dict[str, Any]) -> list[str]:
-    """Problems ``check_example`` can't see: a copied ``meaning``, and calls that ``sensible``
-    refuses (scenarios sampled before it existed)."""
-    errors = []
-    meaning = scenario.get("meaning")
-    if meaning and normalize(utterance) == normalize(meaning):
-        errors.append("the utterance copies the meaning; rephrase it")
-    for call in scenario.get("calls", ()):
-        if not sensible(call.get("args", {})):
-            errors.append(f"call to {call['tool']} is a conversion no one asks for; re-sample it")
-    return errors
-
-
-def check_written(
-    batch: dict[str, Any], written: list[dict[str, Any]], library: dict[str, Tool]
-) -> tuple[list[dict[str, Any]], list[Reject]]:
-    """Join written utterances to their scenarios. Returns (examples, rejects)."""
-    scenarios = {s["id"]: s for s in batch["scenarios"]}
-    examples: list[dict[str, Any]] = []
-    rejects: list[Reject] = []
-    for line in written:
-        scenario = scenarios.get(line.get("id"))
-        if scenario is None:
-            rejects.append((line, ["unknown scenario id"]))
-            continue
-        try:
-            ex = TaskExample.from_json(
-                {**scenario, "utterance": line.get("utterance", "")}, library
-            )
-        except (SchemaError, KeyError) as e:
-            rejects.append((line, [str(e)]))
-            continue
-        implied = {tuple(x) for x in scenario.get("implied", ())}
-        if errors := check_example(ex, implied) + _scenario_errors(ex.utterance, scenario):
-            rejects.append((line, errors))
-        else:
-            examples.append({**ex.to_json(inline=True), "source": "chat"})
-    return examples, rejects
-
-
-def chat_examples(
-    sources: Sources, generation_dir: str | Path = defaults.GENERATION_DIR
-) -> tuple[dict[str, list[dict[str, Any]]], list[tuple[str, dict[str, Any], list[str]]]]:
-    """All written batches, by split, and everything that failed validation."""
-    generation_dir = Path(generation_dir)
-    by_split: dict[str, list[dict[str, Any]]] = {s: [] for s in CHAT_SPLITS}
-    rejects: list[tuple[str, dict[str, Any], list[str]]] = []
-    for path in sorted((generation_dir / "batches").glob("batch-*.json")):
-        written = generation_dir / "written" / f"{path.stem}.jsonl"
-        if not written.exists():
-            continue
-        batch = json.loads(path.read_text())
-        examples, bad = check_written(batch, read_jsonl(written), sources.library)
-        by_split[batch["split"]] += examples
-        rejects += [(path.stem, line, errors) for line, errors in bad]
-    return by_split, rejects
 
 
 # ---- the whole dataset ----------------------------------------------------------------------
@@ -226,9 +105,7 @@ def _stats(rows: list[dict[str, Any]], sources: Sources) -> dict[str, Any]:
         "source": dict(Counter(r.get("source", "template") for r in rows)),
         "called_tool_source": dict(
             Counter(
-                sources.source_of(c["tool"])
-                if r.get("source") in ("template", "chat")
-                else r["source"]
+                sources.source_of(c["tool"]) if r.get("source") == "template" else r["source"]
                 for r in rows
                 for c in r["calls"]
             )
@@ -242,8 +119,6 @@ TRAIN_SPLITS = ("train",)  # written to the task directory; every other split to
 DEDUP_ORDER = (
     ("novel-tools", "val"),
     ("novel-tools", "train"),
-    ("probe-candidates", "val"),
-    ("probe-candidates", "train"),
     ("massive-test", "val"),
     ("massive-test", "train"),
     ("val", "train"),
@@ -259,7 +134,6 @@ def _external(external_dir: Path, name: str) -> list[dict[str, Any]]:
 
 def _assemble(
     sources: Sources,
-    chat: Splits,
     rng: np.random.Generator,
     n_templates: int,
     n_heldout: int,
@@ -272,11 +146,9 @@ def _assemble(
     heldout_pool = [all_bank.index[s.name] for s in sources.heldout]
     return {
         "train": template_examples(train_bank, n_templates, rng, sources)
-        + chat["train"]
         + _external(external_dir, "xlam")
         + _external(external_dir, "massive-train"),
-        "val": chat["val"] + _external(external_dir, "massive-dev"),
-        "probe-candidates": chat["probe"],
+        "val": _external(external_dir, "massive-dev"),
         "heldout-templates": template_examples(
             all_bank, n_heldout, rng, sources, heldout_pool, heldout=True
         ),
@@ -331,11 +203,11 @@ def build(
     """Write the splits as .jsonl files, train to ``out_dir`` and the sets models are scored on
     to ``evals_dir``, and return a report (also ``out_dir/report.json``).
 
-    - train: template examples + chat-written train batches + xLAM + MASSIVE train
-    - val: chat-written val batches + MASSIVE dev. Only written by people or chats: template
-      text is too easy for fitting calibration.
-    - probe-candidates: chat-written probe batches, to be checked by hand into evals/probe-v1
-    - heldout-templates: template examples whose correct tool is from a held-out domain
+    - train: template examples + xLAM + MASSIVE train
+    - val: MASSIVE dev. Only written by people: template text is too easy for fitting
+      calibration.
+    - heldout-templates: template examples whose correct tool is from a held-out domain; it
+      also fits the new-tool temperatures (``eve calibrate``)
     - massive-test: MASSIVE's test partition, human-written
     - novel-tools: made-up tools with hand-written requests, from ``novel_dir`` (see
       ``eve.data.generate.novel``)
@@ -347,10 +219,7 @@ def build(
     """
     sources = Sources.load(tools_dir, generation_dir)
     rng = np.random.default_rng(seed)
-    chat, rejects = chat_examples(sources, generation_dir)
-    splits = _assemble(
-        sources, chat, rng, n_templates, n_heldout, Path(external_dir), Path(novel_dir)
-    )
+    splits = _assemble(sources, rng, n_templates, n_heldout, Path(external_dir), Path(novel_dir))
     removed = _remove_duplicates(splits)
     too_long: Counter[str] = Counter()
     if tokenizer is not None and cfg is not None:
@@ -362,7 +231,6 @@ def build(
     report = {
         "splits": {name: _stats(rows, sources) for name, rows in splits.items()},
         "tools": {"train": len(sources.train), "heldout": len(sources.heldout)},
-        "rejected_chat_lines": len(rejects),
         "removed_duplicates": dict(removed),
         "too_long": dict(too_long),
     }

@@ -206,16 +206,16 @@ def test_a_temperature_changes_the_probabilities_not_the_answers(library, tokeni
 
 
 def _write_task(path: Path, library: dict[str, Tool]) -> Path:
-    """Every set has the same examples; in probe-candidates, the first 3 call a new tool."""
+    """Every set has the same examples; in heldout-templates, the first 3 call a new tool."""
     path.mkdir()
     exs = examples(library)
     rows = "".join(json.dumps(e.to_json()) + "\n" for e in exs)
-    for name in ("train", "val", "heldout-templates", "massive-test"):
+    for name in ("train", "val", "massive-test"):
         (path / f"{name}.jsonl").write_text(rows)
     probe = [e.to_json(inline=True) for e in exs]
     for row in probe[:3]:
         row["tools"][0]["description"] = "A tool the model never saw"
-    (path / "probe-candidates.jsonl").write_text("".join(json.dumps(r) + "\n" for r in probe))
+    (path / "heldout-templates.jsonl").write_text("".join(json.dumps(r) + "\n" for r in probe))
     return path
 
 
@@ -239,10 +239,10 @@ def test_eve_calibrate(
 
     main([*argv[:1], str(tmp_path / "joint.pt"), *argv[1:], "--json"])
     out = json.loads(capsys.readouterr().out.strip().splitlines()[-1])
-    assert out["fitted_on"] == {"familiar": "val", "new": "probe-candidates"}
-    assert list(out["sets"]) == ["val", "probe-candidates", "massive-test"]
+    assert out["fitted_on"] == {"familiar": "val", "new": "heldout-templates"}
+    assert list(out["sets"]) == ["val", "heldout-templates", "massive-test"]
     assert out["sets"]["val"]["examples"] == {"familiar": 6, "new": 0}
-    assert out["sets"]["probe-candidates"]["examples"] == {"familiar": 3, "new": 3}
+    assert out["sets"]["heldout-templates"]["examples"] == {"familiar": 3, "new": 3}
     assert set(out["sets"]["val"]) == {"examples", "intent", "tools", "values"}
     assert set(out["sets"]["val"]["intent"]["before"]) == {"n", "accuracy", "confidence", "ece"}
     assert "calibration" not in load_checkpoint(tmp_path / "joint.pt").meta  # no --save

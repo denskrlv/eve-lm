@@ -18,10 +18,11 @@ from eve.data.schema import MAX_ARGS, Arg, SchemaError, Tool
 
 # Topics of the held-out domain (travel; math was trained on from 2026-10-28, as a basic tool
 # every assistant needs). An external example whose tools or request touch them is dropped, or
-# the held-out test would no longer measure unseen tools. Conversion stays out with currency.
+# the held-out test would no longer measure unseen tools. Money stays out with currency;
+# converting units, dates or colors is trained (convert_units).
 HELD_OUT = re.compile(
     r"\b(flights?|airports?|airlines?|hotels?|travel\w*|trips?|currenc\w*|exchange rates?|"
-    r"convert\w*|conversion)\b",
+    r"money|usd|eur|gbp|jpy)\b",
     re.IGNORECASE,
 )
 TOOL_DESCRIPTION_CHARS, ARG_DESCRIPTION_CHARS = 120, 60  # longer xLAM descriptions are cut
@@ -265,7 +266,9 @@ MASSIVE_TOOLS = {
     "takeaway_query": ("check_takeaway", "Ask about takeaway food or an order"),
     "weather_query": ("check_weather", "Get the weather"),
 }
-MASSIVE_NONE = ("general_greet", "general_joke", "general_quirky")
+# general_quirky is left out: about half of it are requests ("what is the recipe for ..."), not
+# small talk, so NONE would be the wrong answer.
+MASSIVE_NONE = ("general_greet", "general_joke")
 SLOT_NOTES = {
     "house_place": "room",
     "change_amount": "how much",

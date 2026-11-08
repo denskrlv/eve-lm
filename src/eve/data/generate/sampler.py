@@ -7,12 +7,13 @@ import numpy as np
 
 from eve.data.draw import pick, shuffled
 from eve.data.generate.library import ToolSpec
-from eve.data.generate.templates import MAX_CALLS, MAX_PROMPT_TOOLS, Filled, fill
+from eve.data.generate.templates import MAX_CALLS, MAX_PROMPT_TOOLS, Filled, fill, tidy
 from eve.data.render import Call, TaskExample
 
 INTENT_MIX = {"call": 0.55, "ask": 0.15, "unsupported": 0.15, "none": 0.15}
 CONNECTORS = (" and ", ", then ", " and then ", ". Also ", ", and also ")
-PREFIXES = ("please ", "can you ", "could you ", "hey, ", "ok, ", "I want to ")
+# Only prefixes that fit any request: "can you"/"please" need a verb next ("can you 81 less 95").
+PREFIXES = ("hey, ", "ok, ")
 SUFFIXES = (" please", "?", ".", " thanks", " now", "!")
 PREFIX_SHARE, SUFFIX_SHARE, CAPITALIZE_SHARE = 0.25, 0.3, 0.3  # how often _decorate adds each
 SAME_DOMAIN_BONUS = 0.3  # added to the similarity of two tools from one domain
@@ -103,11 +104,9 @@ class ToolBank:
 
 @dataclass
 class Sample:
-    """One sampled example, plus what chat writers need to rephrase it."""
+    """One sampled example, plus the values its template set by meaning, not by words."""
 
     example: TaskExample
-    meaning: str | None  # the template text before decoration; what chat writers rephrase
-    missing: list[str] = field(default_factory=list)  # ASK: the required arguments left out
     implied: set[tuple[int, str]] = field(default_factory=set)  # (call, argument) set by a template
 
 
@@ -118,7 +117,7 @@ def _decorate(text: str, rng: np.random.Generator) -> str:
         text += pick(rng, SUFFIXES)
     if rng.random() < CAPITALIZE_SHARE:
         text = text[0].upper() + text[1:]
-    return text
+    return tidy(text)  # a suffix the request already ends with: "open now now"
 
 
 def _fill_any(spec: ToolSpec, rng: np.random.Generator, ask: bool = False) -> Filled | None:
@@ -225,7 +224,7 @@ def sample_call(
     example = TaskExample(
         _decorate(text, rng), tuple(bank.specs[i].tool for i in tools), "call", tuple(calls)
     )
-    return Sample(example, text, implied=implied)
+    return Sample(example, implied)
 
 
 def sample_ask(
@@ -241,14 +240,13 @@ def sample_ask(
     else:
         raise RuntimeError("no tool in the pool can make an ASK example")
     tools = _prompt(bank, [gold_index], rng)
-    missing = [k for k, v in filled.args.items() if v == "?"]
     example = TaskExample(
         _decorate(filled.text, rng),
         tuple(bank.specs[i].tool for i in tools),
         "ask",
         (Call(spec.name, filled.args),),
     )
-    return Sample(example, filled.text, missing, {(0, name) for name in filled.implied})
+    return Sample(example, {(0, name) for name in filled.implied})
 
 
 def sample_unsupported(
@@ -273,7 +271,7 @@ def sample_unsupported(
     example = TaskExample(
         _decorate(text, rng), tuple(bank.specs[i].tool for i in tools), "unsupported"
     )
-    return Sample(example, text)
+    return Sample(example)
 
 
 def sample_none(
@@ -288,7 +286,7 @@ def sample_none(
     n_tools = prompt_size(rng) - len(first)
     tools = shuffled(rng, first + bank.distractors(first, n_tools, rng, hard=False))
     example = TaskExample(text or "thanks", tuple(bank.specs[i].tool for i in tools), "none")
-    return Sample(example, None)
+    return Sample(example)
 
 
 def sample(
