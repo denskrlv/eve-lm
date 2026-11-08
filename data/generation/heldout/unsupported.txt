@@ -1,0 +1,11 @@
+# Unsupported requests for the held-out set only (heldout-templates): never trained on.
+# ../unsupported.txt has the training lines and the rules for what belongs here.
+book a table for two at 8
+write me a poem about cats
+renew my passport
+iron my shirt
+make me a sandwich
+mail a birthday card to my aunt
+charge my phone
+honk the horn
+cancel my gym membership

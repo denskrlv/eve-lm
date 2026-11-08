@@ -41,6 +41,14 @@ def test_adding_replacing_and_removing(library: dict[str, Tool]) -> None:
         box.remove("nope")
 
 
+def test_adding_a_box_keeps_its_functions(library: dict[str, Tool]) -> None:
+    box = ToolBox([set_lights, library["lock_door"]])
+    merged = ToolBox([library["set_timer"]])
+    merged.add(box)
+    assert merged.names == ["set_timer", "set_lights", "lock_door"]
+    assert merged.functions == {"set_lights": set_lights}
+
+
 @pytest.mark.parametrize(
     ("text", "best"),
     [

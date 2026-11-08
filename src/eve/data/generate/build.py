@@ -34,6 +34,8 @@ class Sources:
     heldout: list[ToolSpec]  # never trained on
     chitchat: list[str]
     unsupported: list[str]
+    heldout_chitchat: list[str]  # only for the held-out set, so its NONE recall isn't memorized
+    heldout_unsupported: list[str]
 
     @classmethod
     def load(
@@ -43,13 +45,15 @@ class Sources:
         seed: int = 0,
     ) -> "Sources":
         """The hand-written and generated tools, held-out tools, and line lists for NONE and
-        UNSUPPORTED requests."""
+        UNSUPPORTED requests: the training ones, and the held-out ones in ``heldout/``."""
         tools_dir, generation_dir = Path(tools_dir), Path(generation_dir)
         return cls(
             load_specs(tools_dir) + generated_specs(seed),
             load_specs(tools_dir / "heldout"),
             read_lines(generation_dir / "chitchat.txt"),
             read_lines(generation_dir / "unsupported.txt"),
+            read_lines(generation_dir / "heldout" / "chitchat.txt"),
+            read_lines(generation_dir / "heldout" / "unsupported.txt"),
         )
 
     @property
@@ -72,16 +76,18 @@ def template_examples(
     rng: np.random.Generator,
     sources: Sources,
     pool: Sequence[int] | None = None,
+    heldout: bool = False,
 ) -> list[dict[str, Any]]:
-    """``count`` template examples with valid labels; exact repeats are skipped."""
+    """``count`` template examples with valid labels; exact repeats are skipped. ``heldout``
+    takes NONE and UNSUPPORTED requests from the held-out lines instead of the training ones."""
+    chitchat = sources.heldout_chitchat if heldout else sources.chitchat
+    unsupported = sources.heldout_unsupported if heldout else sources.unsupported
     rows: list[dict[str, Any]] = []
     seen: set[tuple[str, tuple[str, ...], str]] = set()
     for _ in range(count * TEMPLATE_TRIES):
         if len(rows) == count:
             break
-        drawn = sample(
-            bank, rng, pool=pool, chitchat=sources.chitchat, unsupported=sources.unsupported
-        )
+        drawn = sample(bank, rng, pool=pool, chitchat=chitchat, unsupported=unsupported)
         ex = drawn.example
         key = (normalize(ex.utterance), tuple(sorted(t.name for t in ex.tools)), ex.intent)
         if key in seen or check_example(ex, drawn.implied):
@@ -241,6 +247,7 @@ DEDUP_ORDER = (
     ("massive-test", "val"),
     ("massive-test", "train"),
     ("val", "train"),
+    ("train", "heldout-templates"),  # its own lines can still match external train rows
 )
 
 
@@ -270,7 +277,9 @@ def _assemble(
         + _external(external_dir, "massive-train"),
         "val": chat["val"] + _external(external_dir, "massive-dev"),
         "probe-candidates": chat["probe"],
-        "heldout-templates": template_examples(all_bank, n_heldout, rng, sources, heldout_pool),
+        "heldout-templates": template_examples(
+            all_bank, n_heldout, rng, sources, heldout_pool, heldout=True
+        ),
         "massive-test": _external(external_dir, "massive-test"),
         "novel-tools": novel_examples(rng, sources.library, novel_dir),
     }
@@ -332,6 +341,8 @@ def build(
       ``eve.data.generate.novel``)
     External data is read from ``external_dir`` (see ``eve data external``) if present.
     An utterance in a test or val split is removed from the splits below it.
+    heldout-templates takes its NONE and UNSUPPORTED requests from ``generation_dir/heldout``,
+    lines train never has.
     With a tokenizer, examples too long for the model are dropped.
     """
     sources = Sources.load(tools_dir, generation_dir)

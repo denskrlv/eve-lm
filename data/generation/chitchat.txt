@@ -4,61 +4,45 @@ hi
 hello there
 good morning
 thanks
-thank you so much
 thanks, that's all
 never mind
-cancel that, I changed my mind
 how are you today
 what's your name
 are you a robot
-you always make me laugh
 you're doing great
 that was helpful
 ok
-okay cool
 sounds good
 yes
 no
-nope, nothing
 I'm just testing you
 what can you do
 who made you
-do you like music
 I'm bored
 I had a long day
 my kitchen lights are really old
-I love the new blinds in the bedroom
-the thermostat in this house is ancient
 I listened to a great podcast yesterday
 my mom texted me earlier
 I really need to start working out
 the weather was lovely last weekend
 I forgot my umbrella again
 my car is due for a service soon
-I should drink more water
 our fridge is always empty
 I can never find my notes
 the traffic was terrible today
-I made banana bread yesterday
 the printer at work is broken again
 my plants look a bit sad
-I think the fan is making a weird noise
-coffee is the best part of the morning
 I don't like alarms
 what a beautiful day
-see you later
-goodbye
 good night
+goodbye
 lol
-hmm
 wait
 sorry, wrong button
 I'm going to bed now
 I'm home
-I'm leaving for work
 just thinking out loud
 so you're some kind of assistant, right
 do you dream
-life is good today
 I hate Mondays
 happy birthday to me

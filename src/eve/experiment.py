@@ -32,7 +32,7 @@ from eve import defaults, registry
 from eve.model.build import start_model
 from eve.runtime import config_of, pick_device, seed_everything
 from eve.train.config import TrainConfig
-from eve.train.loop import DEFAULT_CALLBACKS, DEFAULT_OPTIMIZER, DEFAULT_SCHEDULE
+from eve.train.loop import DEFAULT_CALLBACKS, DEFAULT_OPTIMIZER, DEFAULT_SCHEDULE, check_new_run
 
 COMPONENTS_DIR = f"{defaults.CONFIG_DIR}/components"  # variant files: <kind>/<name>.toml
 CONFIG_FILE = "config.toml"  # the resolved experiment, in every run directory
@@ -234,6 +234,7 @@ def run(experiment: Experiment, **data_args: Any) -> dict[str, float]:
         train_cfg = with_epochs(train_cfg, experiment.epochs, len(data.train))
     resolved = Experiment(c, params, train_cfg, experiment.run, experiment.meta)
     out_dir = Path(experiment.run.out)
+    check_new_run(out_dir, experiment.run.resume)  # before config.toml is rewritten
     out_dir.mkdir(parents=True, exist_ok=True)
     (out_dir / CONFIG_FILE).write_text(to_toml(resolved.to_dict()))
 

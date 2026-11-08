@@ -133,6 +133,23 @@ def test_resume_refuses_a_checkpoint_without_train_state(
         run(tmp_path, tokenizer, resume=True)
 
 
+def test_a_new_run_refuses_to_overwrite_a_saved_one(tokenizer, tmp_path):
+    run(tmp_path, tokenizer, stop_after=3)
+    saved = (tmp_path / "last.pt").read_bytes(), (tmp_path / "metrics.jsonl").read_text()
+    with pytest.raises(FileExistsError, match="last.pt"):
+        run(tmp_path, tokenizer)  # resume forgotten
+    assert ((tmp_path / "last.pt").read_bytes(), (tmp_path / "metrics.jsonl").read_text()) == saved
+
+
+def test_resuming_a_finished_run_leaves_its_model_as_it_is(tokenizer, tmp_path):
+    run(tmp_path, tokenizer)
+    ckpt = load_checkpoint(tmp_path / "model.pt")
+    meta = ckpt.meta | {"calibration": {"familiar": {"intent": 2.0}}}  # as eve calibrate --save
+    save_checkpoint(tmp_path / "model.pt", ckpt.model, ckpt.tokenizer, meta)
+    run(tmp_path, tokenizer, resume=True)
+    assert load_checkpoint(tmp_path / "model.pt").meta == meta
+
+
 def test_last_checkpoint_holds_the_train_state(tokenizer, tmp_path):
     run(tmp_path, tokenizer, stop_after=3)
     ckpt = load_checkpoint(tmp_path / "last.pt")

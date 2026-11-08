@@ -141,6 +141,8 @@ def test_run_calls_the_functions_only_when_all_is_in_place() -> None:
         (answers("call", GOOD | {"on": Value("invalid", "maybe", 0.5, "on: bad")}), functions,
          r"no valid value for \['on'\]"),
         (answers("call", GOOD), {}, "was given as a schema, not a function"),
+        (Answers(answers("call", {}).intent, [{"set_lights": 0.1, "STOP": 0.9}]), functions,
+         "no tool was picked"),  # the intent head says call, slot 1 says STOP
     ]  # fmt: skip
     for given, funcs, reason in cases:
         with pytest.raises(EveError, match=reason):

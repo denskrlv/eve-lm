@@ -23,7 +23,10 @@ def _run_experiment(values: dict[str, Any], sets: list[str]) -> None:
         experiment = Experiment.from_dict(apply_sets(values, sets))
     except (KeyError, TypeError, ValueError) as error:
         raise SystemExit(f"bad experiment: {error}") from error
-    run(experiment)
+    try:
+        run(experiment)
+    except FileExistsError as error:  # a new run over a saved one
+        raise SystemExit(str(error)) from None
 
 
 def run_file(args: argparse.Namespace) -> None:

@@ -247,8 +247,9 @@ def test_data_build_writes_the_splits(
 def test_data_batch_then_check_a_batch_nobody_wrote(
     tmp_path: Path, capsys: pytest.CaptureFixture[str]
 ) -> None:
-    for name in ("chitchat.txt", "unsupported.txt"):
-        shutil.copy(ROOT / "data/generation" / name, tmp_path / name)
+    for name in ("chitchat.txt", "unsupported.txt", "heldout"):
+        source = ROOT / "data/generation" / name
+        (shutil.copytree if source.is_dir() else shutil.copy)(source, tmp_path / name)
 
     main(["data", "batch", "--n", "3", "--dir", str(tmp_path)])
     batch = json.loads((tmp_path / "batches/batch-0001.json").read_text())
