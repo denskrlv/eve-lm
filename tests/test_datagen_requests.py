@@ -238,3 +238,34 @@ def test_a_tool_named_with_case_does_not_turn_schema_rejects_into_value_rejects(
 
     assert _kind(["call to check_case_status: speed: None is not a valid str"]) == "schema"
     assert _kind(["symptom='holes' must be written with the request's case"]) == "value"
+
+
+TIMER = GenTool.from_dict(
+    {
+        "id": "t05",
+        "topic": "home > air",
+        "names": ["fan_timer", "breeze_stop_clock"],
+        "descriptions": ["Turn the fan off after a while", "Stop the moving air later"],
+        "args": [
+            {"name": "minutes", "type": "int", "min": 15, "max": 240},
+            {"name": "level", "type": "float", "required": False},
+            {"name": "room", "type": "str", "required": False},
+        ],
+    }
+)
+JUNK = ["thirty", "half an hour", "", [30], {"n": 30}, True, 30.5, float("nan"), -1, "30", "?"]
+
+
+def test_junk_values_are_rejects_never_a_crash():
+    """The reply format doesn't fix argument types: any value may come back for any argument."""
+    for intent in ("ask", "call"):
+        card = {"intent": intent, "speaker": "a nurse", "form": "question"}
+        if intent == "ask":
+            card["leave_out"] = "minutes"
+        for value in JUNK:
+            for args in ({"minutes": value}, {"minutes": 30, "level": value, "room": value}):
+                reply = {
+                    "rows": [{"card": 1, "utterance": "shut the air off 30 later", "args": args}]
+                }
+                rows, stats = write_requests(Script(reply), TIMER, [card], set(), "m")
+                assert len(rows) + stats.dropped == 1, (intent, args)

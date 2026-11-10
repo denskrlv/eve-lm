@@ -195,6 +195,8 @@ def _leave_out(
     if arg.name not in args:
         reason = f"give a value for {arg.name} in args, though the request leaves it out"
         return "schema", [reason], args
+    if (problem := arg.check(args[arg.name])) is not None:  # before turning it into text
+        return "schema", [f"{arg.name}: {problem}"], args
     if any(mentions(utterance, form) for form in value_forms(arg, args[arg.name])):
         reason = f"the request says {arg.name}={args[arg.name]!r}: this card leaves it out"
         return "ask", [reason], args

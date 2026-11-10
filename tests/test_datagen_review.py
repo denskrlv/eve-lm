@@ -129,3 +129,12 @@ def test_the_review_knows_the_rules_the_code_checks():
     assert "at least one of the tool's names and one of its descriptions" in text
     assert "only the words for that argument" in text  # value edges
     assert "never on an optional argument" in text
+
+
+def test_junk_in_a_fix_is_dropped_never_a_crash():
+    junk = ["thirty", "", [30], {"n": 30}, True, float("nan"), None, "?", 5]
+    for value in junk:
+        for intent in ("call", "ask", "unsupported", "none", 7, None):
+            fix = {"id": "t02-r01", "intent": intent, "args": {"speed": value}, "utterance": value}
+            result = apply_review({"fixes": [fix]}, [PEST, FAN], ROWS)
+            assert result.fixed + result.dropped == 1
