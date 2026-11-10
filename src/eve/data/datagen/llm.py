@@ -76,19 +76,32 @@ def ollama_generate(
     temperature: float = 0.9,
     timeout: float = 600,
 ) -> Generate:
-    """A ``Generate`` on an Ollama model, with thinking off and the reply held to the schema."""
+    """A ``Generate`` on an Ollama model, with thinking off and the reply held to the schema. A
+    model Ollama can't hold to a schema gets the schema in its system prompt instead."""
+    constrained = True
 
     def generate(system: str, prompt: str, schema: dict[str, Any]) -> Reply:
-        body = {
+        nonlocal constrained
+        body: dict[str, Any] = {
             "model": model,
             "system": system,
             "prompt": prompt,
-            "format": schema,
             "stream": False,
             "think": False,
             "options": {"temperature": temperature},
         }
-        out = _post(f"{url}/api/generate", body, timeout)
+        if constrained:
+            try:
+                out = _post(f"{url}/api/generate", {**body, "format": schema}, timeout)
+            except LLMError as error:
+                if "structured output is unavailable" not in str(error):
+                    raise
+                constrained = False
+        if not constrained:
+            body["system"] = (
+                f"{system}\n\nAnswer with only JSON matching this schema:\n{json.dumps(schema)}"
+            )
+            out = _post(f"{url}/api/generate", body, timeout)
         if "error" in out:
             raise LLMError(f"ollama {model}: {out['error']}")
         text = str(out.get("response", ""))

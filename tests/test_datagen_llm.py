@@ -110,3 +110,18 @@ def test_parse_json():
     assert parse_json('Sure! Here it is: {"a": {"b": 2}} hope that helps') == {"a": {"b": 2}}
     assert parse_json("no json here") is None
     assert parse_json('{"a": ') is None
+
+
+def test_ollama_generate_falls_back_when_structured_output_is_unavailable(monkeypatch):
+    unavailable = urllib.error.HTTPError(
+        "u", 501, "no", {}, io.BytesIO(b'{"error":"structured output is unavailable"}')
+    )
+    ok = {"response": 'Here: {"a": "x"}', "eval_count": 5, "eval_duration": 1_000_000_000}
+    http = FakeHTTP(unavailable, ok, ok)
+    monkeypatch.setattr(llm.urllib.request, "urlopen", http)
+    generate = ollama_generate("m")
+    assert generate("sys", "hi", SCHEMA).data == {"a": "x"}
+    assert generate("sys", "hi", SCHEMA).data == {"a": "x"}
+    first, second, third = (body for _, body in http.sent)
+    assert "format" in first and "format" not in second and "format" not in third
+    assert json.dumps(SCHEMA) in second["system"]
