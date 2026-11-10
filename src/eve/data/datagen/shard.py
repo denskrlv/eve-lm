@@ -20,7 +20,7 @@ from eve.data.schema import Arg, SchemaError, Tool
 
 TOOLS_PER_SHARD = 25
 TOPICS_PER_SHARD = 5
-STATUSES = ("new", "tools", "requests", "reviewed", "approved", "flagged")
+STATUSES = ("new", "tools", "requests", "approved", "flagged")
 DONE = ("approved", "flagged")
 LOCK = ".lock"
 
