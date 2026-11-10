@@ -233,6 +233,14 @@ def test_a_value_in_the_wrong_case_goes_back_as_a_value_reject():
     assert stats.rejected["value"] == 1
 
 
+def test_the_prompt_says_choice_values_must_be_meant():
+    """Code can't check enum and true/false values against the text, so the prompt must."""
+    from eve.data.datagen.requests import REQUESTS_SYSTEM
+
+    text = " ".join(REQUESTS_SYSTEM.split())
+    assert "says or clearly implies" in text and "leave an optional one out" in text
+
+
 def test_a_tool_named_with_case_does_not_turn_schema_rejects_into_value_rejects():
     from eve.data.datagen.requests import _kind
 

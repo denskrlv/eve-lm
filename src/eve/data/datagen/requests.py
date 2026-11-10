@@ -40,7 +40,10 @@ By the card's intent:
 and any optional one the request mentions, and nothing the request doesn't say. Each text value \
 is only the words for that argument, copied exactly from the request ("kale", not "my kale \
 right now"). A number may be written as a word in the request (7 or seven), and is said \
-in the argument's own unit (minutes=60 is "60 minutes", not "an hour").
+in the argument's own unit (minutes=60 is "60 minutes", not "an hour"). Give an enum or \
+true/false value only when the request says or clearly implies that option ("turn it off" \
+means false); leave an optional one out otherwise, and for a required one, write the request so \
+it implies the option.
 - ask: the card names in "leave_out" one argument the request must not say. Request the \
 tool's action itself, as in call, just without that value (for a fan timer with leave_out \
 "minutes": "turn the fan off later", which wants the action but doesn't say how long; not a \

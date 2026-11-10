@@ -66,8 +66,7 @@
  "form": [
   "command",
   "question",
-  "a need stated so the request is clear (\"I'm out of milk, add it\")",
-  "a request said as a complaint",
+  "a request with its reason first (\"my hands are full, turn the lights on\")",
   "a short fragment that still asks for it",
   "polite request"
  ],

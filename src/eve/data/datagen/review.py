@@ -147,6 +147,9 @@ def apply_review(data: Any, tools: Sequence[GenTool], rows: Sequence[Row]) -> Re
         utterance = item.get("utterance", old.utterance)
         if intent == "unsupported":
             args = None
+        if (str(utterance).strip(), intent, args) == (old.utterance, old.intent, old.args):
+            reasons.append({"id": row_id, "action": "unchanged", "why": str(item.get("why", ""))})
+            continue
         problems = ["the fix isn't a request with a known intent and args"]
         if (
             intent in INTENTS

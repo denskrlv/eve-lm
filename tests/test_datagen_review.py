@@ -54,6 +54,14 @@ def test_fix_is_rechecked_and_marked_fixed():
     assert {r.writer for r in result.rows if r.id != "t01-r02"} == {"m"}
 
 
+def test_a_fix_that_changes_nothing_is_not_counted():
+    same = {"id": "t01-r02", "utterance": " spots all over my roses", "why": "keep"}
+    result = apply_review({"fixes": [same, {"id": "t01-r03", "why": "keep"}]}, [PEST, FAN], ROWS)
+    assert result.fixed == 0 and result.dropped == 0 and result.fix_rate == 0
+    assert {r.writer for r in result.rows} == {"m"}
+    assert [r["action"] for r in result.reasons] == ["unchanged", "unchanged"]
+
+
 def test_fix_failing_checks_is_dropped():
     data = {
         "fixes": [

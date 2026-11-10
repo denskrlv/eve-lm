@@ -74,6 +74,15 @@ def test_the_prompt_asks_for_short_everyday_tools_without_seed_words():
     assert "the topic is a theme" in " ".join(TOOLS_SYSTEM.split())
 
 
+def test_the_prompt_gives_the_area_with_the_subtopic_only_as_an_example():
+    """A narrow subtopic made narrow tools ("tennis > backhand slice spin")."""
+    script = Script({"tools": [GOOD]})
+    tools, _ = run(script, per_topic=1, topics=("tennis > backhand slice spin",))
+    assert "Topic: tennis (one example: backhand slice spin)" in script.prompts[0]
+    assert tools[0].topic == "tennis > backhand slice spin"
+    assert "required only when" in " ".join(TOOLS_SYSTEM.split())  # choice arguments
+
+
 def test_invent_tools_accepts_good_tools_and_sends_rejects_back():
     bad_schema = tool(["Bad Name", "x_y"], ["A thing", "Another thing"])
     script = Script({"tools": [GOOD, SUNBURN]}, {"tools": [bad_schema]}, {"tools": [GOOD2]})

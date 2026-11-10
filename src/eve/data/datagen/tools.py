@@ -41,9 +41,12 @@ Rules:
 - One clear, everyday capability per tool, the kind of thing a person really asks a phone or \
 smart speaker for, different from every tool listed as taken. Keep it simple: no gimmicks.
 - Broad enough that people ask for it in many different ways: the topic is a theme, not the \
-exact job (for "tennis > backhand slice", a tool that suggests a drill for any stroke, not one \
-only for the backhand slice).
+exact job, and its example is just one corner of it (for "tennis", one example "backhand \
+slice": a tool that suggests a drill for any stroke, not one only for the backhand slice).
 - Every name and description of a tool describes the same single action.
+- An enum or true/false argument is required only when every request for the tool would state \
+it (on or off for a light switch); otherwise make it optional. Never require a choice people \
+wouldn't say, like indoor or outdoor for a glue.
 - Nothing about flights, hotels, trains, travel bookings, or money currencies.
 - Plain everyday English."""
 
@@ -183,7 +186,9 @@ def _prompt(
     taken: Sequence[str],
     feedback: Sequence[dict[str, Any]],
 ) -> str:
-    lines = [f"Topic: {topic}", f"Write {wanted} tool{'s' if wanted > 1 else ''}."]
+    area, _, example = (part.strip() for part in topic.partition(">"))
+    shown = f"{area} (one example: {example})" if example else area  # the area, not one niche
+    lines = [f"Topic: {shown}", f"Write {wanted} tool{'s' if wanted > 1 else ''}."]
     if taken:
         lines.append("Taken (don't repeat these): " + ", ".join(taken))
     if feedback:
