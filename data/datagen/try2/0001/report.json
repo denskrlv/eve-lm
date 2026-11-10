@@ -1,0 +1,417 @@
+{
+ "approved": false,
+ "tools": {
+  "proposed": 45,
+  "kept": 23,
+  "rejected": {
+   "name": 2,
+   "incoherent": 12,
+   "repeat": 4,
+   "json": 1,
+   "wording": 4
+  },
+  "dropped": 2,
+  "twins": 4,
+  "blocked_topics": 0,
+  "tokens": 8092,
+  "seconds": 138.13408975
+ },
+ "rows": {
+  "written": 774,
+  "rejected": {
+   "schema": 147,
+   "missing": 40,
+   "value": 190,
+   "shared": 16,
+   "repeat": 3
+  },
+  "rounds": {
+   "1": 192,
+   "2": 182,
+   "3": 44
+  },
+  "dropped": 42,
+  "tokens": 40065,
+  "seconds": 685.5273127900001,
+  "kept": 399
+ },
+ "review": {
+  "reviewed": 418,
+  "fixed": 54,
+  "dropped": 19,
+  "fix_rate": 0.1746,
+  "tools_dropped": [],
+  "cost": 0.3607518,
+  "reasons": [
+   {
+    "id": "t01-r20",
+    "action": "drop",
+    "why": "remark, asks nothing"
+   },
+   {
+    "id": "t03-r20",
+    "action": "drop",
+    "why": "nonsense request"
+   },
+   {
+    "id": "t04-r05",
+    "action": "drop",
+    "why": "complaint question, not a request"
+   },
+   {
+    "id": "t04-r14",
+    "action": "drop",
+    "why": "fragment, unclear request"
+   },
+   {
+    "id": "t06-r02",
+    "action": "drop",
+    "why": "asks to write code, not resources"
+   },
+   {
+    "id": "t09-r04",
+    "action": "drop",
+    "why": "company 'New' invented"
+   },
+   {
+    "id": "t09-r06",
+    "action": "drop",
+    "why": "company 'System' invented"
+   },
+   {
+    "id": "t11-r18",
+    "action": "drop",
+    "why": "asks beam width, value given"
+   },
+   {
+    "id": "t15-r17",
+    "action": "drop",
+    "why": "query, not a timer setting"
+   },
+   {
+    "id": "t16-r18",
+    "action": "drop",
+    "why": "forehand, unsupported; value given"
+   },
+   {
+    "id": "t19-r13",
+    "action": "drop",
+    "why": "not a request"
+   },
+   {
+    "id": "t20-r03",
+    "action": "drop",
+    "why": "remark, asks nothing"
+   },
+   {
+    "id": "t20-r04",
+    "action": "drop",
+    "why": "remark, asks nothing"
+   },
+   {
+    "id": "t20-r09",
+    "action": "drop",
+    "why": "remark, asks nothing"
+   },
+   {
+    "id": "t20-r10",
+    "action": "drop",
+    "why": "remark, asks nothing"
+   },
+   {
+    "id": "t21-r07",
+    "action": "drop",
+    "why": "remark, asks nothing"
+   },
+   {
+    "id": "t23-r19",
+    "action": "drop",
+    "why": "remark, asks nothing"
+   },
+   {
+    "id": "t23-r20",
+    "action": "drop",
+    "why": "nonsense"
+   },
+   {
+    "id": "t01-r08",
+    "action": "fix",
+    "why": "every name shares a word (switch/on/light)"
+   },
+   {
+    "id": "t04-r17",
+    "action": "fix",
+    "why": "value given, so call not ask"
+   },
+   {
+    "id": "t04-r18",
+    "action": "fix",
+    "why": "value given, so call not ask"
+   },
+   {
+    "id": "t06-r18",
+    "action": "fix",
+    "why": "budget_level invented"
+   },
+   {
+    "id": "t07-r01",
+    "action": "fix",
+    "why": "location should be user's words"
+   },
+   {
+    "id": "t07-r04",
+    "action": "fix",
+    "why": "role not really given; ask"
+   },
+   {
+    "id": "t07-r18",
+    "action": "fix",
+    "why": "role 'sales' given, so call"
+   },
+   {
+    "id": "t08-r11",
+    "action": "fix",
+    "why": "no job posting given; ask"
+   },
+   {
+    "id": "t08-r13",
+    "action": "fix",
+    "why": "no job posting given; ask"
+   },
+   {
+    "id": "t08-r17",
+    "action": "fix",
+    "why": "job description given, so call"
+   },
+   {
+    "id": "t09-r01",
+    "action": "fix",
+    "why": "case mismatch"
+   },
+   {
+    "id": "t09-r02",
+    "action": "fix",
+    "why": "case mismatch"
+   },
+   {
+    "id": "t09-r03",
+    "action": "fix",
+    "why": "case mismatch"
+   },
+   {
+    "id": "t09-r05",
+    "action": "fix",
+    "why": "case mismatch"
+   },
+   {
+    "id": "t09-r07",
+    "action": "fix",
+    "why": "case mismatch"
+   },
+   {
+    "id": "t09-r08",
+    "action": "fix",
+    "why": "no company given; ask"
+   },
+   {
+    "id": "t09-r09",
+    "action": "fix",
+    "why": "case mismatch"
+   },
+   {
+    "id": "t09-r10",
+    "action": "fix",
+    "why": "case mismatch"
+   },
+   {
+    "id": "t09-r11",
+    "action": "fix",
+    "why": "case mismatch"
+   },
+   {
+    "id": "t09-r13",
+    "action": "fix",
+    "why": "case mismatch"
+   },
+   {
+    "id": "t09-r15",
+    "action": "fix",
+    "why": "case mismatch"
+   },
+   {
+    "id": "t09-r17",
+    "action": "fix",
+    "why": "title given, so call"
+   },
+   {
+    "id": "t09-r18",
+    "action": "fix",
+    "why": "company given, so call"
+   },
+   {
+    "id": "t11-r08",
+    "action": "fix",
+    "why": "joint is 'tongue and groove'"
+   },
+   {
+    "id": "t11-r16",
+    "action": "fix",
+    "why": "asked width, not clamp count"
+   },
+   {
+    "id": "t11-r17",
+    "action": "fix",
+    "why": "width given, so call"
+   },
+   {
+    "id": "t12-r17",
+    "action": "fix",
+    "why": "brand given, so call"
+   },
+   {
+    "id": "t13-r18",
+    "action": "fix failed checks",
+    "why": "verify_joint_alignment.measure_tolerance_degrees=4.9 is not in the utterance"
+   },
+   {
+    "id": "t14-r17",
+    "action": "fix",
+    "why": "literal '?' in text; humidity missing"
+   },
+   {
+    "id": "t14-r18",
+    "action": "fix",
+    "why": "asked humidity, not tool's job"
+   },
+   {
+    "id": "t15-r01",
+    "action": "fix",
+    "why": "forehand, tool is backhand slice only"
+   },
+   {
+    "id": "t15-r02",
+    "action": "fix",
+    "why": "forehand, tool is backhand slice only"
+   },
+   {
+    "id": "t15-r05",
+    "action": "fix",
+    "why": "forehand, tool is backhand slice only"
+   },
+   {
+    "id": "t15-r13",
+    "action": "fix",
+    "why": "forehand, tool is backhand slice only"
+   },
+   {
+    "id": "t15-r18",
+    "action": "fix",
+    "why": "value given, so call"
+   },
+   {
+    "id": "t16-r02",
+    "action": "fix",
+    "why": "keyword 'specific shot' not a keyword; ask"
+   },
+   {
+    "id": "t16-r08",
+    "action": "fix",
+    "why": "forehand, tool is backhand slice"
+   },
+   {
+    "id": "t16-r17",
+    "action": "fix",
+    "why": "keyword given, so call"
+   },
+   {
+    "id": "t17-r01",
+    "action": "fix",
+    "why": "asked swing speed not spin"
+   },
+   {
+    "id": "t17-r04",
+    "action": "fix",
+    "why": "no request for spin"
+   },
+   {
+    "id": "t17-r10",
+    "action": "fix",
+    "why": "not asking for spin"
+   },
+   {
+    "id": "t17-r11",
+    "action": "fix",
+    "why": "not asking for a calculation"
+   },
+   {
+    "id": "t17-r14",
+    "action": "fix",
+    "why": "asks swing speed, not spin"
+   },
+   {
+    "id": "t17-r15",
+    "action": "fix",
+    "why": "asks swing speed, not spin"
+   },
+   {
+    "id": "t19-r06",
+    "action": "fix",
+    "why": "not a request"
+   },
+   {
+    "id": "t19-r09",
+    "action": "fix",
+    "why": "vague, no ask"
+   },
+   {
+    "id": "t19-r17",
+    "action": "fix",
+    "why": "dangling 'at?'"
+   },
+   {
+    "id": "t19-r18",
+    "action": "fix",
+    "why": "dangling 'at?'"
+   },
+   {
+    "id": "t20-r02",
+    "action": "fix",
+    "why": "face mask, not hair"
+   },
+   {
+    "id": "t20-r17",
+    "action": "fix",
+    "why": "status query, tool only starts"
+   },
+   {
+    "id": "t20-r18",
+    "action": "fix",
+    "why": "value given, so call"
+   },
+   {
+    "id": "t22-r17",
+    "action": "fix",
+    "why": "value given, so call"
+   },
+   {
+    "id": "t22-r18",
+    "action": "fix",
+    "why": "value given, so call"
+   },
+   {
+    "id": "t23-r17",
+    "action": "fix",
+    "why": "hair type given, so call"
+   },
+   {
+    "id": "t23-r18",
+    "action": "fix",
+    "why": "hair type given, so call"
+   }
+  ]
+ },
+ "speed": {
+  "tools_tokens_per_s": 58.6,
+  "requests_tokens_per_s": 58.4
+ }
+}

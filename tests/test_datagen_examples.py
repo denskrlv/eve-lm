@@ -194,3 +194,11 @@ def test_build_with_datagen_keeps_evals_identical(tmp_path):
     train = with_datagen["task/train.jsonl"]
     assert train.startswith(plain["task/train.jsonl"])
     assert train.count('"source": "datagen"') == 40
+
+
+def test_build_keeps_one_copy_of_a_request_two_shards_wrote(tmp_path):
+    shards = tmp_path / "shards"
+    _shard(shards, "approved", [pest_row(0)])
+    _shard(shards, "approved", [pest_row(0)])  # written at the same time by another process
+    train = _build(tmp_path, "a", shards)["task/train.jsonl"]
+    assert train.count('"source": "datagen"') == 1

@@ -1,0 +1,378 @@
+{"tool": "t01", "round": 1, "card": 1, "utterance": null, "because": ["not written"], "kind": "missing"}
+{"tool": "t01", "round": 1, "card": 2, "utterance": null, "because": ["not written"], "kind": "missing"}
+{"tool": "t01", "round": 1, "card": 3, "utterance": null, "because": ["not written"], "kind": "missing"}
+{"tool": "t01", "round": 1, "card": 4, "utterance": null, "because": ["not written"], "kind": "missing"}
+{"tool": "t01", "round": 1, "card": 5, "utterance": null, "because": ["not written"], "kind": "missing"}
+{"tool": "t01", "round": 1, "card": 6, "utterance": null, "because": ["not written"], "kind": "missing"}
+{"tool": "t01", "round": 1, "card": 7, "utterance": null, "because": ["not written"], "kind": "missing"}
+{"tool": "t01", "round": 1, "card": 8, "utterance": null, "because": ["not written"], "kind": "missing"}
+{"tool": "t01", "round": 1, "card": 9, "utterance": null, "because": ["not written"], "kind": "missing"}
+{"tool": "t01", "round": 1, "card": 10, "utterance": null, "because": ["not written"], "kind": "missing"}
+{"tool": "t01", "round": 1, "card": 11, "utterance": null, "because": ["not written"], "kind": "missing"}
+{"tool": "t01", "round": 1, "card": 12, "utterance": null, "because": ["not written"], "kind": "missing"}
+{"tool": "t01", "round": 1, "card": 13, "utterance": null, "because": ["not written"], "kind": "missing"}
+{"tool": "t01", "round": 1, "card": 14, "utterance": null, "because": ["not written"], "kind": "missing"}
+{"tool": "t01", "round": 1, "card": 15, "utterance": null, "because": ["not written"], "kind": "missing"}
+{"tool": "t01", "round": 1, "card": 16, "utterance": null, "because": ["not written"], "kind": "missing"}
+{"tool": "t01", "round": 1, "card": 17, "utterance": null, "because": ["not written"], "kind": "missing"}
+{"tool": "t01", "round": 1, "card": 18, "utterance": null, "because": ["not written"], "kind": "missing"}
+{"tool": "t01", "round": 1, "card": 19, "utterance": null, "because": ["not written"], "kind": "missing"}
+{"tool": "t01", "round": 1, "card": 20, "utterance": null, "because": ["not written"], "kind": "missing"}
+{"tool": "t01", "round": 2, "card": 1, "utterance": "Could you energize the overhead bulb?", "because": ["call to turn_light_on_off: missing required argument 'room_name'"], "kind": "schema"}
+{"tool": "t01", "round": 2, "card": 2, "utterance": "Oh wow, please switch the status of that fixture to on!", "because": ["turn_light_on_off.room_name='kitchen' is not in the utterance", "turn_light_on_off.device_identifier='overhead' is not in the utterance"], "kind": "value"}
+{"tool": "t01", "round": 2, "card": 3, "utterance": "Make the ceiling glow bright, now!", "because": ["turn_light_on_off.room_name='bathroom' is not in the utterance"], "kind": "value"}
+{"tool": "t01", "round": 2, "card": 4, "utterance": "Would you mind activating the lamp?", "because": ["turn_light_on_off.room_name='bedroom' is not in the utterance"], "kind": "value"}
+{"tool": "t01", "round": 2, "card": 5, "utterance": "My hands are messy, so please switch that fixture on.", "because": ["turn_light_on_off.room_name='living room' is not in the utterance", "turn_light_on_off.device_identifier='main' is not in the utterance"], "kind": "value"}
+{"tool": "t01", "round": 2, "card": 6, "utterance": "I am rushing out, could you wake the lamp?", "because": ["turn_light_on_off.room_name='hallway' is not in the utterance"], "kind": "value"}
+{"tool": "t01", "round": 2, "card": 7, "utterance": "Please enable the illumination device immediately.", "because": ["turn_light_on_off.room_name='office' is not in the utterance", "turn_light_on_off.device_identifier='desk' is not in the utterance"], "kind": "value"}
+{"tool": "t01", "round": 2, "card": 8, "utterance": "Yes, make the lamp opposite state now!", "because": ["turn_light_on_off.room_name='bedroom' is not in the utterance", "turn_light_on_off.device_identifier='bedside' is not in the utterance"], "kind": "value"}
+{"tool": "t01", "round": 2, "card": 9, "utterance": "Ugh, just activate the ceiling unit already.", "because": ["turn_light_on_off.room_name='kitchen' is not in the utterance"], "kind": "value"}
+{"tool": "t01", "round": 2, "card": 10, "utterance": "Energize the bulb!", "because": ["turn_light_on_off.room_name='dining room' is not in the utterance"], "kind": "value"}
+{"tool": "t01", "round": 2, "card": 11, "utterance": "Could you please toggle the status of that lamp?", "because": ["turn_light_on_off.room_name='nursery' is not in the utterance", "turn_light_on_off.device_identifier='nightlight' is not in the utterance"], "kind": "value"}
+{"tool": "t01", "round": 2, "card": 12, "utterance": "Wake up the ceiling!", "because": ["turn_light_on_off.room_name='hallway' is not in the utterance"], "kind": "value"}
+{"tool": "t01", "round": 2, "card": 13, "utterance": "My eyes are heavy, please power the fixture.", "because": ["turn_light_on_off.room_name='living room' is not in the utterance"], "kind": "value"}
+{"tool": "t01", "round": 2, "card": 14, "utterance": "Flip the switch!", "because": ["turn_light_on_off.room_name='study' is not in the utterance"], "kind": "value"}
+{"tool": "t01", "round": 2, "card": 15, "utterance": "Will you activate that ceiling lamp?", "because": ["turn_light_on_off.room_name='bathroom' is not in the utterance", "turn_light_on_off.device_identifier='mirror' is not in the utterance"], "kind": "value"}
+{"tool": "t01", "round": 2, "card": 16, "utterance": "Please energize the overhead bulb quickly.", "because": ["turn_light_on_off.room_name='bedroom' is not in the utterance"], "kind": "value"}
+{"tool": "t01", "round": 2, "card": 17, "utterance": null, "because": ["needs an utterance and args"], "kind": "schema"}
+{"tool": "t01", "round": 3, "card": 5, "utterance": "My hands are messy, so please switch that living room fixture on.", "because": ["turn_light_on_off.device_identifier='main' is not in the utterance"], "kind": "value"}
+{"tool": "t01", "round": 3, "card": 8, "utterance": "Yes, make the bedroom lamp opposite state now!", "because": ["turn_light_on_off.device_identifier='bedside' is not in the utterance"], "kind": "value"}
+{"tool": "t01", "round": 3, "card": 11, "utterance": "Could you please toggle the status of that nursery lamp?", "because": ["turn_light_on_off.device_identifier='nightlight' is not in the utterance"], "kind": "value"}
+{"tool": "t01", "round": 3, "card": 12, "utterance": "Wake up the ceiling!", "because": ["turn_light_on_off.room_name='hallway' is not in the utterance"], "kind": "value"}
+{"tool": "t01", "round": 3, "card": 17, "utterance": "What time does the gym light turn off?", "because": ["the request says room_name='gym': this card leaves it out"], "kind": "ask"}
+{"tool": "t02", "round": 1, "card": 1, "utterance": "Hey, can you make the glow in the bedroom super bright for me right now?", "because": ["set_light_brightness.brightness_level=95 is not in the utterance"], "kind": "value"}
+{"tool": "t02", "round": 1, "card": 2, "utterance": "Is the lamp in the kitchen too dark?", "because": ["set_light_brightness.brightness_level=10 is not in the utterance"], "kind": "value"}
+{"tool": "t02", "round": 1, "card": 3, "utterance": "Can we increase the glow in the hallway quickly?", "because": ["set_light_brightness.brightness_level=80 is not in the utterance"], "kind": "value"}
+{"tool": "t02", "round": 1, "card": 4, "utterance": "Could you brighten the kitchen? Thanks!", "because": ["set_light_brightness.brightness_level=60 is not in the utterance"], "kind": "value"}
+{"tool": "t02", "round": 1, "card": 5, "utterance": "Is the glow in the living room too dim for a movie?", "because": ["set_light_brightness.brightness_level=20 is not in the utterance"], "kind": "value"}
+{"tool": "t02", "round": 1, "card": 6, "utterance": "Could you please make the bathroom glow brighter?", "because": ["set_light_brightness.brightness_level=75 is not in the utterance"], "kind": "value"}
+{"tool": "t02", "round": 1, "card": 7, "utterance": "The bedroom is too dark. Can we fix that glow? I need to read.", "because": ["set_light_brightness.brightness_level=90 is not in the utterance"], "kind": "value"}
+{"tool": "t02", "round": 1, "card": 8, "utterance": "My hands are full. Please make the study glow brighter for me now.", "because": ["set_light_brightness.brightness_level=85 is not in the utterance"], "kind": "value"}
+{"tool": "t02", "round": 1, "card": 9, "utterance": null, "because": ["needs an utterance and args"], "kind": "schema"}
+{"tool": "t02", "round": 1, "card": 10, "utterance": "Can you make the patio glow brighter? I am having fun outside.", "because": ["set_light_brightness.brightness_level=70 is not in the utterance"], "kind": "value"}
+{"tool": "t02", "round": 1, "card": 11, "utterance": "Can we make the kitchen glow super bright for dinner time now?", "because": ["set_light_brightness.brightness_level=95 is not in the utterance"], "kind": "value"}
+{"tool": "t02", "round": 1, "card": 12, "utterance": "The bedroom is too dark. Can we boost the glow quickly? I am worried.", "because": ["set_light_brightness.brightness_level=80 is not in the utterance"], "kind": "value"}
+{"tool": "t02", "round": 1, "card": 13, "utterance": "Can you make the living room glow brighter? I want to see clearly!", "because": ["set_light_brightness.brightness_level=75 is not in the utterance"], "kind": "value"}
+{"tool": "t02", "round": 1, "card": 14, "utterance": "My hands are full. Please make the office glow brighter for me now.", "because": ["set_light_brightness.brightness_level=65 is not in the utterance"], "kind": "value"}
+{"tool": "t02", "round": 1, "card": 15, "utterance": "My hands are full. Please make the garage glow brighter for me now.", "because": ["set_light_brightness.brightness_level=50 is not in the utterance"], "kind": "value"}
+{"tool": "t02", "round": 1, "card": 16, "utterance": "Is the kitchen too dark? I am worried about cooking dinner safely.", "because": ["set_light_brightness.brightness_level=30 is not in the utterance"], "kind": "value"}
+{"tool": "t02", "round": 1, "card": 18, "utterance": "Could you brighten the bathroom glow for me? Thanks so much.", "because": ["the request says room_name='bathroom': this card leaves it out"], "kind": "ask"}
+{"tool": "t02", "round": 2, "card": 1, "utterance": "Hey, can you make the bedroom glow super bright for me right now?", "because": ["set_light_brightness.brightness_level=95 is not in the utterance"], "kind": "value"}
+{"tool": "t02", "round": 2, "card": 2, "utterance": "Is the kitchen lamp too dark?", "because": ["set_light_brightness.brightness_level=10 is not in the utterance"], "kind": "value"}
+{"tool": "t02", "round": 2, "card": 3, "utterance": "Can we increase the hallway glow quickly?", "because": ["set_light_brightness.brightness_level=80 is not in the utterance"], "kind": "value"}
+{"tool": "t02", "round": 2, "card": 4, "utterance": null, "because": ["needs an utterance and args"], "kind": "schema"}
+{"tool": "t02", "round": 2, "card": 5, "utterance": "Is the living room glow too dim for a movie?", "because": ["set_light_brightness.brightness_level=20 is not in the utterance"], "kind": "value"}
+{"tool": "t02", "round": 2, "card": 6, "utterance": "Could you please make the bathroom glow brighter?", "because": ["set_light_brightness.brightness_level=75 is not in the utterance"], "kind": "value"}
+{"tool": "t02", "round": 2, "card": 7, "utterance": "The bedroom is too dark. Can we fix that glow? I need to read.", "because": ["set_light_brightness.brightness_level=90 is not in the utterance"], "kind": "value"}
+{"tool": "t02", "round": 2, "card": 8, "utterance": "My hands are full. Please make the study glow brighter for me now.", "because": ["set_light_brightness.brightness_level=85 is not in the utterance"], "kind": "value"}
+{"tool": "t02", "round": 2, "card": 9, "utterance": "Can we boost the bedroom lamp's shine?", "because": ["set_light_brightness.brightness_level=50 is not in the utterance"], "kind": "value"}
+{"tool": "t02", "round": 2, "card": 10, "utterance": "Can you make the patio glow brighter? I am having fun outside.", "because": ["set_light_brightness.brightness_level=70 is not in the utterance"], "kind": "value"}
+{"tool": "t02", "round": 2, "card": 11, "utterance": "Can we make the kitchen glow super bright for dinner time now?", "because": ["set_light_brightness.brightness_level=95 is not in the utterance"], "kind": "value"}
+{"tool": "t02", "round": 2, "card": 12, "utterance": "The bedroom is too dark. Can we boost the glow quickly? I am worried.", "because": ["set_light_brightness.brightness_level=80 is not in the utterance"], "kind": "value"}
+{"tool": "t02", "round": 2, "card": 13, "utterance": "Can you make the living room glow brighter? I want to see clearly!", "because": ["set_light_brightness.brightness_level=75 is not in the utterance"], "kind": "value"}
+{"tool": "t02", "round": 2, "card": 14, "utterance": "My hands are full. Please make the office glow brighter for me now.", "because": ["set_light_brightness.brightness_level=65 is not in the utterance"], "kind": "value"}
+{"tool": "t02", "round": 2, "card": 15, "utterance": "My hands are full. Please make the garage glow brighter for me now.", "because": ["set_light_brightness.brightness_level=50 is not in the utterance"], "kind": "value"}
+{"tool": "t02", "round": 2, "card": 16, "utterance": "Is the kitchen too dark? I am worried about cooking dinner safely.", "because": ["set_light_brightness.brightness_level=30 is not in the utterance"], "kind": "value"}
+{"tool": "t02", "round": 2, "card": 18, "utterance": "Could you brighten the bathroom glow for me? Thanks so much.", "because": ["the request says room_name='bathroom': this card leaves it out"], "kind": "ask"}
+{"tool": "t02", "round": 3, "card": 1, "utterance": "Can you make the bedroom shine really bright while I walk Fido?", "because": ["set_light_brightness.brightness_level=95 is not in the utterance"], "kind": "value"}
+{"tool": "t02", "round": 3, "card": 2, "utterance": "Is the kitchen glare too weak?", "because": ["set_light_brightness.brightness_level=10 is not in the utterance"], "kind": "value"}
+{"tool": "t02", "round": 3, "card": 3, "utterance": "Can we crank up the hallway glow fast?", "because": ["set_light_brightness.brightness_level=80 is not in the utterance"], "kind": "value"}
+{"tool": "t02", "round": 3, "card": 4, "utterance": "Please make the kitchen shine bright.", "because": ["set_light_brightness.brightness_level=90 is not in the utterance"], "kind": "value"}
+{"tool": "t02", "round": 3, "card": 5, "utterance": "Is the living room glow too dim for my movie night?", "because": ["set_light_brightness.brightness_level=20 is not in the utterance"], "kind": "value"}
+{"tool": "t02", "round": 3, "card": 6, "utterance": null, "because": ["needs an utterance and args"], "kind": "schema"}
+{"tool": "t02", "round": 3, "card": 8, "utterance": "My hands are full. Please make the study shine brighter.", "because": ["set_light_brightness.brightness_level=85 is not in the utterance"], "kind": "value"}
+{"tool": "t02", "round": 3, "card": 10, "utterance": "Can you make the patio shine brighter while I play?", "because": ["set_light_brightness.brightness_level=70 is not in the utterance"], "kind": "value"}
+{"tool": "t02", "round": 3, "card": 11, "utterance": "Can we make the kitchen shine super bright for dinner?", "because": ["set_light_brightness.brightness_level=95 is not in the utterance"], "kind": "value"}
+{"tool": "t02", "round": 3, "card": 12, "utterance": "The bedroom is dark. Boost the glow quickly.", "because": ["set_light_brightness.brightness_level=80 is not in the utterance"], "kind": "value"}
+{"tool": "t02", "round": 3, "card": 13, "utterance": "Can you make the living room shine brighter so I see?", "because": ["set_light_brightness.brightness_level=75 is not in the utterance"], "kind": "value"}
+{"tool": "t02", "round": 3, "card": 14, "utterance": "My hands are full. Make the office shine now.", "because": ["set_light_brightness.brightness_level=65 is not in the utterance"], "kind": "value"}
+{"tool": "t02", "round": 3, "card": 15, "utterance": "My hands are full. Make the garage shine now.", "because": ["set_light_brightness.brightness_level=50 is not in the utterance"], "kind": "value"}
+{"tool": "t02", "round": 3, "card": 16, "utterance": "Is the kitchen too dark for cooking safely?", "because": ["set_light_brightness.brightness_level=30 is not in the utterance"], "kind": "value"}
+{"tool": "t02", "round": 3, "card": 18, "utterance": "Could you brighten the bathroom glow? Thanks.", "because": ["the request says room_name='bathroom': this card leaves it out"], "kind": "ask"}
+{"tool": "t03", "round": 1, "card": 2, "utterance": "Why is the dining room still so dark?", "because": ["set_light_color.color_value='bright' is not in the utterance"], "kind": "value"}
+{"tool": "t03", "round": 1, "card": 17, "utterance": "I just woke up, make the bedroom blue.", "because": ["give a value for room_name in args, though the request leaves it out"], "kind": "schema"}
+{"tool": "t03", "round": 1, "card": 18, "utterance": "I am so busy, set the gym to green.", "because": ["give a value for color_value in args, though the request leaves it out"], "kind": "schema"}
+{"tool": "t03", "round": 2, "card": 2, "utterance": "Can we make the dining area bright?", "because": ["set_light_color.room_name='dining room' is not in the utterance"], "kind": "value"}
+{"tool": "t03", "round": 2, "card": 17, "utterance": "Blue is so energizing for my bedroom right now!", "because": ["the request says room_name='bedroom': this card leaves it out"], "kind": "ask"}
+{"tool": "t03", "round": 2, "card": 18, "utterance": "My hands are full, set the gym to green", "because": ["the request says color_value='green': this card leaves it out"], "kind": "ask"}
+{"tool": "t03", "round": 3, "card": 17, "utterance": "Turn on the bedroom and set it to a calming blue immediately!", "because": ["the request says room_name='bedroom': this card leaves it out"], "kind": "ask"}
+{"tool": "t03", "round": 3, "card": 18, "utterance": "My hands are full, switch the gym fixture to green now.", "because": ["give a value for color_value in args, though the request leaves it out"], "kind": "schema"}
+{"tool": "t04", "round": 1, "card": 1, "utterance": "Get the bedroom lamp on for me soon?", "because": ["schedule_light_timer.trigger_time='7pm' is not in the utterance"], "kind": "value"}
+{"tool": "t04", "round": 1, "card": 6, "utterance": "My bags are heavy, switch the hall on", "because": ["schedule_light_timer.trigger_time='now' is not in the utterance"], "kind": "value"}
+{"tool": "t04", "round": 1, "card": 7, "utterance": "My arms are full, set the entry to off", "because": ["schedule_light_timer.trigger_time='19:00' is not in the utterance"], "kind": "value"}
+{"tool": "t04", "round": 1, "card": 9, "utterance": "Can I switch the attic on?", "because": ["schedule_light_timer.trigger_time='now' is not in the utterance"], "kind": "value"}
+{"tool": "t04", "round": 1, "card": 10, "utterance": "When does the guest room turn off?", "because": ["schedule_light_timer.trigger_time='8pm' is not in the utterance"], "kind": "value"}
+{"tool": "t04", "round": 1, "card": 11, "utterance": "Is the basement light on?", "because": ["schedule_light_timer.trigger_time='now' is not in the utterance"], "kind": "value"}
+{"tool": "t04", "round": 1, "card": 12, "utterance": "Switch the study off, thanks", "because": ["schedule_light_timer.trigger_time='now' is not in the utterance"], "kind": "value"}
+{"tool": "t04", "round": 1, "card": 14, "utterance": "Do we want the pantry to glow at six?", "because": ["schedule_light_timer.trigger_time='6pm' is not in the utterance"], "kind": "value"}
+{"tool": "t04", "round": 1, "card": 15, "utterance": "Will the studio switch off at nine?", "because": ["schedule_light_timer.trigger_time='9pm' is not in the utterance"], "kind": "value"}
+{"tool": "t04", "round": 1, "card": 16, "utterance": "My keys are gone, light the porch on", "because": ["schedule_light_timer.trigger_time='now' is not in the utterance"], "kind": "value"}
+{"tool": "t04", "round": 2, "card": 14, "utterance": "Do we want the pantry to glow at six pm exactly?", "because": ["schedule_light_timer.trigger_time='6pm' is not in the utterance"], "kind": "value"}
+{"tool": "t04", "round": 2, "card": 15, "utterance": "Will the studio switch off at nine pm?", "because": ["schedule_light_timer.trigger_time='9pm' is not in the utterance"], "kind": "value"}
+{"tool": "t04", "round": 3, "card": 14, "utterance": "Should we have the pantry glow at exactly six pm?", "because": ["schedule_light_timer.trigger_time='6pm' is not in the utterance"], "kind": "value"}
+{"tool": "t04", "round": 3, "card": 15, "utterance": "Will the studio switch off at nine pm?", "because": ["schedule_light_timer.trigger_time='9pm' is not in the utterance"], "kind": "value"}
+{"tool": "t05", "round": 1, "card": 2, "utterance": "Show me the desk lamp state", "because": ["call to get_light_status: missing required argument 'room_name'"], "kind": "schema"}
+{"tool": "t05", "round": 1, "card": 5, "utterance": "Could you let me know if the bathroom lamp is on right now?", "because": ["call to get_light_status: missing required argument 'room_name'"], "kind": "schema"}
+{"tool": "t05", "round": 1, "card": 6, "utterance": "I need to see if the living room bulb works", "because": ["get_light_status.room_name='living_room' is not in the utterance"], "kind": "value"}
+{"tool": "t05", "round": 1, "card": 7, "utterance": "Tell me about the office light status", "because": ["call to get_light_status: missing required argument 'room_name'"], "kind": "schema"}
+{"tool": "t05", "round": 1, "card": 8, "utterance": "Please check the guest room lamp state", "because": ["get_light_status.room_name='guest_room' is not in the utterance"], "kind": "value"}
+{"tool": "t05", "round": 1, "card": 14, "utterance": "Show guest room lamp state", "because": ["get_light_status.room_name='guest_room' is not in the utterance"], "kind": "value"}
+{"tool": "t05", "round": 1, "card": 15, "utterance": "Is the patio bulb on?", "because": ["call to get_light_status: missing required argument 'room_name'"], "kind": "schema"}
+{"tool": "t05", "round": 1, "card": 17, "utterance": "Turn on the lamp immediately because I am annoyed", "because": ["get_light_status.device_identifier='nightstand' is not in the utterance"], "kind": "value"}
+{"tool": "t05", "round": 1, "card": 18, "utterance": "Please verify the kitchen bulb is active now", "because": ["the request says room_name='kitchen': this card leaves it out"], "kind": "ask"}
+{"tool": "t05", "round": 2, "card": 6, "utterance": "See if the living room is lit up.", "because": ["get_light_status.room_name='living_room' is not in the utterance"], "kind": "value"}
+{"tool": "t05", "round": 2, "card": 8, "utterance": "Please check if the guest room is on.", "because": ["get_light_status.room_name='guest_room' is not in the utterance"], "kind": "value"}
+{"tool": "t05", "round": 2, "card": 14, "utterance": "Is the guest room glowing?", "because": ["get_light_status.room_name='guest_room' is not in the utterance"], "kind": "value"}
+{"tool": "t05", "round": 2, "card": 18, "utterance": "Please verify the kitchen bulb is active now for cooking dinner.", "because": ["the request says room_name='kitchen': this card leaves it out"], "kind": "ask"}
+{"tool": "t05", "round": 3, "card": 18, "utterance": "Confirm the stove area electrical supply is on for dinner prep.", "because": ["the request says room_name='stove area': this card leaves it out"], "kind": "ask"}
+{"tool": "t06", "round": 1, "card": 17, "utterance": "Please locate entry level roles.", "because": ["give a value for keyword in args, though the request leaves it out"], "kind": "schema"}
+{"tool": "t06", "round": 1, "card": 18, "utterance": "Do you have mid level roles available?", "because": ["give a value for keyword in args, though the request leaves it out"], "kind": "schema"}
+{"tool": "t06", "round": 2, "card": 17, "utterance": "Could you locate entry level roles?", "because": ["the request says keyword='roles': this card leaves it out"], "kind": "ask"}
+{"tool": "t06", "round": 2, "card": 18, "utterance": "Are there any mid level positions available for a parent?", "because": ["the request says keyword='positions': this card leaves it out"], "kind": "ask"}
+{"tool": "t06", "round": 3, "card": 17, "utterance": "Please identify entry level roles near me.", "because": ["the request says keyword='roles': this card leaves it out"], "kind": "ask"}
+{"tool": "t06", "round": 3, "card": 18, "utterance": "Can you tell me if there are any mid level openings in this field right now?", "because": ["the request says keyword='openings': this card leaves it out"], "kind": "ask"}
+{"tool": "t07", "round": 1, "card": 1, "utterance": "Fix my employment details now.", "because": ["update_resume_file.section='experience' is not in the utterance", "content='Employment details' must be written with the request's case"], "kind": "value"}
+{"tool": "t07", "round": 1, "card": 2, "utterance": "Edit work history please.", "because": ["update_resume_file.section='experience' is not in the utterance"], "kind": "value"}
+{"tool": "t07", "round": 1, "card": 5, "utterance": "Can you fix personal info?", "because": ["update_resume_file.section='summary' is not in the utterance"], "kind": "value"}
+{"tool": "t07", "round": 1, "card": 6, "utterance": "I need to edit work history sections immediately.", "because": ["update_resume_file.section='experience' is not in the utterance"], "kind": "value"}
+{"tool": "t07", "round": 1, "card": 8, "utterance": null, "because": ["needs an utterance and args"], "kind": "schema"}
+{"tool": "t07", "round": 1, "card": 9, "utterance": "Fix personal information quickly.", "because": ["update_resume_file.section='summary' is not in the utterance"], "kind": "value"}
+{"tool": "t07", "round": 1, "card": 10, "utterance": "Edit work history sections while I laugh.", "because": ["update_resume_file.section='experience' is not in the utterance"], "kind": "value"}
+{"tool": "t07", "round": 1, "card": 13, "utterance": "Fix personal info now.", "because": ["update_resume_file.section='summary' is not in the utterance"], "kind": "value"}
+{"tool": "t07", "round": 1, "card": 14, "utterance": "My hands are full, edit work history please.", "because": ["update_resume_file.section='experience' is not in the utterance"], "kind": "value"}
+{"tool": "t07", "round": 1, "card": 20, "utterance": null, "because": ["needs an utterance and args"], "kind": "schema"}
+{"tool": "t07", "round": 2, "card": 1, "utterance": "Change employment section details.", "because": ["update_resume_file.section='experience' is not in the utterance", "update_resume_file.content='Employment details' is not in the utterance"], "kind": "value"}
+{"tool": "t07", "round": 2, "card": 2, "utterance": "Update my experience data.", "because": ["content='Experience data' must be written with the request's case"], "kind": "value"}
+{"tool": "t07", "round": 2, "card": 5, "utterance": "Can I fix the summary text?", "because": ["content='Summary text' must be written with the request's case"], "kind": "value"}
+{"tool": "t07", "round": 2, "card": 6, "utterance": "Please change my professional history right now.", "because": ["update_resume_file.section='experience' is not in the utterance", "content='Professional history' must be written with the request's case"], "kind": "value"}
+{"tool": "t07", "round": 2, "card": 8, "utterance": "Change the contact info please.", "because": ["content='Contact info' must be written with the request's case"], "kind": "value"}
+{"tool": "t07", "round": 2, "card": 9, "utterance": "Fix summary details now.", "because": ["content='Summary details' must be written with the request's case"], "kind": "value"}
+{"tool": "t07", "round": 2, "card": 10, "utterance": "Change my professional background details.", "because": ["update_resume_file.section='experience' is not in the utterance", "content='Professional background' must be written with the request's case"], "kind": "value"}
+{"tool": "t07", "round": 2, "card": 13, "utterance": "Hands full, change summary text.", "because": ["content='Summary text' must be written with the request's case"], "kind": "value"}
+{"tool": "t07", "round": 2, "card": 14, "utterance": "Hands busy, update career history now.", "because": ["update_resume_file.section='experience' is not in the utterance", "content='Career history' must be written with the request's case"], "kind": "value"}
+{"tool": "t07", "round": 3, "card": 1, "utterance": "Fix my work history now", "because": ["update_resume_file.section='experience' is not in the utterance"], "kind": "value"}
+{"tool": "t07", "round": 3, "card": 2, "utterance": "Rewrite career past?", "because": ["update_resume_file.section='experience' is not in the utterance"], "kind": "value"}
+{"tool": "t07", "round": 3, "card": 6, "utterance": "I need to alter my professional background details immediately", "because": ["update_resume_file.section='experience' is not in the utterance"], "kind": "value"}
+{"tool": "t07", "round": 3, "card": 10, "utterance": "I want to change my professional background details right away", "because": ["update_resume_file.section='experience' is not in the utterance"], "kind": "value"}
+{"tool": "t07", "round": 3, "card": 14, "utterance": "Hands busy, update career history now", "because": ["update_resume_file.section='experience' is not in the utterance"], "kind": "value"}
+{"tool": "t08", "round": 1, "card": 3, "utterance": "Please locate educational materials.", "because": ["call to check_skill_gaps: missing required argument 'target_role'"], "kind": "schema"}
+{"tool": "t08", "round": 1, "card": 6, "utterance": "Find me the courses for missing professional know-how!", "because": ["call to check_skill_gaps: missing required argument 'target_role'"], "kind": "schema"}
+{"tool": "t08", "round": 1, "card": 7, "utterance": "My hands are occupied, help me find learning resources.", "because": ["call to check_skill_gaps: missing required argument 'target_role'"], "kind": "schema"}
+{"tool": "t08", "round": 1, "card": 11, "utterance": "Find me professional learning resources.", "because": ["call to check_skill_gaps: missing required argument 'target_role'"], "kind": "schema"}
+{"tool": "t08", "round": 1, "card": 15, "utterance": "Where can I find courses?", "because": ["call to check_skill_gaps: missing required argument 'target_role'"], "kind": "schema"}
+{"tool": "t08", "round": 1, "card": 17, "utterance": "Please list my current abilities.", "because": ["give a value for target_role in args, though the request leaves it out"], "kind": "schema"}
+{"tool": "t08", "round": 1, "card": 18, "utterance": "Tell me what I lack against these job demands.", "because": ["the request says target_role='job demands': this card leaves it out"], "kind": "ask"}
+{"tool": "t08", "round": 2, "card": 15, "utterance": "Nursing jobs?", "because": ["target_role='nursing' must be written with the request's case"], "kind": "value"}
+{"tool": "t08", "round": 2, "card": 17, "utterance": "Please analyze my background.", "because": ["check_skill_gaps.current_skills='teaching' is not in the utterance"], "kind": "value"}
+{"tool": "t08", "round": 2, "card": 18, "utterance": "Just tell me what I need for the job demands.", "because": ["the request says target_role='job demands': this card leaves it out"], "kind": "ask"}
+{"tool": "t08", "round": 3, "card": 15, "utterance": "What role is open?", "because": ["check_skill_gaps.target_role='Nursing' is not in the utterance"], "kind": "value"}
+{"tool": "t08", "round": 3, "card": 18, "utterance": "Tell me what qualifications I lack for becoming a manager.", "because": ["the request says target_role='Manager': this card leaves it out"], "kind": "ask"}
+{"tool": "t09", "round": 1, "card": 5, "utterance": "Nurse wages?", "because": ["job_title='nurse' must be written with the request's case"], "kind": "value"}
+{"tool": "t09", "round": 1, "card": 17, "utterance": "Can you tell me the salary range for a dentist without specifying the job?", "because": ["the request says job_title='dentist': this card leaves it out"], "kind": "ask"}
+{"tool": "t09", "round": 1, "card": 18, "utterance": "What is the pay scale for a lawyer?", "because": ["the request says job_title='lawyer': this card leaves it out"], "kind": "ask"}
+{"tool": "t09", "round": 2, "card": 17, "utterance": "How much do engineers in Seattle make exactly?", "because": ["the request says job_title='engineers': this card leaves it out"], "kind": "ask"}
+{"tool": "t09", "round": 2, "card": 18, "utterance": "What is the pay scale for a lawyer?", "because": ["the request says job_title='lawyer': this card leaves it out"], "kind": "ask"}
+{"tool": "t09", "round": 3, "card": 17, "utterance": "Can you figure out how much a software developer makes in Austin?", "because": ["the request says job_title='software developer': this card leaves it out"], "kind": "ask"}
+{"tool": "t09", "round": 3, "card": 18, "utterance": "Tell me the typical pay for an accountant in Chicago.", "because": ["the request says job_title='accountant': this card leaves it out"], "kind": "ask"}
+{"tool": "t10", "round": 1, "card": 1, "utterance": "Could you figure out the board foot amount for a piece that is two inches wide, half an inch thick and six feet long?", "because": ["calculate_board_footage.thickness_inches=0.5 is not in the utterance"], "kind": "value"}
+{"tool": "t10", "round": 1, "card": 2, "utterance": "Can you tell me the volume in board feet for a plank that is three inches wide, one inch thick and eight feet long?", "because": ["shares \"board\" with every name and description pair: avoid the words of at least one name and one description"], "kind": "shared"}
+{"tool": "t10", "round": 1, "card": 4, "utterance": "My eyes are blurry so please tell me the volume for a board that is six inches wide, one inch thick and twelve feet long.", "because": ["shares \"board\" with every name and description pair: avoid the words of at least one name and one description"], "kind": "shared"}
+{"tool": "t10", "round": 1, "card": 6, "utterance": "Please could you help me determine the volume for a three inch wide, half inch thick and five foot long plank?", "because": ["calculate_board_footage.thickness_inches=0.5 is not in the utterance"], "kind": "value"}
+{"tool": "t10", "round": 1, "card": 14, "utterance": "Please could you provide the volume in board feet for a four inch wide, half inch thick and ten foot long board?", "because": ["calculate_board_footage.thickness_inches=0.5 is not in the utterance", "shares \"board\" with every name and description pair: avoid the words of at least one name and one description"], "kind": "value"}
+{"tool": "t10", "round": 1, "card": 18, "utterance": "My back hurts so please compute the board feet for a three inch wide and eight foot long piece.", "because": ["the request says length_feet=8.0: this card leaves it out"], "kind": "ask"}
+{"tool": "t10", "round": 2, "card": 1, "utterance": "What is the board foot total for a slab two inches wide, half inch thick and six feet long?", "because": ["calculate_board_footage.thickness_inches=0.5 is not in the utterance"], "kind": "value"}
+{"tool": "t10", "round": 2, "card": 2, "utterance": "What is the volume in board feet for a plank three inches wide, one inch thick and eight feet long?", "because": ["shares \"board\" with every name and description pair: avoid the words of at least one name and one description"], "kind": "shared"}
+{"tool": "t10", "round": 2, "card": 6, "utterance": "Please could you help me determine the volume for a three inch wide, half inch thick and five foot long plank?", "because": ["calculate_board_footage.thickness_inches=0.5 is not in the utterance"], "kind": "value"}
+{"tool": "t10", "round": 2, "card": 14, "utterance": "Please could you provide the volume in board feet for a four inch wide, half inch thick and ten foot long board?", "because": ["calculate_board_footage.thickness_inches=0.5 is not in the utterance", "shares \"board\" with every name and description pair: avoid the words of at least one name and one description"], "kind": "value"}
+{"tool": "t10", "round": 2, "card": 18, "utterance": "My back hurts so please compute the board feet for a three inch wide and eight foot long piece.", "because": ["the request says length_feet=8.0: this card leaves it out"], "kind": "ask"}
+{"tool": "t10", "round": 3, "card": 1, "utterance": "Can you tell me how many board feet are in a slab two inches wide, half an inch thick and six feet long?", "because": ["calculate_board_footage.thickness_inches=0.5 is not in the utterance"], "kind": "value"}
+{"tool": "t10", "round": 3, "card": 2, "utterance": "How much volume in board feet does a plank three inches wide, one inch thick and eight feet long hold?", "because": ["shares \"board\" with every name and description pair: avoid the words of at least one name and one description"], "kind": "shared"}
+{"tool": "t10", "round": 3, "card": 6, "utterance": "Could you please help me figure out the total for a three inch wide, half inch thick and five foot long plank?", "because": ["calculate_board_footage.thickness_inches=0.5 is not in the utterance"], "kind": "value"}
+{"tool": "t10", "round": 3, "card": 14, "utterance": "I would appreciate it if you could provide the volume for a four inch wide, half inch thick and ten foot long piece.", "because": ["calculate_board_footage.thickness_inches=0.5 is not in the utterance"], "kind": "value"}
+{"tool": "t10", "round": 3, "card": 18, "utterance": "My back hurts so please compute the board feet for a three inch wide and half inch thick piece.", "because": ["give a value for length_feet in args, though the request leaves it out"], "kind": "schema"}
+{"tool": "t11", "round": 1, "card": 1, "utterance": "Show me tool shops close by!", "because": ["call to find_hardware_store_nearby: missing required argument 'location'"], "kind": "schema"}
+{"tool": "t11", "round": 1, "card": 2, "utterance": "Where are timber merchants?", "because": ["call to find_hardware_store_nearby: missing required argument 'location'"], "kind": "schema"}
+{"tool": "t11", "round": 1, "card": 3, "utterance": "Please help me discover local wood vendors nearby", "because": ["call to find_hardware_store_nearby: missing required argument 'location'"], "kind": "schema"}
+{"tool": "t11", "round": 1, "card": 4, "utterance": "Nearby tool shops?", "because": ["call to find_hardware_store_nearby: missing required argument 'location'"], "kind": "schema"}
+{"tool": "t11", "round": 1, "card": 5, "utterance": "Where are timber outlets?", "because": ["call to find_hardware_store_nearby: missing required argument 'location'"], "kind": "schema"}
+{"tool": "t11", "round": 1, "card": 6, "utterance": "Find local wood sellers", "because": ["call to find_hardware_store_nearby: missing required argument 'location'"], "kind": "schema"}
+{"tool": "t11", "round": 1, "card": 7, "utterance": "Can you show me nearby tool outlets?", "because": ["call to find_hardware_store_nearby: missing required argument 'location'"], "kind": "schema"}
+{"tool": "t11", "round": 1, "card": 8, "utterance": "Timber merchants please", "because": ["call to find_hardware_store_nearby: missing required argument 'location'"], "kind": "schema"}
+{"tool": "t11", "round": 1, "card": 9, "utterance": "Local wood vendors?", "because": ["call to find_hardware_store_nearby: missing required argument 'location'"], "kind": "schema"}
+{"tool": "t11", "round": 1, "card": 10, "utterance": "Nearby tool outlets?", "because": ["call to find_hardware_store_nearby: missing required argument 'location'"], "kind": "schema"}
+{"tool": "t11", "round": 1, "card": 11, "utterance": "My bag is heavy, timber merchants?", "because": ["call to find_hardware_store_nearby: missing required argument 'location'"], "kind": "schema"}
+{"tool": "t11", "round": 1, "card": 12, "utterance": "Wood vendors please", "because": ["call to find_hardware_store_nearby: missing required argument 'location'"], "kind": "schema"}
+{"tool": "t11", "round": 1, "card": 13, "utterance": "My car broke down, tool shops nearby?", "because": ["call to find_hardware_store_nearby: missing required argument 'location'"], "kind": "schema"}
+{"tool": "t11", "round": 1, "card": 14, "utterance": "Timber merchants please", "because": ["call to find_hardware_store_nearby: missing required argument 'location'"], "kind": "schema"}
+{"tool": "t11", "round": 1, "card": 15, "utterance": "My van is stuck, wood sellers?", "because": ["call to find_hardware_store_nearby: missing required argument 'location'"], "kind": "schema"}
+{"tool": "t11", "round": 1, "card": 16, "utterance": "The music is loud, tool shops?", "because": ["call to find_hardware_store_nearby: missing required argument 'location'"], "kind": "schema"}
+{"tool": "t11", "round": 1, "card": 18, "utterance": "Could you find local wood sellers?", "because": ["shares \"find\" with every name and description pair: avoid the words of at least one name and one description"], "kind": "shared"}
+{"tool": "t11", "round": 2, "card": 2, "utterance": "Where is the tool outlet?", "because": ["find_hardware_store_nearby.location='gym' is not in the utterance"], "kind": "value"}
+{"tool": "t11", "round": 2, "card": 3, "utterance": "Oh my goodness, could you help me find a place for supplies? I need wood fast!", "because": ["find_hardware_store_nearby.location='garden' is not in the utterance"], "kind": "value"}
+{"tool": "t11", "round": 2, "card": 4, "utterance": "Any tool shops nearby?", "because": ["find_hardware_store_nearby.location='gym' is not in the utterance"], "kind": "value"}
+{"tool": "t11", "round": 2, "card": 5, "utterance": "Where are the timber merchants?", "because": ["find_hardware_store_nearby.location='home' is not in the utterance"], "kind": "value"}
+{"tool": "t11", "round": 2, "card": 6, "utterance": "Find a wood seller.", "because": ["find_hardware_store_nearby.location='phone' is not in the utterance"], "kind": "value"}
+{"tool": "t11", "round": 2, "card": 7, "utterance": "Can you please show me where the tool stores are located?", "because": ["find_hardware_store_nearby.location='tidying' is not in the utterance"], "kind": "value"}
+{"tool": "t11", "round": 2, "card": 8, "utterance": "Timber merchants please.", "because": ["find_hardware_store_nearby.location='room' is not in the utterance"], "kind": "value"}
+{"tool": "t11", "round": 2, "card": 9, "utterance": "Local wood vendors?", "because": ["find_hardware_store_nearby.location='desk' is not in the utterance"], "kind": "value"}
+{"tool": "t11", "round": 2, "card": 10, "utterance": null, "because": ["needs an utterance and args"], "kind": "schema"}
+{"tool": "t11", "round": 2, "card": 12, "utterance": "Wood vendors please.", "because": ["find_hardware_store_nearby.location='garden' is not in the utterance"], "kind": "value"}
+{"tool": "t11", "round": 2, "card": 14, "utterance": "Timber merchants please.", "because": ["find_hardware_store_nearby.location='party' is not in the utterance"], "kind": "value"}
+{"tool": "t11", "round": 3, "card": 4, "utterance": "Gym tool places?", "because": ["location='gym' must be written with the request's case"], "kind": "value"}
+{"tool": "t11", "round": 3, "card": 5, "utterance": "House hardware spots?", "because": ["find_hardware_store_nearby.location='home' is not in the utterance"], "kind": "value"}
+{"tool": "t11", "round": 3, "card": 8, "utterance": "Room tool outlets please", "because": ["location='room' must be written with the request's case"], "kind": "value"}
+{"tool": "t11", "round": 3, "card": 9, "utterance": "Desk tool vendors?", "because": ["location='desk' must be written with the request's case"], "kind": "value"}
+{"tool": "t11", "round": 3, "card": 10, "utterance": "Desk tool outlets?", "because": ["location='desk' must be written with the request's case"], "kind": "value"}
+{"tool": "t11", "round": 3, "card": 12, "utterance": "Garden tool vendors please", "because": ["location='garden' must be written with the request's case"], "kind": "value"}
+{"tool": "t12", "round": 1, "card": 17, "utterance": "My dog is barking, give me maple traits.", "because": ["the request says wood_type='maple': this card leaves it out"], "kind": "ask"}
+{"tool": "t12", "round": 1, "card": 18, "utterance": "I have a fever, tell me oak features.", "because": ["the request says wood_type='oak': this card leaves it out"], "kind": "ask"}
+{"tool": "t12", "round": 2, "card": 17, "utterance": "Hey pal, tell me what pine wood brings to the table!", "because": ["the request says wood_type='pine': this card leaves it out"], "kind": "ask"}
+{"tool": "t12", "round": 2, "card": 18, "utterance": "Could you kindly provide the characteristics of cherry wood?", "because": ["the request says wood_type='cherry': this card leaves it out"], "kind": "ask"}
+{"tool": "t12", "round": 3, "card": 17, "utterance": "fetch me the traits for oak wood", "because": ["the request says wood_type='oak': this card leaves it out"], "kind": "ask"}
+{"tool": "t12", "round": 3, "card": 18, "utterance": "please reveal the features of maple timber", "because": ["the request says wood_type='maple': this card leaves it out"], "kind": "ask"}
+{"tool": "t13", "round": 1, "card": 1, "utterance": "help me get this to inches", "because": ["convert_wood_units.value=5.0 is not in the utterance"], "kind": "value"}
+{"tool": "t13", "round": 1, "card": 2, "utterance": "Could you please translate these feet into millimeters for me?", "because": ["convert_wood_units.value=10.0 is not in the utterance"], "kind": "value"}
+{"tool": "t13", "round": 1, "card": 3, "utterance": "make this plank metric pretty", "because": ["convert_wood_units.value=2.5 is not in the utterance"], "kind": "value"}
+{"tool": "t14", "round": 1, "card": 17, "utterance": "I would be grateful if you could provide the details for the bookshelf design I need.", "because": ["give a value for project_name in args, though the request leaves it out"], "kind": "schema"}
+{"tool": "t14", "round": 1, "card": 18, "utterance": "Look up the guide for building that storage unit now.", "because": ["give a value for project_name in args, though the request leaves it out"], "kind": "schema"}
+{"tool": "t14", "round": 2, "card": 17, "utterance": "Could you kindly display the carpentry guidelines for the coffee table assembly?", "because": ["the request says project_name='coffee table': this card leaves it out"], "kind": "ask"}
+{"tool": "t14", "round": 2, "card": 18, "utterance": "Fetch the hand tool manual for constructing the bookcase right away.", "because": ["the request says project_name='bookcase': this card leaves it out"], "kind": "ask"}
+{"tool": "t14", "round": 3, "card": 17, "utterance": "Would you mind pulling up the assembly details for that rustic coffee table I mentioned earlier?", "because": ["the request says project_name='coffee table': this card leaves it out"], "kind": "ask"}
+{"tool": "t14", "round": 3, "card": 18, "utterance": "Get me the construction guide for a simple pine bookcase immediately.", "because": ["the request says project_name='bookcase': this card leaves it out"], "kind": "ask"}
+{"tool": "t17", "round": 1, "card": 2, "utterance": "Which palm measurement fits my hand exactly?", "because": ["call to get_tennis_equipment_info: missing required argument 'product_name'"], "kind": "schema"}
+{"tool": "t17", "round": 1, "card": 3, "utterance": "What do you suggest for an intermediate player's gear?", "because": ["call to get_tennis_equipment_info: missing required argument 'product_name'"], "kind": "schema"}
+{"tool": "t17", "round": 1, "card": 5, "utterance": "Could you tell me what grip width works for my hand?", "because": ["call to get_tennis_equipment_info: missing required argument 'product_name'"], "kind": "schema"}
+{"tool": "t17", "round": 1, "card": 6, "utterance": "For a pro player, which one?", "because": ["call to get_tennis_equipment_info: missing required argument 'product_name'"], "kind": "schema"}
+{"tool": "t17", "round": 1, "card": 8, "utterance": "Tell me the right size for my palm now.", "because": ["call to get_tennis_equipment_info: missing required argument 'product_name'"], "kind": "schema"}
+{"tool": "t17", "round": 1, "card": 9, "utterance": "For a beginner?", "because": ["call to get_tennis_equipment_info: missing required argument 'product_name'"], "kind": "schema"}
+{"tool": "t17", "round": 1, "card": 11, "utterance": "Please tell me the correct hand measurement.", "because": ["call to get_tennis_equipment_info: missing required argument 'product_name'"], "kind": "schema"}
+{"tool": "t17", "round": 1, "card": 12, "utterance": "For a senior player?", "because": ["call to get_tennis_equipment_info: missing required argument 'product_name'"], "kind": "schema"}
+{"tool": "t17", "round": 1, "card": 14, "utterance": "My fingers are cramped, give me the size guide.", "because": ["call to get_tennis_equipment_info: missing required argument 'product_name'"], "kind": "schema"}
+{"tool": "t17", "round": 1, "card": 15, "utterance": "For a junior player?", "because": ["call to get_tennis_equipment_info: missing required argument 'product_name'"], "kind": "schema"}
+{"tool": "t17", "round": 1, "card": 18, "utterance": "My hands are full, which racket for a pro?", "because": ["give a value for product_name in args, though the request leaves it out"], "kind": "schema"}
+{"tool": "t18", "round": 1, "card": 5, "utterance": "Would you measure the speed?", "because": ["calculate_ball_speed.stroke_type='unknown' is not in the utterance"], "kind": "value"}
+{"tool": "t18", "round": 1, "card": 10, "utterance": "My eyes are blurry, determine the serve speed.", "because": ["calculate_ball_speed.player_level='amateur' is not in the utterance"], "kind": "value"}
+{"tool": "t18", "round": 1, "card": 14, "utterance": "How fast does that serve go?", "because": ["calculate_ball_speed.player_level='pro' is not in the utterance"], "kind": "value"}
+{"tool": "t18", "round": 1, "card": 17, "utterance": "Give me the mph for this shot.", "because": ["the request says stroke_type='shot': this card leaves it out"], "kind": "ask"}
+{"tool": "t18", "round": 1, "card": 18, "utterance": "What is the velocity of that serve?", "because": ["the request says stroke_type='serve': this card leaves it out"], "kind": "ask"}
+{"tool": "t18", "round": 2, "card": 17, "utterance": "Find out the mph for my serve.", "because": ["the request says stroke_type='serve': this card leaves it out"], "kind": "ask"}
+{"tool": "t18", "round": 2, "card": 18, "utterance": "How fast does that backhand fly?", "because": ["the request says stroke_type='backhand': this card leaves it out"], "kind": "ask"}
+{"tool": "t18", "round": 3, "card": 17, "utterance": "How quick is that forehand really?", "because": ["the request says stroke_type='forehand': this card leaves it out"], "kind": "ask"}
+{"tool": "t18", "round": 3, "card": 18, "utterance": "Can you guess the backhand pace?", "because": ["the request says stroke_type='backhand': this card leaves it out"], "kind": "ask"}
+{"tool": "t20", "round": 1, "card": 4, "utterance": null, "because": ["needs an utterance and args"], "kind": "schema"}
+{"tool": "t20", "round": 1, "card": 11, "utterance": "The guest arrived, measure the wave of my hair.", "because": ["shares \"hair\" with every name and description pair: avoid the words of at least one name and one description"], "kind": "shared"}
+{"tool": "t20", "round": 1, "card": 17, "utterance": "May I please know my current porosity status?", "because": ["the request says hair_characteristic='porosity': this card leaves it out"], "kind": "ask"}
+{"tool": "t20", "round": 1, "card": 18, "utterance": "Would you kindly determine the curl pattern for me?", "because": ["the request says hair_characteristic='curl pattern': this card leaves it out"], "kind": "ask"}
+{"tool": "t20", "round": 2, "card": 17, "utterance": "Could you check what my hair does right now?", "because": ["shares \"hair\" with every name and description pair: avoid the words of at least one name and one description"], "kind": "shared"}
+{"tool": "t20", "round": 2, "card": 18, "utterance": "Please help me figure out the curl pattern details.", "because": ["the request says hair_characteristic='curl pattern': this card leaves it out"], "kind": "ask"}
+{"tool": "t20", "round": 3, "card": 17, "utterance": "Could you tell me about my main hair feature?", "because": ["the request says hair_characteristic='main hair feature': this card leaves it out"], "kind": "ask"}
+{"tool": "t20", "round": 3, "card": 18, "utterance": "Can you please help determine the specific texture of my strands?", "because": ["the request says hair_characteristic='texture of my strands': this card leaves it out"], "kind": "ask"}
+{"tool": "t21", "round": 1, "card": 1, "utterance": null, "because": ["not written"], "kind": "missing"}
+{"tool": "t21", "round": 1, "card": 2, "utterance": null, "because": ["not written"], "kind": "missing"}
+{"tool": "t21", "round": 1, "card": 3, "utterance": null, "because": ["not written"], "kind": "missing"}
+{"tool": "t21", "round": 1, "card": 4, "utterance": null, "because": ["not written"], "kind": "missing"}
+{"tool": "t21", "round": 1, "card": 5, "utterance": null, "because": ["not written"], "kind": "missing"}
+{"tool": "t21", "round": 1, "card": 6, "utterance": null, "because": ["not written"], "kind": "missing"}
+{"tool": "t21", "round": 1, "card": 7, "utterance": null, "because": ["not written"], "kind": "missing"}
+{"tool": "t21", "round": 1, "card": 8, "utterance": null, "because": ["not written"], "kind": "missing"}
+{"tool": "t21", "round": 1, "card": 9, "utterance": null, "because": ["not written"], "kind": "missing"}
+{"tool": "t21", "round": 1, "card": 10, "utterance": null, "because": ["not written"], "kind": "missing"}
+{"tool": "t21", "round": 1, "card": 11, "utterance": null, "because": ["not written"], "kind": "missing"}
+{"tool": "t21", "round": 1, "card": 12, "utterance": null, "because": ["not written"], "kind": "missing"}
+{"tool": "t21", "round": 1, "card": 13, "utterance": null, "because": ["not written"], "kind": "missing"}
+{"tool": "t21", "round": 1, "card": 14, "utterance": null, "because": ["not written"], "kind": "missing"}
+{"tool": "t21", "round": 1, "card": 15, "utterance": null, "because": ["not written"], "kind": "missing"}
+{"tool": "t21", "round": 1, "card": 16, "utterance": null, "because": ["not written"], "kind": "missing"}
+{"tool": "t21", "round": 1, "card": 17, "utterance": null, "because": ["not written"], "kind": "missing"}
+{"tool": "t21", "round": 1, "card": 18, "utterance": null, "because": ["not written"], "kind": "missing"}
+{"tool": "t21", "round": 1, "card": 19, "utterance": null, "because": ["not written"], "kind": "missing"}
+{"tool": "t21", "round": 1, "card": 20, "utterance": null, "because": ["not written"], "kind": "missing"}
+{"tool": "t21", "round": 2, "card": 1, "utterance": "Fix my dry scalp ASAP, I'm rushing.", "because": ["recommend_hair_products.hair_issue='dryness' is not in the utterance"], "kind": "value"}
+{"tool": "t21", "round": 2, "card": 2, "utterance": "My hands are full with the sleeping baby, find me a good oil for oily scalps.", "because": ["recommend_hair_products.hair_issue='oiliness' is not in the utterance"], "kind": "value"}
+{"tool": "t21", "round": 2, "card": 3, "utterance": "Scalp itchy, worried about infection.", "because": ["recommend_hair_products.hair_issue='itchiness' is not in the utterance"], "kind": "value"}
+{"tool": "t21", "round": 2, "card": 4, "utterance": null, "because": ["needs an utterance and args"], "kind": "schema"}
+{"tool": "t21", "round": 2, "card": 5, "utterance": "My hands are full holding the toddler, please suggest a conditioner for brittle strands.", "because": ["recommend_hair_products.hair_issue='brittleness' is not in the utterance"], "kind": "value"}
+{"tool": "t21", "round": 2, "card": 6, "utterance": "I am cleaning the kitchen now, would you kindly find a spray for frizzy curls?", "because": ["recommend_hair_products.hair_issue='frizz' is not in the utterance"], "kind": "value"}
+{"tool": "t21", "round": 2, "card": 7, "utterance": "Leaving the house soon, fix my dry skin on the scalp immediately.", "because": ["recommend_hair_products.hair_issue='dryness' is not in the utterance"], "kind": "value"}
+{"tool": "t21", "round": 2, "card": 8, "utterance": "Just got home and I am wondering if you can pick a brush for sensitive scalps?", "because": ["call to recommend_hair_products: product_type: 'brush' is not a valid enum"], "kind": "schema"}
+{"tool": "t21", "round": 2, "card": 9, "utterance": "On the phone with a client now, fix my oily scalp situation.", "because": ["recommend_hair_products.hair_issue='oiliness' is not in the utterance"], "kind": "value"}
+{"tool": "t21", "round": 2, "card": 10, "utterance": "Sitting while the baby sleeps, do you have a shampoo for thinning hair?", "because": ["shares \"hair\" with every name and description pair: avoid the words of at least one name and one description"], "kind": "shared"}
+{"tool": "t21", "round": 2, "card": 11, "utterance": "My hands are full with gardening tools, fix my dry scalp problem.", "because": ["recommend_hair_products.hair_issue='dryness' is not in the utterance"], "kind": "value"}
+{"tool": "t21", "round": 2, "card": 12, "utterance": "Soft sofa here, fix itchy skin please.", "because": ["recommend_hair_products.hair_issue='itchiness' is not in the utterance"], "kind": "value"}
+{"tool": "t21", "round": 2, "card": 13, "utterance": "Feeding the dog late night, I am worried about my dry scalp.", "because": ["recommend_hair_products.hair_issue='dryness' is not in the utterance"], "kind": "value"}
+{"tool": "t21", "round": 2, "card": 14, "utterance": "Running late again, please suggest an oil for brittle strands.", "because": ["recommend_hair_products.hair_issue='brittleness' is not in the utterance"], "kind": "value"}
+{"tool": "t21", "round": 2, "card": 15, "utterance": "Tired now, fix my sensitive scalp issue.", "because": ["recommend_hair_products.hair_issue='sensitivity' is not in the utterance"], "kind": "value"}
+{"tool": "t21", "round": 2, "card": 16, "utterance": "On the way out, need a brush for oily roots.", "because": ["call to recommend_hair_products: product_type: 'brush' is not a valid enum"], "kind": "schema"}
+{"tool": "t21", "round": 2, "card": 17, "utterance": "Waking up groggy, suggest a conditioner for dryness?", "because": ["the request says hair_issue='dryness': this card leaves it out"], "kind": "ask"}
+{"tool": "t21", "round": 2, "card": 18, "utterance": "Guests here now, find me a shampoo for oiliness.", "because": ["the request says hair_issue='oiliness': this card leaves it out"], "kind": "ask"}
+{"tool": "t21", "round": 3, "card": 1, "utterance": "Fix my dry scalp ASAP!", "because": ["recommend_hair_products.hair_issue='dryness' is not in the utterance"], "kind": "value"}
+{"tool": "t21", "round": 3, "card": 2, "utterance": "Baby sleeping, help with oily skin issues.", "because": ["recommend_hair_products.hair_issue='oiliness' is not in the utterance"], "kind": "value"}
+{"tool": "t21", "round": 3, "card": 3, "utterance": "Itchy scalp, worried!", "because": ["recommend_hair_products.hair_issue='itchiness' is not in the utterance"], "kind": "value"}
+{"tool": "t21", "round": 3, "card": 4, "utterance": "Late night here. Need something for sensitive skin.", "because": ["recommend_hair_products.hair_issue='sensitivity' is not in the utterance"], "kind": "value"}
+{"tool": "t21", "round": 3, "card": 5, "utterance": "Holding toddler tight. Select a conditioner for brittle strands.", "because": ["recommend_hair_products.hair_issue='brittleness' is not in the utterance"], "kind": "value"}
+{"tool": "t21", "round": 3, "card": 7, "utterance": null, "because": ["needs an utterance and args"], "kind": "schema"}
+{"tool": "t21", "round": 3, "card": 8, "utterance": "Just home. Pick a shampoo for sensitive roots?", "because": ["recommend_hair_products.hair_issue='sensitivity' is not in the utterance"], "kind": "value"}
+{"tool": "t21", "round": 3, "card": 9, "utterance": "Phone call now. Fix oily skin issues.", "because": ["recommend_hair_products.hair_issue='oiliness' is not in the utterance"], "kind": "value"}
+{"tool": "t21", "round": 3, "card": 11, "utterance": "Tools in hands. Fix dry scalp issues.", "because": ["recommend_hair_products.hair_issue='dryness' is not in the utterance"], "kind": "value"}
+{"tool": "t21", "round": 3, "card": 12, "utterance": "Sofa here. Fix itchy skin please.", "because": ["recommend_hair_products.hair_issue='itchiness' is not in the utterance"], "kind": "value"}
+{"tool": "t21", "round": 3, "card": 13, "utterance": "Feeding dog now. Worried about dry scalp.", "because": ["recommend_hair_products.hair_issue='dryness' is not in the utterance"], "kind": "value"}
+{"tool": "t21", "round": 3, "card": 14, "utterance": "Running late. Please find an oil for brittle strands.", "because": ["recommend_hair_products.hair_issue='brittleness' is not in the utterance"], "kind": "value"}
+{"tool": "t21", "round": 3, "card": 15, "utterance": "Tired now. Fix sensitive scalp issue.", "because": ["recommend_hair_products.hair_issue='sensitivity' is not in the utterance"], "kind": "value"}
+{"tool": "t21", "round": 3, "card": 16, "utterance": "On the way out. Need a spray for oily roots.", "because": ["recommend_hair_products.hair_issue='oiliness' is not in the utterance"], "kind": "value"}
+{"tool": "t21", "round": 3, "card": 17, "utterance": "Waking up groggy. Suggest conditioner?", "because": ["give a value for hair_issue in args, though the request leaves it out"], "kind": "schema"}
+{"tool": "t21", "round": 3, "card": 18, "utterance": "Guests here now. Find shampoo.", "because": ["give a value for hair_issue in args, though the request leaves it out"], "kind": "schema"}
+{"tool": "t22", "round": 1, "card": 3, "utterance": "Teach me the sequence for constructing this specific updo look.", "because": ["find_hairstyle_tutorials.style_name='chignon' is not in the utterance"], "kind": "value"}
+{"tool": "t22", "round": 1, "card": 15, "utterance": "Help me master the steps for creating that specific updo style now.", "because": ["shares \"style\" with every name and description pair: avoid the words of at least one name and one description"], "kind": "shared"}
+{"tool": "t22", "round": 1, "card": 17, "utterance": "My hands are full, show me clips for medium style.", "because": ["the request says style_name='medium style': this card leaves it out"], "kind": "ask"}
+{"tool": "t22", "round": 1, "card": 18, "utterance": "Please teach easy steps for me now.", "because": ["the request says style_name='easy steps': this card leaves it out"], "kind": "ask"}
+{"tool": "t22", "round": 2, "card": 17, "utterance": "Show me hard tutorials.", "because": ["give a value for style_name in args, though the request leaves it out"], "kind": "schema"}
+{"tool": "t22", "round": 2, "card": 18, "utterance": "Show me easy videos.", "because": ["give a value for style_name in args, though the request leaves it out"], "kind": "schema"}
+{"tool": "t22", "round": 3, "card": 17, "utterance": "Help me with this braid.", "because": ["the request says style_name='braid': this card leaves it out"], "kind": "ask"}
+{"tool": "t22", "round": 3, "card": 18, "utterance": "Can you teach a braid?", "because": ["the request says style_name='braid': this card leaves it out"], "kind": "ask"}
+{"tool": "t23", "round": 1, "card": 1, "utterance": null, "because": ["not written"], "kind": "missing"}
+{"tool": "t23", "round": 1, "card": 2, "utterance": null, "because": ["not written"], "kind": "missing"}
+{"tool": "t23", "round": 1, "card": 3, "utterance": null, "because": ["not written"], "kind": "missing"}
+{"tool": "t23", "round": 1, "card": 4, "utterance": null, "because": ["not written"], "kind": "missing"}
+{"tool": "t23", "round": 1, "card": 5, "utterance": null, "because": ["not written"], "kind": "missing"}
+{"tool": "t23", "round": 1, "card": 6, "utterance": null, "because": ["not written"], "kind": "missing"}
+{"tool": "t23", "round": 1, "card": 7, "utterance": null, "because": ["not written"], "kind": "missing"}
+{"tool": "t23", "round": 1, "card": 8, "utterance": null, "because": ["not written"], "kind": "missing"}
+{"tool": "t23", "round": 1, "card": 9, "utterance": null, "because": ["not written"], "kind": "missing"}
+{"tool": "t23", "round": 1, "card": 10, "utterance": null, "because": ["not written"], "kind": "missing"}
+{"tool": "t23", "round": 1, "card": 11, "utterance": null, "because": ["not written"], "kind": "missing"}
+{"tool": "t23", "round": 1, "card": 12, "utterance": null, "because": ["not written"], "kind": "missing"}
+{"tool": "t23", "round": 1, "card": 13, "utterance": null, "because": ["not written"], "kind": "missing"}
+{"tool": "t23", "round": 1, "card": 14, "utterance": null, "because": ["not written"], "kind": "missing"}
+{"tool": "t23", "round": 1, "card": 15, "utterance": null, "because": ["not written"], "kind": "missing"}
+{"tool": "t23", "round": 1, "card": 16, "utterance": null, "because": ["not written"], "kind": "missing"}
+{"tool": "t23", "round": 1, "card": 17, "utterance": null, "because": ["not written"], "kind": "missing"}
+{"tool": "t23", "round": 1, "card": 18, "utterance": null, "because": ["not written"], "kind": "missing"}
+{"tool": "t23", "round": 1, "card": 19, "utterance": null, "because": ["not written"], "kind": "missing"}
+{"tool": "t23", "round": 1, "card": 20, "utterance": null, "because": ["not written"], "kind": "missing"}
+{"tool": "t23", "round": 2, "card": 6, "utterance": "Make my scalp happy!", "because": ["set_hair_reminder.task_description='scalp massage' is not in the utterance"], "kind": "value"}
+{"tool": "t23", "round": 2, "card": 18, "utterance": "Why no weekly trim schedule?", "because": ["the request says task_description='trim': this card leaves it out"], "kind": "ask"}
+{"tool": "t23", "round": 3, "card": 6, "utterance": "Make scalp fun!", "because": ["set_hair_reminder.task_description='scalp massage' is not in the utterance"], "kind": "value"}
+{"tool": "t23", "round": 3, "card": 18, "utterance": "When is next trim?", "because": ["the request says task_description='trim': this card leaves it out"], "kind": "ask"}
+{"tool": "t24", "round": 1, "card": 1, "utterance": "How long is this strand?", "because": ["track_hair_growth.length_inches=2.5 is not in the utterance"], "kind": "value"}
+{"tool": "t24", "round": 1, "card": 2, "utterance": "My head itches, save the size now", "because": ["track_hair_growth.length_inches=3.0 is not in the utterance"], "kind": "value"}
+{"tool": "t24", "round": 1, "card": 5, "utterance": "This lock measures four point two inches", "because": ["track_hair_growth.length_inches=4.2 is not in the utterance"], "kind": "value"}
+{"tool": "t24", "round": 1, "card": 7, "utterance": "The follicle dimension is currently eight point five inches long", "because": ["track_hair_growth.length_inches=8.5 is not in the utterance"], "kind": "value"}
+{"tool": "t24", "round": 1, "card": 8, "utterance": "Size it now", "because": ["track_hair_growth.length_inches=1.0 is not in the utterance"], "kind": "value"}
+{"tool": "t24", "round": 1, "card": 10, "utterance": "My eyes are heavy, measure two point eight inches", "because": ["track_hair_growth.length_inches=2.8 is not in the utterance"], "kind": "value"}
+{"tool": "t24", "round": 1, "card": 12, "utterance": "Input the value as zero point five inches", "because": ["track_hair_growth.length_inches=0.5 is not in the utterance"], "kind": "value"}
+{"tool": "t24", "round": 1, "card": 13, "utterance": null, "because": ["needs an utterance and args"], "kind": "schema"}
+{"tool": "t24", "round": 1, "card": 14, "utterance": "Does the ponytail measure nine point five inches today?", "because": ["track_hair_growth.length_inches=9.5 is not in the utterance"], "kind": "value"}
+{"tool": "t24", "round": 2, "card": 1, "utterance": "Is this strand two and a half inches?", "because": ["track_hair_growth.length_inches=2.5 is not in the utterance"], "kind": "value"}
+{"tool": "t24", "round": 2, "card": 5, "utterance": "This lock measures four point two inches", "because": ["track_hair_growth.length_inches=4.2 is not in the utterance"], "kind": "value"}
+{"tool": "t24", "round": 2, "card": 7, "utterance": "The follicle dimension is currently eight point five inches long", "because": ["track_hair_growth.length_inches=8.5 is not in the utterance"], "kind": "value"}
+{"tool": "t24", "round": 2, "card": 10, "utterance": "Eyes heavy, measure two point eight inches", "because": ["track_hair_growth.length_inches=2.8 is not in the utterance"], "kind": "value"}
+{"tool": "t24", "round": 2, "card": 12, "utterance": "Input the value as zero point five inches", "because": ["track_hair_growth.length_inches=0.5 is not in the utterance"], "kind": "value"}
+{"tool": "t24", "round": 2, "card": 13, "utterance": "Does this curl measure six point seven inches?", "because": ["track_hair_growth.length_inches=6.7 is not in the utterance"], "kind": "value"}
+{"tool": "t24", "round": 2, "card": 14, "utterance": "Does the ponytail measure nine point five inches today?", "because": ["track_hair_growth.length_inches=9.5 is not in the utterance"], "kind": "value"}
+{"tool": "t24", "round": 3, "card": 1, "utterance": "Record two point five inches now?", "because": ["track_hair_growth.length_inches=2.5 is not in the utterance"], "kind": "value"}
+{"tool": "t24", "round": 3, "card": 5, "utterance": "Please measure this strand at four point two inches", "because": ["track_hair_growth.length_inches=4.2 is not in the utterance"], "kind": "value"}
+{"tool": "t24", "round": 3, "card": 7, "utterance": "I need to save the current dimension of eight point five inches immediately", "because": ["track_hair_growth.length_inches=8.5 is not in the utterance"], "kind": "value"}
+{"tool": "t24", "round": 3, "card": 10, "utterance": "Exams loom, so measure two point eight inches today", "because": ["track_hair_growth.length_inches=2.8 is not in the utterance"], "kind": "value"}
+{"tool": "t24", "round": 3, "card": 12, "utterance": "Save zero point five inches to the file", "because": ["track_hair_growth.length_inches=0.5 is not in the utterance"], "kind": "value"}
+{"tool": "t24", "round": 3, "card": 13, "utterance": "Does this curl span six point seven inches?", "because": ["track_hair_growth.length_inches=6.7 is not in the utterance"], "kind": "value"}
+{"tool": "t24", "round": 3, "card": 14, "utterance": "Is the ponytail measuring nine point five inches today?", "because": ["track_hair_growth.length_inches=9.5 is not in the utterance"], "kind": "value"}

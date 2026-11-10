@@ -1,0 +1,396 @@
+{"tool": "t03", "round": 1, "card": 1, "utterance": "Could you please tell me the current rotational velocity of the ceiling fan? I am quite worried about it.", "because": ["needs an utterance and args"], "kind": "schema"}
+{"tool": "t03", "round": 1, "card": 2, "utterance": "Get the speed now!", "because": ["needs an utterance and args"], "kind": "schema"}
+{"tool": "t03", "round": 1, "card": 3, "utterance": "Would you mind telling me what the active rotational level is?", "because": ["needs an utterance and args"], "kind": "schema"}
+{"tool": "t03", "round": 1, "card": 4, "utterance": "Tell me the current setting immediately.", "because": ["needs an utterance and args"], "kind": "schema"}
+{"tool": "t03", "round": 1, "card": 5, "utterance": "Could you possibly inform me of the present rotational speed?", "because": ["needs an utterance and args"], "kind": "schema"}
+{"tool": "t03", "round": 1, "card": 6, "utterance": "Show me the current velocity.", "because": ["needs an utterance and args"], "kind": "schema"}
+{"tool": "t03", "round": 1, "card": 7, "utterance": "I really wish this thing would show me the setting already.", "because": ["needs an utterance and args"], "kind": "schema"}
+{"tool": "t03", "round": 1, "card": 8, "utterance": "Is it currently on high or low?", "because": ["needs an utterance and args"], "kind": "schema"}
+{"tool": "t03", "round": 1, "card": 9, "utterance": "What is speed?", "because": ["needs an utterance and args"], "kind": "schema"}
+{"tool": "t03", "round": 1, "card": 10, "utterance": "Current setting", "because": ["needs an utterance and args"], "kind": "schema"}
+{"tool": "t03", "round": 1, "card": 11, "utterance": "Can you tell me if the rotational speed is high or low?", "because": ["needs an utterance and args"], "kind": "schema"}
+{"tool": "t03", "round": 1, "card": 12, "utterance": "Please show me the active velocity level.", "because": ["needs an utterance and args"], "kind": "schema"}
+{"tool": "t03", "round": 1, "card": 13, "utterance": "What is the current setting?", "because": ["needs an utterance and args"], "kind": "schema"}
+{"tool": "t03", "round": 1, "card": 14, "utterance": "Speed check", "because": ["needs an utterance and args"], "kind": "schema"}
+{"tool": "t03", "round": 1, "card": 15, "utterance": "I require the current rotational speed information.", "because": ["needs an utterance and args"], "kind": "schema"}
+{"tool": "t03", "round": 1, "card": 16, "utterance": "Tell me the setting now.", "because": ["needs an utterance and args"], "kind": "schema"}
+{"tool": "t03", "round": 1, "card": 17, "utterance": "Would you kindly tell me if it is on medium or high?", "because": ["needs an utterance and args"], "kind": "schema"}
+{"tool": "t03", "round": 1, "card": 18, "utterance": "Show velocity?", "because": ["needs an utterance and args"], "kind": "schema"}
+{"tool": "t01", "round": 1, "card": 1, "utterance": null, "because": ["not written"], "kind": "missing"}
+{"tool": "t01", "round": 1, "card": 2, "utterance": null, "because": ["not written"], "kind": "missing"}
+{"tool": "t01", "round": 1, "card": 3, "utterance": null, "because": ["not written"], "kind": "missing"}
+{"tool": "t01", "round": 1, "card": 4, "utterance": null, "because": ["not written"], "kind": "missing"}
+{"tool": "t01", "round": 1, "card": 5, "utterance": null, "because": ["not written"], "kind": "missing"}
+{"tool": "t01", "round": 1, "card": 6, "utterance": null, "because": ["not written"], "kind": "missing"}
+{"tool": "t01", "round": 1, "card": 7, "utterance": null, "because": ["not written"], "kind": "missing"}
+{"tool": "t01", "round": 1, "card": 8, "utterance": null, "because": ["not written"], "kind": "missing"}
+{"tool": "t01", "round": 1, "card": 9, "utterance": null, "because": ["not written"], "kind": "missing"}
+{"tool": "t01", "round": 1, "card": 10, "utterance": null, "because": ["not written"], "kind": "missing"}
+{"tool": "t01", "round": 1, "card": 11, "utterance": null, "because": ["not written"], "kind": "missing"}
+{"tool": "t01", "round": 1, "card": 12, "utterance": null, "because": ["not written"], "kind": "missing"}
+{"tool": "t01", "round": 1, "card": 13, "utterance": null, "because": ["not written"], "kind": "missing"}
+{"tool": "t01", "round": 1, "card": 14, "utterance": null, "because": ["not written"], "kind": "missing"}
+{"tool": "t01", "round": 1, "card": 15, "utterance": null, "because": ["not written"], "kind": "missing"}
+{"tool": "t01", "round": 1, "card": 16, "utterance": null, "because": ["not written"], "kind": "missing"}
+{"tool": "t01", "round": 1, "card": 17, "utterance": null, "because": ["not written"], "kind": "missing"}
+{"tool": "t01", "round": 1, "card": 18, "utterance": null, "because": ["not written"], "kind": "missing"}
+{"tool": "t01", "round": 1, "card": 19, "utterance": null, "because": ["not written"], "kind": "missing"}
+{"tool": "t01", "round": 1, "card": 20, "utterance": null, "because": ["not written"], "kind": "missing"}
+{"tool": "t01", "round": 2, "card": 5, "utterance": "Why is the lamp not working right now?", "because": ["needs an utterance and args"], "kind": "schema"}
+{"tool": "t01", "round": 2, "card": 9, "utterance": "This fixture is broken again!", "because": ["needs an utterance and args"], "kind": "schema"}
+{"tool": "t01", "round": 2, "card": 11, "utterance": "Is the illumination currently active or not?", "because": ["needs an utterance and args"], "kind": "schema"}
+{"tool": "t01", "round": 2, "card": 12, "utterance": "Fix this broken bulb.", "because": ["needs an utterance and args"], "kind": "schema"}
+{"tool": "t01", "round": 2, "card": 13, "utterance": "My room is dark, help.", "because": ["needs an utterance and args"], "kind": "schema"}
+{"tool": "t01", "round": 2, "card": 15, "utterance": "Why does this glow refuse to work?", "because": ["needs an utterance and args"], "kind": "schema"}
+{"tool": "t01", "round": 2, "card": 16, "utterance": "Is the bulb actually on?", "because": ["needs an utterance and args"], "kind": "schema"}
+{"tool": "t01", "round": 2, "card": 17, "utterance": "Can you check if the glow is working?", "because": ["needs an utterance and args"], "kind": "schema"}
+{"tool": "t01", "round": 2, "card": 18, "utterance": "Stop messing with the light.", "because": ["needs an utterance and args"], "kind": "schema"}
+{"tool": "t01", "round": 3, "card": 5, "utterance": "Why is the overhead illumination still dark while I'm trying to fold this laundry?", "because": ["call to toggle_ceiling_fan_light: location: None is not a valid str"], "kind": "schema"}
+{"tool": "t01", "round": 3, "card": 9, "utterance": "I need the main overhead bulb switched on right away!", "because": ["call to toggle_ceiling_fan_light: location: None is not a valid str"], "kind": "schema"}
+{"tool": "t01", "round": 3, "card": 11, "utterance": "Is the main bulb currently glowing or is it dark?", "because": ["call to toggle_ceiling_fan_light: location: None is not a valid str"], "kind": "schema"}
+{"tool": "t01", "round": 3, "card": 12, "utterance": "Wake up the overhead glow please", "because": ["call to toggle_ceiling_fan_light: location: None is not a valid str"], "kind": "schema"}
+{"tool": "t01", "round": 3, "card": 13, "utterance": "Make the room bright again", "because": ["call to toggle_ceiling_fan_light: location: None is not a valid str"], "kind": "schema"}
+{"tool": "t01", "round": 3, "card": 15, "utterance": "Why is this overhead glow refusing to work?", "because": ["call to toggle_ceiling_fan_light: location: None is not a valid str"], "kind": "schema"}
+{"tool": "t01", "round": 3, "card": 16, "utterance": "Is the main bulb actually glowing now?", "because": ["call to toggle_ceiling_fan_light: location: None is not a valid str"], "kind": "schema"}
+{"tool": "t01", "round": 3, "card": 17, "utterance": "Can you check if the overhead illumination is currently active?", "because": ["call to toggle_ceiling_fan_light: location: None is not a valid str"], "kind": "schema"}
+{"tool": "t01", "round": 3, "card": 18, "utterance": "Fix this broken bulb status", "because": ["call to toggle_ceiling_fan_light: location: None is not a valid str"], "kind": "schema"}
+{"tool": "t05", "round": 1, "card": 20, "utterance": null, "because": ["needs an utterance and args"], "kind": "schema"}
+{"tool": "t04", "round": 1, "card": 1, "utterance": "Set the time to one hour.", "because": ["set_fan_timer_duration.minutes=60 is not in the utterance"], "kind": "value"}
+{"tool": "t04", "round": 1, "card": 8, "utterance": "I am leaving in three hours so set the cooling to stop then", "because": ["set_fan_timer_duration.minutes=180 is not in the utterance"], "kind": "value"}
+{"tool": "t04", "round": 1, "card": 12, "utterance": "Set the air off in ninety minutes.", "because": ["shares \"off\" with every name and description pair: avoid the words of at least one name and one description"], "kind": "shared"}
+{"tool": "t04", "round": 1, "card": 18, "utterance": "I need the air circulation set for thirty minutes", "because": ["needs an utterance and args"], "kind": "schema"}
+{"tool": "t04", "round": 2, "card": 8, "utterance": "Make the wind stop blowing in two hours from now", "because": ["set_fan_timer_duration.minutes=120 is not in the utterance"], "kind": "value"}
+{"tool": "t04", "round": 3, "card": 8, "utterance": "Hey, I need the fan to stop after ninety minutes please.", "because": ["shares \"fan\" with every name and description pair: avoid the words of at least one name and one description"], "kind": "shared"}
+{"tool": "t06", "round": 1, "card": 1, "utterance": "Hey, I need some new lessons fast to boost my skills!", "because": ["suggest_learning_resources.skill_name='plumbing basics' is not in the utterance"], "kind": "value"}
+{"tool": "t06", "round": 1, "card": 2, "utterance": "Could you perhaps locate some study modules for me?", "because": ["suggest_learning_resources.skill_name='coding python' is not in the utterance"], "kind": "value"}
+{"tool": "t06", "round": 1, "card": 3, "utterance": "I am tired of searching alone.", "because": ["call to suggest_learning_resources: budget_level: None is not a valid enum"], "kind": "schema"}
+{"tool": "t06", "round": 1, "card": 4, "utterance": "Get me study aids immediately.", "because": ["suggest_learning_resources.skill_name='cooking recipes' is not in the utterance"], "kind": "value"}
+{"tool": "t06", "round": 1, "card": 5, "utterance": "Stop making me wait for better help!", "because": ["suggest_learning_resources.skill_name='gardening tips' is not in the utterance"], "kind": "value"}
+{"tool": "t06", "round": 1, "card": 6, "utterance": "Give links to training content please.", "because": ["suggest_learning_resources.skill_name='english grammar' is not in the utterance"], "kind": "value"}
+{"tool": "t06", "round": 1, "card": 7, "utterance": "Find me tutorials now!", "because": ["call to suggest_learning_resources: budget_level: None is not a valid enum"], "kind": "schema"}
+{"tool": "t06", "round": 1, "card": 8, "utterance": "Oh dear, I really need some educational videos urgently.", "because": ["suggest_learning_resources.skill_name='math calculations' is not in the utterance"], "kind": "value"}
+{"tool": "t06", "round": 1, "card": 9, "utterance": "Where can I watch these classes?", "because": ["call to suggest_learning_resources: budget_level: None is not a valid enum"], "kind": "schema"}
+{"tool": "t06", "round": 1, "card": 10, "utterance": "Fetch me study guides.", "because": ["suggest_learning_resources.skill_name='pet care' is not in the utterance"], "kind": "value"}
+{"tool": "t06", "round": 1, "card": 11, "utterance": "Provide links for training now.", "because": ["call to suggest_learning_resources: budget_level: None is not a valid enum"], "kind": "schema"}
+{"tool": "t06", "round": 1, "card": 12, "utterance": "Let's have some fun learning sessions together!", "because": ["suggest_learning_resources.skill_name='motivation skills' is not in the utterance"], "kind": "value"}
+{"tool": "t06", "round": 1, "card": 13, "utterance": "I am quite worried about finding help.", "because": ["call to suggest_learning_resources: budget_level: None is not a valid enum"], "kind": "schema"}
+{"tool": "t06", "round": 1, "card": 14, "utterance": "Are modules available?", "because": ["call to suggest_learning_resources: budget_level: None is not a valid enum"], "kind": "schema"}
+{"tool": "t06", "round": 1, "card": 15, "utterance": "Do you have guides?", "because": ["suggest_learning_resources.skill_name='cleaning hacks' is not in the utterance"], "kind": "value"}
+{"tool": "t06", "round": 1, "card": 16, "utterance": "Can we find new educational materials today?", "because": ["suggest_learning_resources.skill_name='language learning' is not in the utterance"], "kind": "value"}
+{"tool": "t06", "round": 1, "card": 17, "utterance": "I would appreciate some tutorial links soon.", "because": ["suggest_learning_resources.skill_name='chef techniques' is not in the utterance", "intent 'ask' with calls needs a missing value ('?')"], "kind": "value"}
+{"tool": "t06", "round": 1, "card": 18, "utterance": "Could you list relevant materials for me?", "because": ["call to suggest_learning_resources: skill_name: None is not a valid str; budget_level: None is not a valid enum"], "kind": "schema"}
+{"tool": "t06", "round": 2, "card": 3, "utterance": "Find free training links now", "because": ["suggest_learning_resources.skill_name='management techniques' is not in the utterance"], "kind": "value"}
+{"tool": "t06", "round": 2, "card": 7, "utterance": "Find paid tutorials now", "because": ["suggest_learning_resources.skill_name='pipe repair' is not in the utterance"], "kind": "value"}
+{"tool": "t06", "round": 2, "card": 9, "utterance": "Where can I watch free classes?", "because": ["suggest_learning_resources.skill_name='parenting advice' is not in the utterance"], "kind": "value"}
+{"tool": "t06", "round": 2, "card": 11, "utterance": "Provide links for training now.", "because": ["suggest_learning_resources.skill_name='animal behavior' is not in the utterance"], "kind": "value"}
+{"tool": "t06", "round": 2, "card": 13, "utterance": "I am quite worried about finding help.", "because": ["suggest_learning_resources.skill_name='public speaking' is not in the utterance"], "kind": "value"}
+{"tool": "t06", "round": 2, "card": 14, "utterance": "Are modules available?", "because": ["suggest_learning_resources.skill_name='typing speed' is not in the utterance"], "kind": "value"}
+{"tool": "t06", "round": 2, "card": 15, "utterance": "Do you have guides?", "because": ["suggest_learning_resources.skill_name='cleaning hacks' is not in the utterance"], "kind": "value"}
+{"tool": "t06", "round": 2, "card": 17, "utterance": "I would appreciate some tutorial links soon.", "because": ["call to suggest_learning_resources: budget_level: '?' is not a valid enum"], "kind": "schema"}
+{"tool": "t06", "round": 3, "card": 17, "utterance": "I would appreciate some tutorial links for budget_level.", "because": ["call to suggest_learning_resources: skill_name: None is not a valid str; budget_level: '?' is not a valid enum"], "kind": "schema"}
+{"tool": "t07", "round": 1, "card": 1, "utterance": "Hello, could you please help me locate employment opportunities in agriculture for a specific area?", "because": ["search_job_board.location='local' is not in the utterance"], "kind": "value"}
+{"tool": "t07", "round": 1, "card": 2, "utterance": "I would appreciate if you could display current vacancies for remote work positions.", "because": ["call to search_job_board: location: None is not a valid str"], "kind": "schema"}
+{"tool": "t07", "round": 1, "card": 3, "utterance": "I am feeling quite ill today and need assistance locating work roles in healthcare without a specific location preference.", "because": ["call to search_job_board: location: None is not a valid str"], "kind": "schema"}
+{"tool": "t07", "round": 1, "card": 5, "utterance": "Hey there! I am looking for music gigs available right now.", "because": ["call to search_job_board: location: None is not a valid str"], "kind": "schema"}
+{"tool": "t07", "round": 1, "card": 6, "utterance": "Could you please show me vacant roles in sales?", "because": ["call to search_job_board: location: None is not a valid str"], "kind": "schema"}
+{"tool": "t07", "round": 1, "card": 7, "utterance": "Help me find work.", "because": ["call to search_job_board: location: None is not a valid str"], "kind": "schema"}
+{"tool": "t07", "round": 1, "card": 8, "utterance": "Just give me the list of open spots.", "because": ["call to search_job_board: location: None is not a valid str"], "kind": "schema"}
+{"tool": "t07", "round": 1, "card": 9, "utterance": "Why can't you just tell me where I can find work in education?", "because": ["call to search_job_board: location: None is not a valid str"], "kind": "schema"}
+{"tool": "t07", "round": 1, "card": 10, "utterance": "Show me teaching jobs.", "because": ["call to search_job_board: location: None is not a valid str"], "kind": "schema"}
+{"tool": "t07", "round": 1, "card": 11, "utterance": "I am so tired of searching for work alone.", "because": ["call to search_job_board: location: None is not a valid str"], "kind": "schema"}
+{"tool": "t07", "round": 1, "card": 12, "utterance": "Where are the nursing roles?", "because": ["call to search_job_board: location: None is not a valid str"], "kind": "schema"}
+{"tool": "t07", "round": 1, "card": 13, "utterance": "I really need help finding work in construction.", "because": ["call to search_job_board: location: None is not a valid str"], "kind": "schema"}
+{"tool": "t07", "round": 1, "card": 14, "utterance": "Let's see the coaching opportunities available!", "because": ["call to search_job_board: location: None is not a valid str"], "kind": "schema"}
+{"tool": "t07", "round": 1, "card": 15, "utterance": "Can you locate work for drivers?", "because": ["call to search_job_board: location: None is not a valid str"], "kind": "schema"}
+{"tool": "t07", "round": 1, "card": 16, "utterance": "Please provide me with the current career opportunities in retail immediately.", "because": ["call to search_job_board: location: None is not a valid str"], "kind": "schema"}
+{"tool": "t07", "round": 1, "card": 17, "utterance": "Show me open positions for coding roles now!", "because": ["only a required value can be left out (\"?\"), not location"], "kind": "schema"}
+{"tool": "t07", "round": 1, "card": 18, "utterance": "Are there sales jobs?", "because": ["call to search_job_board: location: None is not a valid str"], "kind": "schema"}
+{"tool": "t07", "round": 2, "card": 5, "utterance": null, "because": ["needs an utterance and args"], "kind": "schema"}
+{"tool": "t07", "round": 2, "card": 11, "utterance": "Tired of searching alone.", "because": ["needs an utterance and args"], "kind": "schema"}
+{"tool": "t07", "round": 2, "card": 17, "utterance": "Show coding roles?", "because": ["intent 'ask' with calls needs a missing value ('?')"], "kind": "schema"}
+{"tool": "t07", "round": 2, "card": 18, "utterance": "Sales jobs?", "because": ["intent 'ask' with calls needs a missing value ('?')"], "kind": "schema"}
+{"tool": "t07", "round": 3, "card": 17, "utterance": "Search for coder spots near me now!", "because": ["only a required value can be left out (\"?\"), not location"], "kind": "schema"}
+{"tool": "t09", "round": 1, "card": 12, "utterance": "Save the writing gig details?", "because": ["track_application_status.company_name='?' is not in the utterance"], "kind": "value"}
+{"tool": "t09", "round": 1, "card": 14, "utterance": "Hey, can you save this writing gig info?", "because": ["track_application_status.company_name='?' is not in the utterance"], "kind": "value"}
+{"tool": "t09", "round": 1, "card": 16, "utterance": "Do you have notes on that writing gig?", "because": ["track_application_status.company_name='?' is not in the utterance"], "kind": "value"}
+{"tool": "t09", "round": 1, "card": 17, "utterance": "Log the work spot for Spotify right now", "because": ["intent 'ask' with calls needs a missing value ('?')"], "kind": "schema"}
+{"tool": "t08", "round": 1, "card": 1, "utterance": "Spot my CV against that role posting!", "because": ["check_resume_keywords.resume_text='my current CV' is not in the utterance"], "kind": "value"}
+{"tool": "t08", "round": 1, "card": 2, "utterance": "Scan through my work history for needed abilities?", "because": ["needs an utterance and args"], "kind": "schema"}
+{"tool": "t08", "round": 1, "card": 4, "utterance": "Is my CV matching that posting?", "because": ["needs an utterance and args"], "kind": "schema"}
+{"tool": "t08", "round": 1, "card": 6, "utterance": "Scan my application text!", "because": ["needs an utterance and args"], "kind": "schema"}
+{"tool": "t08", "round": 1, "card": 7, "utterance": "Verify skills in my CV.", "because": ["needs an utterance and args"], "kind": "schema"}
+{"tool": "t08", "round": 1, "card": 8, "utterance": "Does my work history match that posting?", "because": ["needs an utterance and args"], "kind": "schema"}
+{"tool": "t08", "round": 1, "card": 9, "utterance": "I hate checking if my CV has the right words for this ad.", "because": ["needs an utterance and args"], "kind": "schema"}
+{"tool": "t08", "round": 1, "card": 10, "utterance": "Scan through my application for listed abilities? I am so tired.", "because": ["needs an utterance and args"], "kind": "schema"}
+{"tool": "t08", "round": 1, "card": 12, "utterance": "Does my application match that posting? I am so playful today.", "because": ["needs an utterance and args"], "kind": "schema"}
+{"tool": "t08", "round": 1, "card": 14, "utterance": "Scan through my application for listed abilities? I am so excited!", "because": ["needs an utterance and args"], "kind": "schema"}
+{"tool": "t08", "round": 1, "card": 15, "utterance": "Verify skills in my CV? I am worried.", "because": ["needs an utterance and args"], "kind": "schema"}
+{"tool": "t08", "round": 1, "card": 17, "utterance": "Please spot key terms in my CV for this description.", "because": ["needs an utterance and args"], "kind": "schema"}
+{"tool": "t08", "round": 1, "card": 18, "utterance": "Scan my application text?", "because": ["needs an utterance and args"], "kind": "schema"}
+{"tool": "t08", "round": 2, "card": 6, "utterance": "Scan my application text!", "because": ["check_resume_keywords.job_description='?' is not in the utterance"], "kind": "value"}
+{"tool": "t08", "round": 2, "card": 7, "utterance": "Verify skills in my CV.", "because": ["check_resume_keywords.job_description='?' is not in the utterance", "repeats an earlier request"], "kind": "value"}
+{"tool": "t08", "round": 2, "card": 15, "utterance": "Verify skills in my CV? I am worried.", "because": ["check_resume_keywords.job_description='?' is not in the utterance"], "kind": "value"}
+{"tool": "t10", "round": 1, "card": 2, "utterance": "Could you help me find the best bonding agent for my cedar table?", "because": ["needs an utterance and args"], "kind": "schema"}
+{"tool": "t10", "round": 1, "card": 3, "utterance": "I need a fixative for oak that won't fail in rain.", "because": ["get_glue_recommendations.project_use='outdoor' is not in the utterance"], "kind": "value"}
+{"tool": "t10", "round": 1, "card": 4, "utterance": "This maple keeps falling apart. Give me the strongest hold you can find.", "because": ["needs an utterance and args"], "kind": "schema"}
+{"tool": "t10", "round": 1, "card": 5, "utterance": "Please fix this birch shelf before it breaks again.", "because": ["call to get_glue_recommendations: project_use: None is not a valid str"], "kind": "schema"}
+{"tool": "t10", "round": 1, "card": 7, "utterance": "Help! The teak is splitting.", "because": ["needs an utterance and args"], "kind": "schema"}
+{"tool": "t10", "round": 1, "card": 8, "utterance": "My cedar porch railing is loose again. Fix it.", "because": ["get_glue_recommendations.project_use='outdoor' is not in the utterance"], "kind": "value"}
+{"tool": "t10", "round": 1, "card": 9, "utterance": "I need strong bond for pine wood please!", "because": ["call to get_glue_recommendations: project_use: None is not a valid str"], "kind": "schema"}
+{"tool": "t10", "round": 1, "card": 10, "utterance": "Get the best hold for oak.", "because": ["call to get_glue_recommendations: project_use: None is not a valid str"], "kind": "schema"}
+{"tool": "t10", "round": 1, "card": 12, "utterance": "Fix the birch joint now.", "because": ["call to get_glue_recommendations: project_use: None is not a valid str"], "kind": "schema"}
+{"tool": "t10", "round": 1, "card": 15, "utterance": "I require precise instructions for bonding oak in dry conditions.", "because": ["get_glue_recommendations.project_use='indoor' is not in the utterance"], "kind": "value"}
+{"tool": "t10", "round": 1, "card": 16, "utterance": "Get me a reliable hold for cedar wood right now.", "because": ["call to get_glue_recommendations: project_use: None is not a valid str"], "kind": "schema"}
+{"tool": "t10", "round": 1, "card": 17, "utterance": "I am out of options for this maple. Find a solution.", "because": ["needs an utterance and args"], "kind": "schema"}
+{"tool": "t10", "round": 1, "card": 18, "utterance": "I need help with pine wood. Please advise.", "because": ["only a required value can be left out (\"?\"), not project_use"], "kind": "schema"}
+{"tool": "t10", "round": 2, "card": 2, "utterance": "Can you tell me what adhesive works for cedar indoors?", "because": ["get_glue_recommendations.project_use='indoor' is not in the utterance"], "kind": "value"}
+{"tool": "t10", "round": 2, "card": 3, "utterance": "I need a fixative for oak that handles rain well.", "because": ["get_glue_recommendations.project_use='outdoor' is not in the utterance"], "kind": "value"}
+{"tool": "t10", "round": 2, "card": 4, "utterance": "Maple keeps falling apart. What holds it best?", "because": ["call to get_glue_recommendations: project_use: None is not a valid str"], "kind": "schema"}
+{"tool": "t10", "round": 2, "card": 5, "utterance": "Birch shelf is breaking again.", "because": ["get_glue_recommendations.project_use='indoor' is not in the utterance"], "kind": "value"}
+{"tool": "t10", "round": 2, "card": 7, "utterance": "Teak splitting. Help!", "because": ["call to get_glue_recommendations: project_use: None is not a valid str"], "kind": "schema"}
+{"tool": "t10", "round": 2, "card": 8, "utterance": "Cedar porch railing is loose.", "because": ["get_glue_recommendations.project_use='outdoor' is not in the utterance"], "kind": "value"}
+{"tool": "t10", "round": 2, "card": 9, "utterance": "Strong bond needed for pine please!", "because": ["call to get_glue_recommendations: project_use: None is not a valid str"], "kind": "schema"}
+{"tool": "t10", "round": 2, "card": 10, "utterance": "Get hold for oak.", "because": ["call to get_glue_recommendations: project_use: None is not a valid str"], "kind": "schema"}
+{"tool": "t10", "round": 2, "card": 12, "utterance": "Fix birch joint now.", "because": ["call to get_glue_recommendations: project_use: None is not a valid str"], "kind": "schema"}
+{"tool": "t10", "round": 2, "card": 15, "utterance": "Bonding oak in dry conditions required.", "because": ["get_glue_recommendations.project_use='indoor' is not in the utterance"], "kind": "value"}
+{"tool": "t10", "round": 2, "card": 16, "utterance": "Reliable hold for cedar wood needed now.", "because": ["call to get_glue_recommendations: project_use: None is not a valid str"], "kind": "schema"}
+{"tool": "t10", "round": 2, "card": 17, "utterance": "Maple needs solution. Options out.", "because": ["call to get_glue_recommendations: project_use: None is not a valid str"], "kind": "schema"}
+{"tool": "t10", "round": 2, "card": 18, "utterance": "Pine wood help needed.", "because": ["call to get_glue_recommendations: project_use: None is not a valid str"], "kind": "schema"}
+{"tool": "t10", "round": 3, "card": 2, "utterance": "Which binder works best for cedar inside?", "because": ["get_glue_recommendations.project_use='indoor' is not in the utterance"], "kind": "value"}
+{"tool": "t10", "round": 3, "card": 3, "utterance": "I need a fixative for oak handling rain.", "because": ["get_glue_recommendations.project_use='outdoor' is not in the utterance"], "kind": "value"}
+{"tool": "t10", "round": 3, "card": 4, "utterance": "Maple keeps falling apart. What holds it indoors?", "because": ["get_glue_recommendations.project_use='indoor' is not in the utterance"], "kind": "value"}
+{"tool": "t10", "round": 3, "card": 5, "utterance": "Birch shelf breaks inside again.", "because": ["get_glue_recommendations.project_use='indoor' is not in the utterance"], "kind": "value"}
+{"tool": "t10", "round": 3, "card": 7, "utterance": "Teak splitting indoors. Help!", "because": ["get_glue_recommendations.project_use='indoor' is not in the utterance"], "kind": "value"}
+{"tool": "t10", "round": 3, "card": 8, "utterance": "Cedar porch railing is loose outside.", "because": ["get_glue_recommendations.project_use='outdoor' is not in the utterance"], "kind": "value"}
+{"tool": "t10", "round": 3, "card": 9, "utterance": "Strong bond needed for pine indoors please!", "because": ["get_glue_recommendations.project_use='indoor' is not in the utterance"], "kind": "value"}
+{"tool": "t10", "round": 3, "card": 10, "utterance": "Get hold for oak outside.", "because": ["get_glue_recommendations.project_use='outdoor' is not in the utterance"], "kind": "value"}
+{"tool": "t10", "round": 3, "card": 12, "utterance": "Fix birch joint inside now.", "because": ["get_glue_recommendations.project_use='indoor' is not in the utterance"], "kind": "value"}
+{"tool": "t10", "round": 3, "card": 15, "utterance": "Bonding oak in dry conditions required indoors.", "because": ["get_glue_recommendations.project_use='indoor' is not in the utterance"], "kind": "value"}
+{"tool": "t10", "round": 3, "card": 16, "utterance": "Reliable hold for cedar wood needed outside now.", "because": ["get_glue_recommendations.project_use='outdoor' is not in the utterance"], "kind": "value"}
+{"tool": "t10", "round": 3, "card": 17, "utterance": "Maple needs solution. Options out?", "because": ["only a required value can be left out (\"?\"), not project_use"], "kind": "schema"}
+{"tool": "t10", "round": 3, "card": 18, "utterance": "Pine wood help needed outside.", "because": ["get_glue_recommendations.project_use='outdoor' is not in the utterance"], "kind": "value"}
+{"tool": "t11", "round": 1, "card": 1, "utterance": "Hey buddy, how fast can you figure out my board count?", "because": ["calculate_clamp_count.joint_type='butt' is not in the utterance", "calculate_clamp_count.wood_width_inches=3.5 is not in the utterance"], "kind": "value"}
+{"tool": "t11", "round": 1, "card": 2, "utterance": "I really need to know how many holding devices this project requires.", "because": ["calculate_clamp_count.joint_type='lap' is not in the utterance", "calculate_clamp_count.wood_width_inches=5.0 is not in the utterance", "shares \"requir\" with every name and description pair: avoid the words of at least one name and one description"], "kind": "value"}
+{"tool": "t11", "round": 1, "card": 3, "utterance": "Give me the wood holder tally!", "because": ["calculate_clamp_count.joint_type='dovetail' is not in the utterance", "calculate_clamp_count.wood_width_inches=2.0 is not in the utterance"], "kind": "value"}
+{"tool": "t11", "round": 1, "card": 4, "utterance": "What is the beam spread width?", "because": ["calculate_clamp_count.joint_type='miter' is not in the utterance", "calculate_clamp_count.wood_width_inches=1.5 is not in the utterance"], "kind": "value"}
+{"tool": "t11", "round": 1, "card": 5, "utterance": "Could you please help me with the lumber sizing details?", "because": ["calculate_clamp_count.joint_type='box' is not in the utterance", "calculate_clamp_count.wood_width_inches=4.0 is not in the utterance"], "kind": "value"}
+{"tool": "t11", "round": 1, "card": 6, "utterance": "I am running low on space!", "because": ["calculate_clamp_count.joint_type='finger' is not in the utterance", "calculate_clamp_count.wood_width_inches=2.5 is not in the utterance"], "kind": "value"}
+{"tool": "t11", "round": 1, "card": 7, "utterance": "Missing the board measure.", "because": ["calculate_clamp_count.joint_type='scarf' is not in the utterance", "calculate_clamp_count.wood_width_inches=6.0 is not in the utterance"], "kind": "value"}
+{"tool": "t11", "round": 1, "card": 8, "utterance": "Process the timber dimensions.", "because": ["calculate_clamp_count.joint_type='tongue' is not in the utterance", "calculate_clamp_count.wood_width_inches=3.0 is not in the utterance"], "kind": "value"}
+{"tool": "t11", "round": 1, "card": 9, "utterance": "Do we have enough holding power for this lumber size?", "because": ["calculate_clamp_count.joint_type='ridge' is not in the utterance", "calculate_clamp_count.wood_width_inches=1.0 is not in the utterance"], "kind": "value"}
+{"tool": "t11", "round": 1, "card": 10, "utterance": "What is the plank dimension?", "because": ["calculate_clamp_count.joint_type='edge' is not in the utterance", "calculate_clamp_count.wood_width_inches=4.5 is not in the utterance"], "kind": "value"}
+{"tool": "t11", "round": 1, "card": 11, "utterance": "Wood thickness specs?", "because": ["calculate_clamp_count.joint_type='butt' is not in the utterance", "calculate_clamp_count.wood_width_inches=2.0 is not in the utterance"], "kind": "value"}
+{"tool": "t11", "round": 1, "card": 12, "utterance": "How wide is this board?", "because": ["calculate_clamp_count.joint_type='lap' is not in the utterance", "calculate_clamp_count.wood_width_inches=3.5 is not in the utterance"], "kind": "value"}
+{"tool": "t11", "round": 1, "card": 13, "utterance": null, "because": ["needs an utterance and args"], "kind": "schema"}
+{"tool": "t11", "round": 1, "card": 14, "utterance": "What is the wood spread?", "because": ["calculate_clamp_count.joint_type='miter' is not in the utterance", "calculate_clamp_count.wood_width_inches=1.5 is not in the utterance"], "kind": "value"}
+{"tool": "t11", "round": 1, "card": 15, "utterance": "I am so stressed about this lumber size.", "because": ["calculate_clamp_count.joint_type='box' is not in the utterance", "calculate_clamp_count.wood_width_inches=4.0 is not in the utterance"], "kind": "value"}
+{"tool": "t11", "round": 1, "card": 16, "utterance": "Tell me the board width size?", "because": ["calculate_clamp_count.joint_type='finger' is not in the utterance", "calculate_clamp_count.wood_width_inches=6.0 is not in the utterance"], "kind": "value"}
+{"tool": "t11", "round": 1, "card": 17, "utterance": "I have no holding devices left.", "because": ["calculate_clamp_count.joint_type='scarf' is not in the utterance"], "kind": "value"}
+{"tool": "t11", "round": 1, "card": 18, "utterance": "Can you please check the beam width?", "because": ["calculate_clamp_count.wood_width_inches=2.0 is not in the utterance"], "kind": "value"}
+{"tool": "t11", "round": 2, "card": 1, "utterance": "Hey pal, how many vices for a butt splice on three point five inch stock?", "because": ["calculate_clamp_count.wood_width_inches=3.5 is not in the utterance"], "kind": "value"}
+{"tool": "t11", "round": 2, "card": 4, "utterance": "What is the count for a miter joint at one point five inches?", "because": ["calculate_clamp_count.wood_width_inches=1.5 is not in the utterance"], "kind": "value"}
+{"tool": "t11", "round": 2, "card": 6, "utterance": "I am running low on space for this finger joint!", "because": ["calculate_clamp_count.wood_width_inches=2.5 is not in the utterance"], "kind": "value"}
+{"tool": "t11", "round": 2, "card": 10, "utterance": "What is the plank dimension for an edge joint at four point five inches?", "because": ["calculate_clamp_count.wood_width_inches=4.5 is not in the utterance"], "kind": "value"}
+{"tool": "t11", "round": 2, "card": 11, "utterance": "Wood thickness specs for a butt joint?", "because": ["calculate_clamp_count.wood_width_inches=2.0 is not in the utterance"], "kind": "value"}
+{"tool": "t11", "round": 2, "card": 12, "utterance": "How wide is this board for a lap joint at three point five inches?", "because": ["calculate_clamp_count.wood_width_inches=3.5 is not in the utterance"], "kind": "value"}
+{"tool": "t11", "round": 2, "card": 14, "utterance": "What is the wood spread for a miter joint at one point five inches?", "because": ["calculate_clamp_count.wood_width_inches=1.5 is not in the utterance"], "kind": "value"}
+{"tool": "t11", "round": 2, "card": 18, "utterance": "Can you please check the beam width for a lap joint at two inches?", "because": ["intent 'ask' with calls needs a missing value ('?')"], "kind": "schema"}
+{"tool": "t11", "round": 3, "card": 1, "utterance": "How many vices for a butt splice on three point five inch stock?", "because": ["calculate_clamp_count.wood_width_inches=3.5 is not in the utterance"], "kind": "value"}
+{"tool": "t11", "round": 3, "card": 4, "utterance": "Count miter joint at one point five inches?", "because": ["calculate_clamp_count.wood_width_inches=1.5 is not in the utterance"], "kind": "value"}
+{"tool": "t11", "round": 3, "card": 6, "utterance": "This finger joint is too wide!", "because": ["calculate_clamp_count.wood_width_inches=2.5 is not in the utterance"], "kind": "value"}
+{"tool": "t11", "round": 3, "card": 10, "utterance": "Edge joint at four point five inches?", "because": ["calculate_clamp_count.wood_width_inches=4.5 is not in the utterance"], "kind": "value"}
+{"tool": "t11", "round": 3, "card": 11, "utterance": "Butt joint thickness specs?", "because": ["calculate_clamp_count.wood_width_inches=2.0 is not in the utterance"], "kind": "value"}
+{"tool": "t11", "round": 3, "card": 12, "utterance": "Lap joint width at three point five inches?", "because": ["calculate_clamp_count.wood_width_inches=3.5 is not in the utterance"], "kind": "value"}
+{"tool": "t11", "round": 3, "card": 14, "utterance": "Miter joint spread at one point five inches?", "because": ["calculate_clamp_count.wood_width_inches=1.5 is not in the utterance"], "kind": "value"}
+{"tool": "t12", "round": 1, "card": 1, "utterance": "Oh my goodness, which wood bonding agent remains usable for the most hours?", "because": ["call to get_glue_open_time: glue_brand: None is not a valid str"], "kind": "schema"}
+{"tool": "t12", "round": 1, "card": 17, "utterance": "I am so worried that I cannot determine how many minutes Elmer's Original stays wet!", "because": ["intent 'ask' with calls needs a missing value ('?')"], "kind": "schema"}
+{"tool": "t12", "round": 1, "card": 18, "utterance": "Please tell me how long Gorilla Wood Glue stays open for assembly.", "because": ["call to get_glue_open_time: glue_brand: None is not a valid str"], "kind": "schema"}
+{"tool": "t12", "round": 2, "card": 18, "utterance": "Could you tell me how much time Gorilla Wood Glue allows for assembly?", "because": ["shares \"time\" with every name and description pair: avoid the words of at least one name and one description"], "kind": "shared"}
+{"tool": "t12", "round": 3, "card": 18, "utterance": "Hey, what's the working window for Gorilla Wood Glue?", "because": ["intent 'ask' with calls needs a missing value ('?')"], "kind": "schema"}
+{"tool": "t13", "round": 1, "card": 1, "utterance": "Could you check the joinery angle for me? I am worried about it.", "because": ["verify_joint_alignment.measure_tolerance_degrees=3.0 is not in the utterance"], "kind": "value"}
+{"tool": "t13", "round": 1, "card": 2, "utterance": "I am nervous. Please confirm the corner is true before I clamp.", "because": ["verify_joint_alignment.measure_tolerance_degrees=4.5 is not in the utterance"], "kind": "value"}
+{"tool": "t13", "round": 1, "card": 3, "utterance": "Check the dovetail angle now.", "because": ["verify_joint_alignment.measure_tolerance_degrees=2.0 is not in the utterance"], "kind": "value"}
+{"tool": "t13", "round": 1, "card": 5, "utterance": "Check the lap joint now.", "because": ["verify_joint_alignment.measure_tolerance_degrees=1.0 is not in the utterance", "shares \"joint\" with every name and description pair: avoid the words of at least one name and one description"], "kind": "value"}
+{"tool": "t13", "round": 1, "card": 6, "utterance": "Is the butt joint square?", "because": ["verify_joint_alignment.measure_tolerance_degrees=5.0 is not in the utterance"], "kind": "value"}
+{"tool": "t13", "round": 1, "card": 8, "utterance": "My arms are tired. Check the miter angle now.", "because": ["verify_joint_alignment.measure_tolerance_degrees=4.0 is not in the utterance"], "kind": "value"}
+{"tool": "t13", "round": 1, "card": 9, "utterance": "Please inspect the box joint angle.", "because": ["verify_joint_alignment.measure_tolerance_degrees=0.5 is not in the utterance"], "kind": "value"}
+{"tool": "t13", "round": 1, "card": 10, "utterance": "Is the finger joint square? I need to know.", "because": ["verify_joint_alignment.measure_tolerance_degrees=3.5 is not in the utterance"], "kind": "value"}
+{"tool": "t13", "round": 1, "card": 11, "utterance": "Am I worried about the cope joint angle being off?", "because": ["verify_joint_alignment.measure_tolerance_degrees=2.5 is not in the utterance"], "kind": "value"}
+{"tool": "t13", "round": 1, "card": 12, "utterance": "This dovetail cut is a disaster and I hate how crooked it looks right now.", "because": ["verify_joint_alignment.measure_tolerance_degrees=1.5 is not in the utterance"], "kind": "value"}
+{"tool": "t13", "round": 1, "card": 13, "utterance": "Check the spline joint angle please.", "because": ["verify_joint_alignment.measure_tolerance_degrees=4.2 is not in the utterance", "shares \"joint\" with every name and description pair: avoid the words of at least one name and one description"], "kind": "value"}
+{"tool": "t13", "round": 1, "card": 14, "utterance": "Verify the biscuit joint squareness now.", "because": ["verify_joint_alignment.measure_tolerance_degrees=3.8 is not in the utterance"], "kind": "value"}
+{"tool": "t13", "round": 1, "card": 15, "utterance": "Oh my goodness! Check the scarf joint angle immediately.", "because": ["verify_joint_alignment.measure_tolerance_degrees=0.1 is not in the utterance", "shares \"joint\" with every name and description pair: avoid the words of at least one name and one description"], "kind": "value"}
+{"tool": "t13", "round": 1, "card": 17, "utterance": "Check the pocket screw joint angle now.", "because": ["shares \"joint\" with every name and description pair: avoid the words of at least one name and one description"], "kind": "shared"}
+{"tool": "t13", "round": 1, "card": 18, "utterance": "Oh dear, this tenon is crooked. Check the angle.", "because": ["verify_joint_alignment.measure_tolerance_degrees=4.9 is not in the utterance", "intent 'ask' with calls needs a missing value ('?')"], "kind": "value"}
+{"tool": "t13", "round": 2, "card": 1, "utterance": "Can we measure a three degree tolerance?", "because": ["verify_joint_alignment.joint_style='dovetail' is not in the utterance"], "kind": "value"}
+{"tool": "t13", "round": 2, "card": 2, "utterance": "Please check the miter at four point five degrees.", "because": ["verify_joint_alignment.measure_tolerance_degrees=4.5 is not in the utterance"], "kind": "value"}
+{"tool": "t13", "round": 2, "card": 9, "utterance": "Please inspect box joint zero point five.", "because": ["verify_joint_alignment.measure_tolerance_degrees=0.5 is not in the utterance"], "kind": "value"}
+{"tool": "t13", "round": 2, "card": 10, "utterance": "Is the finger joint three point five okay?", "because": ["verify_joint_alignment.measure_tolerance_degrees=3.5 is not in the utterance"], "kind": "value"}
+{"tool": "t13", "round": 2, "card": 11, "utterance": "Am I safe with cope at two point five?", "because": ["verify_joint_alignment.measure_tolerance_degrees=2.5 is not in the utterance"], "kind": "value"}
+{"tool": "t13", "round": 2, "card": 12, "utterance": "This dovetail cut is a disaster and I need it at one point five degrees tolerance.", "because": ["verify_joint_alignment.measure_tolerance_degrees=1.5 is not in the utterance"], "kind": "value"}
+{"tool": "t13", "round": 2, "card": 13, "utterance": "Check spline joint four point two tolerance.", "because": ["verify_joint_alignment.measure_tolerance_degrees=4.2 is not in the utterance", "shares \"joint\" with every name and description pair: avoid the words of at least one name and one description"], "kind": "value"}
+{"tool": "t13", "round": 2, "card": 14, "utterance": "Verify biscuit joint three point eight now.", "because": ["verify_joint_alignment.measure_tolerance_degrees=3.8 is not in the utterance"], "kind": "value"}
+{"tool": "t13", "round": 2, "card": 15, "utterance": "Oh my! Check scarf joint zero point one.", "because": ["verify_joint_alignment.measure_tolerance_degrees=0.1 is not in the utterance", "shares \"joint\" with every name and description pair: avoid the words of at least one name and one description"], "kind": "value"}
+{"tool": "t13", "round": 2, "card": 17, "utterance": "Check pocket screw joint angle tolerance?", "because": ["shares \"joint\" with every name and description pair: avoid the words of at least one name and one description"], "kind": "shared"}
+{"tool": "t13", "round": 2, "card": 18, "utterance": "Is tenon crooked at four point nine degrees?", "because": ["verify_joint_alignment.measure_tolerance_degrees=4.9 is not in the utterance", "intent 'ask' with calls needs a missing value ('?')"], "kind": "value"}
+{"tool": "t13", "round": 3, "card": 2, "utterance": "Please check miter tolerance four point five degrees.", "because": ["verify_joint_alignment.measure_tolerance_degrees=4.5 is not in the utterance"], "kind": "value"}
+{"tool": "t13", "round": 3, "card": 9, "utterance": "Inspect box joint zero point five tolerance?", "because": ["verify_joint_alignment.measure_tolerance_degrees=0.5 is not in the utterance"], "kind": "value"}
+{"tool": "t13", "round": 3, "card": 10, "utterance": "Is finger joint three point five degrees okay?", "because": ["verify_joint_alignment.measure_tolerance_degrees=3.5 is not in the utterance"], "kind": "value"}
+{"tool": "t13", "round": 3, "card": 11, "utterance": "Am I safe with cope at two point five degrees?", "because": ["verify_joint_alignment.measure_tolerance_degrees=2.5 is not in the utterance"], "kind": "value"}
+{"tool": "t13", "round": 3, "card": 12, "utterance": "This dovetail cut is a disaster and I need it at one point five degrees.", "because": ["verify_joint_alignment.measure_tolerance_degrees=1.5 is not in the utterance"], "kind": "value"}
+{"tool": "t13", "round": 3, "card": 13, "utterance": "Check spline tolerance four point two degrees.", "because": ["verify_joint_alignment.measure_tolerance_degrees=4.2 is not in the utterance"], "kind": "value"}
+{"tool": "t13", "round": 3, "card": 14, "utterance": "Verify biscuit tolerance three point eight now.", "because": ["verify_joint_alignment.measure_tolerance_degrees=3.8 is not in the utterance"], "kind": "value"}
+{"tool": "t13", "round": 3, "card": 15, "utterance": "Oh my! Check scarf tolerance zero point one.", "because": ["verify_joint_alignment.measure_tolerance_degrees=0.1 is not in the utterance"], "kind": "value"}
+{"tool": "t14", "round": 1, "card": 1, "utterance": "Please determine the necessary wait duration for the adhesive to set under current conditions.", "because": ["calculate_dry_time_hours.humidity_level=50.0 is not in the utterance", "calculate_dry_time_hours.temperature_fahrenheit=72.0 is not in the utterance"], "kind": "value"}
+{"tool": "t14", "round": 1, "card": 2, "utterance": "Compute the wait period for bond integrity.", "because": ["calculate_dry_time_hours.humidity_level=45.0 is not in the utterance", "calculate_dry_time_hours.temperature_fahrenheit=68.0 is not in the utterance"], "kind": "value"}
+{"tool": "t14", "round": 1, "card": 3, "utterance": "Could you tell me when the material will achieve maximum durability?", "because": ["calculate_dry_time_hours.humidity_level=55.0 is not in the utterance", "calculate_dry_time_hours.temperature_fahrenheit=75.0 is not in the utterance"], "kind": "value"}
+{"tool": "t14", "round": 1, "card": 4, "utterance": "Determine the waiting period for the adhesive to set.", "because": ["calculate_dry_time_hours.humidity_level=60.0 is not in the utterance", "calculate_dry_time_hours.temperature_fahrenheit=70.0 is not in the utterance"], "kind": "value"}
+{"tool": "t14", "round": 1, "card": 5, "utterance": "I really need to know when the bond will reach its peak strength.", "because": ["calculate_dry_time_hours.humidity_level=40.0 is not in the utterance", "calculate_dry_time_hours.temperature_fahrenheit=65.0 is not in the utterance"], "kind": "value"}
+{"tool": "t14", "round": 1, "card": 6, "utterance": "Moisture is high, check when the material reaches full strength.", "because": ["calculate_dry_time_hours.humidity_level=70.0 is not in the utterance", "calculate_dry_time_hours.temperature_fahrenheit=78.0 is not in the utterance"], "kind": "value"}
+{"tool": "t14", "round": 1, "card": 7, "utterance": "How long does the adhesive take to set properly?", "because": ["calculate_dry_time_hours.humidity_level=52.0 is not in the utterance", "calculate_dry_time_hours.temperature_fahrenheit=71.0 is not in the utterance"], "kind": "value"}
+{"tool": "t14", "round": 1, "card": 8, "utterance": "I am tired of waiting for the bond to reach peak strength.", "because": ["calculate_dry_time_hours.humidity_level=48.0 is not in the utterance", "calculate_dry_time_hours.temperature_fahrenheit=69.0 is not in the utterance"], "kind": "value"}
+{"tool": "t14", "round": 1, "card": 9, "utterance": "When will the wood achieve its ultimate structural integrity?", "because": ["calculate_dry_time_hours.humidity_level=58.0 is not in the utterance", "calculate_dry_time_hours.temperature_fahrenheit=74.0 is not in the utterance"], "kind": "value"}
+{"tool": "t14", "round": 1, "card": 10, "utterance": "Please compute the required waiting period for the adhesive to set.", "because": ["calculate_dry_time_hours.humidity_level=50.0 is not in the utterance", "calculate_dry_time_hours.temperature_fahrenheit=72.0 is not in the utterance"], "kind": "value"}
+{"tool": "t14", "round": 1, "card": 11, "utterance": "Check strength duration of joint.", "because": ["calculate_dry_time_hours.humidity_level=45.0 is not in the utterance", "calculate_dry_time_hours.temperature_fahrenheit=68.0 is not in the utterance"], "kind": "value"}
+{"tool": "t14", "round": 1, "card": 12, "utterance": "When will the wood reach maximum structural integrity?", "because": ["calculate_dry_time_hours.humidity_level=55.0 is not in the utterance", "calculate_dry_time_hours.temperature_fahrenheit=75.0 is not in the utterance"], "kind": "value"}
+{"tool": "t14", "round": 1, "card": 13, "utterance": "I need to know the wait duration for the adhesive to set.", "because": ["calculate_dry_time_hours.humidity_level=50.0 is not in the utterance", "calculate_dry_time_hours.temperature_fahrenheit=72.0 is not in the utterance"], "kind": "value"}
+{"tool": "t14", "round": 1, "card": 14, "utterance": "Please tell me when it sets fully.", "because": ["calculate_dry_time_hours.humidity_level=50.0 is not in the utterance", "calculate_dry_time_hours.temperature_fahrenheit=72.0 is not in the utterance"], "kind": "value"}
+{"tool": "t14", "round": 1, "card": 15, "utterance": "Humidity is high, tell me when it reaches max strength.", "because": ["calculate_dry_time_hours.humidity_level=65.0 is not in the utterance", "calculate_dry_time_hours.temperature_fahrenheit=70.0 is not in the utterance"], "kind": "value"}
+{"tool": "t14", "round": 1, "card": 16, "utterance": "Please calculate the waiting period for the adhesive to set.", "because": ["calculate_dry_time_hours.humidity_level=50.0 is not in the utterance", "calculate_dry_time_hours.temperature_fahrenheit=72.0 is not in the utterance"], "kind": "value"}
+{"tool": "t14", "round": 1, "card": 17, "utterance": "Temp is low, check bond strength duration.", "because": ["calculate_dry_time_hours.temperature_fahrenheit=55.0 is not in the utterance"], "kind": "value"}
+{"tool": "t14", "round": 1, "card": 18, "utterance": "Please calculate moisture level for wood drying.", "because": ["calculate_dry_time_hours.temperature_fahrenheit=70.0 is not in the utterance"], "kind": "value"}
+{"tool": "t14", "round": 2, "card": 18, "utterance": "Please calculate moisture level for wood drying at seventy degrees? temperature.", "because": ["call to calculate_dry_time_hours: humidity_level: None is not a valid float"], "kind": "schema"}
+{"tool": "t15", "round": 1, "card": 2, "utterance": "I need to know how much time I spent working on my groundstrokes today.", "because": ["needs an utterance and args"], "kind": "schema"}
+{"tool": "t15", "round": 1, "card": 4, "utterance": "Why won't you start the clock for my strokes?", "because": ["needs an utterance and args"], "kind": "schema"}
+{"tool": "t15", "round": 1, "card": 5, "utterance": "How long have I been drilling my forehands lately?", "because": ["needs an utterance and args"], "kind": "schema"}
+{"tool": "t15", "round": 1, "card": 6, "utterance": "I need to track the time spent on my backside shots now.", "because": ["needs an utterance and args"], "kind": "schema"}
+{"tool": "t15", "round": 1, "card": 8, "utterance": "Stop complaining about the time tracking.", "because": ["needs an utterance and args"], "kind": "schema"}
+{"tool": "t15", "round": 1, "card": 9, "utterance": "Fix the practice clock issue now.", "because": ["needs an utterance and args"], "kind": "schema"}
+{"tool": "t15", "round": 1, "card": 10, "utterance": "Please start the timer for me.", "because": ["set_backhand_slice_timer.minutes=15 is not in the utterance"], "kind": "value"}
+{"tool": "t15", "round": 1, "card": 11, "utterance": "Cease this delay in tracking my efforts.", "because": ["needs an utterance and args"], "kind": "schema"}
+{"tool": "t15", "round": 1, "card": 14, "utterance": "How much time did I spend on swings?", "because": ["needs an utterance and args"], "kind": "schema"}
+{"tool": "t15", "round": 1, "card": 15, "utterance": "This practice tracking is broken again.", "because": ["needs an utterance and args"], "kind": "schema"}
+{"tool": "t15", "round": 1, "card": 16, "utterance": "Finally, start the timer for forehands!", "because": ["set_backhand_slice_timer.minutes=45 is not in the utterance"], "kind": "value"}
+{"tool": "t15", "round": 1, "card": 18, "utterance": "Could you set the clock for thirty minutes?", "because": ["intent 'ask' with calls needs a missing value ('?')"], "kind": "schema"}
+{"tool": "t15", "round": 2, "card": 5, "utterance": "How many minutes did I spend doing groundstroke reps today?", "because": ["call to set_backhand_slice_timer: minutes: '?' is not a valid int"], "kind": "schema"}
+{"tool": "t15", "round": 2, "card": 6, "utterance": "I need to measure the time for my crosscourt shots now.", "because": ["set_backhand_slice_timer.minutes=30 is not in the utterance"], "kind": "value"}
+{"tool": "t15", "round": 2, "card": 8, "utterance": "Fix this timing mess!", "because": ["set_backhand_slice_timer.minutes=45 is not in the utterance"], "kind": "value"}
+{"tool": "t15", "round": 2, "card": 9, "utterance": "My swings are failing.", "because": ["set_backhand_slice_timer.minutes=60 is not in the utterance"], "kind": "value"}
+{"tool": "t15", "round": 2, "card": 11, "utterance": "This delay is unacceptable.", "because": ["set_backhand_slice_timer.minutes=25 is not in the utterance"], "kind": "value"}
+{"tool": "t15", "round": 2, "card": 14, "utterance": "How long were my swing sessions?", "because": ["call to set_backhand_slice_timer: minutes: '?' is not a valid int"], "kind": "schema"}
+{"tool": "t15", "round": 2, "card": 15, "utterance": "The tracking is broken.", "because": ["set_backhand_slice_timer.minutes=10 is not in the utterance"], "kind": "value"}
+{"tool": "t16", "round": 1, "card": 8, "utterance": "Do you have any recordings demonstrating the correct way to execute that specific shot?", "because": ["repeats an earlier request"], "kind": "repeat"}
+{"tool": "t16", "round": 1, "card": 14, "utterance": "Do you have any recordings demonstrating the correct way to execute that specific shot?", "because": ["repeats an earlier request"], "kind": "repeat"}
+{"tool": "t16", "round": 1, "card": 18, "utterance": "Locate educational materials for my backstroke.", "because": ["intent 'ask' with calls needs a missing value ('?')"], "kind": "schema"}
+{"tool": "t17", "round": 1, "card": 1, "utterance": "Hey chef, how fast is my swing turning the racket?", "because": ["calculate_slice_spin_rate.swing_speed=25.5 is not in the utterance", "calculate_slice_spin_rate.racket_angle=45.0 is not in the utterance"], "kind": "value"}
+{"tool": "t17", "round": 1, "card": 2, "utterance": "Please determine the rotational velocity of my forehand stroke immediately.", "because": ["calculate_slice_spin_rate.swing_speed=30.0 is not in the utterance", "calculate_slice_spin_rate.racket_angle=10.5 is not in the utterance"], "kind": "value"}
+{"tool": "t17", "round": 1, "card": 3, "utterance": "Find out the rotation speed for my groundstroke right now!", "because": ["calculate_slice_spin_rate.swing_speed=28.0 is not in the utterance", "calculate_slice_spin_rate.racket_angle=15.0 is not in the utterance"], "kind": "value"}
+{"tool": "t17", "round": 1, "card": 4, "utterance": "My racket is loose, fix the swing speed to 20.", "because": ["calculate_slice_spin_rate.racket_angle=5.0 is not in the utterance"], "kind": "value"}
+{"tool": "t17", "round": 1, "card": 5, "utterance": "What is the rotational force on my current forehand hit?", "because": ["calculate_slice_spin_rate.swing_speed=32.5 is not in the utterance", "calculate_slice_spin_rate.racket_angle=12.0 is not in the utterance"], "kind": "value"}
+{"tool": "t17", "round": 1, "card": 6, "utterance": "Ugh, tell me the spin on my slice please.", "because": ["calculate_slice_spin_rate.swing_speed=18.0 is not in the utterance", "calculate_slice_spin_rate.racket_angle=40.0 is not in the utterance"], "kind": "value"}
+{"tool": "t17", "round": 1, "card": 7, "utterance": "Could you check the rotation speed of my backhand?", "because": ["calculate_slice_spin_rate.swing_speed=22.0 is not in the utterance", "calculate_slice_spin_rate.racket_angle=35.0 is not in the utterance"], "kind": "value"}
+{"tool": "t17", "round": 1, "card": 8, "utterance": "Compute the spin for my forehand.", "because": ["calculate_slice_spin_rate.swing_speed=27.0 is not in the utterance", "calculate_slice_spin_rate.racket_angle=20.0 is not in the utterance"], "kind": "value"}
+{"tool": "t17", "round": 1, "card": 9, "utterance": null, "because": ["needs an utterance and args"], "kind": "schema"}
+{"tool": "t17", "round": 1, "card": 10, "utterance": "Is the swing speed 25 m/s for my slice?", "because": ["calculate_slice_spin_rate.racket_angle=45.0 is not in the utterance"], "kind": "value"}
+{"tool": "t17", "round": 1, "card": 11, "utterance": "Fix the swing speed to 20.", "because": ["calculate_slice_spin_rate.racket_angle=10.0 is not in the utterance"], "kind": "value"}
+{"tool": "t17", "round": 1, "card": 12, "utterance": "Spin rate now?", "because": ["calculate_slice_spin_rate.swing_speed=30.0 is not in the utterance", "calculate_slice_spin_rate.racket_angle=50.0 is not in the utterance"], "kind": "value"}
+{"tool": "t17", "round": 1, "card": 13, "utterance": "May I get the rotation speed for my forehand?", "because": ["calculate_slice_spin_rate.swing_speed=26.0 is not in the utterance", "calculate_slice_spin_rate.racket_angle=15.0 is not in the utterance"], "kind": "value"}
+{"tool": "t17", "round": 1, "card": 14, "utterance": "Speed of swing?", "because": ["calculate_slice_spin_rate.swing_speed=23.0 is not in the utterance", "calculate_slice_spin_rate.racket_angle=38.0 is not in the utterance"], "kind": "value"}
+{"tool": "t17", "round": 1, "card": 15, "utterance": "Please compute the swing speed.", "because": ["calculate_slice_spin_rate.swing_speed=29.0 is not in the utterance", "calculate_slice_spin_rate.racket_angle=42.0 is not in the utterance"], "kind": "value"}
+{"tool": "t17", "round": 1, "card": 16, "utterance": "I am worried about the spin rate.", "because": ["calculate_slice_spin_rate.swing_speed=31.0 is not in the utterance", "calculate_slice_spin_rate.racket_angle=25.0 is not in the utterance"], "kind": "value"}
+{"tool": "t17", "round": 1, "card": 17, "utterance": "Check the rotation speed?", "because": ["calculate_slice_spin_rate.swing_speed=28.5 is not in the utterance"], "kind": "value"}
+{"tool": "t17", "round": 1, "card": 18, "utterance": "Estimate the spin value.", "because": ["calculate_slice_spin_rate.swing_speed=27.5 is not in the utterance"], "kind": "value"}
+{"tool": "t19", "round": 1, "card": 3, "utterance": "Measure the backspin for 70 mph.", "because": ["call to measure_slice_spin_rate: contact_angle_degrees: None is not a valid float"], "kind": "schema"}
+{"tool": "t19", "round": 1, "card": 4, "utterance": "Get me the spin rate at 60 mph.", "because": ["call to measure_slice_spin_rate: contact_angle_degrees: None is not a valid float"], "kind": "schema"}
+{"tool": "t19", "round": 1, "card": 5, "utterance": "Can you calculate the rotational speed for 80 mph?", "because": ["call to measure_slice_spin_rate: contact_angle_degrees: None is not a valid float"], "kind": "schema"}
+{"tool": "t19", "round": 1, "card": 6, "utterance": "Quantify the spin at 50 mph.", "because": ["call to measure_slice_spin_rate: contact_angle_degrees: None is not a valid float"], "kind": "schema"}
+{"tool": "t19", "round": 1, "card": 7, "utterance": null, "because": ["needs an utterance and args"], "kind": "schema"}
+{"tool": "t19", "round": 1, "card": 9, "utterance": "Could you measure the spin rate?", "because": ["call to measure_slice_spin_rate: ball_speed_mph: None is not a valid float; contact_angle_degrees: None is not a valid float"], "kind": "schema"}
+{"tool": "t19", "round": 1, "card": 11, "utterance": "Please measure the backspin for me.", "because": ["call to measure_slice_spin_rate: ball_speed_mph: None is not a valid float; contact_angle_degrees: None is not a valid float"], "kind": "schema"}
+{"tool": "t19", "round": 1, "card": 12, "utterance": "My spin is crazy high at 60 mph!", "because": ["call to measure_slice_spin_rate: contact_angle_degrees: None is not a valid float"], "kind": "schema"}
+{"tool": "t19", "round": 1, "card": 13, "utterance": "How much spin is there?", "because": ["call to measure_slice_spin_rate: ball_speed_mph: None is not a valid float; contact_angle_degrees: None is not a valid float"], "kind": "schema"}
+{"tool": "t19", "round": 1, "card": 14, "utterance": "Calculate the rotational speed.", "because": ["call to measure_slice_spin_rate: ball_speed_mph: None is not a valid float; contact_angle_degrees: None is not a valid float"], "kind": "schema"}
+{"tool": "t19", "round": 1, "card": 16, "utterance": "Measure the spin rate.", "because": ["call to measure_slice_spin_rate: ball_speed_mph: None is not a valid float; contact_angle_degrees: None is not a valid float"], "kind": "schema"}
+{"tool": "t19", "round": 1, "card": 17, "utterance": "Check the rotational speed for me.", "because": ["call to measure_slice_spin_rate: ball_speed_mph: None is not a valid float; contact_angle_degrees: None is not a valid float"], "kind": "schema"}
+{"tool": "t19", "round": 1, "card": 18, "utterance": "Give me the backspin number.", "because": ["call to measure_slice_spin_rate: ball_speed_mph: None is not a valid float; contact_angle_degrees: None is not a valid float"], "kind": "schema"}
+{"tool": "t18", "round": 1, "card": 1, "utterance": "My forehand grip is wrong, fix it!", "because": ["shares \"grip\" with every name and description pair: avoid the words of at least one name and one description"], "kind": "shared"}
+{"tool": "t18", "round": 1, "card": 2, "utterance": "Which grip is best for slice?", "because": ["needs an utterance and args"], "kind": "schema"}
+{"tool": "t18", "round": 1, "card": 3, "utterance": "Check my hand position now.", "because": ["needs an utterance and args"], "kind": "schema"}
+{"tool": "t18", "round": 1, "card": 4, "utterance": "Is my current grip correct for slicing?", "because": ["needs an utterance and args"], "kind": "schema"}
+{"tool": "t18", "round": 1, "card": 5, "utterance": "Get the best slice grip.", "because": ["needs an utterance and args"], "kind": "schema"}
+{"tool": "t18", "round": 1, "card": 6, "utterance": "Check hand position now.", "because": ["needs an utterance and args"], "kind": "schema"}
+{"tool": "t18", "round": 1, "card": 7, "utterance": "Please fix my forehand grip.", "because": ["shares \"grip\" with every name and description pair: avoid the words of at least one name and one description"], "kind": "shared"}
+{"tool": "t18", "round": 1, "card": 8, "utterance": "Which grip works best for slice?", "because": ["needs an utterance and args"], "kind": "schema"}
+{"tool": "t18", "round": 1, "card": 9, "utterance": "Check my hand position, please.", "because": ["needs an utterance and args"], "kind": "schema"}
+{"tool": "t18", "round": 1, "card": 10, "utterance": "Is my forehand grip correct?", "because": ["shares \"grip\" with every name and description pair: avoid the words of at least one name and one description"], "kind": "shared"}
+{"tool": "t18", "round": 1, "card": 11, "utterance": "Tell me the best slice grip.", "because": ["needs an utterance and args"], "kind": "schema"}
+{"tool": "t18", "round": 1, "card": 12, "utterance": "Check my hand position now.", "because": ["needs an utterance and args"], "kind": "schema"}
+{"tool": "t18", "round": 1, "card": 13, "utterance": "My forehand grip is wrong.", "because": ["shares \"grip\" with every name and description pair: avoid the words of at least one name and one description"], "kind": "shared"}
+{"tool": "t18", "round": 1, "card": 14, "utterance": "Which grip works best for slice?", "because": ["needs an utterance and args"], "kind": "schema"}
+{"tool": "t18", "round": 1, "card": 15, "utterance": "Check hand position now.", "because": ["needs an utterance and args"], "kind": "schema"}
+{"tool": "t18", "round": 1, "card": 16, "utterance": "My forehand grip is wrong.", "because": ["shares \"grip\" with every name and description pair: avoid the words of at least one name and one description"], "kind": "shared"}
+{"tool": "t18", "round": 1, "card": 17, "utterance": "I need the best slice grip", "because": ["shares \"grip\" with every name and description pair: avoid the words of at least one name and one description"], "kind": "shared"}
+{"tool": "t18", "round": 2, "card": 1, "utterance": "Is my left hand twist proper for that shot?", "because": ["check_backhand_slice_grip.grip_name='continental' is not in the utterance"], "kind": "value"}
+{"tool": "t18", "round": 2, "card": 2, "utterance": "Which hold is optimal for a slice stroke?", "because": ["check_backhand_slice_grip.grip_name='continantal' is not in the utterance"], "kind": "value"}
+{"tool": "t18", "round": 2, "card": 3, "utterance": "Verify my current hand placement immediately.", "because": ["check_backhand_slice_grip.grip_name='eastern' is not in the utterance"], "kind": "value"}
+{"tool": "t18", "round": 2, "card": 4, "utterance": "Is the specific grip I am employing suitable for slicing?", "because": ["check_backhand_slice_grip.grip_name='western' is not in the utterance", "shares \"grip\" with every name and description pair: avoid the words of at least one name and one description"], "kind": "value"}
+{"tool": "t18", "round": 2, "card": 5, "utterance": "Tell me the finest hold.", "because": ["check_backhand_slice_grip.grip_name='semi-western' is not in the utterance"], "kind": "value"}
+{"tool": "t18", "round": 2, "card": 6, "utterance": "Check my finger placement now.", "because": ["check_backhand_slice_grip.grip_name='prohand' is not in the utterance"], "kind": "value"}
+{"tool": "t18", "round": 2, "card": 7, "utterance": "Could you inspect my rotation?", "because": ["check_backhand_slice_grip.grip_name='western' is not in the utterance"], "kind": "value"}
+{"tool": "t18", "round": 2, "card": 8, "utterance": "What specific hold serves the slice stroke best?", "because": ["check_backhand_slice_grip.grip_name='eastern' is not in the utterance"], "kind": "value"}
+{"tool": "t18", "round": 2, "card": 9, "utterance": "Inspect my fingers position for me.", "because": ["check_backhand_slice_grip.grip_name='continental' is not in the utterance"], "kind": "value"}
+{"tool": "t18", "round": 2, "card": 10, "utterance": "Is my current twist appropriate for slicing?", "because": ["check_backhand_slice_grip.grip_name='western' is not in the utterance"], "kind": "value"}
+{"tool": "t18", "round": 2, "card": 11, "utterance": "Please tell me the best hold.", "because": ["check_backhand_slice_grip.grip_name='eastern' is not in the utterance"], "kind": "value"}
+{"tool": "t18", "round": 2, "card": 12, "utterance": "Check my fingers placement immediately.", "because": ["check_backhand_slice_grip.grip_name='continental' is not in the utterance"], "kind": "value"}
+{"tool": "t18", "round": 2, "card": 13, "utterance": "Is my twist suitable for slicing?", "because": ["check_backhand_slice_grip.grip_name='western' is not in the utterance"], "kind": "value"}
+{"tool": "t18", "round": 2, "card": 14, "utterance": "Which hold serves the slice stroke best?", "because": ["check_backhand_slice_grip.grip_name='eastern' is not in the utterance"], "kind": "value"}
+{"tool": "t18", "round": 2, "card": 15, "utterance": "Check my fingers position now.", "because": ["check_backhand_slice_grip.grip_name='continental' is not in the utterance"], "kind": "value"}
+{"tool": "t18", "round": 2, "card": 16, "utterance": "Is my rotation suitable for slicing?", "because": ["check_backhand_slice_grip.grip_name='western' is not in the utterance"], "kind": "value"}
+{"tool": "t18", "round": 3, "card": 2, "utterance": "Which hold is optimal for a slice stroke?", "because": ["needs an utterance and args"], "kind": "schema"}
+{"tool": "t20", "round": 1, "card": 1, "utterance": "Can I begin the process now?", "because": ["apply_hair_mask.duration_minutes=20 is not in the utterance"], "kind": "value"}
+{"tool": "t20", "round": 1, "card": 2, "utterance": "I am wondering if we could initiate the deep conditioning phase for my tresses right this second.", "because": ["apply_hair_mask.duration_minutes=30 is not in the utterance"], "kind": "value"}
+{"tool": "t20", "round": 1, "card": 3, "utterance": "This process is taking too long.", "because": ["apply_hair_mask.duration_minutes=15 is not in the utterance"], "kind": "value"}
+{"tool": "t20", "round": 1, "card": 4, "utterance": "I cannot believe I have to wait for this treatment to finish now.", "because": ["apply_hair_mask.duration_minutes=45 is not in the utterance"], "kind": "value"}
+{"tool": "t20", "round": 1, "card": 5, "utterance": "Do you think this deep conditioning phase is necessary?", "because": ["apply_hair_mask.duration_minutes=10 is not in the utterance"], "kind": "value"}
+{"tool": "t20", "round": 1, "card": 6, "utterance": "Hey there, let's launch this amazing process for my locks quickly.", "because": ["apply_hair_mask.duration_minutes=25 is not in the utterance"], "kind": "value"}
+{"tool": "t20", "round": 1, "card": 7, "utterance": "Could you please initiate the mask routine?", "because": ["apply_hair_mask.duration_minutes=20 is not in the utterance"], "kind": "value"}
+{"tool": "t20", "round": 1, "card": 8, "utterance": "I am running low on time, so I need you to start this process immediately.", "because": ["apply_hair_mask.duration_minutes=15 is not in the utterance"], "kind": "value"}
+{"tool": "t20", "round": 1, "card": 9, "utterance": "This process is dragging on forever and I am bored.", "because": ["apply_hair_mask.duration_minutes=30 is not in the utterance"], "kind": "value"}
+{"tool": "t20", "round": 1, "card": 10, "utterance": "I find this waiting period to be utterly exhausting.", "because": ["apply_hair_mask.duration_minutes=40 is not in the utterance"], "kind": "value"}
+{"tool": "t20", "round": 1, "card": 11, "utterance": "Please begin the conditioning phase for my strands right away.", "because": ["apply_hair_mask.duration_minutes=20 is not in the utterance"], "kind": "value"}
+{"tool": "t20", "round": 1, "card": 12, "utterance": "Launch this process.", "because": ["apply_hair_mask.duration_minutes=15 is not in the utterance"], "kind": "value"}
+{"tool": "t20", "round": 1, "card": 13, "utterance": "Could you apply the mask?", "because": ["apply_hair_mask.duration_minutes=25 is not in the utterance"], "kind": "value"}
+{"tool": "t20", "round": 1, "card": 14, "utterance": "I would love it if we could start this wonderful deep conditioning treatment now.", "because": ["apply_hair_mask.duration_minutes=30 is not in the utterance"], "kind": "value"}
+{"tool": "t20", "round": 1, "card": 15, "utterance": "Initiate the process.", "because": ["apply_hair_mask.duration_minutes=20 is not in the utterance"], "kind": "value"}
+{"tool": "t20", "round": 1, "card": 16, "utterance": "My supplies are empty, so I need you to start this mask routine.", "because": ["apply_hair_mask.duration_minutes=35 is not in the utterance"], "kind": "value"}
+{"tool": "t20", "round": 1, "card": 18, "utterance": "Could you please start this process?", "because": ["apply_hair_mask.duration_minutes=20 is not in the utterance", "intent 'ask' with calls needs a missing value ('?')"], "kind": "value"}
+{"tool": "t20", "round": 2, "card": 2, "utterance": "Could we kick off the deep conditioning phase for my tresses right now?", "because": ["apply_hair_mask.duration_minutes=30 is not in the utterance"], "kind": "value"}
+{"tool": "t21", "round": 1, "card": 1, "utterance": null, "because": ["not written"], "kind": "missing"}
+{"tool": "t21", "round": 1, "card": 2, "utterance": null, "because": ["not written"], "kind": "missing"}
+{"tool": "t21", "round": 1, "card": 3, "utterance": null, "because": ["not written"], "kind": "missing"}
+{"tool": "t21", "round": 1, "card": 4, "utterance": null, "because": ["not written"], "kind": "missing"}
+{"tool": "t21", "round": 1, "card": 5, "utterance": null, "because": ["not written"], "kind": "missing"}
+{"tool": "t21", "round": 1, "card": 6, "utterance": null, "because": ["not written"], "kind": "missing"}
+{"tool": "t21", "round": 1, "card": 7, "utterance": null, "because": ["not written"], "kind": "missing"}
+{"tool": "t21", "round": 1, "card": 8, "utterance": null, "because": ["not written"], "kind": "missing"}
+{"tool": "t21", "round": 1, "card": 9, "utterance": null, "because": ["not written"], "kind": "missing"}
+{"tool": "t21", "round": 1, "card": 10, "utterance": null, "because": ["not written"], "kind": "missing"}
+{"tool": "t21", "round": 1, "card": 11, "utterance": null, "because": ["not written"], "kind": "missing"}
+{"tool": "t21", "round": 1, "card": 12, "utterance": null, "because": ["not written"], "kind": "missing"}
+{"tool": "t21", "round": 1, "card": 13, "utterance": null, "because": ["not written"], "kind": "missing"}
+{"tool": "t21", "round": 1, "card": 14, "utterance": null, "because": ["not written"], "kind": "missing"}
+{"tool": "t21", "round": 1, "card": 15, "utterance": null, "because": ["not written"], "kind": "missing"}
+{"tool": "t21", "round": 1, "card": 16, "utterance": null, "because": ["not written"], "kind": "missing"}
+{"tool": "t21", "round": 1, "card": 17, "utterance": null, "because": ["not written"], "kind": "missing"}
+{"tool": "t21", "round": 1, "card": 18, "utterance": null, "because": ["not written"], "kind": "missing"}
+{"tool": "t21", "round": 1, "card": 19, "utterance": null, "because": ["not written"], "kind": "missing"}
+{"tool": "t21", "round": 1, "card": 20, "utterance": null, "because": ["not written"], "kind": "missing"}
+{"tool": "t21", "round": 2, "card": 17, "utterance": "Is the scalp pack done?", "because": ["repeats an earlier request"], "kind": "repeat"}
+{"tool": "t22", "round": 1, "card": 8, "utterance": "I want you to tell me when the half hour is up, honestly.", "because": ["set_mask_timer.minutes_until_rinse=30 is not in the utterance"], "kind": "value"}
+{"tool": "t22", "round": 1, "card": 18, "utterance": "Please set a timer for twenty five minutes.", "because": ["intent 'ask' with calls needs a missing value ('?')"], "kind": "schema"}
+{"tool": "t23", "round": 1, "card": 5, "utterance": "Get the routine for my fine hair", "because": ["shares \"hair\" with every name and description pair: avoid the words of at least one name and one description"], "kind": "shared"}
+{"tool": "t23", "round": 1, "card": 11, "utterance": "When is my fine hair treatment due?", "because": ["shares \"hair\" with every name and description pair: avoid the words of at least one name and one description"], "kind": "shared"}
+{"tool": "t23", "round": 1, "card": 13, "utterance": "Please show me normal hair plan", "because": ["shares \"hair\" with every name and description pair: avoid the words of at least one name and one description"], "kind": "shared"}
+{"tool": "t23", "round": 1, "card": 15, "utterance": "Give me straight hair plan", "because": ["shares \"hair\" with every name and description pair: avoid the words of at least one name and one description"], "kind": "shared"}
+{"tool": "t23", "round": 2, "card": 11, "utterance": "When is the next hair product application due?", "because": ["get_daily_hair_mask_schedule.hair_type='?' is not in the utterance", "shares \"hair\" with every name and description pair: avoid the words of at least one name and one description"], "kind": "value"}
+{"tool": "t23", "round": 2, "card": 15, "utterance": "Give straight hair treatment timing", "because": ["shares \"hair\" with every name and description pair: avoid the words of at least one name and one description"], "kind": "shared"}

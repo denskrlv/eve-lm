@@ -1,0 +1,506 @@
+{
+ "approved": false,
+ "tools": {
+  "proposed": 32,
+  "kept": 23,
+  "rejected": {
+   "incoherent": 6,
+   "schema": 1,
+   "repeat": 2
+  },
+  "dropped": 2,
+  "twins": 3,
+  "blocked_topics": 0,
+  "tokens": 6090,
+  "seconds": 108.54133974999999
+ },
+ "rows": {
+  "written": 656,
+  "rejected": {
+   "value": 188,
+   "schema": 25,
+   "ask": 29,
+   "missing": 40,
+   "repeat": 3,
+   "shared": 8
+  },
+  "rounds": {
+   "1": 303,
+   "2": 78,
+   "3": 22
+  },
+  "dropped": 57,
+  "tokens": 35610,
+  "seconds": 653.2328624970002,
+  "kept": 363
+ },
+ "review": {
+  "reviewed": 403,
+  "fixed": 51,
+  "dropped": 40,
+  "fix_rate": 0.2258,
+  "tools_dropped": [],
+  "cost": 0.318746,
+  "reasons": [
+   {
+    "id": "t01-r01",
+    "action": "drop",
+    "why": "fan_id unclear"
+   },
+   {
+    "id": "t02-r07",
+    "action": "drop",
+    "why": "remark, no request"
+   },
+   {
+    "id": "t02-r15",
+    "action": "drop",
+    "why": "remark, no request"
+   },
+   {
+    "id": "t03-r18",
+    "action": "drop",
+    "why": "invented direction, vague"
+   },
+   {
+    "id": "t04-r17",
+    "action": "drop",
+    "why": "full power is not light brightness; ambiguous"
+   },
+   {
+    "id": "t05-r09",
+    "action": "drop",
+    "why": "remark, no request"
+   },
+   {
+    "id": "t08-r17",
+    "action": "drop",
+    "why": "not a request"
+   },
+   {
+    "id": "t09-r15",
+    "action": "drop",
+    "why": "remark, no request"
+   },
+   {
+    "id": "t09-r18",
+    "action": "drop",
+    "why": "nonsense request"
+   },
+   {
+    "id": "t10-r08",
+    "action": "drop",
+    "why": "bad value 'first timer'"
+   },
+   {
+    "id": "t10-r09",
+    "action": "drop",
+    "why": "remark, not a request"
+   },
+   {
+    "id": "t10-r13",
+    "action": "drop",
+    "why": "nonsense"
+   },
+   {
+    "id": "t14-r09",
+    "action": "drop",
+    "why": "mixed woods, bad value"
+   },
+   {
+    "id": "t14-r20",
+    "action": "drop",
+    "why": "remark, no request"
+   },
+   {
+    "id": "t15-r01",
+    "action": "drop",
+    "why": "vague, no backhand slice"
+   },
+   {
+    "id": "t15-r03",
+    "action": "drop",
+    "why": "invented level, not slice"
+   },
+   {
+    "id": "t15-r04",
+    "action": "drop",
+    "why": "vague, invented level"
+   },
+   {
+    "id": "t15-r06",
+    "action": "drop",
+    "why": "vague"
+   },
+   {
+    "id": "t15-r07",
+    "action": "drop",
+    "why": "invented level"
+   },
+   {
+    "id": "t15-r10",
+    "action": "drop",
+    "why": "vague"
+   },
+   {
+    "id": "t15-r12",
+    "action": "drop",
+    "why": "vague"
+   },
+   {
+    "id": "t15-r14",
+    "action": "drop",
+    "why": "vague"
+   },
+   {
+    "id": "t15-r15",
+    "action": "drop",
+    "why": "remark"
+   },
+   {
+    "id": "t15-r17",
+    "action": "drop",
+    "why": "vague"
+   },
+   {
+    "id": "t15-r18",
+    "action": "drop",
+    "why": "vague, invented level"
+   },
+   {
+    "id": "t17-r20",
+    "action": "drop",
+    "why": "tool could handle it; wrong label"
+   },
+   {
+    "id": "t22-r13",
+    "action": "drop",
+    "why": "not asking for steps"
+   },
+   {
+    "id": "t23-r02",
+    "action": "drop",
+    "why": "skin not hair"
+   },
+   {
+    "id": "t23-r05",
+    "action": "drop",
+    "why": "action, not a check"
+   },
+   {
+    "id": "t23-r12",
+    "action": "drop",
+    "why": "action, not a check"
+   },
+   {
+    "id": "t23-r15",
+    "action": "drop",
+    "why": "action, not a check"
+   },
+   {
+    "id": "t23-r16",
+    "action": "drop",
+    "why": "vague condition"
+   },
+   {
+    "id": "t01-r03",
+    "action": "fix",
+    "why": "slow maps to low, not off"
+   },
+   {
+    "id": "t01-r11",
+    "action": "fix",
+    "why": "slow maps to low, not off"
+   },
+   {
+    "id": "t01-r16",
+    "action": "fix",
+    "why": "slow maps to low, not off"
+   },
+   {
+    "id": "t01-r05",
+    "action": "fix",
+    "why": "fan_id should be the user's words 'drafty room'"
+   },
+   {
+    "id": "t01-r17",
+    "action": "fix",
+    "why": "fan is named in the request, so it isn't missing"
+   },
+   {
+    "id": "t02-r02",
+    "action": "fix",
+    "why": "status question; tool only toggles"
+   },
+   {
+    "id": "t02-r12",
+    "action": "fix",
+    "why": "status question; tool only toggles"
+   },
+   {
+    "id": "t02-r16",
+    "action": "fix",
+    "why": "status question; tool only toggles"
+   },
+   {
+    "id": "t02-r06",
+    "action": "fix",
+    "why": "remark with no ask; make it a request"
+   },
+   {
+    "id": "t05-r01",
+    "action": "fix",
+    "why": "fan_id should be full phrase 'blower unit one'"
+   },
+   {
+    "id": "t08-r18",
+    "action": "fix",
+    "why": "skill is given: managing the herd"
+   },
+   {
+    "id": "t10-r17",
+    "action": "fix",
+    "why": "industry given: gardening"
+   },
+   {
+    "id": "t10-r18",
+    "action": "fix",
+    "why": "industry given: fitness"
+   },
+   {
+    "id": "t11-r02",
+    "action": "fix",
+    "why": "indoor/outdoor invented; clearer request"
+   },
+   {
+    "id": "t11-r05",
+    "action": "fix",
+    "why": "indoor_outdoor invented"
+   },
+   {
+    "id": "t11-r06",
+    "action": "fix",
+    "why": "indoor_outdoor invented"
+   },
+   {
+    "id": "t11-r09",
+    "action": "fix",
+    "why": "indoor_outdoor invented"
+   },
+   {
+    "id": "t11-r10",
+    "action": "fix",
+    "why": "indoor_outdoor invented"
+   },
+   {
+    "id": "t11-r11",
+    "action": "fix",
+    "why": "indoor_outdoor invented"
+   },
+   {
+    "id": "t11-r12",
+    "action": "fix",
+    "why": "indoor_outdoor invented"
+   },
+   {
+    "id": "t11-r13",
+    "action": "fix",
+    "why": "indoor_outdoor invented"
+   },
+   {
+    "id": "t11-r14",
+    "action": "fix",
+    "why": "indoor_outdoor invented"
+   },
+   {
+    "id": "t11-r15",
+    "action": "fix",
+    "why": "indoor_outdoor invented"
+   },
+   {
+    "id": "t11-r16",
+    "action": "fix",
+    "why": "indoor_outdoor invented"
+   },
+   {
+    "id": "t15-r02",
+    "action": "fix",
+    "why": "forehand, tool is backhand slice"
+   },
+   {
+    "id": "t15-r05",
+    "action": "fix",
+    "why": "forehand, tool is backhand slice"
+   },
+   {
+    "id": "t15-r08",
+    "action": "fix",
+    "why": "forehand, tool is backhand slice"
+   },
+   {
+    "id": "t15-r11",
+    "action": "fix",
+    "why": "forehand, tool is backhand slice"
+   },
+   {
+    "id": "t15-r13",
+    "action": "fix",
+    "why": "forehand, tool is backhand slice"
+   },
+   {
+    "id": "t15-r16",
+    "action": "fix",
+    "why": "forehand, tool is backhand slice"
+   },
+   {
+    "id": "t16-r04",
+    "action": "fix",
+    "why": "forehand fix, not slice drills"
+   },
+   {
+    "id": "t17-r02",
+    "action": "fix",
+    "why": "keep"
+   },
+   {
+    "id": "t20-r02",
+    "action": "fix failed checks",
+    "why": "an ask request needs a required text or number argument to leave out"
+   },
+   {
+    "id": "t20-r06",
+    "action": "fix failed checks",
+    "why": "an ask request needs a required text or number argument to leave out"
+   },
+   {
+    "id": "t20-r09",
+    "action": "fix failed checks",
+    "why": "an ask request needs a required text or number argument to leave out"
+   },
+   {
+    "id": "t20-r10",
+    "action": "fix failed checks",
+    "why": "an ask request needs a required text or number argument to leave out"
+   },
+   {
+    "id": "t20-r11",
+    "action": "fix failed checks",
+    "why": "an ask request needs a required text or number argument to leave out"
+   },
+   {
+    "id": "t20-r12",
+    "action": "fix failed checks",
+    "why": "an ask request needs a required text or number argument to leave out"
+   },
+   {
+    "id": "t20-r15",
+    "action": "fix failed checks",
+    "why": "an ask request needs a required text or number argument to leave out"
+   },
+   {
+    "id": "t20-r17",
+    "action": "fix failed checks",
+    "why": "an ask request needs a required text or number argument to leave out"
+   },
+   {
+    "id": "t21-r01",
+    "action": "fix",
+    "why": "level not stated; ask"
+   },
+   {
+    "id": "t21-r02",
+    "action": "fix",
+    "why": "level not stated; ask"
+   },
+   {
+    "id": "t21-r03",
+    "action": "fix",
+    "why": "level not stated; ask"
+   },
+   {
+    "id": "t21-r04",
+    "action": "fix",
+    "why": "level not stated; ask"
+   },
+   {
+    "id": "t21-r05",
+    "action": "fix",
+    "why": "level not stated; ask"
+   },
+   {
+    "id": "t21-r06",
+    "action": "fix",
+    "why": "level not stated; ask"
+   },
+   {
+    "id": "t21-r07",
+    "action": "fix",
+    "why": "level not stated; ask"
+   },
+   {
+    "id": "t21-r08",
+    "action": "fix",
+    "why": "level not stated; ask"
+   },
+   {
+    "id": "t21-r09",
+    "action": "fix",
+    "why": "level not stated; ask"
+   },
+   {
+    "id": "t21-r10",
+    "action": "fix",
+    "why": "level not stated; ask"
+   },
+   {
+    "id": "t21-r11",
+    "action": "fix",
+    "why": "level not stated; ask"
+   },
+   {
+    "id": "t21-r12",
+    "action": "fix",
+    "why": "level not stated; ask"
+   },
+   {
+    "id": "t21-r13",
+    "action": "fix",
+    "why": "level not stated; ask"
+   },
+   {
+    "id": "t21-r14",
+    "action": "fix",
+    "why": "level not stated; ask"
+   },
+   {
+    "id": "t21-r15",
+    "action": "fix",
+    "why": "level not stated; ask"
+   },
+   {
+    "id": "t21-r16",
+    "action": "fix",
+    "why": "level not stated; ask"
+   },
+   {
+    "id": "t22-r17",
+    "action": "fix",
+    "why": "mask type given: deep conditioning"
+   },
+   {
+    "id": "t23-r13",
+    "action": "fix",
+    "why": "condition not stated; ask"
+   },
+   {
+    "id": "t23-r17",
+    "action": "fix",
+    "why": "value should be 'dry ends'"
+   }
+  ]
+ },
+ "speed": {
+  "tools_tokens_per_s": 56.1,
+  "requests_tokens_per_s": 54.5
+ }
+}

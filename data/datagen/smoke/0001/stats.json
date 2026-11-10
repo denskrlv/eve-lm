@@ -1,0 +1,14 @@
+{
+ "tools": {
+  "proposed": 32,
+  "rejected": {
+   "schema": 8,
+   "json": 2,
+   "wording": 2
+  },
+  "dropped": 3,
+  "twins": 0,
+  "tokens": 9583,
+  "seconds": 280.373485917
+ }
+}

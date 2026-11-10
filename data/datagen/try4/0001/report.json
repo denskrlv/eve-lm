@@ -1,0 +1,401 @@
+{
+ "approved": false,
+ "tools": {
+  "proposed": 33,
+  "kept": 24,
+  "rejected": {
+   "json": 2,
+   "incoherent": 7,
+   "repeat": 1,
+   "wording": 1
+  },
+  "dropped": 1,
+  "twins": 1,
+  "blocked_topics": 0,
+  "tokens": 8827,
+  "seconds": 139.47767758199998
+ },
+ "rows": {
+  "written": 716,
+  "rejected": {
+   "missing": 60,
+   "schema": 63,
+   "value": 192,
+   "ask": 54,
+   "shared": 9
+  },
+  "rounds": {
+   "2": 72,
+   "3": 30,
+   "1": 296
+  },
+  "dropped": 82,
+  "tokens": 39104,
+  "seconds": 670.073283127,
+  "kept": 384
+ },
+ "review": {
+  "reviewed": 398,
+  "fixed": 56,
+  "dropped": 14,
+  "fix_rate": 0.1759,
+  "tools_dropped": [],
+  "cost": 0.2940292,
+  "reasons": [
+   {
+    "id": "t04-r03",
+    "action": "drop",
+    "why": "appliance isn't a light"
+   },
+   {
+    "id": "t04-r05",
+    "action": "drop",
+    "why": "turn on now is not scheduling"
+   },
+   {
+    "id": "t04-r12",
+    "action": "drop",
+    "why": "ungrammatical, 'now' not a time"
+   },
+   {
+    "id": "t07-r17",
+    "action": "drop",
+    "why": "content value is not real text"
+   },
+   {
+    "id": "t03-r12",
+    "action": "drop",
+    "why": "remark about gym equipment, no request"
+   },
+   {
+    "id": "t16-r04",
+    "action": "drop",
+    "why": "too vague, not tennis"
+   },
+   {
+    "id": "t16-r07",
+    "action": "drop",
+    "why": "too vague"
+   },
+   {
+    "id": "t16-r10",
+    "action": "drop",
+    "why": "too vague"
+   },
+   {
+    "id": "t16-r11",
+    "action": "drop",
+    "why": "too vague"
+   },
+   {
+    "id": "t16-r16",
+    "action": "drop",
+    "why": "too vague"
+   },
+   {
+    "id": "t16-r17",
+    "action": "drop",
+    "why": "too vague"
+   },
+   {
+    "id": "t17-r18",
+    "action": "drop",
+    "why": "no real request"
+   },
+   {
+    "id": "t24-r17",
+    "action": "drop",
+    "why": "question, not a request"
+   },
+   {
+    "id": "t02-r17",
+    "action": "fix",
+    "why": "turning on isn't brightness; rewrite as brightness ask"
+   },
+   {
+    "id": "t03-r09",
+    "action": "fix",
+    "why": "status question, not a request"
+   },
+   {
+    "id": "t03-r10",
+    "action": "fix",
+    "why": "floor isn't a light"
+   },
+   {
+    "id": "t03-r13",
+    "action": "fix",
+    "why": "question not a request"
+   },
+   {
+    "id": "t04-r10",
+    "action": "fix",
+    "why": "question, not a schedule request"
+   },
+   {
+    "id": "t04-r11",
+    "action": "fix",
+    "why": "status question, not a schedule request"
+   },
+   {
+    "id": "t05-r17",
+    "action": "fix",
+    "why": "turning on a lamp isn't status check"
+   },
+   {
+    "id": "t07-r03",
+    "action": "fix",
+    "why": "content not given"
+   },
+   {
+    "id": "t07-r04",
+    "action": "fix",
+    "why": "content not given"
+   },
+   {
+    "id": "t07-r05",
+    "action": "fix",
+    "why": "content not given"
+   },
+   {
+    "id": "t07-r07",
+    "action": "fix",
+    "why": "content not given"
+   },
+   {
+    "id": "t07-r08",
+    "action": "fix",
+    "why": "content not given"
+   },
+   {
+    "id": "t07-r09",
+    "action": "fix",
+    "why": "content not given"
+   },
+   {
+    "id": "t07-r11",
+    "action": "fix",
+    "why": "content not given"
+   },
+   {
+    "id": "t07-r12",
+    "action": "fix",
+    "why": "content not given"
+   },
+   {
+    "id": "t07-r13",
+    "action": "fix",
+    "why": "content not given"
+   },
+   {
+    "id": "t07-r15",
+    "action": "fix",
+    "why": "content not given"
+   },
+   {
+    "id": "t07-r16",
+    "action": "fix",
+    "why": "content not given"
+   },
+   {
+    "id": "t07-r18",
+    "action": "fix",
+    "why": "section is given, content missing"
+   },
+   {
+    "id": "t08-r02",
+    "action": "fix",
+    "why": "no role given"
+   },
+   {
+    "id": "t08-r04",
+    "action": "fix",
+    "why": "certs isn't a role"
+   },
+   {
+    "id": "t08-r09",
+    "action": "fix",
+    "why": "abilities isn't a role"
+   },
+   {
+    "id": "t08-r10",
+    "action": "fix",
+    "why": "role missing"
+   },
+   {
+    "id": "t08-r13",
+    "action": "fix",
+    "why": "skills isn't a role"
+   },
+   {
+    "id": "t08-r14",
+    "action": "fix",
+    "why": "no role given"
+   },
+   {
+    "id": "t10-r03",
+    "action": "fix",
+    "why": "2x4: thickness 2, width 4"
+   },
+   {
+    "id": "t10-r11",
+    "action": "fix",
+    "why": "2x4: thickness 2, width 4"
+   },
+   {
+    "id": "t10-r16",
+    "action": "fix",
+    "why": "2x4: thickness 2, width 4"
+   },
+   {
+    "id": "t11-r01",
+    "action": "fix",
+    "why": "no location given"
+   },
+   {
+    "id": "t11-r06",
+    "action": "fix",
+    "why": "phone isn't a location"
+   },
+   {
+    "id": "t11-r07",
+    "action": "fix",
+    "why": "tidying isn't a location"
+   },
+   {
+    "id": "t11-r11",
+    "action": "fix",
+    "why": "bag isn't a location"
+   },
+   {
+    "id": "t11-r13",
+    "action": "fix",
+    "why": "car isn't a location"
+   },
+   {
+    "id": "t11-r14",
+    "action": "fix",
+    "why": "morning isn't a location"
+   },
+   {
+    "id": "t11-r15",
+    "action": "fix",
+    "why": "van isn't a location"
+   },
+   {
+    "id": "t11-r16",
+    "action": "fix",
+    "why": "music isn't a location"
+   },
+   {
+    "id": "t13-r04",
+    "action": "fix",
+    "why": "meters not a supported unit"
+   },
+   {
+    "id": "t13-r17",
+    "action": "fix",
+    "why": "units not given"
+   },
+   {
+    "id": "t13-r18",
+    "action": "fix",
+    "why": "units not given"
+   },
+   {
+    "id": "t18-r01",
+    "action": "fix",
+    "why": "stroke isn't a type"
+   },
+   {
+    "id": "t18-r04",
+    "action": "fix",
+    "why": "hit isn't a type"
+   },
+   {
+    "id": "t20-r09",
+    "action": "fix",
+    "why": "porosity is the characteristic"
+   },
+   {
+    "id": "t22-r01",
+    "action": "fix",
+    "why": "difficulty invented"
+   },
+   {
+    "id": "t22-r02",
+    "action": "fix",
+    "why": "difficulty invented"
+   },
+   {
+    "id": "t22-r04",
+    "action": "fix",
+    "why": "difficulty invented"
+   },
+   {
+    "id": "t22-r05",
+    "action": "fix",
+    "why": "difficulty invented"
+   },
+   {
+    "id": "t22-r06",
+    "action": "fix",
+    "why": "difficulty invented"
+   },
+   {
+    "id": "t22-r07",
+    "action": "fix",
+    "why": "difficulty invented"
+   },
+   {
+    "id": "t22-r09",
+    "action": "fix",
+    "why": "difficulty invented"
+   },
+   {
+    "id": "t22-r10",
+    "action": "fix",
+    "why": "difficulty invented"
+   },
+   {
+    "id": "t22-r11",
+    "action": "fix",
+    "why": "difficulty invented"
+   },
+   {
+    "id": "t22-r12",
+    "action": "fix",
+    "why": "no style named"
+   },
+   {
+    "id": "t22-r13",
+    "action": "fix",
+    "why": "difficulty invented"
+   },
+   {
+    "id": "t22-r14",
+    "action": "fix",
+    "why": "no style named"
+   },
+   {
+    "id": "t22-r16",
+    "action": "fix",
+    "why": "difficulty invented"
+   },
+   {
+    "id": "t24-r04",
+    "action": "fix",
+    "why": "question not a request"
+   },
+   {
+    "id": "t24-r11",
+    "action": "fix failed checks",
+    "why": "shares \"hair\" with every name and description pair: avoid the words of at least one name and one description"
+   }
+  ]
+ },
+ "speed": {
+  "tools_tokens_per_s": 63.3,
+  "requests_tokens_per_s": 58.4
+ }
+}

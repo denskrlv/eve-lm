@@ -192,8 +192,10 @@ def claude_generate(
         except json.JSONDecodeError:
             detail = (done.stderr or done.stdout).strip()[:300]
             raise _Transient(f"{command} exited {done.returncode}: {detail}") from None
-        if done.returncode or out.get("is_error"):
-            raise _Transient(f"{command} failed: {str(out.get('result'))[:300]}")
+        if done.returncode or out.get("is_error"):  # an answer, not a glitch: trying again costs
+            spent = float(out.get("total_cost_usd") or 0.0)
+            detail = str(out.get("result") or out.get("subtype"))[:300]
+            raise LLMError(f"{command} failed (${spent:.2f} spent): {detail}")
         text = str(out.get("result") or "")
         data = out.get("structured_output")
         return Reply(

@@ -26,6 +26,13 @@ PEST = {
     ],
 }
 TOPICS = [f"area{i} > sub{i}" for i in range(15)]
+HOLD_LOCK = """
+import sys, time
+from eve.data.datagen.shard import Shard, claim
+assert claim(Shard(sys.argv[1]))
+print("held", flush=True)
+time.sleep(60)
+"""
 
 
 def test_gen_tool_round_trips_and_builds_every_variant():
@@ -75,15 +82,31 @@ def test_new_shard_skips_a_number_taken_meanwhile(tmp_path):
     assert new_shard(tmp_path, TOPICS).number == 3
 
 
-def test_claim_is_exclusive_and_stale_locks_are_taken(tmp_path):
+def test_claim_is_exclusive_until_released(tmp_path):
     shard = new_shard(tmp_path, TOPICS)
     assert claim(shard)
     assert not claim(Shard(shard.path))
     release(shard)
-    done = subprocess.run(
-        [sys.executable, "-c", "import os; print(os.getpid())"], capture_output=True, text=True
+    assert claim(Shard(shard.path))
+
+
+def test_a_lock_held_by_another_process_blocks_and_ends_with_it(tmp_path):
+    shard = new_shard(tmp_path, TOPICS)
+    holder = subprocess.Popen(
+        [sys.executable, "-c", HOLD_LOCK, str(shard.path)], stdout=subprocess.PIPE, text=True
     )
-    (shard.path / ".lock").write_text(done.stdout.strip())  # that process is gone
+    try:
+        assert holder.stdout is not None and holder.stdout.readline().strip() == "held"
+        assert not claim(shard)
+    finally:
+        holder.kill()
+        holder.wait()
+    assert claim(shard)  # the lock died with the process
+
+
+def test_a_lock_file_left_behind_is_no_lock(tmp_path):
+    shard = new_shard(tmp_path, TOPICS)
+    (shard.path / ".lock").write_text("1")  # left by an old run; pid 1 is alive, but holds nothing
     assert claim(shard)
 
 

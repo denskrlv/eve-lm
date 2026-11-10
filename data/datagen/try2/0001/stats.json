@@ -1,0 +1,36 @@
+{
+ "tools": {
+  "proposed": 45,
+  "kept": 23,
+  "rejected": {
+   "name": 2,
+   "incoherent": 12,
+   "repeat": 4,
+   "json": 1,
+   "wording": 4
+  },
+  "dropped": 2,
+  "twins": 4,
+  "blocked_topics": 0,
+  "tokens": 8092,
+  "seconds": 138.13408975
+ },
+ "requests": {
+  "written": 774,
+  "rejected": {
+   "schema": 147,
+   "missing": 40,
+   "value": 190,
+   "shared": 16,
+   "repeat": 3
+  },
+  "rounds": {
+   "1": 192,
+   "2": 182,
+   "3": 44
+  },
+  "dropped": 42,
+  "tokens": 40065,
+  "seconds": 685.5273127900001
+ }
+}

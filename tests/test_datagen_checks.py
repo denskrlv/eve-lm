@@ -105,3 +105,17 @@ def test_long_descriptions_are_a_tool_problem():
 def test_text_values_keep_the_case_of_the_request():
     lower = Row("t01-r07", "t01", "something chews Holes in my kale", "call", {"symptom": "holes"})
     assert any("case" in p for p in row_problems(lower, PEST, set()))
+
+
+def test_ask_leaves_out_only_text_or_number_values():
+    timer = GenTool.from_dict(
+        {
+            "id": "t03",
+            "topic": "home > air",
+            "names": ["fan_timer", "breeze_clock"],
+            "descriptions": ["Stops the fan after a while", "Sets when cooling ends"],
+            "args": [{"name": "minutes", "type": "int"}, {"name": "on", "type": "bool"}],
+        }
+    )
+    left_out = Row("t03-r01", "t03", "Stop the breeze in 20 min", "ask", {"minutes": 20, "on": "?"})
+    assert any("text or number" in p for p in row_problems(left_out, timer, set()))

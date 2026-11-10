@@ -1,0 +1,415 @@
+{
+ "approved": false,
+ "tools": {
+  "proposed": 26,
+  "rejected": {
+   "json": 5,
+   "incoherent": 1,
+   "repeat": 1
+  },
+  "dropped": 1,
+  "twins": 1,
+  "blocked_topics": 0,
+  "tokens": 10532,
+  "seconds": 189.150889166,
+  "kept": 24
+ },
+ "rows": {
+  "written": 1005,
+  "rejected": {
+   "schema": 234,
+   "shared": 252,
+   "repeat": 2,
+   "missing": 71,
+   "value": 192
+  },
+  "rounds": {
+   "1": 116,
+   "2": 132,
+   "3": 77
+  },
+  "dropped": 155,
+  "tokens": 53803,
+  "seconds": 921.4164437539997,
+  "kept": 273
+ },
+ "review": {
+  "reviewed": 325,
+  "fixed": 21,
+  "dropped": 52,
+  "fix_rate": 0.2246,
+  "tools_dropped": [],
+  "cost": 0.22888399999999998,
+  "reasons": [
+   {
+    "id": "t02-r15",
+    "action": "drop",
+    "why": "complaint, not a gentle-speed request"
+   },
+   {
+    "id": "t02-r10",
+    "action": "drop",
+    "why": "garden doesn't fit ceiling fan"
+   },
+   {
+    "id": "t05-r05",
+    "action": "drop",
+    "why": "complaint, not request"
+   },
+   {
+    "id": "t05-r07",
+    "action": "drop",
+    "why": "status question, not action"
+   },
+   {
+    "id": "t05-r09",
+    "action": "drop",
+    "why": "status question"
+   },
+   {
+    "id": "t05-r16",
+    "action": "drop",
+    "why": "status question"
+   },
+   {
+    "id": "t06-r02",
+    "action": "drop",
+    "why": "invented preference, no text"
+   },
+   {
+    "id": "t06-r03",
+    "action": "drop",
+    "why": "invented preference, no text"
+   },
+   {
+    "id": "t06-r08",
+    "action": "drop",
+    "why": "invented preference"
+   },
+   {
+    "id": "t06-r13",
+    "action": "drop",
+    "why": "invented preference"
+   },
+   {
+    "id": "t06-r15",
+    "action": "drop",
+    "why": "invented args"
+   },
+   {
+    "id": "t07-r12",
+    "action": "drop",
+    "why": "nonsensical skills"
+   },
+   {
+    "id": "t07-r20",
+    "action": "drop",
+    "why": "tool could do it"
+   },
+   {
+    "id": "t08-r20",
+    "action": "drop",
+    "why": "tool could do it"
+   },
+   {
+    "id": "t09-r02",
+    "action": "drop",
+    "why": "unclear, bad ask"
+   },
+   {
+    "id": "t11-r13",
+    "action": "drop",
+    "why": "unnatural"
+   },
+   {
+    "id": "t11-r15",
+    "action": "drop",
+    "why": "unnatural"
+   },
+   {
+    "id": "t12-r20",
+    "action": "drop",
+    "why": "ambiguous, duplicates ask"
+   },
+   {
+    "id": "t13-r08",
+    "action": "drop",
+    "why": "nonsense project"
+   },
+   {
+    "id": "t13-r16",
+    "action": "drop",
+    "why": "nonsense project"
+   },
+   {
+    "id": "t14-r20",
+    "action": "drop",
+    "why": "tool can do it"
+   },
+   {
+    "id": "t15-r20",
+    "action": "drop",
+    "why": "tool can do it"
+   },
+   {
+    "id": "t18-r01",
+    "action": "drop",
+    "why": "dog pulling, not tennis"
+   },
+   {
+    "id": "t19-r20",
+    "action": "drop",
+    "why": "tool can do it"
+   },
+   {
+    "id": "t20-r04",
+    "action": "drop",
+    "why": "not a request"
+   },
+   {
+    "id": "t20-r05",
+    "action": "drop",
+    "why": "unclear"
+   },
+   {
+    "id": "t20-r19",
+    "action": "drop",
+    "why": "ambiguous label"
+   },
+   {
+    "id": "t20-r20",
+    "action": "drop",
+    "why": "ambiguous label"
+   },
+   {
+    "id": "t21-r18",
+    "action": "drop",
+    "why": "not a request"
+   },
+   {
+    "id": "t23-r15",
+    "action": "drop",
+    "why": "vague"
+   },
+   {
+    "id": "t23-r17",
+    "action": "drop",
+    "why": "no content"
+   },
+   {
+    "id": "t24-r01",
+    "action": "drop",
+    "why": "asks safety, not duration"
+   },
+   {
+    "id": "t24-r04",
+    "action": "drop",
+    "why": "not a request"
+   },
+   {
+    "id": "t24-r06",
+    "action": "drop",
+    "why": "complaint"
+   },
+   {
+    "id": "t24-r07",
+    "action": "drop",
+    "why": "complaint"
+   },
+   {
+    "id": "t24-r12",
+    "action": "drop",
+    "why": "complaint"
+   },
+   {
+    "id": "t06-r18",
+    "action": "fix",
+    "why": "culture_preference is optional; not an ask"
+   },
+   {
+    "id": "t07-r17",
+    "action": "fix",
+    "why": "target_role is given, not missing"
+   },
+   {
+    "id": "t07-r18",
+    "action": "fix",
+    "why": "current_skills is given, not missing"
+   },
+   {
+    "id": "t11-r18",
+    "action": "fix",
+    "why": "wood_species optional and given"
+   },
+   {
+    "id": "t16-r02",
+    "action": "fix",
+    "why": "numbers must be digits as in args"
+   },
+   {
+    "id": "t16-r07",
+    "action": "fix",
+    "why": "numbers must appear as digits"
+   },
+   {
+    "id": "t16-r10",
+    "action": "fix",
+    "why": "numbers must appear as digits"
+   },
+   {
+    "id": "t16-r17",
+    "action": "fix",
+    "why": "number must appear as digits"
+   },
+   {
+    "id": "t17-r01",
+    "action": "fix",
+    "why": "digits needed"
+   },
+   {
+    "id": "t17-r02",
+    "action": "fix",
+    "why": "digits needed"
+   },
+   {
+    "id": "t17-r03",
+    "action": "fix",
+    "why": "digits needed"
+   },
+   {
+    "id": "t17-r04",
+    "action": "fix",
+    "why": "digits needed"
+   },
+   {
+    "id": "t17-r05",
+    "action": "fix",
+    "why": "digits needed"
+   },
+   {
+    "id": "t17-r06",
+    "action": "fix",
+    "why": "digits needed"
+   },
+   {
+    "id": "t17-r07",
+    "action": "fix",
+    "why": "digits needed"
+   },
+   {
+    "id": "t17-r08",
+    "action": "fix",
+    "why": "digits needed"
+   },
+   {
+    "id": "t17-r09",
+    "action": "fix",
+    "why": "digits needed"
+   },
+   {
+    "id": "t17-r10",
+    "action": "fix",
+    "why": "digits needed"
+   },
+   {
+    "id": "t17-r13",
+    "action": "fix",
+    "why": "digits needed"
+   },
+   {
+    "id": "t18-r17",
+    "action": "fix",
+    "why": "optional arg not missing"
+   },
+   {
+    "id": "t18-r18",
+    "action": "fix",
+    "why": "optional arg not missing"
+   },
+   {
+    "id": "t20-r01",
+    "action": "fix failed checks",
+    "why": "shares \"hair\", \"mask\", \"minut\", \"reminder\" with the tool's names or descriptions"
+   },
+   {
+    "id": "t20-r02",
+    "action": "fix failed checks",
+    "why": "shares \"hair\", \"mask\", \"minut\" with the tool's names or descriptions"
+   },
+   {
+    "id": "t20-r03",
+    "action": "fix failed checks",
+    "why": "shares \"hair\", \"mask\", \"minut\" with the tool's names or descriptions"
+   },
+   {
+    "id": "t20-r06",
+    "action": "fix failed checks",
+    "why": "shares \"hair\", \"mask\", \"minut\" with the tool's names or descriptions"
+   },
+   {
+    "id": "t20-r07",
+    "action": "fix failed checks",
+    "why": "shares \"mask\", \"minut\" with the tool's names or descriptions"
+   },
+   {
+    "id": "t20-r08",
+    "action": "fix failed checks",
+    "why": "shares \"hair\", \"mask\", \"minut\" with the tool's names or descriptions"
+   },
+   {
+    "id": "t20-r09",
+    "action": "fix failed checks",
+    "why": "shares \"hair\", \"mask\", \"minut\" with the tool's names or descriptions"
+   },
+   {
+    "id": "t20-r10",
+    "action": "fix failed checks",
+    "why": "shares \"condition\", \"mask\", \"minut\" with the tool's names or descriptions"
+   },
+   {
+    "id": "t20-r11",
+    "action": "fix failed checks",
+    "why": "shares \"mask\", \"minut\" with the tool's names or descriptions"
+   },
+   {
+    "id": "t20-r12",
+    "action": "fix failed checks",
+    "why": "shares \"hair\", \"mask\", \"minut\" with the tool's names or descriptions"
+   },
+   {
+    "id": "t20-r13",
+    "action": "fix failed checks",
+    "why": "shares \"hair\", \"mask\", \"minut\" with the tool's names or descriptions"
+   },
+   {
+    "id": "t20-r14",
+    "action": "fix failed checks",
+    "why": "shares \"mask\", \"minut\" with the tool's names or descriptions"
+   },
+   {
+    "id": "t20-r15",
+    "action": "fix failed checks",
+    "why": "shares \"mask\", \"minut\" with the tool's names or descriptions"
+   },
+   {
+    "id": "t20-r16",
+    "action": "fix failed checks",
+    "why": "shares \"mask\", \"minut\" with the tool's names or descriptions"
+   },
+   {
+    "id": "t20-r17",
+    "action": "fix failed checks",
+    "why": "shares \"hair\", \"mask\", \"reminder\" with the tool's names or descriptions"
+   },
+   {
+    "id": "t20-r18",
+    "action": "fix failed checks",
+    "why": "shares \"mask\" with the tool's names or descriptions"
+   }
+  ]
+ },
+ "speed": {
+  "tools_tokens_per_s": 55.7,
+  "requests_tokens_per_s": 58.4
+ }
+}

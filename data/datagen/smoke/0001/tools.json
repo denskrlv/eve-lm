@@ -1,0 +1,783 @@
+[
+ {
+  "id": "t01",
+  "topic": "lighting > ceiling fans",
+  "names": [
+   "clean_fan_blades",
+   "remove_dust_from_hub",
+   "wipe_residue_from_grille"
+  ],
+  "descriptions": [
+   "Removes sticky debris caught in fan blades using a damp cloth.",
+   "Clears dust particles from the central hub without disassembly.",
+   "Wipes away adhesive residue left on the outer cover surface."
+  ],
+  "args": [
+   {
+    "name": "fan_id",
+    "type": "str",
+    "description": "Identifier for the specific ceiling fan unit."
+   },
+   {
+    "name": "cleaner_type",
+    "type": "enum",
+    "required": false,
+    "options": [
+     "damp_cloth",
+     "wet_pad",
+     "alcohol_wipe"
+    ],
+    "description": "Type of cleaning material to use."
+   }
+  ],
+  "capability": "clean_fan_blades"
+ },
+ {
+  "id": "t02",
+  "topic": "lighting > ceiling fans",
+  "names": [
+   "fix_cheap_tape_jobs",
+   "budget_repair_hookup",
+   "temporary_fix_with_tape"
+  ],
+  "descriptions": [
+   "Uses affordable tape to secure a loose fan cover panel.",
+   "Planes minor electrical or mechanical repairs within budget limits.",
+   "Creates a quick, temporary fix for wobbly mounting hardware."
+  ],
+  "args": [
+   {
+    "name": "tape_type",
+    "type": "enum",
+    "options": [
+     "masking_tape",
+     "duct Tape",
+     "fabric_tape"
+    ],
+    "description": "Type of adhesive tape available for the job."
+   },
+   {
+    "name": "repair_cost_limit",
+    "type": "float",
+    "min": 5.0,
+    "max": 50.0,
+    "description": "Maximum budget allowable for this repair task."
+   }
+  ],
+  "capability": "fix_cheap_tape_jobs"
+ },
+ {
+  "id": "t03",
+  "topic": "lighting > ceiling fans",
+  "names": [
+   "clean_cable_from_sponge",
+   "remove_gunk_from_wire",
+   "wash_mounting_hookup"
+  ],
+  "descriptions": [
+   "Uses a sponge to clean dust accumulated on wiring connections.",
+   "Washes away dried grime from the mounting bracket assembly.",
+   "Prepares electrical cables for inspection before reassembly."
+  ],
+  "args": [
+   {
+    "name": "wiring_id",
+    "type": "str",
+    "description": "Label or code for the specific wire bundle being cleaned."
+   },
+   {
+    "name": "sponge_size",
+    "type": "enum",
+    "required": false,
+    "options": [
+     "small",
+     "medium",
+     "large"
+    ],
+    "description": "Size of the sponge tool used for cleaning."
+   }
+  ],
+  "capability": "clean_cable_from_sponge"
+ },
+ {
+  "id": "t04",
+  "topic": "lighting > ceiling fans",
+  "names": [
+   "budget_fan_speed",
+   "electricity_tracker"
+  ],
+  "descriptions": [
+   "Shows how much electricity the fan uses at a specific speed setting.",
+   "Helps decide the best fan setting to save money on energy bills.",
+   "Calculates potential savings by adjusting fan blades from high to low."
+  ],
+  "args": [
+   {
+    "name": "speed_level",
+    "type": "enum",
+    "options": [
+     "low",
+     "medium",
+     "high"
+    ],
+    "description": "The current or desired fan speed setting."
+   },
+   {
+    "name": "hours_per_day",
+    "type": "int",
+    "description": "How many hours the fan is expected to run daily."
+   }
+  ],
+  "capability": "budget_fan_speed"
+ },
+ {
+  "id": "t05",
+  "topic": "lighting > ceiling fans",
+  "names": [
+   "cord_length_estimator",
+   "dangling_wires_checker"
+  ],
+  "descriptions": [
+   "Checks if a loose power cord needs to be shortened before installation.",
+   "Determines the appropriate length of an extension cable for ceiling fans.",
+   "Warns if current wiring is too long or short for the fan mount."
+  ],
+  "args": [
+   {
+    "name": "room_height",
+    "type": "float",
+    "min": 8.0,
+    "max": 12.0,
+    "description": "The height of the ceiling where the fan is being installed."
+   },
+   {
+    "name": "cable_available",
+    "type": "bool",
+    "required": false,
+    "description": "Whether an extension cord or power strip is currently in use."
+   }
+  ],
+  "capability": "cord_length_estimator"
+ },
+ {
+  "id": "t06",
+  "topic": "job search > skill gap analysis tools",
+  "names": [
+   "job_portrait_printer",
+   "skill_memo_maker"
+  ],
+  "descriptions": [
+   "Generates a printed summary of your current abilities for a quick review.",
+   "Creates a detailed text document outlining your professional strengths."
+  ],
+  "args": [
+   {
+    "name": "summary_title",
+    "type": "str",
+    "required": false,
+    "description": "The title to use for the printed or saved document"
+   },
+   {
+    "name": "skill_level",
+    "type": "enum",
+    "options": [
+     "beginner",
+     "intermediate",
+     "expert"
+    ],
+    "description": "Your self-assessed proficiency level in the given skills"
+   },
+   {
+    "name": "top_skills",
+    "type": "str",
+    "description": "A list of your top skills to include in the analysis"
+   },
+   {
+    "name": "print_format",
+    "type": "enum",
+    "required": false,
+    "options": [
+     "pdf",
+     "doc"
+    ],
+    "description": "The preferred output format for the job portrait"
+   }
+  ],
+  "capability": "job_portrait_printer"
+ },
+ {
+  "id": "t07",
+  "topic": "job search > skill gap analysis tools",
+  "names": [
+   "branch_path_finder",
+   "skill_tree_explorer"
+  ],
+  "descriptions": [
+   "Maps out a progression path from your current skills to desired roles.",
+   "Explores how your existing abilities connect to broader industries."
+  ],
+  "args": [
+   {
+    "name": "current_role",
+    "type": "str",
+    "description": "Your current job title or primary skill focus"
+   },
+   {
+    "name": "target_field",
+    "type": "str",
+    "description": "The industry or career field you want to move into"
+   },
+   {
+    "name": "intermediate_steps",
+    "type": "enum",
+    "required": false,
+    "options": [
+     "certificates",
+     "internships",
+     "projects"
+    ],
+    "description": "Types of steps to include in the bridge between current and target"
+   },
+   {
+    "name": "timeframe",
+    "type": "int",
+    "required": false,
+    "min": 1,
+    "max": 5,
+    "description": "The number of years to project for the career transition plan"
+   }
+  ],
+  "capability": "branch_path_finder"
+ },
+ {
+  "id": "t08",
+  "topic": "job search > skill gap analysis tools",
+  "names": [
+   "quiet_focus_mode",
+   "legacy_advice_tuner"
+  ],
+  "descriptions": [
+   "Saves a distraction-free audio stream for intense interview practice.",
+   "Generates a personalized message from an expert based on your grandma's advice."
+  ],
+  "args": [
+   {
+    "name": "practice_duration",
+    "type": "int",
+    "min": 5,
+    "max": 60,
+    "description": "The length of time in minutes to dedicate to focused practice"
+   },
+   {
+    "name": "noise_type",
+    "type": "enum",
+    "required": false,
+    "options": [
+     "white_noise",
+     "rain",
+     "coffee_shop"
+    ],
+    "description": "The type of background sound to simulate for interview prep"
+   },
+   {
+    "name": "advice_theme",
+    "type": "str",
+    "description": "The main life lesson or career advice your grandma would give you"
+   },
+   {
+    "name": "tone_style",
+    "type": "enum",
+    "required": false,
+    "options": [
+     "warm",
+     "direct",
+     "wise"
+    ],
+    "description": "The emotional tone for the generated legacy message"
+   }
+  ],
+  "capability": "quiet_focus_mode"
+ },
+ {
+  "id": "t09",
+  "topic": "job search > skill gap analysis tools",
+  "names": [
+   "baking_budget_planner",
+   "light_mood_checker"
+  ],
+  "descriptions": [
+   "Calculates the cost of cooking a meal based on your pantry's stock.",
+   "Adjusts the ambient lighting in your workspace to match your mood."
+  ],
+  "args": [
+   {
+    "name": "pantry_items",
+    "type": "str",
+    "description": "A list of ingredients currently available in your kitchen"
+   },
+   {
+    "name": "budget_limit",
+    "type": "float",
+    "min": 5.0,
+    "max": 100.0,
+    "description": "The maximum amount of money you are willing to spend on the meal"
+   },
+   {
+    "name": "desired_dish",
+    "type": "str",
+    "required": false,
+    "description": "The specific recipe or dish type you want to prepare (optional)"
+   },
+   {
+    "name": "mood_level",
+    "type": "enum",
+    "options": [
+     "calm",
+     "energetic",
+     "focus"
+    ],
+    "description": "Your current emotional state to determine the right lighting setting"
+   }
+  ],
+  "capability": "baking_budget_planner"
+ },
+ {
+  "id": "t10",
+  "topic": "job search > skill gap analysis tools",
+  "names": [
+   "digital_showcase_builder",
+   "achievement_highlighter"
+  ],
+  "descriptions": [
+   "Creates a visual summary of your work on a portable screen.",
+   "Compiles a list of past wins to boost confidence during interviews."
+  ],
+  "args": [
+   {
+    "name": "project_list",
+    "type": "str",
+    "description": "A brief description of the projects you have completed"
+   },
+   {
+    "name": "device_type",
+    "type": "enum",
+    "required": false,
+    "options": [
+     "tablet_screen",
+     "printout",
+     "web_link"
+    ],
+    "description": "Where you want to display or save your digital portfolio"
+   },
+   {
+    "name": "highlight_event",
+    "type": "str",
+    "description": "The most significant achievement you want to feature prominently"
+   },
+   {
+    "name": "audience_role",
+    "type": "str",
+    "required": false,
+    "description": "Who the final showcase is intended for (e.g., recruiter, peer)"
+   }
+  ],
+  "capability": "digital_showcase_builder"
+ },
+ {
+  "id": "t11",
+  "topic": "woodworking > gluing joints",
+  "names": [
+   "wedge_scheduling_helper",
+   "weekend_join_planner"
+  ],
+  "descriptions": [
+   "Generates a timeline for woodworking projects scheduled during a specific break period.",
+   "Suggests ideal times to tackle glue-ups based on the user's upcoming off days.",
+   "Plans joint assembly sequences that align with planned weekend availability windows."
+  ],
+  "args": [
+   {
+    "name": "start_date",
+    "type": "str",
+    "description": "The date the woodworking session begins."
+   },
+   {
+    "name": "duration_days",
+    "type": "int",
+    "min": 1,
+    "max": 7,
+    "description": "How many days the project spans during the break."
+   },
+   {
+    "name": "project_type",
+    "type": "enum",
+    "required": false,
+    "options": [
+     "table_top",
+     "bench_frame"
+    ],
+    "description": "The type of joinery project being planned."
+   }
+  ],
+  "capability": "wedge_scheduling_helper"
+ },
+ {
+  "id": "t12",
+  "topic": "woodworking > gluing joints",
+  "names": [
+   "chill_marker_manager",
+   "cold_weather_sketcher"
+  ],
+  "descriptions": [
+   "Provides markers for marking joints when the environment temperature is low.",
+   "Adjusts drawing techniques specifically for cold conditions in a workshop setting.",
+   "Reminds users to use appropriate lead grades for cold-weather wood preparation."
+  ],
+  "args": [
+   {
+    "name": "room_temp",
+    "type": "float",
+    "min": 0,
+    "max": 30,
+    "description": "The current temperature of the workshop in degrees Celsius."
+   },
+   {
+    "name": "joint_style",
+    "type": "enum",
+    "required": false,
+    "options": [
+     "mortise_tongue",
+     "finger_joint"
+    ],
+    "description": "The type of joint being marked."
+   }
+  ],
+  "capability": "chill_marker_manager"
+ },
+ {
+  "id": "t13",
+  "topic": "woodworking > gluing joints",
+  "names": [
+   "garnish_glue_mixer",
+   "spoon_clamp_prepper"
+  ],
+  "descriptions": [
+   "Calculates the exact amount of onion powder needed to season wood glue.",
+   "Offers a makeshift clamp solution using household spoons if professional tools are unavailable.",
+   "Suggests flavoring agents for woodworking adhesives when standard supplies are scarce."
+  ],
+  "args": [
+   {
+    "name": "glue_volume_ml",
+    "type": "float",
+    "min": 10,
+    "max": 1000,
+    "description": "The quantity of glue mixture in milliliters."
+   },
+   {
+    "name": "clamp_type",
+    "type": "enum",
+    "required": false,
+    "options": [
+     "fork",
+     "spoon"
+    ],
+    "description": "The type of clamp needed for the joint."
+   }
+  ],
+  "capability": "garnish_glue_mixer"
+ },
+ {
+  "id": "t14",
+  "topic": "woodworking > gluing joints",
+  "names": [
+   "wet_seal_timer_alert",
+   "leak_prevention_clock"
+  ],
+  "descriptions": [
+   "Sets a countdown timer to check on joints that are beginning to show water damage.",
+   "Sends an urgent notification before the glue line becomes compromised by moisture.",
+   "Tracks elapsed time since applying wet glue to predict potential leakage risks."
+  ],
+  "args": [
+   {
+    "name": "alert_minutes",
+    "type": "int",
+    "min": 5,
+    "max": 60,
+    "description": "The number of minutes before the alert triggers."
+   },
+   {
+    "name": "severity_level",
+    "type": "enum",
+    "required": false,
+    "options": [
+     "low",
+     "medium",
+     "critical"
+    ],
+    "description": "The expected severity of the leak."
+   }
+  ],
+  "capability": "wet_seal_timer_alert"
+ },
+ {
+  "id": "t15",
+  "topic": "woodworking > gluing joints",
+  "names": [
+   "crisp_joint_cutter",
+   "fresh_glue_prep_guide"
+  ],
+  "descriptions": [
+   "Suggests apple-based cleaners for removing dried glue from joint surfaces.",
+   "Provides recipes for egg-wash sealants before applying final wood glue layers.",
+   "Recommends fresh fruit juices as a natural solvent for sticky joint residues."
+  ],
+  "args": [
+   {
+    "name": "cleaning_liquid",
+    "type": "enum",
+    "required": false,
+    "options": [
+     "apple_cider_vinegar",
+     "egg_white"
+    ],
+    "description": "The cleaning or sealing agent to use."
+   },
+   {
+    "name": "joint_count",
+    "type": "int",
+    "min": 1,
+    "max": 50,
+    "description": "The number of joints requiring treatment."
+   }
+  ],
+  "capability": "crisp_joint_cutter"
+ },
+ {
+  "id": "t16",
+  "topic": "tennis > backhand slice spin",
+  "names": [
+   "noisy_appliance_reporter",
+   "silent_zone_checker"
+  ],
+  "descriptions": [
+   "Checks if the refrigerator door is open or making noise.",
+   "Reports loud sounds coming from inside the fridge compartment.",
+   "Identifies squeaky hinges that need lubrication immediately.",
+   "Logs unusual mechanical noises when checking the appliance."
+  ],
+  "args": [
+   {
+    "name": "location",
+    "type": "enum",
+    "options": [
+     "front_door",
+     "inside_shelf",
+     "hinges"
+    ],
+    "description": "Which part of the fridge to inspect."
+   },
+   {
+    "name": "noise_level",
+    "type": "int",
+    "required": false,
+    "min": 1,
+    "max": 10,
+    "description": "How loud the noise is rated on a scale."
+   }
+  ],
+  "capability": "noisy_appliance_reporter"
+ },
+ {
+  "id": "t17",
+  "topic": "tennis > backhand slice spin",
+  "names": [
+   "bounce_distance_tracker",
+   "dough_rise_estimator"
+  ],
+  "descriptions": [
+   "Measures how far a tennis ball can bounce on different surfaces.",
+   "Predicts if bread dough has risen enough based on its size.",
+   "Calculates the ideal pressure needed for a perfect bounce test.",
+   "Estimates volume expansion when baking fresh loaves of bread."
+  ],
+  "args": [
+   {
+    "name": "object_type",
+    "type": "enum",
+    "options": [
+     "tennis_ball",
+     "bread_dough"
+    ],
+    "description": "Whether the object is a ball or dough."
+   },
+   {
+    "name": "surface_hardness",
+    "type": "int",
+    "required": false,
+    "min": 1,
+    "max": 10,
+    "description": "The hardness level of the surface or container."
+   },
+   {
+    "name": "target_height",
+    "type": "float",
+    "required": false,
+    "min": 5.0,
+    "max": 200.0,
+    "description": "The desired height or bounce distance in centimeters."
+   }
+  ],
+  "capability": "bounce_distance_tracker"
+ },
+ {
+  "id": "t18",
+  "topic": "hair care > treatment mask routines",
+  "names": [
+   "schedule_mask_appointment",
+   "book_stylist_slot"
+  ],
+  "descriptions": [
+   "Reserve a specific time to visit a salon for a hair treatment.",
+   "Coordinate an exclusive window at a beauty shop for service."
+  ],
+  "args": [
+   {
+    "name": "service_type",
+    "type": "enum",
+    "options": [
+     "deep_conditioning",
+     "root_stimulating"
+    ]
+   },
+   {
+    "name": "preferred_day",
+    "type": "enum",
+    "required": false,
+    "options": [
+     "sunday",
+     "tuesday",
+     "friday"
+    ]
+   },
+   {
+    "name": "salon_name",
+    "type": "str"
+   }
+  ],
+  "capability": "schedule_mask_appointment"
+ },
+ {
+  "id": "t19",
+  "topic": "hair care > treatment mask routines",
+  "names": [
+   "mix_treatment_batch",
+   "prepare_hair_blend"
+  ],
+  "descriptions": [
+   "Combine specific hair mask ingredients into a workable consistency.",
+   "Mix your chosen components to create the perfect custom treatment."
+  ],
+  "args": [
+   {
+    "name": "ingredients_list",
+    "type": "str",
+    "description": "Comma separated list of ingredients like honey or olive oil"
+   },
+   {
+    "name": "target_volume",
+    "type": "float",
+    "min": 0.5,
+    "max": 10.0
+   }
+  ],
+  "capability": "mix_treatment_batch"
+ },
+ {
+  "id": "t20",
+  "topic": "hair care > treatment mask routines",
+  "names": [
+   "scan_mask_sheet",
+   "analyze_dry_wig"
+  ],
+  "descriptions": [
+   "Read a digital prescription or guide for using a treatment.",
+   "Identify the correct application method from an image."
+  ],
+  "args": [
+   {
+    "name": "image_file",
+    "type": "str"
+   },
+   {
+    "name": "read_method",
+    "type": "enum",
+    "required": false,
+    "options": [
+     "qr_code_scan",
+     "text_recognition"
+    ]
+   }
+  ],
+  "capability": "scan_mask_sheet"
+ },
+ {
+  "id": "t21",
+  "topic": "hair care > treatment mask routines",
+  "names": [
+   "check_mask_status",
+   "verify_order_return"
+  ],
+  "descriptions": [
+   "Find the current location of your hair product delivery.",
+   "Track the return process for a refund on an empty bottle."
+  ],
+  "args": [
+   {
+    "name": "tracking_number",
+    "type": "str"
+   },
+   {
+    "name": "return_reason",
+    "type": "enum",
+    "required": false,
+    "options": [
+     "unused_product",
+     "wrong_item"
+    ]
+   }
+  ],
+  "capability": "check_mask_status"
+ },
+ {
+  "id": "t22",
+  "topic": "hair care > treatment mask routines",
+  "names": [
+   "drain_hot_water",
+   "empty_heating_tub"
+  ],
+  "descriptions": [
+   "Release hot water safely from a container before use.",
+   "Drain excess liquid from a heated vessel for hair treatment."
+  ],
+  "args": [
+   {
+    "name": "vessel_type",
+    "type": "enum",
+    "options": [
+     "hot_tub",
+     "blotter"
+    ]
+   },
+   {
+    "name": "drain_speed",
+    "type": "float",
+    "required": false,
+    "min": 0.1,
+    "max": 2.0
+   }
+  ],
+  "capability": "drain_hot_water"
+ }
+]

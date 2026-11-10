@@ -1,0 +1,587 @@
+[
+ {
+  "id": "t01",
+  "topic": "lighting > ceiling fans",
+  "names": [
+   "toggle_ceiling_fan_light",
+   "switch_fan_light",
+   "turn_on_fan_lamp",
+   "control_fan_lighting"
+  ],
+  "descriptions": [
+   "Turns the light attached to the fan on or off.",
+   "Switches the integrated fan lighting state.",
+   "Controls the illumination of the ceiling fan.",
+   "Activates or deactivates the fan's built-in light."
+  ],
+  "args": [
+   {
+    "name": "state",
+    "type": "bool",
+    "description": "Whether to turn the light on or off."
+   },
+   {
+    "name": "location",
+    "type": "str",
+    "required": false,
+    "description": "The specific room containing the fan."
+   }
+  ],
+  "capability": "fan.power"
+ },
+ {
+  "id": "t02",
+  "topic": "lighting > ceiling fans",
+  "names": [
+   "turn_off_ceiling_fan",
+   "stop_fan_rotation",
+   "power_down_fan",
+   "switch_off_fan"
+  ],
+  "descriptions": [
+   "Stops the ceiling fan from spinning.",
+   "Turns off the power to the fan motor.",
+   "Halts the rotation of the fan blades.",
+   "Deactivates the ceiling fan completely."
+  ],
+  "args": [
+   {
+    "name": "location",
+    "type": "str",
+    "required": false,
+    "description": "The room containing the fan to stop."
+   }
+  ],
+  "capability": "fan.power"
+ },
+ {
+  "id": "t03",
+  "topic": "lighting > ceiling fans",
+  "names": [
+   "get_current_fan_speed",
+   "check_fan_rpm_level",
+   "query_fan_velocity"
+  ],
+  "descriptions": [
+   "Returns the current speed setting of the ceiling fan.",
+   "Tells you if the fan is on low, medium, or high.",
+   "Displays the active rotational speed level."
+  ],
+  "args": [],
+  "capability": "ceiling_fan.speed"
+ },
+ {
+  "id": "t04",
+  "topic": "lighting > ceiling fans",
+  "names": [
+   "set_fan_timer_duration",
+   "schedule_auto_off_delay",
+   "configure_sleep_timer"
+  ],
+  "descriptions": [
+   "Sets a countdown timer to automatically turn off the fan.",
+   "Configures how many minutes before the fan shuts down.",
+   "Defines a delay period for automatic fan power off."
+  ],
+  "args": [
+   {
+    "name": "minutes",
+    "type": "int",
+    "min": 15,
+    "max": 240,
+    "description": "The number of minutes until the fan turns off."
+   }
+  ],
+  "capability": "set_fan_timer_duration"
+ },
+ {
+  "id": "t05",
+  "topic": "lighting > ceiling fans",
+  "names": [
+   "set_ceiling_fan_speed",
+   "adjust_fan_velocity",
+   "control_fan_rotation"
+  ],
+  "descriptions": [
+   "Set the ceiling fan to a specific speed level.",
+   "Adjust how fast the fan blades rotate.",
+   "Control the rotation speed of the fan."
+  ],
+  "args": [
+   {
+    "name": "speed",
+    "type": "enum",
+    "options": [
+     "low",
+     "medium",
+     "high"
+    ],
+    "description": "The desired speed setting for the fan."
+   }
+  ],
+  "capability": "ceiling_fan.speed"
+ },
+ {
+  "id": "t06",
+  "topic": "job search > skill gap analysis tools",
+  "names": [
+   "suggest_learning_resources",
+   "find_coursera_courses",
+   "get_training_links"
+  ],
+  "descriptions": [
+   "Recommend online courses for identified skill gaps.",
+   "List relevant tutorials to improve specific skills.",
+   "Provide links to training materials."
+  ],
+  "args": [
+   {
+    "name": "skill_name",
+    "type": "str",
+    "description": "The specific skill to learn"
+   },
+   {
+    "name": "budget_level",
+    "type": "enum",
+    "required": false,
+    "options": [
+     "free",
+     "paid",
+     "any"
+    ],
+    "description": "Preferred cost level for resources"
+   }
+  ],
+  "capability": "suggest_learning_resources"
+ },
+ {
+  "id": "t07",
+  "topic": "job search > skill gap analysis tools",
+  "names": [
+   "search_job_board",
+   "find_open_positions",
+   "look_up_jobs"
+  ],
+  "descriptions": [
+   "Search for current job openings in a field.",
+   "List available positions matching specific criteria.",
+   "Find jobs by location and role."
+  ],
+  "args": [
+   {
+    "name": "role",
+    "type": "str",
+    "description": "Job title or role category"
+   },
+   {
+    "name": "location",
+    "type": "str",
+    "required": false,
+    "description": "City or remote preference"
+   }
+  ],
+  "capability": "search_job_board"
+ },
+ {
+  "id": "t08",
+  "topic": "job search > skill gap analysis tools",
+  "names": [
+   "check_resume_keywords",
+   "scan_resume_terms",
+   "verify_skill_coverage",
+   "match_resume_skills"
+  ],
+  "descriptions": [
+   "Checks if your resume contains key terms from a job description.",
+   "Scans your resume text for required skills listed in a posting.",
+   "Verifies that your resume covers specific skills mentioned by employers.",
+   "Matches the skills in your resume against a target job listing."
+  ],
+  "args": [
+   {
+    "name": "resume_text",
+    "type": "str",
+    "description": "The text content of your current resume."
+   },
+   {
+    "name": "job_description",
+    "type": "str",
+    "description": "The text of the job posting you are targeting."
+   }
+  ],
+  "capability": "check_resume_keywords"
+ },
+ {
+  "id": "t09",
+  "topic": "job search > skill gap analysis tools",
+  "names": [
+   "track_application_status",
+   "log_job_application",
+   "update_application_state",
+   "record_submission_date"
+  ],
+  "descriptions": [
+   "Records when you applied for a specific job position.",
+   "Logs the submission date of a recent job application.",
+   "Updates the status of an ongoing job application process.",
+   "Stores details about a recently submitted job application."
+  ],
+  "args": [
+   {
+    "name": "company_name",
+    "type": "str",
+    "description": "The name of the employer you applied to."
+   },
+   {
+    "name": "job_title",
+    "type": "str",
+    "description": "The title of the position you applied for."
+   }
+  ],
+  "capability": "track_application_status"
+ },
+ {
+  "id": "t10",
+  "topic": "woodworking > gluing joints",
+  "names": [
+   "get_glue_recommendations",
+   "find_better_glue",
+   "ask_for_glue_type"
+  ],
+  "descriptions": [
+   "Suggests the right adhesive for a specific wood joint.",
+   "Recommends glue types based on material and use case.",
+   "Helps choose appropriate wood glue for your project."
+  ],
+  "args": [
+   {
+    "name": "wood_type",
+    "type": "str",
+    "description": "The type of wood being joined"
+   },
+   {
+    "name": "project_use",
+    "type": "str",
+    "required": false,
+    "description": "Indoor or outdoor application context"
+   }
+  ],
+  "capability": "get_glue_recommendations"
+ },
+ {
+  "id": "t11",
+  "topic": "woodworking > gluing joints",
+  "names": [
+   "calculate_clamp_count",
+   "determine_needed_clamps",
+   "estimate_clamp_quantity"
+  ],
+  "descriptions": [
+   "Compute how many clamps are needed for a joint.",
+   "Find the number of clamps required for assembly.",
+   "Estimate total clamps necessary for your project."
+  ],
+  "args": [
+   {
+    "name": "joint_type",
+    "type": "str",
+    "description": "Type of wood joint being glued"
+   },
+   {
+    "name": "wood_width_inches",
+    "type": "float",
+    "min": 0.1,
+    "description": "Width of the lumber in inches"
+   }
+  ],
+  "capability": "calculate_clamp_count"
+ },
+ {
+  "id": "t12",
+  "topic": "woodworking > gluing joints",
+  "names": [
+   "get_glue_open_time",
+   "check_working_time",
+   "find_glue_open_duration"
+  ],
+  "descriptions": [
+   "Retrieve how long the glue stays open.",
+   "Find the working time for specific adhesives.",
+   "Check duration before glue sets initially."
+  ],
+  "args": [
+   {
+    "name": "glue_brand",
+    "type": "str",
+    "description": "Brand or type of wood glue"
+   }
+  ],
+  "capability": "get_glue_open_time"
+ },
+ {
+  "id": "t13",
+  "topic": "woodworking > gluing joints",
+  "names": [
+   "verify_joint_alignment",
+   "check_squareness",
+   "ensure_perfect_angle"
+  ],
+  "descriptions": [
+   "Verify if the joint is perfectly square.",
+   "Check alignment of wood pieces before clamping.",
+   "Ensure angles are correct for strong joints."
+  ],
+  "args": [
+   {
+    "name": "joint_style",
+    "type": "str",
+    "description": "Style of the wood joint"
+   },
+   {
+    "name": "measure_tolerance_degrees",
+    "type": "float",
+    "min": 0.0,
+    "max": 5.0,
+    "description": "Acceptable deviation from square in degrees"
+   }
+  ],
+  "capability": "verify_joint_alignment"
+ },
+ {
+  "id": "t14",
+  "topic": "woodworking > gluing joints",
+  "names": [
+   "calculate_dry_time_hours",
+   "estimate_curing_duration",
+   "find_full_strength_time"
+  ],
+  "descriptions": [
+   "Calculate total hours for glue to cure.",
+   "Estimate time until joint reaches full strength.",
+   "Find how long wood needs to dry."
+  ],
+  "args": [
+   {
+    "name": "humidity_level",
+    "type": "float",
+    "min": 0.0,
+    "max": 100.0,
+    "description": "Current relative humidity percentage"
+   },
+   {
+    "name": "temperature_fahrenheit",
+    "type": "float",
+    "min": 32.0,
+    "max": 100.0,
+    "description": "Ambient temperature in Fahrenheit"
+   }
+  ],
+  "capability": "calculate_dry_time_hours"
+ },
+ {
+  "id": "t15",
+  "topic": "tennis > backhand slice spin",
+  "names": [
+   "set_backhand_slice_timer",
+   "track_slice_practice_duration",
+   "start_backhand_drill_clock"
+  ],
+  "descriptions": [
+   "Start a timer for my slice backhand drills.",
+   "How long have I practiced my backhand slice?",
+   "Set a practice clock for backhand slices."
+  ],
+  "args": [
+   {
+    "name": "minutes",
+    "type": "int",
+    "description": "The duration in minutes to set the timer."
+   }
+  ],
+  "capability": "set_backhand_slice_timer"
+ },
+ {
+  "id": "t16",
+  "topic": "tennis > backhand slice spin",
+  "names": [
+   "find_backhand_slice_videos",
+   "search_tennis_slice_clips",
+   "get_backhand_slice_tutorials"
+  ],
+  "descriptions": [
+   "Find video tutorials for the backhand slice.",
+   "Search for clips showing proper slice technique.",
+   "Look up instructional videos for backhands."
+  ],
+  "args": [
+   {
+    "name": "keyword",
+    "type": "str",
+    "description": "Specific aspect of the slice to search for."
+   }
+  ],
+  "capability": "find_backhand_slice_videos"
+ },
+ {
+  "id": "t17",
+  "topic": "tennis > backhand slice spin",
+  "names": [
+   "calculate_slice_spin_rate",
+   "measure_backhand_rpm",
+   "estimate_spin_value"
+  ],
+  "descriptions": [
+   "Calculate the spin rate of my backhand slice.",
+   "Estimate the RPM for this tennis shot.",
+   "Determine the amount of backspin applied."
+  ],
+  "args": [
+   {
+    "name": "swing_speed",
+    "type": "float",
+    "description": "The speed of the racket swing in meters per second."
+   },
+   {
+    "name": "racket_angle",
+    "type": "float",
+    "description": "The open angle of the racket face at contact."
+   }
+  ],
+  "capability": "calculate_slice_spin_rate"
+ },
+ {
+  "id": "t18",
+  "topic": "tennis > backhand slice spin",
+  "names": [
+   "check_backhand_slice_grip",
+   "verify_grip_type",
+   "get_grip_recommendation"
+  ],
+  "descriptions": [
+   "Confirm if I am using the correct grip.",
+   "What grip works best for a slice backhand?",
+   "Check my hand position for slicing."
+  ],
+  "args": [
+   {
+    "name": "grip_name",
+    "type": "str",
+    "description": "The name of the tennis grip being used."
+   }
+  ],
+  "capability": "check_backhand_slice_grip"
+ },
+ {
+  "id": "t19",
+  "topic": "tennis > backhand slice spin",
+  "names": [
+   "measure_slice_spin_rate",
+   "calculate_spin_magnitude",
+   "quantify_backhand_rotation"
+  ],
+  "descriptions": [
+   "Determine the amount of spin applied during a slice shot.",
+   "Calculate the rotational speed of a backhand slice ball.",
+   "Measure how much backspin is generated by a slice stroke."
+  ],
+  "args": [
+   {
+    "name": "ball_speed_mph",
+    "type": "float",
+    "description": "The initial speed of the ball in miles per hour"
+   },
+   {
+    "name": "contact_angle_degrees",
+    "type": "float",
+    "description": "The angle of the racket face at impact"
+   }
+  ],
+  "capability": "measure_slice_spin_rate"
+ },
+ {
+  "id": "t20",
+  "topic": "hair care > treatment mask routines",
+  "names": [
+   "apply_hair_mask",
+   "start_deep_conditioner",
+   "begin_hair_treatment"
+  ],
+  "descriptions": [
+   "Start a timer for your hair mask routine.",
+   "Begin deep conditioning treatment on hair.",
+   "Launch the hair mask process."
+  ],
+  "args": [
+   {
+    "name": "duration_minutes",
+    "type": "int",
+    "min": 1,
+    "max": 60,
+    "description": "How long to leave the mask on."
+   }
+  ],
+  "capability": "apply_hair_mask"
+ },
+ {
+  "id": "t21",
+  "topic": "hair care > treatment mask routines",
+  "names": [
+   "check_hair_mask_time",
+   "get_treatment_remaining",
+   "view_mask_timer"
+  ],
+  "descriptions": [
+   "Show remaining time for current hair mask.",
+   "Check if hair treatment is done yet.",
+   "See how long left on conditioner."
+  ],
+  "args": [],
+  "capability": "check_hair_mask_time"
+ },
+ {
+  "id": "t22",
+  "topic": "hair care > treatment mask routines",
+  "names": [
+   "set_mask_timer",
+   "schedule_hair_rinse",
+   "create_conditioning_alarm"
+  ],
+  "descriptions": [
+   "Set an alarm for hair mask removal.",
+   "Schedule a rinse for deep conditioner.",
+   "Create a reminder to wash out mask."
+  ],
+  "args": [
+   {
+    "name": "minutes_until_rinse",
+    "type": "int",
+    "min": 1,
+    "max": 120,
+    "description": "Minutes before you need to rinse hair."
+   }
+  ],
+  "capability": "set_mask_timer"
+ },
+ {
+  "id": "t23",
+  "topic": "hair care > treatment mask routines",
+  "names": [
+   "get_daily_hair_mask_schedule",
+   "check_mask_routine_plan",
+   "view_hair_care_timetable"
+  ],
+  "descriptions": [
+   "Show the weekly hair mask routine.",
+   "Display when to apply treatments.",
+   "List next scheduled hair mask."
+  ],
+  "args": [
+   {
+    "name": "hair_type",
+    "type": "str",
+    "description": "Type of hair needing treatment"
+   }
+  ],
+  "capability": "get_daily_hair_mask_schedule"
+ }
+]

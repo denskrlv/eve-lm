@@ -1,4 +1,5 @@
 import re
+import time
 from pathlib import Path
 
 import numpy as np
@@ -7,7 +8,7 @@ import pytest
 from eve.cli import build_parser
 from eve.data.datagen.llm import LLMError, Reply
 from eve.data.datagen.run import Models, load_context, report_rows, run
-from eve.data.datagen.shard import TOOLS_PER_SHARD, Shard, claim
+from eve.data.datagen.shard import TOOLS_PER_SHARD, GenTool, Shard, claim, release
 
 ROOT = Path(__file__).parents[1]
 TOPICS = [f"area{i} > sub{i}" for i in range(20)]
@@ -113,7 +114,7 @@ def test_run_makes_and_approves_a_shard(tmp_path, context):
     report = shard.read_json("report.json")
     assert report["approved"] and report["review"]["cost"] == 0.3
     assert report["rows"]["kept"] == len(rows)
-    assert not (shard.path / ".lock").exists()
+    assert claim(Shard(shard.path))  # released
     assert report_rows(tmp_path)[0]["status"] == "approved"
     assert (shard.path / "rejects.jsonl").exists()
     assert "log" not in shard.read_json("stats.json")["requests"]
@@ -134,11 +135,34 @@ def _failing(system, prompt, schema):
     raise LLMError("claude is down")
 
 
+def test_a_stop_cancels_the_reviews_still_queued(tmp_path, context):
+    with pytest.raises(LLMError):
+        run(tmp_path, 3, models(review=_failing), TOPICS, CONSTRAINTS, context)
+    calls = []
+
+    def slow_review(system, prompt, schema):
+        calls.append(1)
+        time.sleep(0.2)
+        return reviewer()(system, prompt, schema)
+
+    def log(line):
+        if line == "0003: review by Claude started":  # shard 1 in review, 2 queued
+            raise KeyboardInterrupt
+
+    with pytest.raises(KeyboardInterrupt):
+        run(tmp_path, 0, models(review=slow_review), TOPICS, CONSTRAINTS, context, log=log)
+    assert len(calls) <= 1
+    assert [s.status() for s in map(Shard, sorted(tmp_path.iterdir()))][1:] == ["requests"] * 2
+
+
 def test_run_with_a_failing_model_leaves_the_shard_resumable(tmp_path, context):
     with pytest.raises(LLMError):
         run(tmp_path, 1, models(requests=RequestWriter(fail=True)), TOPICS, CONSTRAINTS, context)
     shard = Shard(tmp_path / "0001")
-    assert shard.status() == "tools" and not (shard.path / ".lock").exists()
+    assert shard.status() == "tools"
+    probe = Shard(shard.path)
+    assert claim(probe)  # released
+    release(probe)
     run(tmp_path, 0, models(), TOPICS, CONSTRAINTS, context)
     assert shard.status() == "approved"
 
@@ -154,10 +178,10 @@ def test_a_shard_held_by_another_process_is_skipped(tmp_path, context):
     with pytest.raises(LLMError):
         run(tmp_path, 1, models(requests=RequestWriter(fail=True)), TOPICS, CONSTRAINTS, context)
     held = Shard(tmp_path / "0001")
-    (held.path / ".lock").write_text("1")  # pid 1 is alive
+    assert claim(held)  # as another process would
     made = run(tmp_path, 1, models(), TOPICS, CONSTRAINTS, context)
     assert [s.number for s in made] == [2]
-    assert held.status() == "tools" and not claim(held)
+    assert held.status() == "tools" and not claim(Shard(held.path))
 
 
 def test_new_shard_tools_never_repeat_earlier_names(tmp_path, context):
@@ -165,6 +189,40 @@ def test_new_shard_tools_never_repeat_earlier_names(tmp_path, context):
     run(tmp_path, 2, models(tools=maker), TOPICS, CONSTRAINTS, context)
     names = [n for p in ("0001", "0002") for t in Shard(tmp_path / p).tools() for n in t.names]
     assert len(names) == len(set(names)) == 2 * TOOLS_PER_SHARD * 2
+
+
+class RacingToolMaker(ToolMaker):
+    """While this shard is in stage A, another process saves shard 0002 with two of its tools:
+    one by name (zz1_a), one by meaning (the descriptions of zz2)."""
+
+    def __init__(self, root):
+        super().__init__()
+        self.root = root
+
+    def __call__(self, system, prompt, schema):
+        if self.calls == 0:
+            late = [(["zz1_a", "late_a"], ["Mop 900 floors", "Wipe 900 tiles"])]
+            late += [(["late_b", "late_c"], ["Quux 2 wibble", "Florp 2 zonk"])]
+            Shard(self.root / "0002").save_tools(
+                [
+                    GenTool.from_dict(
+                        {"id": f"t0{i}", "topic": "x > y", "names": n, "descriptions": d}
+                    )
+                    for i, (n, d) in enumerate(late, start=1)
+                ]
+            )
+        return super().__call__(system, prompt, schema)
+
+
+def test_tools_another_process_saved_meanwhile_are_not_repeated(tmp_path, context):
+    shard = run(tmp_path, 1, models(tools=RacingToolMaker(tmp_path)), TOPICS, CONSTRAINTS, context)[
+        0
+    ]
+    names = {n for t in shard.tools() for n in t.names}
+    assert "zz1_a" not in names and "zz2_a" not in names and "zz3_a" in names
+    stats = shard.read_json("stats.json")["tools"]
+    assert stats["rejected"] == {"name": 1, "repeat": 1}
+    assert stats["kept"] == TOOLS_PER_SHARD - 2 == len(shard.tools())
 
 
 def test_a_topic_too_close_to_an_eval_tool_is_skipped(tmp_path, context):

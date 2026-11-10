@@ -1,0 +1,584 @@
+[
+ {
+  "id": "t01",
+  "topic": "lighting > ceiling fans",
+  "names": [
+   "check_fan_cleanliness",
+   "inspect_blade_dust"
+  ],
+  "descriptions": [
+   "Checks if the ceiling fan blades look sticky or dusty and need cleaning.",
+   "Inspects the fan blades for accumulated grime similar to fish residue."
+  ],
+  "args": [],
+  "capability": "check_fan_cleanliness"
+ },
+ {
+  "id": "t02",
+  "topic": "lighting > ceiling fans",
+  "names": [
+   "set_fan_speed_gentle",
+   "use_feather_setting"
+  ],
+  "descriptions": [
+   "Sets the ceiling fan to a low speed that feels like a gentle feather touch.",
+   "Configures the fan to operate on its softest, quietest level."
+  ],
+  "args": [],
+  "capability": "ceiling_fan.speed"
+ },
+ {
+  "id": "t03",
+  "topic": "lighting > ceiling fans",
+  "names": [
+   "estimate_fan_maintenance_cost",
+   "calculate_blade_cleaning_budget"
+  ],
+  "descriptions": [
+   "Estimates the budget required for regular ceiling fan maintenance and cleaning.",
+   "Calculates a cost estimate for maintaining your home's lighting and cooling fixtures."
+  ],
+  "args": [],
+  "capability": "estimate_fan_maintenance_cost"
+ },
+ {
+  "id": "t04",
+  "topic": "lighting > ceiling fans",
+  "names": [
+   "check_fan_cable_integrity",
+   "inspect_wiring_condition"
+  ],
+  "descriptions": [
+   "Checks if the ceiling fan cables are securely connected and undamaged.",
+   "Verifies the status of the electrical wiring for the fan unit."
+  ],
+  "args": [],
+  "capability": "check_fan_cable_integrity"
+ },
+ {
+  "id": "t05",
+  "topic": "lighting > ceiling fans",
+  "names": [
+   "set_holiday_lighting_mode",
+   "enable_celebration_fan_pattern"
+  ],
+  "descriptions": [
+   "Activates a special spinning pattern or light effect for holiday celebrations.",
+   "Sets the fan and lights to a festive mode suitable for holidays."
+  ],
+  "args": [],
+  "capability": "set_holiday_lighting_mode"
+ },
+ {
+  "id": "t06",
+  "topic": "job search > skill gap analysis tools",
+  "names": [
+   "check_professional_warmth",
+   "assess_team_fit_score",
+   "evaluate_workplace_culture"
+  ],
+  "descriptions": [
+   "Analyzes job descriptions to determine if the company culture aligns with your preferred collaborative and supportive environment.",
+   "Measures how well a role's interpersonal requirements match your desire for a warm and engaging team atmosphere.",
+   "Evaluates the potential 'warmth' of a workplace based on keywords found in the job posting."
+  ],
+  "args": [
+   {
+    "name": "job_description",
+    "type": "str",
+    "description": "The text content of the job advertisement or description."
+   },
+   {
+    "name": "culture_preference",
+    "type": "str",
+    "required": false,
+    "description": "Specific cultural traits you value, such as collaborative or mentorship-focused."
+   }
+  ],
+  "capability": "check_professional_warmth"
+ },
+ {
+  "id": "t07",
+  "topic": "job search > skill gap analysis tools",
+  "names": [
+   "map_yearly_skill_growth",
+   "calculate_annual_learning_path",
+   "forecast_skill_development"
+  ],
+  "descriptions": [
+   "Generates a visual roadmap of skills you need to acquire over the next twelve months to reach your target role.",
+   "Breaks down long-term career goals into specific yearly milestones for skill acquisition.",
+   "Predicts the necessary skill progression trajectory based on your current abilities and desired position."
+  ],
+  "args": [
+   {
+    "name": "current_skills",
+    "type": "str",
+    "description": "A list of your existing technical and soft skills."
+   },
+   {
+    "name": "target_role",
+    "type": "str",
+    "description": "The job title or role you are aiming for in the coming year."
+   }
+  ],
+  "capability": "map_yearly_skill_growth"
+ },
+ {
+  "id": "t08",
+  "topic": "job search > skill gap analysis tools",
+  "names": [
+   "mix_resume_ingredients",
+   "balance_skill_portfolio",
+   "optimize_candidate_mix"
+  ],
+  "descriptions": [
+   "Suggests adjustments to your resume by combining different skill sets to create a stronger candidate profile.",
+   "Analyzes the ratio of hard to soft skills in your application to ensure a well-rounded presentation.",
+   "Identifies missing ingredients in your professional narrative that are needed to compete for specific jobs."
+  ],
+  "args": [
+   {
+    "name": "resume_text",
+    "type": "str",
+    "description": "The current text content of your resume or CV."
+   },
+   {
+    "name": "job_title",
+    "type": "str",
+    "description": "The title of the job you are applying for to tailor the mix."
+   }
+  ],
+  "capability": "mix_resume_ingredients"
+ },
+ {
+  "id": "t09",
+  "topic": "job search > skill gap analysis tools",
+  "names": [
+   "identify_hardware_gaps",
+   "analyze_technical_deficits",
+   "find_tooling_weaknesses"
+  ],
+  "descriptions": [
+   "Pinpoints specific technical tools or software you lack that are commonly used in your target industry.",
+   "Compares your known technologies against the standard requirements of a job posting to find gaps.",
+   "Identifies where your practical, hands-on expertise might be missing for a given role."
+  ],
+  "args": [
+   {
+    "name": "target_job",
+    "type": "str",
+    "description": "The job description or requirements list to analyze."
+   },
+   {
+    "name": "known_technologies",
+    "type": "str",
+    "required": false,
+    "description": "A comma-separated list of software or tools you already know how to use."
+   }
+  ],
+  "capability": "identify_hardware_gaps"
+ },
+ {
+  "id": "t10",
+  "topic": "job search > skill gap analysis tools",
+  "names": [
+   "check_weekend_availability",
+   "track_free_time_schedule",
+   "verify_leisure_slots"
+  ],
+  "descriptions": [
+   "Checks your calendar for open weekends to ensure you have time for self-study or job applications.",
+   "Verifies if you have sufficient free time on weekends to dedicate to learning new skills.",
+   "Identifies potential scheduling conflicts that might reduce your availability for part-time work or study."
+  ],
+  "args": [
+   {
+    "name": "date_range_start",
+    "type": "str",
+    "description": "The start date of the period to check (e.g., '2023-10-01')."
+   },
+   {
+    "name": "date_range_end",
+    "type": "str",
+    "description": "The end date of the period to check."
+   }
+  ],
+  "capability": "check_weekend_availability"
+ },
+ {
+  "id": "t11",
+  "topic": "woodworking > gluing joints",
+  "names": [
+   "apply_squeaky_clean_glue",
+   "use_fridge_cooled_adhesive",
+   "apply_precise_glue_amount"
+  ],
+  "descriptions": [
+   "Calculates the exact amount of wood glue needed to prevent squeaky joints caused by excess or insufficient adhesive.",
+   "Determines if letting wood components reach room temperature before gluing, as one might with fridge items, improves bond strength.",
+   "Provides a quick lookup for standard wood glue coverage rates per square inch to ensure proper joint saturation."
+  ],
+  "args": [
+   {
+    "name": "joint_type",
+    "type": "str",
+    "description": "The type of woodworking joint being glued, such as mortise and tenon or butt joint."
+   },
+   {
+    "name": "wood_species",
+    "type": "str",
+    "required": false,
+    "description": "The specific type of wood being used, affecting porosity and glue absorption."
+   }
+  ],
+  "capability": "apply_squeaky_clean_glue"
+ },
+ {
+  "id": "t12",
+  "topic": "woodworking > gluing joints",
+  "names": [
+   "check_empty_joint_spacing",
+   "calculate_allowance_for_gap",
+   "measure_gap_tolerance"
+  ],
+  "descriptions": [
+   "Evaluates if the gap between wood pieces is empty of debris to ensure a tight, strong glue line.",
+   "Calculates the necessary allowance for gap filling in non-tight joints using specialized wood fillers.",
+   "Checks if the spacing between components falls within the acceptable tolerance for gluing without clamping pressure."
+  ],
+  "args": [
+   {
+    "name": "gap_width_mm",
+    "type": "float",
+    "min": 0.0,
+    "description": "The measured width of the gap between the wood pieces in millimeters."
+   },
+   {
+    "name": "allowance_type",
+    "type": "str",
+    "required": false,
+    "description": "The type of allowance needed, such as shrinkage or filler depth."
+   }
+  ],
+  "capability": "check_empty_joint_spacing"
+ },
+ {
+  "id": "t13",
+  "topic": "woodworking > gluing joints",
+  "names": [
+   "roll_bread_glue_technique",
+   "apply_bread_crumb_paste",
+   "use_sourdough_adhesive"
+  ],
+  "descriptions": [
+   "Provides instructions on using traditional sourdough starter as a natural adhesive for bookmatching or veneers.",
+   "Explains the technique of rolling out wood glue like dough to ensure even coverage on large surfaces.",
+   "Offers tips on using bread-based pastes for antique furniture restoration where synthetic glues are unsuitable."
+  ],
+  "args": [
+   {
+    "name": "project_type",
+    "type": "str",
+    "description": "The type of project requiring the adhesive, such as veneering or paper lamination."
+   },
+   {
+    "name": "fermentation_time_hours",
+    "type": "int",
+    "required": false,
+    "description": "The time in hours the starter has been fermenting to determine its sticky strength."
+   }
+  ],
+  "capability": "roll_bread_glue_technique"
+ },
+ {
+  "id": "t14",
+  "topic": "woodworking > gluing joints",
+  "names": [
+   "mirror_surface_finish_check",
+   "inspect_slow_cure_glue",
+   "verify_mirror_glue_strength"
+  ],
+  "descriptions": [
+   "Checks if the glued surface has cured slowly and evenly, mimicking the patience needed for mirror finishing.",
+   "Verifies that the glue line is not disturbed during the slow curing process to maintain structural integrity.",
+   "Provides a checklist for inspecting slow-setting adhesives for proper bond formation without visible gaps."
+  ],
+  "args": [
+   {
+    "name": "glue_type",
+    "type": "str",
+    "description": "The type of glue used, such as aliphatic resin or epoxy, which affects cure time."
+   },
+   {
+    "name": "cure_time_minutes",
+    "type": "int",
+    "required": false,
+    "description": "The elapsed time in minutes since the glue was applied."
+   }
+  ],
+  "capability": "mirror_surface_finish_check"
+ },
+ {
+  "id": "t15",
+  "topic": "woodworking > gluing joints",
+  "names": [
+   "link_chain_glue_strength",
+   "check_tablet_glue_recipe",
+   "verify_joint_chain_integrity"
+  ],
+  "descriptions": [
+   "Evaluates if the glue bond is as strong as a linked chain for structural load-bearing applications.",
+   "Looks up specific glue mixing ratios or recipes often documented on digital tablets or guides.",
+   "Checks if the sequence of glued joints forms a reliable chain of strength throughout the assembly."
+  ],
+  "args": [
+   {
+    "name": "load_requirement",
+    "type": "str",
+    "description": "The expected load or stress the joint must withstand, such as static or dynamic weight."
+   },
+   {
+    "name": "tool_reference_id",
+    "type": "str",
+    "required": false,
+    "description": "An identifier for a specific reference guide or digital tool used for the glue specification."
+   }
+  ],
+  "capability": "link_chain_glue_strength"
+ },
+ {
+  "id": "t16",
+  "topic": "tennis > backhand slice spin",
+  "names": [
+   "calculate_slice_spin_value",
+   "determine_backhand_spin_amount",
+   "measure_slice_rotation_rate"
+  ],
+  "descriptions": [
+   "Calculates the specific RPM of backspin generated by a slice shot.",
+   "Determines how much reverse rotation is applied to the tennis ball during a backhand.",
+   "Estimates the spin intensity for a soft, slicing backhand stroke."
+  ],
+  "args": [
+   {
+    "name": "shot_velocity",
+    "type": "float",
+    "min": 0.0,
+    "max": 150.0,
+    "description": "The speed of the racket head in kilometers per hour."
+   },
+   {
+    "name": "contact_angle",
+    "type": "float",
+    "min": 0.0,
+    "max": 90.0,
+    "description": "The angle of the racket face relative to the ground at impact."
+   }
+  ],
+  "capability": "calculate_slice_spin_value"
+ },
+ {
+  "id": "t17",
+  "topic": "tennis > backhand slice spin",
+  "names": [
+   "generate_slice_drill_plan",
+   "create_backhand_slice_exercises",
+   "design_spin_training_routine"
+  ],
+  "descriptions": [
+   "Generates a practice routine focused on improving backhand slice consistency.",
+   "Creates a set of drills to increase control over backspin shots.",
+   "Provides a daily exercise plan for mastering the slicing technique."
+  ],
+  "args": [
+   {
+    "name": "skill_level",
+    "type": "str",
+    "description": "The player's current skill level (e.g., beginner, intermediate, advanced)."
+   },
+   {
+    "name": "duration_minutes",
+    "type": "int",
+    "min": 5,
+    "max": 120,
+    "description": "The total practice time in minutes."
+   }
+  ],
+  "capability": "generate_slice_drill_plan"
+ },
+ {
+  "id": "t18",
+  "topic": "tennis > backhand slice spin",
+  "names": [
+   "identify_slice_grip_issues",
+   "check_backhand_hand_position",
+   "analyze_slice_stance_accuracy"
+  ],
+  "descriptions": [
+   "Identifies common grip mistakes that reduce backspin effectiveness.",
+   "Analyzes the hand position during a slice shot for optimal spin.",
+   "Checks if the player's stance supports generating effective backspin."
+  ],
+  "args": [
+   {
+    "name": "video_description",
+    "type": "str",
+    "description": "A textual description of the player's grip and swing mechanics."
+   },
+   {
+    "name": "common_error_type",
+    "type": "str",
+    "required": false,
+    "description": "The suspected error (e.g., flat racket face, poor footwork)."
+   }
+  ],
+  "capability": "identify_slice_grip_issues"
+ },
+ {
+  "id": "t19",
+  "topic": "tennis > backhand slice spin",
+  "names": [
+   "retrieve_slice_rule_changes",
+   "check_usa_tennis_spin_limits",
+   "get_wta_backhand_spin_stats"
+  ],
+  "descriptions": [
+   "Retrieves the latest rules regarding spin limits in professional tennis.",
+   "Checks official statistics on backhand slice speeds and spins.",
+   "Gets regulatory updates affecting slice techniques in tournaments."
+  ],
+  "args": [
+   {
+    "name": "organization",
+    "type": "str",
+    "description": "The tennis governing body (e.g., ITF, ATP, WTA)."
+   },
+   {
+    "name": "year",
+    "type": "int",
+    "required": false,
+    "min": 2000,
+    "max": 2030,
+    "description": "The year to check for rule changes or statistics."
+   }
+  ],
+  "capability": "retrieve_slice_rule_changes"
+ },
+ {
+  "id": "t20",
+  "topic": "hair care > treatment mask routines",
+  "names": [
+   "set_treatment_mask_reminder",
+   "schedule_hair_mask_time",
+   "set_hair_care_alarm"
+  ],
+  "descriptions": [
+   "Set a reminder to take your hair treatment mask off after a specified number of minutes.",
+   "Create an alarm that notifies you when it is time to rinse out your deep conditioning mask.",
+   "Schedule a notification for the duration you intend to keep a hair mask on."
+  ],
+  "args": [
+   {
+    "name": "minutes",
+    "type": "int",
+    "min": 1,
+    "max": 120,
+    "description": "The number of minutes to let the mask sit on the hair before removing."
+   }
+  ],
+  "capability": "set_treatment_mask_reminder"
+ },
+ {
+  "id": "t21",
+  "topic": "hair care > treatment mask routines",
+  "names": [
+   "list_hair_mask_brands",
+   "find_hair_care_products",
+   "search_brand_catalog"
+  ],
+  "descriptions": [
+   "Show a list of popular brands that offer hair treatment masks.",
+   "Retrieve product information for different hair mask brands available in the store.",
+   "Get details on various hair care product lines specializing in deep conditioning."
+  ],
+  "args": [
+   {
+    "name": "hair_type",
+    "type": "str",
+    "required": false,
+    "description": "The specific type of hair to tailor recommendations, such as curly, dry, or oily."
+   }
+  ],
+  "capability": "list_hair_mask_brands"
+ },
+ {
+  "id": "t22",
+  "topic": "hair care > treatment mask routines",
+  "names": [
+   "get_mask_usage_instructions",
+   "retrieve_hair_care_guide",
+   "find_treatment_steps"
+  ],
+  "descriptions": [
+   "Display step-by-step instructions on how to properly apply a hair treatment mask.",
+   "Show the recommended process for using deep conditioning products effectively.",
+   "Provide guidelines on preparation and application techniques for hair masks."
+  ],
+  "args": [
+   {
+    "name": "product_name",
+    "type": "str",
+    "required": false,
+    "description": "The specific name of the hair mask product to get tailored instructions for."
+   }
+  ],
+  "capability": "get_mask_usage_instructions"
+ },
+ {
+  "id": "t23",
+  "topic": "hair care > treatment mask routines",
+  "names": [
+   "check_mask_expiry_date",
+   "verify_product_safety",
+   "look_up_shelf_life"
+  ],
+  "descriptions": [
+   "Check if a specific hair treatment mask is still safe to use based on its expiration date.",
+   "Verify whether the product in your cabinet has passed its best-by date.",
+   "Look up the shelf life and current status of a stored hair care item."
+  ],
+  "args": [
+   {
+    "name": "product_name",
+    "type": "str",
+    "description": "The name of the hair mask to check for expiration or safety."
+   }
+  ],
+  "capability": "check_mask_expiry_date"
+ },
+ {
+  "id": "t24",
+  "topic": "hair care > treatment mask routines",
+  "names": [
+   "estimate_hair_mask_duration",
+   "calculate_mask_time_needed",
+   "predict_treatment_length",
+   "determine_mask_apply_minutes"
+  ],
+  "descriptions": [
+   "Calculate how long you should leave a specific hair mask on your hair based on the product type.",
+   "Determine the recommended duration for a hair treatment mask to ensure optimal results.",
+   "Estimate the time required for different types of hair masks to penetrate the hair shaft effectively.",
+   "Find out how many minutes are ideal for keeping a deep conditioning mask in your hair."
+  ],
+  "args": [
+   {
+    "name": "mask_type",
+    "type": "str",
+    "description": "The type or brand of the hair mask being used, e.g., 'deep conditioner', 'protein treatment'."
+   }
+  ],
+  "capability": "estimate_hair_mask_duration"
+ }
+]

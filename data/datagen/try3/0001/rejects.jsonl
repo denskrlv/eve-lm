@@ -1,0 +1,293 @@
+{"tool": "t02", "round": 1, "card": 1, "utterance": "I need the overhead lumens activated immediately for my pup walk!", "because": ["toggle_fan_light.fan_id='living_room_fan' is not in the utterance"], "kind": "value"}
+{"tool": "t02", "round": 1, "card": 2, "utterance": "Is the glow on?", "because": ["toggle_fan_light.fan_id='bedroom_fan' is not in the utterance"], "kind": "value"}
+{"tool": "t02", "round": 1, "card": 3, "utterance": "Enable the illumination right now.", "because": ["toggle_fan_light.fan_id='kitchen_fan' is not in the utterance"], "kind": "value"}
+{"tool": "t02", "round": 1, "card": 4, "utterance": "Please activate the bulb.", "because": ["toggle_fan_light.fan_id='dining_fan' is not in the utterance"], "kind": "value"}
+{"tool": "t02", "round": 1, "card": 5, "utterance": null, "because": ["needs an utterance and args"], "kind": "schema"}
+{"tool": "t02", "round": 1, "card": 6, "utterance": "Would you kindly deactivate that lamp fixture for me?", "because": ["toggle_fan_light.fan_id='hallway_fan' is not in the utterance", "shares \"fixture\" with every name and description pair: avoid the words of at least one name and one description"], "kind": "value"}
+{"tool": "t02", "round": 1, "card": 7, "utterance": "I am exhausted and need the overhead glow deactivated now.", "because": ["toggle_fan_light.fan_id='master_bedroom_fan' is not in the utterance"], "kind": "value"}
+{"tool": "t02", "round": 1, "card": 8, "utterance": "My eyes hurt so please activate the illumination source.", "because": ["toggle_fan_light.fan_id='study_fan' is not in the utterance"], "kind": "value"}
+{"tool": "t02", "round": 1, "card": 9, "utterance": "Can I switch it off?", "because": ["toggle_fan_light.fan_id='guest_room_fan' is not in the utterance"], "kind": "value"}
+{"tool": "t02", "round": 1, "card": 10, "utterance": "I really want the overhead glow activated for my garden work.", "because": ["toggle_fan_light.fan_id='patio_fan' is not in the utterance"], "kind": "value"}
+{"tool": "t02", "round": 1, "card": 11, "utterance": "Could you please turn on the illumination for me?", "because": ["toggle_fan_light.fan_id='playroom_fan' is not in the utterance"], "kind": "value"}
+{"tool": "t02", "round": 1, "card": 12, "utterance": "Is the bulb currently off?", "because": ["toggle_fan_light.fan_id='gym_fan' is not in the utterance"], "kind": "value"}
+{"tool": "t02", "round": 1, "card": 13, "utterance": "I need the overhead lumens activated for my daily walk!", "because": ["toggle_fan_light.fan_id='porch_fan' is not in the utterance"], "kind": "value"}
+{"tool": "t02", "round": 1, "card": 14, "utterance": "Switch on the bulb please.", "because": ["toggle_fan_light.fan_id='shop_floor_fan' is not in the utterance"], "kind": "value"}
+{"tool": "t02", "round": 1, "card": 15, "utterance": "This lamp is so annoying to control.", "because": ["toggle_fan_light.fan_id='farmhouse_fan' is not in the utterance"], "kind": "value"}
+{"tool": "t02", "round": 1, "card": 16, "utterance": "Is the glow deactivated?", "because": ["toggle_fan_light.fan_id='entryway_fan' is not in the utterance"], "kind": "value"}
+{"tool": "t02", "round": 1, "card": 17, "utterance": "Deactivate that specific bulb immediately.", "because": ["give a value for fan_id in args, though the request leaves it out"], "kind": "schema"}
+{"tool": "t02", "round": 1, "card": 18, "utterance": "Please deactivate the illumination source right now.", "because": ["give a value for fan_id in args, though the request leaves it out"], "kind": "schema"}
+{"tool": "t02", "round": 2, "card": 1, "utterance": "I am so pumped for our walk, can you make the living room fan glow brighter?", "because": ["toggle_fan_light.fan_id='living_room_fan' is not in the utterance"], "kind": "value"}
+{"tool": "t02", "round": 2, "card": 3, "utterance": "Kitchen fan lamp is annoyingly dark now.", "because": ["toggle_fan_light.fan_id='kitchen_fan' is not in the utterance"], "kind": "value"}
+{"tool": "t02", "round": 2, "card": 4, "utterance": "Dining fan glow on?", "because": ["toggle_fan_light.fan_id='dining_fan' is not in the utterance"], "kind": "value"}
+{"tool": "t02", "round": 2, "card": 9, "utterance": null, "because": ["needs an utterance and args"], "kind": "schema"}
+{"tool": "t02", "round": 3, "card": 1, "utterance": "Walk is starting! Please activate the dining room ceiling fan's bulb immediately!", "because": ["toggle_fan_light.fan_id='dining_fan' is not in the utterance", "shares \"ceil\" with every name and description pair: avoid the words of at least one name and one description"], "kind": "value"}
+{"tool": "t02", "round": 3, "card": 3, "utterance": "Stop the noise! Switch on the kitchen overhead illumination now.", "because": ["toggle_fan_light.fan_id='kitchen_fan' is not in the utterance"], "kind": "value"}
+{"tool": "t02", "round": 3, "card": 4, "utterance": "Make the dining room light glow bright, please!", "because": ["toggle_fan_light.fan_id='dining_fan' is not in the utterance"], "kind": "value"}
+{"tool": "t02", "round": 3, "card": 9, "utterance": "Can you switch on the bedroom overhead bulb?", "because": ["toggle_fan_light.fan_id='bedroom_fan' is not in the utterance"], "kind": "value"}
+{"tool": "t01", "round": 1, "card": 17, "utterance": "Can we make the kitchen blender spin faster?", "because": ["the request says fan_id='kitchen': this card leaves it out"], "kind": "ask"}
+{"tool": "t01", "round": 1, "card": 18, "utterance": null, "because": ["needs an utterance and args"], "kind": "schema"}
+{"tool": "t01", "round": 2, "card": 18, "utterance": "Set the bedroom one to low.", "because": ["the request says fan_id='bedroom': this card leaves it out"], "kind": "ask"}
+{"tool": "t01", "round": 3, "card": 18, "utterance": "Set it to low.", "because": ["give a value for fan_id in args, though the request leaves it out"], "kind": "schema"}
+{"tool": "t03", "round": 1, "card": 1, "utterance": "Is there any way to make the air move backwards right now? I am so anxious.", "because": ["set_fan_direction.fan_id='living_room' is not in the utterance"], "kind": "value"}
+{"tool": "t03", "round": 1, "card": 2, "utterance": "Make it spin that way!", "because": ["set_fan_direction.fan_id='bedroom' is not in the utterance"], "kind": "value"}
+{"tool": "t03", "round": 1, "card": 3, "utterance": "Could you possibly alter the rotation setting? I am quite concerned.", "because": ["set_fan_direction.fan_id='kitchen' is not in the utterance"], "kind": "value"}
+{"tool": "t03", "round": 1, "card": 4, "utterance": "Reverse the spin immediately. I need help now.", "because": ["set_fan_direction.fan_id='office' is not in the utterance"], "kind": "value"}
+{"tool": "t03", "round": 1, "card": 5, "utterance": "Would you kindly adjust the airflow orientation for me? It is crucial.", "because": ["set_fan_direction.fan_id='master_bedroom' is not in the utterance"], "kind": "value"}
+{"tool": "t03", "round": 1, "card": 6, "utterance": "Switch the spin to backward. My arms hurt.", "because": ["set_fan_direction.fan_id='gym' is not in the utterance"], "kind": "value"}
+{"tool": "t03", "round": 1, "card": 7, "utterance": "I hate how this thing spins forward always.", "because": ["set_fan_direction.fan_id='dining_room' is not in the utterance"], "kind": "value"}
+{"tool": "t03", "round": 1, "card": 8, "utterance": null, "because": ["needs an utterance and args"], "kind": "schema"}
+{"tool": "t03", "round": 1, "card": 9, "utterance": "Change spin?", "because": ["set_fan_direction.fan_id='porch' is not in the utterance"], "kind": "value"}
+{"tool": "t03", "round": 1, "card": 10, "utterance": "Reverse spin now.", "because": ["set_fan_direction.fan_id='garage' is not in the utterance"], "kind": "value"}
+{"tool": "t03", "round": 1, "card": 11, "utterance": "I really hope we can change the rotation setting before guests arrive. I am exhausted.", "because": ["set_fan_direction.fan_id='patio' is not in the utterance"], "kind": "value"}
+{"tool": "t03", "round": 1, "card": 12, "utterance": "Please reverse the spin for me. Thank you so much!", "because": ["set_fan_direction.fan_id='library' is not in the utterance"], "kind": "value"}
+{"tool": "t03", "round": 1, "card": 13, "utterance": "Could the rotation be changed to backward? I request this.", "because": ["set_fan_direction.fan_id='study' is not in the utterance"], "kind": "value"}
+{"tool": "t03", "round": 1, "card": 14, "utterance": "Make it go backward! Wink wink.", "because": ["set_fan_direction.fan_id='nursery' is not in the utterance"], "kind": "value"}
+{"tool": "t03", "round": 1, "card": 15, "utterance": "I require the spin to be reversed immediately for my comfort. It is very important.", "because": ["set_fan_direction.fan_id='sunroom' is not in the utterance"], "kind": "value"}
+{"tool": "t03", "round": 1, "card": 16, "utterance": "Stop the forward spin now. I am scared.", "because": ["set_fan_direction.fan_id='basement' is not in the utterance"], "kind": "value"}
+{"tool": "t03", "round": 2, "card": 1, "utterance": "How do I make the living room air circulate backward? I am so anxious.", "because": ["set_fan_direction.fan_id='living_room' is not in the utterance"], "kind": "value"}
+{"tool": "t03", "round": 2, "card": 5, "utterance": "Would you change the master bedroom airflow to reverse? It matters.", "because": ["set_fan_direction.fan_id='master_bedroom' is not in the utterance"], "kind": "value"}
+{"tool": "t03", "round": 2, "card": 7, "utterance": "Why is the dining room spinning forward? I hate it.", "because": ["set_fan_direction.fan_id='dining_room' is not in the utterance"], "kind": "value"}
+{"tool": "t03", "round": 2, "card": 8, "utterance": "Can you set the living room to reverse rotation?", "because": ["set_fan_direction.fan_id='living_room' is not in the utterance"], "kind": "value"}
+{"tool": "t03", "round": 2, "card": 10, "utterance": "Garage reverse rotation. Now.", "because": ["fan_id='garage' must be written with the request's case"], "kind": "value"}
+{"tool": "t03", "round": 3, "card": 1, "utterance": "Can you tell me how to reverse the rotation of the living room unit?", "because": ["set_fan_direction.fan_id='living_room' is not in the utterance"], "kind": "value"}
+{"tool": "t03", "round": 3, "card": 5, "utterance": "Could you please alter the spinning orientation of the master bedroom device to backward?", "because": ["set_fan_direction.fan_id='master_bedroom' is not in the utterance"], "kind": "value"}
+{"tool": "t03", "round": 3, "card": 7, "utterance": "I despise how the dining area is currently spinning forward.", "because": ["set_fan_direction.fan_id='dining_room' is not in the utterance"], "kind": "value"}
+{"tool": "t03", "round": 3, "card": 8, "utterance": "Is it possible to set the living room tool to backward spin?", "because": ["set_fan_direction.fan_id='living_room' is not in the utterance"], "kind": "value"}
+{"tool": "t04", "round": 1, "card": 1, "utterance": "Make the fixture glow stronger", "because": ["dim_fan_light.brightness=0.9 is not in the utterance"], "kind": "value"}
+{"tool": "t04", "round": 1, "card": 2, "utterance": "The overhead unit is too dark, fix it please", "because": ["dim_fan_light.brightness=0.8 is not in the utterance"], "kind": "value"}
+{"tool": "t04", "round": 1, "card": 3, "utterance": "Could you help me increase the light output from that ceiling device?", "because": ["dim_fan_light.brightness=0.75 is not in the utterance"], "kind": "value"}
+{"tool": "t04", "round": 1, "card": 4, "utterance": "Boost the glow on the main fixture now", "because": ["dim_fan_light.brightness=0.95 is not in the utterance"], "kind": "value"}
+{"tool": "t04", "round": 1, "card": 5, "utterance": "Why is the overhead light so dim when I need to see clearly?", "because": ["dim_fan_light.brightness=0.85 is not in the utterance"], "kind": "value"}
+{"tool": "t04", "round": 1, "card": 6, "utterance": "Increase luminosity on device Alpha", "because": ["dim_fan_light.brightness=0.9 is not in the utterance"], "kind": "value"}
+{"tool": "t04", "round": 1, "card": 7, "utterance": "Please turn up the illumination for me right now", "because": ["dim_fan_light.brightness=0.8 is not in the utterance"], "kind": "value"}
+{"tool": "t04", "round": 1, "card": 8, "utterance": "My eyes hurt from the dark, make it brighter immediately", "because": ["dim_fan_light.brightness=0.95 is not in the utterance"], "kind": "value"}
+{"tool": "t04", "round": 1, "card": 9, "utterance": "This overhead light is too weak for me to see properly", "because": ["dim_fan_light.brightness=0.85 is not in the utterance"], "kind": "value"}
+{"tool": "t04", "round": 1, "card": 10, "utterance": "Can you make the overhead fixture shine much brighter for me?", "because": ["dim_fan_light.brightness=0.9 is not in the utterance"], "kind": "value"}
+{"tool": "t04", "round": 1, "card": 11, "utterance": "The main light is too dark and I am struggling to see", "because": ["dim_fan_light.brightness=0.85 is not in the utterance"], "kind": "value"}
+{"tool": "t04", "round": 1, "card": 12, "utterance": "Increase the glow on that fixture right away", "because": ["dim_fan_light.brightness=0.9 is not in the utterance"], "kind": "value"}
+{"tool": "t04", "round": 1, "card": 13, "utterance": "Is it possible to make the overhead light brighter?", "because": ["dim_fan_light.brightness=0.85 is not in the utterance"], "kind": "value"}
+{"tool": "t04", "round": 1, "card": 14, "utterance": "Adjust the illumination intensity of unit One now", "because": ["dim_fan_light.brightness=0.9 is not in the utterance"], "kind": "value"}
+{"tool": "t04", "round": 1, "card": 15, "utterance": "Make the main light bulb shine a bit more brightly please", "because": ["dim_fan_light.brightness=0.85 is not in the utterance"], "kind": "value"}
+{"tool": "t04", "round": 1, "card": 16, "utterance": "Turn up the light output immediately", "because": ["dim_fan_light.brightness=0.95 is not in the utterance"], "kind": "value"}
+{"tool": "t04", "round": 1, "card": 18, "utterance": "Turn on the overhead light now", "because": ["the request says fan_id='overhead': this card leaves it out"], "kind": "ask"}
+{"tool": "t04", "round": 2, "card": 1, "utterance": "Boost the glow on that fixture", "because": ["dim_fan_light.fan_id='fixture_one' is not in the utterance", "dim_fan_light.brightness=0.9 is not in the utterance"], "kind": "value"}
+{"tool": "t04", "round": 2, "card": 2, "utterance": "The overhead unit is too dark, fix it please", "because": ["dim_fan_light.fan_id='overhead_unit' is not in the utterance", "dim_fan_light.brightness=0.8 is not in the utterance"], "kind": "value"}
+{"tool": "t04", "round": 2, "card": 3, "utterance": "Could you help me increase the light output from that ceiling device?", "because": ["dim_fan_light.fan_id='ceiling_device' is not in the utterance", "dim_fan_light.brightness=0.75 is not in the utterance"], "kind": "value"}
+{"tool": "t04", "round": 2, "card": 4, "utterance": "Boost the glow on the main fixture now", "because": ["dim_fan_light.fan_id='main_fixture' is not in the utterance", "dim_fan_light.brightness=0.95 is not in the utterance"], "kind": "value"}
+{"tool": "t04", "round": 2, "card": 5, "utterance": "Why is the overhead light so dim when I need to see clearly?", "because": ["dim_fan_light.fan_id='overhead_light' is not in the utterance", "dim_fan_light.brightness=0.85 is not in the utterance"], "kind": "value"}
+{"tool": "t04", "round": 2, "card": 6, "utterance": "Increase luminosity on device Alpha", "because": ["dim_fan_light.fan_id='device_alpha' is not in the utterance", "dim_fan_light.brightness=0.9 is not in the utterance"], "kind": "value"}
+{"tool": "t04", "round": 2, "card": 7, "utterance": "Please turn up the illumination for me right now", "because": ["dim_fan_light.fan_id='illumination_source' is not in the utterance", "dim_fan_light.brightness=0.8 is not in the utterance"], "kind": "value"}
+{"tool": "t04", "round": 2, "card": 8, "utterance": "My eyes hurt from the dark, make it brighter immediately", "because": ["dim_fan_light.fan_id='dark_area' is not in the utterance", "dim_fan_light.brightness=0.95 is not in the utterance"], "kind": "value"}
+{"tool": "t04", "round": 2, "card": 9, "utterance": "This overhead light is too weak for me to see properly", "because": ["dim_fan_light.fan_id='overhead_light' is not in the utterance", "dim_fan_light.brightness=0.85 is not in the utterance"], "kind": "value"}
+{"tool": "t04", "round": 2, "card": 10, "utterance": "Can you make the overhead fixture shine much brighter for me?", "because": ["dim_fan_light.fan_id='overhead_fixture' is not in the utterance", "dim_fan_light.brightness=0.9 is not in the utterance"], "kind": "value"}
+{"tool": "t04", "round": 2, "card": 11, "utterance": "The main light is too dark and I am struggling to see", "because": ["dim_fan_light.fan_id='main_light' is not in the utterance", "dim_fan_light.brightness=0.85 is not in the utterance"], "kind": "value"}
+{"tool": "t04", "round": 2, "card": 12, "utterance": "Increase the glow on that fixture right away", "because": ["dim_fan_light.fan_id='that_fixture' is not in the utterance", "dim_fan_light.brightness=0.9 is not in the utterance"], "kind": "value"}
+{"tool": "t04", "round": 2, "card": 13, "utterance": "Is it possible to make the overhead light brighter?", "because": ["dim_fan_light.fan_id='overhead_light' is not in the utterance", "dim_fan_light.brightness=0.85 is not in the utterance"], "kind": "value"}
+{"tool": "t04", "round": 2, "card": 14, "utterance": "Adjust the illumination intensity of unit One now", "because": ["dim_fan_light.fan_id='unit_one' is not in the utterance", "dim_fan_light.brightness=0.9 is not in the utterance"], "kind": "value"}
+{"tool": "t04", "round": 2, "card": 15, "utterance": "Make the main light bulb shine a bit more brightly please", "because": ["dim_fan_light.fan_id='main_light_bulb' is not in the utterance", "dim_fan_light.brightness=0.85 is not in the utterance"], "kind": "value"}
+{"tool": "t04", "round": 2, "card": 16, "utterance": "Turn up the light output immediately", "because": ["dim_fan_light.fan_id='light_output' is not in the utterance", "dim_fan_light.brightness=0.95 is not in the utterance"], "kind": "value"}
+{"tool": "t04", "round": 2, "card": 18, "utterance": "Turn on the overhead light now", "because": ["dim_fan_light.brightness=0.8 is not in the utterance"], "kind": "value"}
+{"tool": "t04", "round": 3, "card": 1, "utterance": "Make room light stronger now", "because": ["dim_fan_light.fan_id='fixture_one' is not in the utterance", "dim_fan_light.brightness=0.9 is not in the utterance"], "kind": "value"}
+{"tool": "t04", "round": 3, "card": 2, "utterance": "Overhead unit is too dark, fix it please", "because": ["dim_fan_light.fan_id='overhead_unit' is not in the utterance", "dim_fan_light.brightness=0.8 is not in the utterance"], "kind": "value"}
+{"tool": "t04", "round": 3, "card": 3, "utterance": "Could you help me increase the output from that ceiling device?", "because": ["dim_fan_light.fan_id='ceiling_device' is not in the utterance", "dim_fan_light.brightness=0.75 is not in the utterance"], "kind": "value"}
+{"tool": "t04", "round": 3, "card": 4, "utterance": "Boost the glow on main fixture now", "because": ["dim_fan_light.fan_id='main_fixture' is not in the utterance", "dim_fan_light.brightness=0.95 is not in the utterance"], "kind": "value"}
+{"tool": "t04", "round": 3, "card": 5, "utterance": "Why is overhead so dim when I need to see clearly?", "because": ["dim_fan_light.fan_id='overhead_light' is not in the utterance", "dim_fan_light.brightness=0.85 is not in the utterance"], "kind": "value"}
+{"tool": "t04", "round": 3, "card": 6, "utterance": "Increase luminosity on device Alpha", "because": ["dim_fan_light.fan_id='device_alpha' is not in the utterance", "dim_fan_light.brightness=0.9 is not in the utterance"], "kind": "value"}
+{"tool": "t04", "round": 3, "card": 7, "utterance": "Please turn up illumination for me right now", "because": ["dim_fan_light.fan_id='illumination_source' is not in the utterance", "dim_fan_light.brightness=0.8 is not in the utterance"], "kind": "value"}
+{"tool": "t04", "round": 3, "card": 8, "utterance": "My eyes hurt from dark, make it brighter immediately", "because": ["dim_fan_light.fan_id='dark_area' is not in the utterance", "dim_fan_light.brightness=0.95 is not in the utterance"], "kind": "value"}
+{"tool": "t04", "round": 3, "card": 9, "utterance": "This overhead light is too weak for me to see properly", "because": ["dim_fan_light.fan_id='overhead_light' is not in the utterance", "dim_fan_light.brightness=0.85 is not in the utterance"], "kind": "value"}
+{"tool": "t04", "round": 3, "card": 10, "utterance": "Can you make overhead fixture shine much brighter for me?", "because": ["dim_fan_light.fan_id='overhead_fixture' is not in the utterance", "dim_fan_light.brightness=0.9 is not in the utterance"], "kind": "value"}
+{"tool": "t04", "round": 3, "card": 11, "utterance": "The main light is too dark and I am struggling to see", "because": ["dim_fan_light.fan_id='main_light' is not in the utterance", "dim_fan_light.brightness=0.85 is not in the utterance"], "kind": "value"}
+{"tool": "t04", "round": 3, "card": 12, "utterance": "Increase the glow on that fixture right away", "because": ["dim_fan_light.fan_id='that_fixture' is not in the utterance", "dim_fan_light.brightness=0.9 is not in the utterance"], "kind": "value"}
+{"tool": "t04", "round": 3, "card": 13, "utterance": "Is it possible to make overhead light brighter?", "because": ["dim_fan_light.fan_id='overhead_light' is not in the utterance", "dim_fan_light.brightness=0.85 is not in the utterance"], "kind": "value"}
+{"tool": "t04", "round": 3, "card": 14, "utterance": "Adjust the illumination intensity of unit One now", "because": ["dim_fan_light.fan_id='unit_one' is not in the utterance", "dim_fan_light.brightness=0.9 is not in the utterance"], "kind": "value"}
+{"tool": "t04", "round": 3, "card": 15, "utterance": "Make main light bulb shine a bit more brightly please", "because": ["dim_fan_light.fan_id='main_light_bulb' is not in the utterance", "dim_fan_light.brightness=0.85 is not in the utterance"], "kind": "value"}
+{"tool": "t04", "round": 3, "card": 16, "utterance": "Turn up the light output immediately", "because": ["dim_fan_light.fan_id='light_output' is not in the utterance", "dim_fan_light.brightness=0.95 is not in the utterance"], "kind": "value"}
+{"tool": "t04", "round": 3, "card": 18, "utterance": "Turn on overhead light now", "because": ["dim_fan_light.brightness=0.8 is not in the utterance"], "kind": "value"}
+{"tool": "t05", "round": 1, "card": 1, "utterance": null, "because": ["not written"], "kind": "missing"}
+{"tool": "t05", "round": 1, "card": 2, "utterance": null, "because": ["not written"], "kind": "missing"}
+{"tool": "t05", "round": 1, "card": 3, "utterance": null, "because": ["not written"], "kind": "missing"}
+{"tool": "t05", "round": 1, "card": 4, "utterance": null, "because": ["not written"], "kind": "missing"}
+{"tool": "t05", "round": 1, "card": 5, "utterance": null, "because": ["not written"], "kind": "missing"}
+{"tool": "t05", "round": 1, "card": 6, "utterance": null, "because": ["not written"], "kind": "missing"}
+{"tool": "t05", "round": 1, "card": 7, "utterance": null, "because": ["not written"], "kind": "missing"}
+{"tool": "t05", "round": 1, "card": 8, "utterance": null, "because": ["not written"], "kind": "missing"}
+{"tool": "t05", "round": 1, "card": 9, "utterance": null, "because": ["not written"], "kind": "missing"}
+{"tool": "t05", "round": 1, "card": 10, "utterance": null, "because": ["not written"], "kind": "missing"}
+{"tool": "t05", "round": 1, "card": 11, "utterance": null, "because": ["not written"], "kind": "missing"}
+{"tool": "t05", "round": 1, "card": 12, "utterance": null, "because": ["not written"], "kind": "missing"}
+{"tool": "t05", "round": 1, "card": 13, "utterance": null, "because": ["not written"], "kind": "missing"}
+{"tool": "t05", "round": 1, "card": 14, "utterance": null, "because": ["not written"], "kind": "missing"}
+{"tool": "t05", "round": 1, "card": 15, "utterance": null, "because": ["not written"], "kind": "missing"}
+{"tool": "t05", "round": 1, "card": 16, "utterance": null, "because": ["not written"], "kind": "missing"}
+{"tool": "t05", "round": 1, "card": 17, "utterance": null, "because": ["not written"], "kind": "missing"}
+{"tool": "t05", "round": 1, "card": 18, "utterance": null, "because": ["not written"], "kind": "missing"}
+{"tool": "t05", "round": 1, "card": 19, "utterance": null, "because": ["not written"], "kind": "missing"}
+{"tool": "t05", "round": 1, "card": 20, "utterance": null, "because": ["not written"], "kind": "missing"}
+{"tool": "t05", "round": 2, "card": 1, "utterance": "What is blower unit number one doing right now?", "because": ["get_fan_status.fan_id='unit one' is not in the utterance"], "kind": "value"}
+{"tool": "t05", "round": 2, "card": 6, "utterance": "I need to know the exact operational details for ceiling fan number three this instant", "because": ["get_fan_status.fan_id='ceiling fan three' is not in the utterance"], "kind": "value"}
+{"tool": "t05", "round": 2, "card": 7, "utterance": "Blower unit two is acting up again!", "because": ["fan_id='blower unit two' must be written with the request's case"], "kind": "value"}
+{"tool": "t05", "round": 2, "card": 10, "utterance": null, "because": ["needs an utterance and args"], "kind": "schema"}
+{"tool": "t05", "round": 2, "card": 17, "utterance": "Check the wind maker.", "because": ["the request says fan_id='wind maker': this card leaves it out"], "kind": "ask"}
+{"tool": "t05", "round": 2, "card": 18, "utterance": "Could you please check the air mover?", "because": ["the request says fan_id='air mover': this card leaves it out"], "kind": "ask"}
+{"tool": "t05", "round": 3, "card": 6, "utterance": "I need to know the exact operational details for ceiling fan number three this instant", "because": ["get_fan_status.fan_id='ceiling fan three' is not in the utterance"], "kind": "value"}
+{"tool": "t05", "round": 3, "card": 7, "utterance": "Blower unit two is acting up again!", "because": ["fan_id='blower unit two' must be written with the request's case"], "kind": "value"}
+{"tool": "t05", "round": 3, "card": 17, "utterance": "Check the wind maker.", "because": ["the request says fan_id='wind maker': this card leaves it out"], "kind": "ask"}
+{"tool": "t05", "round": 3, "card": 18, "utterance": "Could you please check the air mover?", "because": ["the request says fan_id='air mover': this card leaves it out"], "kind": "ask"}
+{"tool": "t07", "round": 1, "card": 8, "utterance": "list personal expertise now", "because": ["repeats an earlier request"], "kind": "repeat"}
+{"tool": "t07", "round": 1, "card": 15, "utterance": "get user skillset details for me now", "because": ["repeats an earlier request"], "kind": "repeat"}
+{"tool": "t09", "round": 1, "card": 5, "utterance": "Engineer position analysis required.", "because": ["job_title='engineer' must be written with the request's case"], "kind": "value"}
+{"tool": "t08", "round": 1, "card": 1, "utterance": "How do I fix this code bug?", "because": ["find_learning_resources.skill_name='fixing code bugs' is not in the utterance"], "kind": "value"}
+{"tool": "t08", "round": 1, "card": 4, "utterance": "I am quite frustrated that I have no idea how to handle this software update properly.", "because": ["find_learning_resources.skill_name='handling software updates' is not in the utterance"], "kind": "value"}
+{"tool": "t08", "round": 1, "card": 5, "utterance": "Could you please help me learn to swim safely?", "because": ["find_learning_resources.skill_name='swimming' is not in the utterance"], "kind": "value"}
+{"tool": "t08", "round": 1, "card": 6, "utterance": "I really need to know how to use this new smartphone app effectively.", "because": ["find_learning_resources.skill_name='using smartphones' is not in the utterance"], "kind": "value"}
+{"tool": "t08", "round": 1, "card": 9, "utterance": "Why is it so hard for me to figure out this new accounting program?", "because": ["find_learning_resources.skill_name='accounting programs' is not in the utterance"], "kind": "value"}
+{"tool": "t08", "round": 1, "card": 10, "utterance": "I require immediate guidance on how to fix leaking pipes.", "because": ["find_learning_resources.skill_name='fixing leaking pipes' is not in the utterance"], "kind": "value"}
+{"tool": "t08", "round": 1, "card": 11, "utterance": null, "because": ["needs an utterance and args"], "kind": "schema"}
+{"tool": "t08", "round": 1, "card": 12, "utterance": "Why am I still bad at this new drill technique?", "because": ["find_learning_resources.skill_name='drill techniques' is not in the utterance"], "kind": "value"}
+{"tool": "t08", "round": 1, "card": 13, "utterance": "Help me learn how to whistle.", "because": ["find_learning_resources.skill_name='whistling' is not in the utterance"], "kind": "value"}
+{"tool": "t08", "round": 1, "card": 14, "utterance": "I am weak at math, so help me practice equations.", "because": ["find_learning_resources.skill_name='math equations' is not in the utterance"], "kind": "value"}
+{"tool": "t08", "round": 1, "card": 15, "utterance": "I am worried I will burn the dinner if I do not cook faster.", "because": ["find_learning_resources.skill_name='cooking fast' is not in the utterance"], "kind": "value"}
+{"tool": "t08", "round": 2, "card": 6, "utterance": "Using smartphones effectively seems impossible.", "because": ["skill_name='using smartphones' must be written with the request's case"], "kind": "value"}
+{"tool": "t08", "round": 2, "card": 9, "utterance": "Figure out this accounting program is tough.", "because": ["find_learning_resources.skill_name='accounting programs' is not in the utterance"], "kind": "value"}
+{"tool": "t08", "round": 2, "card": 11, "utterance": "Train my dog.", "because": ["find_learning_resources.skill_name='dog training' is not in the utterance"], "kind": "value"}
+{"tool": "t08", "round": 2, "card": 13, "utterance": "Teach me to whistle.", "because": ["find_learning_resources.skill_name='whistling' is not in the utterance"], "kind": "value"}
+{"tool": "t08", "round": 2, "card": 15, "utterance": "Cook faster dinner please.", "because": ["find_learning_resources.skill_name='cooking fast' is not in the utterance"], "kind": "value"}
+{"tool": "t08", "round": 3, "card": 9, "utterance": "This accounting program is driving me crazy after my terrible day today.", "because": ["find_learning_resources.skill_name='accounting programs' is not in the utterance"], "kind": "value"}
+{"tool": "t08", "round": 3, "card": 11, "utterance": "Dog training skills please.", "because": ["skill_name='dog training' must be written with the request's case"], "kind": "value"}
+{"tool": "t08", "round": 3, "card": 15, "utterance": "I am so worried about cooking dinner fast while baby sleeps.", "because": ["find_learning_resources.skill_name='cooking fast' is not in the utterance"], "kind": "value"}
+{"tool": "t10", "round": 1, "card": 7, "utterance": "Builder permits are driving me crazy.", "because": ["industry_or_role='builder' must be written with the request's case"], "kind": "value"}
+{"tool": "t10", "round": 1, "card": 8, "utterance": "First timer needs permits.", "because": ["industry_or_role='first timer' must be written with the request's case"], "kind": "value"}
+{"tool": "t10", "round": 1, "card": 9, "utterance": "Musician badges are missing again.", "because": ["industry_or_role='musician' must be written with the request's case"], "kind": "value"}
+{"tool": "t10", "round": 1, "card": 11, "utterance": "Do builders need permits?", "because": ["suggest_certifications.industry_or_role='builder' is not in the utterance"], "kind": "value"}
+{"tool": "t10", "round": 1, "card": 14, "utterance": "Office worker permits please.", "because": ["industry_or_role='office worker' must be written with the request's case"], "kind": "value"}
+{"tool": "t10", "round": 1, "card": 17, "utterance": "List licenses for gardening.", "because": ["the request says industry_or_role='gardening': this card leaves it out"], "kind": "ask"}
+{"tool": "t10", "round": 1, "card": 18, "utterance": "Tell me fitness badges needed.", "because": ["the request says industry_or_role='fitness': this card leaves it out"], "kind": "ask"}
+{"tool": "t10", "round": 2, "card": 11, "utterance": "Do builders need permits right now?", "because": ["suggest_certifications.industry_or_role='builder' is not in the utterance"], "kind": "value"}
+{"tool": "t10", "round": 2, "card": 14, "utterance": "Office worker permits please.", "because": ["industry_or_role='office worker' must be written with the request's case"], "kind": "value"}
+{"tool": "t10", "round": 3, "card": 11, "utterance": "What certs help builders succeed?", "because": ["suggest_certifications.industry_or_role='builder' is not in the utterance"], "kind": "value"}
+{"tool": "t11", "round": 1, "card": 17, "utterance": "My pine shelf is wobbling. I need a solution that works indoors.", "because": ["the request says wood_type='pine': this card leaves it out"], "kind": "ask"}
+{"tool": "t11", "round": 1, "card": 18, "utterance": "This cedar plank is loose. Find something for outdoor use.", "because": ["the request says wood_type='cedar': this card leaves it out"], "kind": "ask"}
+{"tool": "t11", "round": 2, "card": 17, "utterance": "I am so anxious about my shaky bookshelf. Can you help me secure it for inside use?", "because": ["give a value for wood_type in args, though the request leaves it out"], "kind": "schema"}
+{"tool": "t11", "round": 2, "card": 18, "utterance": "Hey there! This cedar plank is coming apart. I need something tough for the patio.", "because": ["give a value for wood_type in args, though the request leaves it out"], "kind": "schema"}
+{"tool": "t11", "round": 3, "card": 17, "utterance": "I'm stressed about this loose oak cabinet. It needs to stay inside my home securely.", "because": ["the request says wood_type='oak': this card leaves it out"], "kind": "ask"}
+{"tool": "t11", "round": 3, "card": 18, "utterance": "This birch board is falling apart for the patio. I want something solid.", "because": ["the request says wood_type='birch': this card leaves it out"], "kind": "ask"}
+{"tool": "t12", "round": 1, "card": 16, "utterance": null, "because": ["needs an utterance and args"], "kind": "schema"}
+{"tool": "t13", "round": 1, "card": 12, "utterance": "Just tell me about the problem with these glued seams already.", "because": ["troubleshoot_glue_failure.symptom='problem with seams' is not in the utterance"], "kind": "value"}
+{"tool": "t13", "round": 1, "card": 17, "utterance": "Can you tell me why the surface prep was poor?", "because": ["give a value for symptom in args, though the request leaves it out"], "kind": "schema"}
+{"tool": "t13", "round": 1, "card": 18, "utterance": "Would you please identify the causes of the issue with the seams?", "because": ["give a value for symptom in args, though the request leaves it out"], "kind": "schema"}
+{"tool": "t14", "round": 1, "card": 1, "utterance": null, "because": ["not written"], "kind": "missing"}
+{"tool": "t14", "round": 1, "card": 2, "utterance": null, "because": ["not written"], "kind": "missing"}
+{"tool": "t14", "round": 1, "card": 3, "utterance": null, "because": ["not written"], "kind": "missing"}
+{"tool": "t14", "round": 1, "card": 4, "utterance": null, "because": ["not written"], "kind": "missing"}
+{"tool": "t14", "round": 1, "card": 5, "utterance": null, "because": ["not written"], "kind": "missing"}
+{"tool": "t14", "round": 1, "card": 6, "utterance": null, "because": ["not written"], "kind": "missing"}
+{"tool": "t14", "round": 1, "card": 7, "utterance": null, "because": ["not written"], "kind": "missing"}
+{"tool": "t14", "round": 1, "card": 8, "utterance": null, "because": ["not written"], "kind": "missing"}
+{"tool": "t14", "round": 1, "card": 9, "utterance": null, "because": ["not written"], "kind": "missing"}
+{"tool": "t14", "round": 1, "card": 10, "utterance": null, "because": ["not written"], "kind": "missing"}
+{"tool": "t14", "round": 1, "card": 11, "utterance": null, "because": ["not written"], "kind": "missing"}
+{"tool": "t14", "round": 1, "card": 12, "utterance": null, "because": ["not written"], "kind": "missing"}
+{"tool": "t14", "round": 1, "card": 13, "utterance": null, "because": ["not written"], "kind": "missing"}
+{"tool": "t14", "round": 1, "card": 14, "utterance": null, "because": ["not written"], "kind": "missing"}
+{"tool": "t14", "round": 1, "card": 15, "utterance": null, "because": ["not written"], "kind": "missing"}
+{"tool": "t14", "round": 1, "card": 16, "utterance": null, "because": ["not written"], "kind": "missing"}
+{"tool": "t14", "round": 1, "card": 17, "utterance": null, "because": ["not written"], "kind": "missing"}
+{"tool": "t14", "round": 1, "card": 18, "utterance": null, "because": ["not written"], "kind": "missing"}
+{"tool": "t14", "round": 1, "card": 19, "utterance": null, "because": ["not written"], "kind": "missing"}
+{"tool": "t14", "round": 1, "card": 20, "utterance": null, "because": ["not written"], "kind": "missing"}
+{"tool": "t14", "round": 2, "card": 1, "utterance": "Get the glue force for pine", "because": ["calculate_clamp_pressure.joint_size_inch=12.0 is not in the utterance"], "kind": "value"}
+{"tool": "t14", "round": 2, "card": 2, "utterance": "Locate the proper gripping tools for this oak assembly, please", "because": ["calculate_clamp_pressure.joint_size_inch=18.5 is not in the utterance"], "kind": "value"}
+{"tool": "t14", "round": 2, "card": 3, "utterance": "How many fasteners do I need for maple?", "because": ["calculate_clamp_pressure.joint_size_inch=6.0 is not in the utterance"], "kind": "value"}
+{"tool": "t14", "round": 2, "card": 4, "utterance": "Could you tell me the binding force for birch?", "because": ["calculate_clamp_pressure.joint_size_inch=24.0 is not in the utterance"], "kind": "value"}
+{"tool": "t14", "round": 2, "card": 5, "utterance": "I lack holding devices for this walnut piece, help", "because": ["calculate_clamp_pressure.joint_size_inch=36.0 is not in the utterance"], "kind": "value"}
+{"tool": "t14", "round": 2, "card": 6, "utterance": "Why no counting tool for cedar?", "because": ["calculate_clamp_pressure.joint_size_inch=10.0 is not in the utterance"], "kind": "value"}
+{"tool": "t14", "round": 2, "card": 7, "utterance": "Stop ignoring the pressure for ash wood please", "because": ["calculate_clamp_pressure.joint_size_inch=14.5 is not in the utterance"], "kind": "value"}
+{"tool": "t14", "round": 2, "card": 8, "utterance": "Which holding devices fit teak?", "because": ["calculate_clamp_pressure.joint_size_inch=20.0 is not in the utterance"], "kind": "value"}
+{"tool": "t14", "round": 2, "card": 9, "utterance": "Give me the total count for redwood and oak mix now", "because": ["calculate_clamp_pressure.joint_size_inch=8.0 is not in the utterance"], "kind": "value"}
+{"tool": "t14", "round": 2, "card": 10, "utterance": "I wish someone would check the force for cherry wood", "because": ["calculate_clamp_pressure.joint_size_inch=15.0 is not in the utterance"], "kind": "value"}
+{"tool": "t14", "round": 2, "card": 11, "utterance": "Find me the best grips for spruce", "because": ["calculate_clamp_pressure.joint_size_inch=30.0 is not in the utterance"], "kind": "value"}
+{"tool": "t14", "round": 2, "card": 12, "utterance": "How many fasteners do I require for pine?", "because": ["calculate_clamp_pressure.joint_size_inch=11.0 is not in the utterance"], "kind": "value"}
+{"tool": "t14", "round": 2, "card": 13, "utterance": "I really need to know the binding force for maple wood right now", "because": ["calculate_clamp_pressure.joint_size_inch=16.0 is not in the utterance"], "kind": "value"}
+{"tool": "t14", "round": 2, "card": 14, "utterance": "Where are the proper grips for walnut?", "because": ["calculate_clamp_pressure.joint_size_inch=22.0 is not in the utterance"], "kind": "value"}
+{"tool": "t14", "round": 2, "card": 15, "utterance": "How many fasteners do I actually need for cedar?", "because": ["calculate_clamp_pressure.joint_size_inch=9.0 is not in the utterance"], "kind": "value"}
+{"tool": "t14", "round": 2, "card": 16, "utterance": "Please tell me the binding force for birch wood", "because": ["calculate_clamp_pressure.joint_size_inch=13.0 is not in the utterance"], "kind": "value"}
+{"tool": "t14", "round": 2, "card": 17, "utterance": "Get the count for the oak assembly I am working on today", "because": ["give a value for wood_type in args, though the request leaves it out"], "kind": "schema"}
+{"tool": "t14", "round": 2, "card": 18, "utterance": "Please provide the total count for the maple project I am managing", "because": ["give a value for joint_size_inch in args, though the request leaves it out"], "kind": "schema"}
+{"tool": "t14", "round": 3, "card": 1, "utterance": "What force for this pine?", "because": ["calculate_clamp_pressure.joint_size_inch=12.0 is not in the utterance"], "kind": "value"}
+{"tool": "t14", "round": 3, "card": 2, "utterance": "I am totally exhausted; what holds oak best for this eighteen and a half inch seam?", "because": ["calculate_clamp_pressure.joint_size_inch=18.5 is not in the utterance"], "kind": "value"}
+{"tool": "t14", "round": 3, "card": 4, "utterance": "Please tell me the binding force for birch wood", "because": ["calculate_clamp_pressure.joint_size_inch=24.0 is not in the utterance"], "kind": "value"}
+{"tool": "t14", "round": 3, "card": 7, "utterance": "Stop ignoring the pressure for fourteen and a half inch ash please", "because": ["calculate_clamp_pressure.joint_size_inch=14.5 is not in the utterance"], "kind": "value"}
+{"tool": "t14", "round": 3, "card": 8, "utterance": null, "because": ["needs an utterance and args"], "kind": "schema"}
+{"tool": "t14", "round": 3, "card": 10, "utterance": "I wish someone would check the force for cherry wood", "because": ["calculate_clamp_pressure.joint_size_inch=15.0 is not in the utterance"], "kind": "value"}
+{"tool": "t14", "round": 3, "card": 12, "utterance": "How many fasteners do I require for pine?", "because": ["calculate_clamp_pressure.joint_size_inch=11.0 is not in the utterance"], "kind": "value"}
+{"tool": "t14", "round": 3, "card": 17, "utterance": "Get the count for the assembly I am working on today using the tool", "because": ["calculate_clamp_pressure.joint_size_inch=12.0 is not in the utterance"], "kind": "value"}
+{"tool": "t16", "round": 1, "card": 9, "utterance": null, "because": ["needs an utterance and args"], "kind": "schema"}
+{"tool": "t18", "round": 1, "card": 5, "utterance": "Can you suggest heavy rackets under budget", "because": ["recommend_racquet_for_slice.budget_max=100.0 is not in the utterance"], "kind": "value"}
+{"tool": "t18", "round": 1, "card": 12, "utterance": "Could you kindly suggest light rackets that are affordable for me?", "because": ["recommend_racquet_for_slice.budget_max=90.0 is not in the utterance"], "kind": "value"}
+{"tool": "t18", "round": 1, "card": 16, "utterance": "Which medium rackets fit my budget?", "because": ["recommend_racquet_for_slice.budget_max=75.0 is not in the utterance"], "kind": "value"}
+{"tool": "t17", "round": 1, "card": 4, "utterance": "Could you please look at my swing and tell me what is wrong with it?", "because": ["analyze_slice_errors.specific_issue='swing error' is not in the utterance"], "kind": "value"}
+{"tool": "t17", "round": 1, "card": 5, "utterance": "My grip feels off.", "because": ["analyze_slice_errors.specific_issue='grip feel' is not in the utterance"], "kind": "value"}
+{"tool": "t17", "round": 1, "card": 8, "utterance": "I need someone to look at my stroke and point out the flaws.", "because": ["analyze_slice_errors.specific_issue='stroke flaws' is not in the utterance"], "kind": "value"}
+{"tool": "t17", "round": 1, "card": 9, "utterance": "My elbow hurts when I hit.", "because": ["analyze_slice_errors.specific_issue='elbow pain' is not in the utterance"], "kind": "value"}
+{"tool": "t17", "round": 1, "card": 13, "utterance": "Look at my swing and identify the errors right now.", "because": ["analyze_slice_errors.specific_issue='swing errors' is not in the utterance"], "kind": "value"}
+{"tool": "t17", "round": 1, "card": 14, "utterance": "Why is my form so incorrect?", "because": ["analyze_slice_errors.specific_issue='form correctness' is not in the utterance"], "kind": "value"}
+{"tool": "t17", "round": 1, "card": 17, "utterance": "Fix the swing flaw without specifying the issue.", "because": ["the request says specific_issue='swing flaw': this card leaves it out"], "kind": "ask"}
+{"tool": "t17", "round": 1, "card": 18, "utterance": "Fix my form.", "because": ["the request says specific_issue='form': this card leaves it out"], "kind": "ask"}
+{"tool": "t17", "round": 2, "card": 4, "utterance": "Hey, can you check my backhand swing? I'm really stressed about the technique errors I keep making.", "because": ["analyze_slice_errors.specific_issue='backhand swing technique errors' is not in the utterance"], "kind": "value"}
+{"tool": "t17", "round": 2, "card": 5, "utterance": "My grip feels weird.", "because": ["analyze_slice_errors.specific_issue='grip feel' is not in the utterance"], "kind": "value"}
+{"tool": "t17", "round": 2, "card": 8, "utterance": "Please look at my stroke and tell me what is wrong with the technique.", "because": ["analyze_slice_errors.specific_issue='stroke technique' is not in the utterance"], "kind": "value"}
+{"tool": "t17", "round": 2, "card": 9, "utterance": "My elbow hurts when I hit the ball hard.", "because": ["analyze_slice_errors.specific_issue='elbow pain' is not in the utterance"], "kind": "value"}
+{"tool": "t17", "round": 2, "card": 13, "utterance": "Find the errors in my backhand swing right now.", "because": ["analyze_slice_errors.specific_issue='backhand swing errors' is not in the utterance"], "kind": "value"}
+{"tool": "t17", "round": 2, "card": 17, "utterance": "Fix the swing flaw without specifying the issue.", "because": ["the request says specific_issue='swing flaw': this card leaves it out"], "kind": "ask"}
+{"tool": "t17", "round": 2, "card": 18, "utterance": "Fix my form.", "because": ["the request says specific_issue='form': this card leaves it out"], "kind": "ask"}
+{"tool": "t17", "round": 3, "card": 4, "utterance": "Could you please analyze the specific swing error causing my backhand slice to go wide? I am quite worried about it.", "because": ["analyze_slice_errors.specific_issue='backhand slice going wide' is not in the utterance"], "kind": "value"}
+{"tool": "t17", "round": 3, "card": 5, "utterance": "My grip is slipping. Check the issue.", "because": ["analyze_slice_errors.specific_issue='grip slipping' is not in the utterance"], "kind": "value"}
+{"tool": "t17", "round": 3, "card": 8, "utterance": "Look at my stroke technique. What is wrong with the swing?", "because": ["analyze_slice_errors.specific_issue='stroke technique swing' is not in the utterance"], "kind": "value"}
+{"tool": "t17", "round": 3, "card": 9, "utterance": "My elbow hurts when I hit the ball hard. Diagnose this issue.", "because": ["analyze_slice_errors.specific_issue='elbow pain hitting ball hard' is not in the utterance"], "kind": "value"}
+{"tool": "t17", "round": 3, "card": 13, "utterance": "Find the errors in my backhand swing right now.", "because": ["analyze_slice_errors.specific_issue='backhand swing errors' is not in the utterance"], "kind": "value"}
+{"tool": "t17", "round": 3, "card": 17, "utterance": "Help me with my swing issues already!", "because": ["the request says specific_issue='swing issues': this card leaves it out"], "kind": "ask"}
+{"tool": "t17", "round": 3, "card": 18, "utterance": "Fix the form.", "because": ["the request says specific_issue='form': this card leaves it out"], "kind": "ask"}
+{"tool": "t20", "round": 1, "card": 4, "utterance": "My hair is quite dry; determine the optimal schedule for a medium strength mask.", "because": ["shares \"mask\" with every name and description pair: avoid the words of at least one name and one description"], "kind": "shared"}
+{"tool": "t20", "round": 1, "card": 7, "utterance": "Would you kindly determine the necessary duration for my medium strength hair mask application?", "because": ["shares \"mask\" with every name and description pair: avoid the words of at least one name and one description"], "kind": "shared"}
+{"tool": "t20", "round": 1, "card": 13, "utterance": "Please help me figure out the best timing for my hair.", "because": ["shares \"out\" with every name and description pair: avoid the words of at least one name and one description"], "kind": "shared"}
+{"tool": "t20", "round": 1, "card": 15, "utterance": "When rinse my hair?", "because": ["repeats an earlier request"], "kind": "repeat"}
+{"tool": "t20", "round": 1, "card": 16, "utterance": "I need to know the optimal schedule for my light strength mask application right away!", "because": ["shares \"mask\" with every name and description pair: avoid the words of at least one name and one description"], "kind": "shared"}
+{"tool": "t20", "round": 1, "card": 18, "utterance": "Why do I have to wait? Tell me when to rinse my light hair mask already.", "because": ["shares \"mask\" with every name and description pair: avoid the words of at least one name and one description"], "kind": "shared"}
+{"tool": "t20", "round": 2, "card": 13, "utterance": "Could you calculate how long to keep this treatment on my hair?", "because": ["shares \"long\" with every name and description pair: avoid the words of at least one name and one description"], "kind": "shared"}
+{"tool": "t20", "round": 2, "card": 18, "utterance": "Why is this taking so long? Tell me when to rinse my light treatment already.", "because": ["shares \"long\" with every name and description pair: avoid the words of at least one name and one description"], "kind": "shared"}
+{"tool": "t21", "round": 1, "card": 5, "utterance": "Could you plan my schedule?", "because": ["suggest_routine_frequency.hair_goal='shine' is not in the utterance"], "kind": "value"}
+{"tool": "t21", "round": 1, "card": 6, "utterance": "I need advice.", "because": ["suggest_routine_frequency.hair_goal='volume' is not in the utterance"], "kind": "value"}
+{"tool": "t21", "round": 1, "card": 8, "utterance": "I was wondering if you could plan a weekly schedule for me.", "because": ["suggest_routine_frequency.hair_goal='volume' is not in the utterance"], "kind": "value"}
+{"tool": "t21", "round": 1, "card": 9, "utterance": "I need advice on the best routine rate.", "because": ["suggest_routine_frequency.hair_goal='shine' is not in the utterance"], "kind": "value"}
+{"tool": "t21", "round": 1, "card": 11, "utterance": "I really want to know how to plan my weekly schedule.", "because": ["suggest_routine_frequency.hair_goal='volume' is not in the utterance"], "kind": "value"}
+{"tool": "t21", "round": 1, "card": 12, "utterance": "Advice please.", "because": ["suggest_routine_frequency.hair_goal='shine' is not in the utterance"], "kind": "value"}
+{"tool": "t21", "round": 1, "card": 14, "utterance": "Please create my weekly schedule.", "because": ["suggest_routine_frequency.hair_goal='shine' is not in the utterance"], "kind": "value"}
+{"tool": "t21", "round": 1, "card": 15, "utterance": "I need advice on the best routine rate.", "because": ["suggest_routine_frequency.hair_goal='volume' is not in the utterance"], "kind": "value"}
+{"tool": "t21", "round": 1, "card": 17, "utterance": "I want volume but no schedule.", "because": ["the request says hair_goal='volume': this card leaves it out"], "kind": "ask"}
+{"tool": "t21", "round": 1, "card": 18, "utterance": "I need shine advice now.", "because": ["the request says hair_goal='shine': this card leaves it out"], "kind": "ask"}
+{"tool": "t21", "round": 2, "card": 14, "utterance": null, "because": ["needs an utterance and args"], "kind": "schema"}
+{"tool": "t21", "round": 2, "card": 17, "utterance": "I am tired and need more volume.", "because": ["the request says hair_goal='volume': this card leaves it out"], "kind": "ask"}
+{"tool": "t21", "round": 2, "card": 18, "utterance": "Walking the dog left me needing shine.", "because": ["the request says hair_goal='shine': this card leaves it out"], "kind": "ask"}
+{"tool": "t21", "round": 3, "card": 17, "utterance": "I need more volume in my hair routine, what is the frequency?", "because": ["the request says hair_goal='volume': this card leaves it out"], "kind": "ask"}
+{"tool": "t21", "round": 3, "card": 18, "utterance": "Walking the dog left me needing shine, how often should I apply it?", "because": ["the request says hair_goal='shine': this card leaves it out"], "kind": "ask"}
+{"tool": "t22", "round": 1, "card": 17, "utterance": "Run the hydration sequence.", "because": ["the request says mask_type='hydration': this card leaves it out"], "kind": "ask"}
+{"tool": "t22", "round": 1, "card": 18, "utterance": "Execute the repair routine for my dry strands.", "because": ["the request says mask_type='repair': this card leaves it out"], "kind": "ask"}
+{"tool": "t23", "round": 1, "card": 5, "utterance": "I need to know if this gel works.", "because": ["check_mask_hair_compatibility.hair_condition='normal' is not in the utterance"], "kind": "value"}
+{"tool": "t23", "round": 1, "card": 6, "utterance": "Tell me if the serum matches my current state.", "because": ["shares \"if\" with every name and description pair: avoid the words of at least one name and one description"], "kind": "shared"}
+{"tool": "t23", "round": 1, "card": 9, "utterance": "Evaluate this mask for me.", "because": ["check_mask_hair_compatibility.hair_condition='general' is not in the utterance"], "kind": "value"}
+{"tool": "t23", "round": 1, "card": 11, "utterance": "Check this stuff now.", "because": ["check_mask_hair_compatibility.hair_condition='generic' is not in the utterance"], "kind": "value"}
+{"tool": "t23", "round": 1, "card": 12, "utterance": "Analyze this product immediately.", "because": ["check_mask_hair_compatibility.hair_condition='standard' is not in the utterance"], "kind": "value"}
+{"tool": "t23", "round": 1, "card": 15, "utterance": "I need this balm evaluated.", "because": ["check_mask_hair_compatibility.hair_condition='unknown' is not in the utterance"], "kind": "value"}
+{"tool": "t23", "round": 1, "card": 18, "utterance": "Run the test now.", "because": ["check_mask_hair_compatibility.hair_condition='default' is not in the utterance"], "kind": "value"}
+{"tool": "t23", "round": 2, "card": 5, "utterance": "My hair feels dry after cycling", "because": ["call to check_mask_hair_compatibility: missing required argument 'mask_ingredients'"], "kind": "schema"}
+{"tool": "t23", "round": 2, "card": 6, "utterance": "Hey chef, does this cream fit my oily locks?", "because": ["call to check_mask_hair_compatibility: missing required argument 'mask_ingredients'"], "kind": "schema"}
+{"tool": "t23", "round": 2, "card": 9, "utterance": "Is this balm good for damaged strands?", "because": ["call to check_mask_hair_compatibility: missing required argument 'mask_ingredients'"], "kind": "schema"}
+{"tool": "t23", "round": 2, "card": 11, "utterance": "Ugh, my strands are so frizzy", "because": ["call to check_mask_hair_compatibility: missing required argument 'mask_ingredients'"], "kind": "schema"}
+{"tool": "t23", "round": 2, "card": 12, "utterance": "Please evaluate this serum for me.", "because": ["call to check_mask_hair_compatibility: missing required argument 'mask_ingredients'; missing required argument 'hair_condition'"], "kind": "schema"}
+{"tool": "t23", "round": 2, "card": 15, "utterance": "My locks feel rough today", "because": ["call to check_mask_hair_compatibility: missing required argument 'mask_ingredients'"], "kind": "schema"}
+{"tool": "t23", "round": 2, "card": 18, "utterance": "Check this oil for brittle ends", "because": ["the request says mask_ingredients='oil': this card leaves it out"], "kind": "ask"}
+{"tool": "t23", "round": 3, "card": 6, "utterance": "Throw some coconut oil onto my greasy strands for the evening meal prep fun!", "because": ["check_mask_hair_compatibility.hair_condition='oily' is not in the utterance"], "kind": "value"}
+{"tool": "t23", "round": 3, "card": 9, "utterance": "Is shea butter fine for broken ends?", "because": ["check_mask_hair_compatibility.hair_condition='damaged' is not in the utterance"], "kind": "value"}
+{"tool": "t23", "round": 3, "card": 11, "utterance": "Arg! My tangles are a mess.", "because": ["check_mask_hair_compatibility.mask_ingredients='unknown' is not in the utterance", "check_mask_hair_compatibility.hair_condition='tangled' is not in the utterance"], "kind": "value"}
+{"tool": "t23", "round": 3, "card": 18, "utterance": "Check this clay for frizzy ends", "because": ["the request says mask_ingredients='clay': this card leaves it out"], "kind": "ask"}

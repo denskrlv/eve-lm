@@ -89,7 +89,7 @@ def test_review_never_edits_a_tool_and_ignores_unknown_ids():
     assert result.tools[0] == FAN  # untouched
     assert result.rows == []  # t02-r01's fix named an arg FAN lacks: dropped
     assert result.tools_dropped == ["t01"]
-    assert result.reviewed == 1 and result.fixed == 0 and result.dropped == 1
+    assert result.reviewed == 4 and result.fixed == 0 and result.dropped == 4  # 3 with t01
     assert any("unknown" in r["why"] for r in result.reasons)
 
 
@@ -146,3 +146,14 @@ def test_junk_in_a_fix_is_dropped_never_a_crash():
             fix = {"id": "t02-r01", "intent": intent, "args": {"speed": value}, "utterance": value}
             result = apply_review({"fixes": [fix]}, [PEST, FAN], ROWS)
             assert result.fixed + result.dropped == 1
+
+
+def test_dropping_a_tool_counts_its_requests_against_approval():
+    rows = [
+        Row(f"t01-r{i:02d}", "t01", f"holes number {i} in my kale", "call", {"symptom": "holes"})
+        for i in range(9)
+    ] + [ROWS[3]]
+    result = apply_review({"drop_tools": [{"id": "t01", "why": "reserved"}]}, [PEST, FAN], rows)
+    assert result.rows == [ROWS[3]]
+    assert result.fix_rate == pytest.approx(0.9)
+    assert not shard_report(ToolStats(), RowStats(), result)["approved"]

@@ -219,15 +219,19 @@ def run(
             models.between_stages()
         with ThreadPoolExecutor(1) as reviews:
             pending: list[Future[None]] = []
-            for shard in held:
-                if shard.status() == "tools":
-                    _stage_b(shard, root, models, constraints, parallel, seed)
-                    log(f"{shard.path.name}: {len(shard.rows())} requests")
-                if shard.status() == "requests":
-                    log(f"{shard.path.name}: review by Claude started")
-                    pending.append(reviews.submit(_review, shard, models, context, log))
-            for future in pending:
-                future.result()
+            try:
+                for shard in held:
+                    if shard.status() == "tools":
+                        _stage_b(shard, root, models, constraints, parallel, seed)
+                        log(f"{shard.path.name}: {len(shard.rows())} requests")
+                    if shard.status() == "requests":
+                        log(f"{shard.path.name}: review by Claude started")
+                        pending.append(reviews.submit(_review, shard, models, context, log))
+                for future in pending:
+                    future.result()
+            except BaseException:
+                reviews.shutdown(cancel_futures=True)  # a stop waits only for the review in flight
+                raise
     finally:
         for shard in held:
             release(shard)

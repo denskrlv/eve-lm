@@ -1,0 +1,646 @@
+[
+ {
+  "id": "t01",
+  "topic": "lighting > ceiling fans",
+  "names": [
+   "set_ceiling_fan_speed",
+   "adjust_fan_rotation",
+   "control_fan_velocity"
+  ],
+  "descriptions": [
+   "Change the spinning speed of a ceiling fan.",
+   "Set the rotation rate for a specific fan device.",
+   "Adjust how fast or slow the fan spins."
+  ],
+  "args": [
+   {
+    "name": "fan_id",
+    "type": "str",
+    "description": "The identifier or name of the ceiling fan."
+   },
+   {
+    "name": "speed",
+    "type": "enum",
+    "options": [
+     "low",
+     "medium",
+     "high",
+     "off"
+    ],
+    "description": "The desired speed setting for the fan."
+   }
+  ],
+  "capability": "fan.speed"
+ },
+ {
+  "id": "t02",
+  "topic": "lighting > ceiling fans",
+  "names": [
+   "toggle_fan_light",
+   "switch_fan_light_on_off",
+   "control_builtin_lamp"
+  ],
+  "descriptions": [
+   "Turn the light fixture on a ceiling fan on or off.",
+   "Activate or deactivate the built-in lighting of a fan.",
+   "Toggle the power state of the fan's attached lamp."
+  ],
+  "args": [
+   {
+    "name": "fan_id",
+    "type": "str",
+    "description": "The identifier or name of the ceiling fan with a light."
+   },
+   {
+    "name": "state",
+    "type": "bool",
+    "description": "True to turn on, false to turn off."
+   }
+  ],
+  "capability": "fan.power"
+ },
+ {
+  "id": "t03",
+  "topic": "lighting > ceiling fans",
+  "names": [
+   "set_fan_direction",
+   "change_breeze_direction",
+   "reverse_fan_flow"
+  ],
+  "descriptions": [
+   "Switch the fan blades between forward and reverse rotation.",
+   "Set the airflow direction to warm or cool mode.",
+   "Toggle the spinning direction of the ceiling fan blades."
+  ],
+  "args": [
+   {
+    "name": "fan_id",
+    "type": "str",
+    "description": "The identifier or name of the ceiling fan."
+   },
+   {
+    "name": "direction",
+    "type": "enum",
+    "options": [
+     "forward",
+     "reverse"
+    ],
+    "description": "The rotational direction for optimal seasonal comfort."
+   }
+  ],
+  "capability": "ceiling_fan.power"
+ },
+ {
+  "id": "t04",
+  "topic": "lighting > ceiling fans",
+  "names": [
+   "dim_fan_light",
+   "adjust_builtin_brightness",
+   "set_lamp_intensity"
+  ],
+  "descriptions": [
+   "Change the brightness level of the ceiling fan's light.",
+   "Adjust how bright or dim the integrated lamp glows.",
+   "Set the illumination intensity for a smart ceiling fan."
+  ],
+  "args": [
+   {
+    "name": "fan_id",
+    "type": "str",
+    "description": "The identifier or name of the ceiling fan with lighting."
+   },
+   {
+    "name": "brightness",
+    "type": "float",
+    "min": 0.0,
+    "max": 1.0,
+    "description": "A value between zero (off) and one (full brightness)."
+   }
+  ],
+  "capability": "dim_fan_light"
+ },
+ {
+  "id": "t05",
+  "topic": "lighting > ceiling fans",
+  "names": [
+   "get_fan_status",
+   "check_ceiling_fane_state",
+   "query_fane_info"
+  ],
+  "descriptions": [
+   "Retrieve the current power and speed settings of a fan.",
+   "Find out if the fan is on and how fast it spins.",
+   "Get real-time data about a ceiling fan's operation."
+  ],
+  "args": [
+   {
+    "name": "fan_id",
+    "type": "str",
+    "description": "The identifier or name of the ceiling fan to check."
+   }
+  ],
+  "capability": "get_fan_status"
+ },
+ {
+  "id": "t06",
+  "topic": "job search > skill gap analysis tools",
+  "names": [
+   "identify_required_skills",
+   "list_job_requirements",
+   "get_skill_checklist"
+  ],
+  "descriptions": [
+   "Show what skills a specific job needs.",
+   "List the abilities required for this role.",
+   "Display the skill checklist for that position."
+  ],
+  "args": [
+   {
+    "name": "job_title",
+    "type": "str",
+    "description": "The title of the job being analyzed."
+   }
+  ],
+  "capability": "identify_required_skills"
+ },
+ {
+  "id": "t07",
+  "topic": "job search > skill gap analysis tools",
+  "names": [
+   "check_my_skills",
+   "list_personal_expertise",
+   "get_user_skillset"
+  ],
+  "descriptions": [
+   "Show the skills I currently have.",
+   "List my existing professional abilities.",
+   "Display my personal skill inventory."
+  ],
+  "args": [],
+  "capability": "check_my_skills"
+ },
+ {
+  "id": "t08",
+  "topic": "job search > skill gap analysis tools",
+  "names": [
+   "find_learning_resources",
+   "suggest_courses",
+   "recommend_training"
+  ],
+  "descriptions": [
+   "Find courses for a specific missing skill.",
+   "Suggest training materials for gap areas.",
+   "Recommend learning paths for new abilities."
+  ],
+  "args": [
+   {
+    "name": "skill_name",
+    "type": "str",
+    "description": "The specific skill that needs improvement."
+   }
+  ],
+  "capability": "find_learning_resources"
+ },
+ {
+  "id": "t09",
+  "topic": "job search > skill gap analysis tools",
+  "names": [
+   "calculate_skill_gap",
+   "compare_skills_to_job",
+   "assess_proficiency_level"
+  ],
+  "descriptions": [
+   "Show how I match a specific job.",
+   "Compare my skills against role requirements.",
+   "Assess the difference between me and the job."
+  ],
+  "args": [
+   {
+    "name": "job_title",
+    "type": "str",
+    "description": "The target job title for comparison."
+   }
+  ],
+  "capability": "calculate_skill_gap"
+ },
+ {
+  "id": "t10",
+  "topic": "job search > skill gap analysis tools",
+  "names": [
+   "suggest_certifications",
+   "list_licenses_needed",
+   "find_pro_credentials"
+  ],
+  "descriptions": [
+   "Show which certifications help this role.",
+   "List licenses required for that job.",
+   "Recommend professional credentials for the field."
+  ],
+  "args": [
+   {
+    "name": "industry_or_role",
+    "type": "str",
+    "description": "The industry or specific job role."
+   }
+  ],
+  "capability": "suggest_certifications"
+ },
+ {
+  "id": "t11",
+  "topic": "woodworking > gluing joints",
+  "names": [
+   "get_glue_recommendation",
+   "suggest_wood_adhesive",
+   "find_best_glue"
+  ],
+  "descriptions": [
+   "Suggest the right glue for a specific wood type.",
+   "Recommend adhesive based on material and finish needs.",
+   "Find suitable wood glue for your project type."
+  ],
+  "args": [
+   {
+    "name": "wood_type",
+    "type": "str",
+    "description": "The type of wood being joined, such as pine or oak."
+   },
+   {
+    "name": "indoor_outdoor",
+    "type": "enum",
+    "required": false,
+    "options": [
+     "indoor",
+     "outdoor"
+    ],
+    "description": "Whether the project is for inside or outside use."
+   }
+  ],
+  "capability": "get_glue_recommendation"
+ },
+ {
+  "id": "t12",
+  "topic": "woodworking > gluing joints",
+  "names": [
+   "calculate_glue_amount",
+   "estimate_adhesive_quantity",
+   "determine_glue_volume"
+  ],
+  "descriptions": [
+   "Estimate how much glue you need for a joint.",
+   "Calculate required adhesive for specific board dimensions.",
+   "Tell you the amount of glue needed."
+  ],
+  "args": [
+   {
+    "name": "joint_length",
+    "type": "float",
+    "min": 0,
+    "description": "The length of the joint in inches or centimeters."
+   },
+   {
+    "name": "board_width",
+    "type": "float",
+    "min": 0,
+    "description": "The width of the boards being glued."
+   }
+  ],
+  "capability": "calculate_glue_amount"
+ },
+ {
+  "id": "t13",
+  "topic": "woodworking > gluing joints",
+  "names": [
+   "troubleshoot_glue_failure",
+   "fix_weak_joint",
+   "diagnose_adhesive_issue"
+  ],
+  "descriptions": [
+   "Explain why a wood joint failed to bond.",
+   "Identify causes of poor adhesive performance.",
+   "Help diagnose problems with glued seams."
+  ],
+  "args": [
+   {
+    "name": "symptom",
+    "type": "str",
+    "description": "Description of the failure, like peeling or weak hold."
+   },
+   {
+    "name": "surface_prep",
+    "type": "enum",
+    "required": false,
+    "options": [
+     "sanded",
+     "smooth",
+     "oily",
+     "dirty"
+    ],
+    "description": "How the wood surfaces were prepared before gluing."
+   }
+  ],
+  "capability": "troubleshoot_glue_failure"
+ },
+ {
+  "id": "t14",
+  "topic": "woodworking > gluing joints",
+  "names": [
+   "calculate_clamp_pressure",
+   "find_suitable_clamps",
+   "determine_clamp_count"
+  ],
+  "descriptions": [
+   "Determine how much pressure is needed for a joint.",
+   "Identify the right clamps for your project.",
+   "Calculate the number of clamps required."
+  ],
+  "args": [
+   {
+    "name": "wood_type",
+    "type": "str",
+    "description": "The type of wood being glued"
+   },
+   {
+    "name": "joint_size_inch",
+    "type": "float",
+    "min": 0.1,
+    "max": 48.0,
+    "description": "The length of the joint in inches"
+   }
+  ],
+  "capability": "calculate_clamp_pressure"
+ },
+ {
+  "id": "t15",
+  "topic": "tennis > backhand slice spin",
+  "names": [
+   "get_backhand_slice_technique",
+   "explain_slice_shots",
+   "teach_backhand_slice",
+   "slice_shot_guide"
+  ],
+  "descriptions": [
+   "Describe how to hit a backhand slice.",
+   "Explain the mechanics of slice shots.",
+   "Guide you through backhand slice steps.",
+   "Provide instructions for slice technique."
+  ],
+  "args": [
+   {
+    "name": "player_level",
+    "type": "enum",
+    "required": false,
+    "options": [
+     "beginner",
+     "intermediate",
+     "advanced"
+    ],
+    "description": "The skill level of the tennis player."
+   }
+  ],
+  "capability": "get_backhand_slice_technique"
+ },
+ {
+  "id": "t16",
+  "topic": "tennis > backhand slice spin",
+  "names": [
+   "find_slice_drills",
+   "get_backhand_drills",
+   "slice_practice_exercises",
+   "drill_for_slices"
+  ],
+  "descriptions": [
+   "Suggest drills for backhand slice.",
+   "List exercises to practice slices.",
+   "Find practice routines for slice shots.",
+   "Recommend drills for improving slices."
+  ],
+  "args": [
+   {
+    "name": "drill_type",
+    "type": "enum",
+    "required": false,
+    "options": [
+     "solo",
+     "partner",
+     "wall"
+    ],
+    "description": "The type of practice drill needed."
+   },
+   {
+    "name": "duration_minutes",
+    "type": "int",
+    "required": false,
+    "min": 5,
+    "max": 60,
+    "description": "Preferred duration for the drill in minutes."
+   }
+  ],
+  "capability": "find_slice_drills"
+ },
+ {
+  "id": "t17",
+  "topic": "tennis > backhand slice spin",
+  "names": [
+   "analyze_slice_errors",
+   "fix_backhand_slice",
+   "slice_mistakes_help",
+   "correct_slice_form"
+  ],
+  "descriptions": [
+   "Identify common backhand slice mistakes.",
+   "Help correct errors in slice form.",
+   "Diagnose problems with slice technique.",
+   "Suggest fixes for slice flaws."
+  ],
+  "args": [
+   {
+    "name": "specific_issue",
+    "type": "str",
+    "description": "Description of the specific swing error."
+   }
+  ],
+  "capability": "analyze_slice_errors"
+ },
+ {
+  "id": "t18",
+  "topic": "tennis > backhand slice spin",
+  "names": [
+   "recommend_racquet_for_slice",
+   "slice_friendly_gear",
+   "best_racquets_slices",
+   "gear_for_backhand_slice"
+  ],
+  "descriptions": [
+   "Suggest racquets for slice shots.",
+   "Recommend gear for backhand slicing.",
+   "Find equipment suitable for slices.",
+   "Advise on racquet specs for slices."
+  ],
+  "args": [
+   {
+    "name": "budget_max",
+    "type": "float",
+    "required": false,
+    "min": 50.0,
+    "max": 500.0,
+    "description": "Maximum budget in dollars for equipment."
+   },
+   {
+    "name": "weight_pref",
+    "type": "enum",
+    "required": false,
+    "options": [
+     "light",
+     "medium",
+     "heavy"
+    ],
+    "description": "Preferred racquet weight category."
+   }
+  ],
+  "capability": "recommend_racquet_for_slice"
+ },
+ {
+  "id": "t19",
+  "topic": "tennis > backhand slice spin",
+  "names": [
+   "explain_spin_types",
+   "compare_tennis_spins",
+   "slice_vs_topspin",
+   "tennis_spin_guide"
+  ],
+  "descriptions": [
+   "Describe different tennis spin types.",
+   "Explain how slice spin works.",
+   "Compare slice with other spins.",
+   "Clarify the physics of tennis spin."
+  ],
+  "args": [
+   {
+    "name": "spin_focus",
+    "type": "enum",
+    "required": false,
+    "options": [
+     "slice",
+     "topspin",
+     "flat"
+    ],
+    "description": "The specific type of spin to focus on."
+   }
+  ],
+  "capability": "explain_spin_types"
+ },
+ {
+  "id": "t20",
+  "topic": "hair care > treatment mask routines",
+  "names": [
+   "calculate_mask_timing",
+   "determine_mask_duration",
+   "set_mask_timer"
+  ],
+  "descriptions": [
+   "Find out how long to leave the mask on.",
+   "Calculate the optimal time for hair treatment.",
+   "Tell you when to rinse your hair."
+  ],
+  "args": [
+   {
+    "name": "mask_strength",
+    "type": "enum",
+    "options": [
+     "light",
+     "medium",
+     "deep"
+    ],
+    "description": "The intensity level of the hair treatment."
+   },
+   {
+    "name": "hair_condition",
+    "type": "str",
+    "required": false,
+    "description": "Current state like dryness or damage level."
+   }
+  ],
+  "capability": "calculate_mask_timing"
+ },
+ {
+  "id": "t21",
+  "topic": "hair care > treatment mask routines",
+  "names": [
+   "suggest_routine_frequency",
+   "plan_mask_schedule",
+   "recommend_usage_rate"
+  ],
+  "descriptions": [
+   "Tell you how often to use hair masks.",
+   "Create a weekly treatment schedule for you.",
+   "Advise on the best routine frequency."
+  ],
+  "args": [
+   {
+    "name": "hair_goal",
+    "type": "str",
+    "description": "The desired outcome like shine or volume."
+   },
+   {
+    "name": "current_routine_level",
+    "type": "enum",
+    "options": [
+     "beginner",
+     "intermediate",
+     "expert"
+    ],
+    "description": "How often you currently treat your hair."
+   }
+  ],
+  "capability": "suggest_routine_frequency"
+ },
+ {
+  "id": "t22",
+  "topic": "hair care > treatment mask routines",
+  "names": [
+   "get_hair_mask_application_steps",
+   "show_hair_mask_usage_guide",
+   "explain_hair_treatment_method"
+  ],
+  "descriptions": [
+   "List steps to apply a hair treatment mask properly.",
+   "Show how to use a specific hair mask product.",
+   "Provide instructions for applying a hair care mask."
+  ],
+  "args": [
+   {
+    "name": "mask_type",
+    "type": "str",
+    "description": "The type of hair mask or treatment, e.g., hydrating, protein."
+   }
+  ],
+  "capability": "get_hair_mask_application_steps"
+ },
+ {
+  "id": "t23",
+  "topic": "hair care > treatment mask routines",
+  "names": [
+   "check_mask_hair_compatibility",
+   "verify_treatment_suitability",
+   "assess_mask_for_hair_type"
+  ],
+  "descriptions": [
+   "Check if a hair mask is suitable for your hair type.",
+   "Verify if a treatment works well for specific hair needs.",
+   "Assess whether a mask matches your current hair condition."
+  ],
+  "args": [
+   {
+    "name": "mask_ingredients",
+    "type": "str",
+    "description": "Key ingredients in the hair mask to evaluate."
+   },
+   {
+    "name": "hair_condition",
+    "type": "str",
+    "description": "Current state of the hair, like dry, oily, or damaged."
+   }
+  ],
+  "capability": "check_mask_hair_compatibility"
+ }
+]

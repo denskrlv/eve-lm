@@ -1,0 +1,725 @@
+[
+ {
+  "id": "t01",
+  "topic": "lighting > ceiling fans",
+  "names": [
+   "turn_light_on_off",
+   "switch_light",
+   "toggle_lamp"
+  ],
+  "descriptions": [
+   "Power a specific light fixture on or off.",
+   "Change the state of a lamp to opposite.",
+   "Activate or deactivate a ceiling light."
+  ],
+  "args": [
+   {
+    "name": "room_name",
+    "type": "str",
+    "description": "The name of the room containing the light"
+   },
+   {
+    "name": "device_identifier",
+    "type": "str",
+    "required": false,
+    "description": "Specific name for multiple lights in one room"
+   }
+  ],
+  "capability": "turn_light_on_off"
+ },
+ {
+  "id": "t02",
+  "topic": "lighting > ceiling fans",
+  "names": [
+   "set_light_brightness",
+   "adjust_dimmer_level",
+   "change_lamp_intensity"
+  ],
+  "descriptions": [
+   "Set the brightness level of a dimmable light.",
+   "Adjust how bright or dark a lamp appears.",
+   "Control the intensity of an adjustable bulb."
+  ],
+  "args": [
+   {
+    "name": "room_name",
+    "type": "str",
+    "description": "The room where the light is located"
+   },
+   {
+    "name": "brightness_level",
+    "type": "int",
+    "min": 0,
+    "max": 100,
+    "description": "Percentage value from 0 to 100"
+   },
+   {
+    "name": "device_identifier",
+    "type": "str",
+    "required": false,
+    "description": "Specific light name if multiple exist"
+   }
+  ],
+  "capability": "set_light_brightness"
+ },
+ {
+  "id": "t03",
+  "topic": "lighting > ceiling fans",
+  "names": [
+   "set_light_color",
+   "change_bulb_hue",
+   "select_light_tone"
+  ],
+  "descriptions": [
+   "Change the color of a smart LED light.",
+   "Set a specific hue for an adjustable bulb.",
+   "Pick a new color tone for a lamp."
+  ],
+  "args": [
+   {
+    "name": "room_name",
+    "type": "str",
+    "description": "The room containing the colored light"
+   },
+   {
+    "name": "color_value",
+    "type": "str",
+    "description": "Name of color or hex code"
+   },
+   {
+    "name": "device_identifier",
+    "type": "str",
+    "required": false,
+    "description": "Specific light name if multiple exist"
+   }
+  ],
+  "capability": "set_light_color"
+ },
+ {
+  "id": "t04",
+  "topic": "lighting > ceiling fans",
+  "names": [
+   "schedule_light_timer",
+   "set_lamp_schedule",
+   "create_light_automation"
+  ],
+  "descriptions": [
+   "Set a time for a light to turn on automatically.",
+   "Schedule when a specific lamp activates.",
+   "Create an automated routine for a light fixture."
+  ],
+  "args": [
+   {
+    "name": "room_name",
+    "type": "str",
+    "description": "The room with the light to schedule"
+   },
+   {
+    "name": "trigger_time",
+    "type": "str",
+    "description": "Time string like 7pm or 19:00"
+   },
+   {
+    "name": "action_type",
+    "type": "enum",
+    "options": [
+     "on",
+     "off"
+    ],
+    "description": "Whether the light turns on or off"
+   }
+  ],
+  "capability": "schedule_light_timer"
+ },
+ {
+  "id": "t05",
+  "topic": "lighting > ceiling fans",
+  "names": [
+   "get_light_status",
+   "check_lamp_state",
+   "query_light_power"
+  ],
+  "descriptions": [
+   "Tell if a specific light is currently on.",
+   "Check the active state of a lamp.",
+   "Find out the power status of a bulb."
+  ],
+  "args": [
+   {
+    "name": "room_name",
+    "type": "str",
+    "description": "The room containing the light"
+   },
+   {
+    "name": "device_identifier",
+    "type": "str",
+    "required": false,
+    "description": "Specific name for multiple lights"
+   }
+  ],
+  "capability": "get_light_status"
+ },
+ {
+  "id": "t06",
+  "topic": "job search > skill gap analysis tools",
+  "names": [
+   "find_job_listings",
+   "search_open_positions",
+   "look_up_jobs",
+   "browse_career_opportunities"
+  ],
+  "descriptions": [
+   "Search for open job positions matching specific criteria.",
+   "List current career openings in a chosen field.",
+   "Find available employment opportunities nearby or remote.",
+   "Query databases for relevant professional job postings."
+  ],
+  "args": [
+   {
+    "name": "keyword",
+    "type": "str",
+    "description": "Job title or skill to search for"
+   },
+   {
+    "name": "location",
+    "type": "str",
+    "required": false,
+    "description": "City, state, or remote preference"
+   },
+   {
+    "name": "experience_level",
+    "type": "str",
+    "required": false,
+    "description": "Entry level, mid, or senior status"
+   }
+  ],
+  "capability": "find_job_listings"
+ },
+ {
+  "id": "t07",
+  "topic": "job search > skill gap analysis tools",
+  "names": [
+   "update_resume_file",
+   "edit_resume_content",
+   "modify_cv_details",
+   "change_resume_text"
+  ],
+  "descriptions": [
+   "Update personal information in an existing resume.",
+   "Edit work history sections of a CV document.",
+   "Change skills listed on a current resume file.",
+   "Modify contact details in a stored CV."
+  ],
+  "args": [
+   {
+    "name": "section",
+    "type": "str",
+    "description": "Part of resume to update like summary or experience"
+   },
+   {
+    "name": "content",
+    "type": "str",
+    "description": "New text to insert or replace"
+   }
+  ],
+  "capability": "update_resume_file"
+ },
+ {
+  "id": "t08",
+  "topic": "job search > skill gap analysis tools",
+  "names": [
+   "check_skill_gaps",
+   "analyze_required_skills",
+   "find_learning_resources",
+   "identify_training_needs"
+  ],
+  "descriptions": [
+   "List skills needed for a specific target job.",
+   "Compare current skills against job requirements.",
+   "Find courses to learn missing professional skills.",
+   "Identify certifications required for a career path."
+  ],
+  "args": [
+   {
+    "name": "target_role",
+    "type": "str",
+    "description": "Desired job title or field"
+   },
+   {
+    "name": "current_skills",
+    "type": "str",
+    "required": false,
+    "description": "List of skills the user currently possesses"
+   }
+  ],
+  "capability": "check_skill_gaps"
+ },
+ {
+  "id": "t09",
+  "topic": "job search > skill gap analysis tools",
+  "names": [
+   "calculate_salary_range",
+   "estimate_pay_scale",
+   "determine_worth_of_role",
+   "find_compensation_data"
+  ],
+  "descriptions": [
+   "Estimate the salary range for a specific job title.",
+   "Calculate potential earnings based on role and location.",
+   "Determine typical pay for a given professional position.",
+   "Find compensation data for a specified career field."
+  ],
+  "args": [
+   {
+    "name": "job_title",
+    "type": "str",
+    "description": "The job title to look up salary information for."
+   },
+   {
+    "name": "location",
+    "type": "str",
+    "required": false,
+    "description": "The geographic area to adjust salary estimates."
+   }
+  ],
+  "capability": "lookup.salary_range"
+ },
+ {
+  "id": "t10",
+  "topic": "woodworking > gluing joints",
+  "names": [
+   "calculate_board_footage",
+   "measure_lumber_volume"
+  ],
+  "descriptions": [
+   "Compute board feet from dimensions",
+   "Convert wood size to volume units",
+   "Estimate lumber quantity needed"
+  ],
+  "args": [
+   {
+    "name": "width_inches",
+    "type": "float",
+    "min": 0,
+    "description": "Width of board in inches"
+   },
+   {
+    "name": "thickness_inches",
+    "type": "float",
+    "min": 0,
+    "description": "Thickness of board in inches"
+   },
+   {
+    "name": "length_feet",
+    "type": "float",
+    "min": 0,
+    "description": "Length of board in feet"
+   }
+  ],
+  "capability": "calculate_board_footage"
+ },
+ {
+  "id": "t11",
+  "topic": "woodworking > gluing joints",
+  "names": [
+   "find_hardware_store_nearby",
+   "locate_wood_supply_shop",
+   "search_lumber_retailer"
+  ],
+  "descriptions": [
+   "Find nearest hardware store location",
+   "Locate shops selling wood supplies",
+   "Search for local lumber vendors"
+  ],
+  "args": [
+   {
+    "name": "location",
+    "type": "str",
+    "description": "City or zip code"
+   }
+  ],
+  "capability": "find_hardware_store_nearby"
+ },
+ {
+  "id": "t12",
+  "topic": "woodworking > gluing joints",
+  "names": [
+   "get_wood_species_info",
+   "identify_timber_properties",
+   "look_up_lumber_details"
+  ],
+  "descriptions": [
+   "Retrieve characteristics of a wood type",
+   "Describe properties of specific timber",
+   "Get details about lumber species"
+  ],
+  "args": [
+   {
+    "name": "wood_type",
+    "type": "str",
+    "description": "Name of the wood species"
+   }
+  ],
+  "capability": "get_wood_species_info"
+ },
+ {
+  "id": "t13",
+  "topic": "woodworking > gluing joints",
+  "names": [
+   "convert_wood_units",
+   "switch_lumber_measurements",
+   "change_board_metrics"
+  ],
+  "descriptions": [
+   "Convert between metric and imperial wood sizes",
+   "Transform lumber measurement units",
+   "Adjust board dimension systems"
+  ],
+  "args": [
+   {
+    "name": "value",
+    "type": "float",
+    "min": 0,
+    "description": "Numeric value to convert"
+   },
+   {
+    "name": "from_unit",
+    "type": "enum",
+    "options": [
+     "inches",
+     "mm",
+     "feet",
+     "cm"
+    ],
+    "description": "Source unit of measurement"
+   },
+   {
+    "name": "to_unit",
+    "type": "enum",
+    "options": [
+     "inches",
+     "mm",
+     "feet",
+     "cm"
+    ],
+    "description": "Target unit of measurement"
+   }
+  ],
+  "capability": "convert_wood_units"
+ },
+ {
+  "id": "t14",
+  "topic": "woodworking > gluing joints",
+  "names": [
+   "get_woodworking_project_plan",
+   "view_diy_wood_project_steps",
+   "retrieve_carpentry_instructions",
+   "access_handtool_guide"
+  ],
+  "descriptions": [
+   "Show step-by-step instructions for building a wooden item.",
+   "Provide detailed plans and materials list for a craft project.",
+   "Display clear guides for assembling a specific wood creation.",
+   "List the tools and steps needed to make a piece."
+  ],
+  "args": [
+   {
+    "name": "project_name",
+    "type": "str",
+    "description": "The name of the wooden item or project to look up."
+   }
+  ],
+  "capability": "get_woodworking_project_plan"
+ },
+ {
+  "id": "t15",
+  "topic": "tennis > backhand slice spin",
+  "names": [
+   "get_tennis_drill",
+   "suggest_tennis_exercise",
+   "find_stroke_drill"
+  ],
+  "descriptions": [
+   "Suggest a practice drill for a specific tennis stroke.",
+   "Provide an exercise to improve your backhand technique.",
+   "Recommend a drill for improving forehand power."
+  ],
+  "args": [
+   {
+    "name": "stroke_type",
+    "type": "enum",
+    "required": false,
+    "options": [
+     "forehand",
+     "backhand",
+     "serve",
+     "volley"
+    ],
+    "description": "The type of tennis stroke to practice."
+   }
+  ],
+  "capability": "get_tennis_drill"
+ },
+ {
+  "id": "t16",
+  "topic": "tennis > backhand slice spin",
+  "names": [
+   "find_tennis_court_nearby",
+   "locate_nearest_tennis_court",
+   "search_nearby_courts"
+  ],
+  "descriptions": [
+   "Find public tennis courts near your current location.",
+   "Locate the closest open tennis court to you.",
+   "Search for private clubs with courts nearby."
+  ],
+  "args": [
+   {
+    "name": "location",
+    "type": "str",
+    "required": false,
+    "description": "The city or address to search near."
+   }
+  ],
+  "capability": "find_tennis_court_nearby"
+ },
+ {
+  "id": "t17",
+  "topic": "tennis > backhand slice spin",
+  "names": [
+   "get_tennis_equipment_info",
+   "check_grip_size_guide",
+   "find_racquet_specs"
+  ],
+  "descriptions": [
+   "Provide specifications for a specific tennis racquet model.",
+   "Tell me the correct grip size for my hand.",
+   "Recommend a racket based on player skill level."
+  ],
+  "args": [
+   {
+    "name": "product_name",
+    "type": "str",
+    "description": "The name of the tennis equipment item."
+   }
+  ],
+  "capability": "get_tennis_equipment_info"
+ },
+ {
+  "id": "t18",
+  "topic": "tennis > backhand slice spin",
+  "names": [
+   "calculate_ball_speed",
+   "estimate_serve_velocity",
+   "find_serve_speed",
+   "measure_shot_force"
+  ],
+  "descriptions": [
+   "Compute the speed of a tennis shot in miles per hour.",
+   "Estimate how fast a serve travels based on player stats.",
+   "Find the velocity of a specific tennis stroke.",
+   "Calculate the force behind a tennis ball hit."
+  ],
+  "args": [
+   {
+    "name": "stroke_type",
+    "type": "str",
+    "description": "The type of shot, such as serve or forehand."
+   },
+   {
+    "name": "player_level",
+    "type": "str",
+    "required": false,
+    "description": "The skill level of the player hitting the ball."
+   }
+  ],
+  "capability": "calculate_ball_speed"
+ },
+ {
+  "id": "t19",
+  "topic": "tennis > backhand slice spin",
+  "names": [
+   "check_match_status",
+   "get_game_score",
+   "track_set_score",
+   "view_tennis_standings"
+  ],
+  "descriptions": [
+   "Show the current score of a live tennis match.",
+   "Display the game points for an ongoing tennis set.",
+   "Track the set scores in a specific tennis match.",
+   "View the current standings in a tennis tournament."
+  ],
+  "args": [
+   {
+    "name": "tournament_name",
+    "type": "str",
+    "required": false,
+    "description": "The name of the tennis tournament or event."
+   },
+   {
+    "name": "player_name",
+    "type": "str",
+    "required": false,
+    "description": "The name of a specific player to track."
+   }
+  ],
+  "capability": "check_match_status"
+ },
+ {
+  "id": "t20",
+  "topic": "hair care > treatment mask routines",
+  "names": [
+   "get_hair_type_guide",
+   "identify_hair_category",
+   "determine_hair_texture",
+   "analyze_hair_pattern"
+  ],
+  "descriptions": [
+   "Identify your hair type for better care.",
+   "Tell you what hair texture you have.",
+   "Find out if your hair is straight or curly.",
+   "Classify your specific hair pattern."
+  ],
+  "args": [
+   {
+    "name": "hair_characteristic",
+    "type": "str",
+    "description": "Describe your main hair feature like texture or porosity."
+   }
+  ],
+  "capability": "get_hair_type_guide"
+ },
+ {
+  "id": "t21",
+  "topic": "hair care > treatment mask routines",
+  "names": [
+   "recommend_hair_products",
+   "suggest_hair_care_items",
+   "find_suitable_hair_gear",
+   "pick_best_hair_brush"
+  ],
+  "descriptions": [
+   "Suggest products for your specific hair needs.",
+   "Find shampoos and conditioners you should buy.",
+   "Recommend tools for your daily routine.",
+   "Pick items that help your scalp health."
+  ],
+  "args": [
+   {
+    "name": "hair_issue",
+    "type": "str",
+    "description": "The main problem you want to fix like dryness or oiliness."
+   },
+   {
+    "name": "product_type",
+    "type": "enum",
+    "required": false,
+    "options": [
+     "shampoo",
+     "conditioner",
+     "oil",
+     "spray"
+    ],
+    "description": "The category of product you are looking for."
+   }
+  ],
+  "capability": "recommend_hair_products"
+ },
+ {
+  "id": "t22",
+  "topic": "hair care > treatment mask routines",
+  "names": [
+   "find_hairstyle_tutorials",
+   "get_hair_styling_guide",
+   "learn_new_updo_steps",
+   "watch_haircut_instructions"
+  ],
+  "descriptions": [
+   "Show videos on how to style your hair.",
+   "Teach you steps for a specific look.",
+   "Guide you through creating a braid.",
+   "Help you learn a new blowout technique."
+  ],
+  "args": [
+   {
+    "name": "style_name",
+    "type": "str",
+    "description": "The name or type of hairstyle you want to learn."
+   },
+   {
+    "name": "difficulty_level",
+    "type": "enum",
+    "required": false,
+    "options": [
+     "easy",
+     "medium",
+     "hard"
+    ],
+    "description": "How complex you want the tutorial to be."
+   }
+  ],
+  "capability": "find_hairstyle_tutorials"
+ },
+ {
+  "id": "t23",
+  "topic": "hair care > treatment mask routines",
+  "names": [
+   "set_hair_reminder",
+   "schedule_hair_task",
+   "remind_hair_care"
+  ],
+  "descriptions": [
+   "Create a recurring reminder for hair care routines.",
+   "Schedule notifications for your hair maintenance tasks.",
+   "Set an alert to remind you about hair care."
+  ],
+  "args": [
+   {
+    "name": "frequency",
+    "type": "enum",
+    "options": [
+     "daily",
+     "weekly",
+     "monthly"
+    ],
+    "description": "How often the reminder should repeat."
+   },
+   {
+    "name": "task_description",
+    "type": "str",
+    "description": "Specific hair care action to be reminded about."
+   }
+  ],
+  "capability": "set_hair_reminder"
+ },
+ {
+  "id": "t24",
+  "topic": "hair care > treatment mask routines",
+  "names": [
+   "track_hair_growth",
+   "log_hair_length",
+   "record_hair_measurement"
+  ],
+  "descriptions": [
+   "Log the current length of your hair.",
+   "Record a measurement for tracking hair growth.",
+   "Save a note about your hair's current length."
+  ],
+  "args": [
+   {
+    "name": "length_inches",
+    "type": "float",
+    "min": 0,
+    "description": "The measured length of the hair in inches."
+   },
+   {
+    "name": "date",
+    "type": "str",
+    "required": false,
+    "description": "Date of the measurement if not today."
+   }
+  ],
+  "capability": "track_hair_growth"
+ }
+]

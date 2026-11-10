@@ -166,3 +166,17 @@ def test_ollama_generate_falls_back_when_structured_output_is_unavailable(monkey
     first, second, third = (body for _, body in http.sent)
     assert "format" in first and "format" not in second and "format" not in third
     assert json.dumps(SCHEMA) in second["system"]
+
+
+def test_claude_error_answer_is_final_not_retried(monkeypatch):
+    calls = []
+    answer = {"is_error": True, "subtype": "error_max_budget_usd", "total_cost_usd": 2.01}
+
+    def run(args, **kwargs):
+        calls.append(args)
+        return subprocess.CompletedProcess(args, 1, json.dumps(answer), "")
+
+    monkeypatch.setattr(llm.subprocess, "run", run)
+    with pytest.raises(LLMError, match=r"\$2\.01 spent.*error_max_budget_usd"):
+        claude_generate()("s", "m", SCHEMA)
+    assert len(calls) == 1

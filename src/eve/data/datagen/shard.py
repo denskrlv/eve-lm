@@ -3,10 +3,11 @@
 A shard is a directory ``NNNN/`` under the shards root (``data/datagen/shards``) holding
 ``topics.json`` (the topics it was given), ``tools.json``, ``requests.jsonl``, ``review.json``,
 ``report.json``, ``stats.json`` and ``status``. Every file is written whole (``write_atomic``),
-so a stopped run loses at most the step in flight. A ``.lock`` file holding a PID marks the
-shard as taken by a running process.
+so a stopped run loses at most the step in flight. An OS lock (``flock``) on its ``.lock`` file
+marks the shard as taken by a running process; it ends with the process, however that ends.
 """
 
+import fcntl
 import json
 import os
 import tempfile
@@ -156,6 +157,7 @@ class Shard:
     def __init__(self, path: Path):
         self.path = Path(path)
         self.number = int(self.path.name)
+        self.lock: int | None = None  # the open .lock file while this process holds the shard
 
     def __repr__(self) -> str:
         return f"Shard({self.path.name})"
@@ -207,41 +209,23 @@ class Shard:
         write_atomic(self.path / "requests.jsonl", "".join(line + "\n" for line in lines))
 
 
-def _alive(pid: int) -> bool:
+def claim(shard: Shard) -> bool:
+    """Take the shard for this process. False if another process (or ``Shard``) holds it."""
+    fd = os.open(shard.path / LOCK, os.O_CREAT | os.O_WRONLY)
     try:
-        os.kill(pid, 0)
-    except ProcessLookupError:
+        fcntl.flock(fd, fcntl.LOCK_EX | fcntl.LOCK_NB)
+    except BlockingIOError:
+        os.close(fd)
         return False
-    except PermissionError:
-        return True  # someone else's process
+    shard.lock = fd
     return True
 
 
-def claim(shard: Shard) -> bool:
-    """Take the shard for this process. False if a live process holds it; a lock left by a
-    dead process is taken over."""
-    path = shard.path / LOCK
-    for _ in range(2):
-        try:
-            fd = os.open(path, os.O_CREAT | os.O_EXCL | os.O_WRONLY)
-        except FileExistsError:
-            try:
-                pid = int(path.read_text().strip() or 0)
-            except (OSError, ValueError):
-                pid = 0
-            if pid and _alive(pid):
-                return False
-            path.unlink(missing_ok=True)
-            continue
-        with os.fdopen(fd, "w") as f:
-            f.write(str(os.getpid()))
-        return True
-    return False
-
-
 def release(shard: Shard) -> None:
-    """Give the shard back."""
-    (shard.path / LOCK).unlink(missing_ok=True)
+    """Give the shard back. The file stays: deleting it would let two processes lock two files."""
+    if shard.lock is not None:
+        os.close(shard.lock)
+        shard.lock = None
 
 
 def topic_slice(topics: Sequence[str], number: int) -> list[str]:
