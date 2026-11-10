@@ -22,3 +22,11 @@ TOKENIZER_WEIGHT = 50  # how many times tool schemas and commands count in token
 MAX_NEW_TOKENS = 24  # most tokens fill_in writes
 TEMPLATE_EXAMPLES = 80_000  # template examples in the train split
 HELDOUT_EXAMPLES = 2_000  # template examples whose correct tool is held out
+
+# Generated fine-tuning data (eve datagen).
+DATAGEN_DIR = "data/datagen"  # topics.txt, constraints.json
+SHARDS_DIR = f"{DATAGEN_DIR}/shards"
+OLLAMA_URL = "http://localhost:11434"
+TOOLS_MODEL = "qwen3.6:35b-a3b"  # invents tools (stage A)
+REQUESTS_MODEL = "qwen3.6:35b-a3b"  # writes requests (stage B)
+EMBED_MODEL = "all-minilm:l6-v2"  # the meaning check
