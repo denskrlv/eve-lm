@@ -1,0 +1,45 @@
+{
+ "seeds": [
+  "lid", "kettle", "sock", "ladder", "bucket", "blanket", "candle", "drawer", "hinge", "battery",
+  "charger", "cable", "sponge", "towel", "pillow", "window", "curtain", "doorbell", "mailbox", "fence",
+  "hose", "rake", "shovel", "seed", "soil", "leaf", "branch", "puddle", "snow", "frost",
+  "umbrella", "jacket", "boot", "glove", "scarf", "button", "zipper", "thread", "needle", "soap",
+  "shampoo", "toothbrush", "mirror", "shelf", "box", "label", "tape", "glue", "paint", "brush",
+  "nail", "screw", "hammer", "drill", "wrench", "bolt", "spring", "wheel", "chain", "bicycle",
+  "helmet", "scooter", "skateboard", "ball", "racket", "net", "goal", "whistle", "medal", "trophy",
+  "ticket", "queue", "bread", "butter", "jam", "cheese", "egg", "flour", "sugar", "salt",
+  "pepper", "oven", "pan", "pot", "spoon", "fork", "plate", "bowl", "cup", "jar",
+  "fridge", "freezer", "leftovers", "lunchbox", "snack", "fruit", "apple", "lemon", "onion", "garlic",
+  "soup", "rice", "noodle", "sauce", "dog", "cat", "fish", "bird", "hamster", "leash",
+  "collar", "cage", "tank", "feather", "paw", "baby", "toddler", "teenager", "grandma", "neighbour",
+  "friend", "coach", "teacher", "nurse", "doctor", "plumber", "landlord", "homework", "exam", "essay",
+  "notebook", "pencil", "eraser", "backpack", "locker", "library", "chapter", "quiz", "song", "playlist",
+  "guitar", "piano", "drum", "radio", "speaker", "headphones", "podcast", "lyric", "photo", "camera",
+  "frame", "screen", "remote", "tablet", "keyboard", "printer", "password", "router", "appointment", "birthday",
+  "anniversary", "holiday", "weekend", "morning", "midnight", "deadline", "habit", "weekly", "daily", "monthly",
+  "yearly", "hourly", "early", "late", "slow", "quick", "quiet", "loud", "warm", "cold",
+  "wet", "dry", "sticky", "broken", "missing", "lost", "stuck", "leaking", "squeaky", "dusty",
+  "noisy", "empty", "full", "heavy", "fragile", "spare", "budget", "receipt", "bill", "coin",
+  "tip", "refund", "donation", "savings", "allowance"
+ ],
+ "speaker": [
+  "a busy parent", "a teenager", "a grandparent", "a night-shift nurse", "a student cramming for exams",
+  "a non-native English speaker", "a chef in a hurry", "a retired teacher", "a small shop owner",
+  "someone who just woke up", "a gardener", "a dog owner", "a cyclist", "a new homeowner",
+  "a person with a cold", "a nervous first-timer", "a joker", "someone very polite", "a grumpy commuter",
+  "a child of ten", "a farmer", "an office worker", "a musician", "a builder", "a plumber",
+  "a freelancer", "someone tidying up", "a pet sitter", "a coach", "a shy person"
+ ],
+ "situation": [
+  "while driving", "while cooking dinner", "half asleep", "in a noisy room", "with full hands",
+  "on a busy morning", "late at night", "at the end of a long day", "while walking the dog",
+  "in the garden", "on the sofa", "in a hurry", "after a bad day", "while on the phone",
+  "while cleaning", "just got home", "while getting dressed", "during a party", "at the gym",
+  "while the baby sleeps", "before going out", "in the middle of a chore", "while waiting",
+  "on a rainy afternoon", "right after waking up", "while fixing something", "at a desk",
+  "with a guest over", "while tired", "on the way out"
+ ],
+ "form": ["command", "question", "statement of need", "complaint", "half sentence", "polite request"],
+ "length": ["3-6 words", "7-12 words", "13-25 words"],
+ "tone": ["casual", "formal", "excited", "annoyed", "worried", "playful", "tired", "matter-of-fact"]
+}
