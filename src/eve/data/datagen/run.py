@@ -5,6 +5,7 @@ stage B (requests) for all, so only one local model needs to be in memory. A sha
 are done goes to Claude's review at once, in the background, while stage B goes on.
 """
 
+import json
 from collections.abc import Callable, Mapping, Sequence
 from concurrent.futures import Future, ThreadPoolExecutor, as_completed
 from dataclasses import dataclass
@@ -28,6 +29,7 @@ from eve.data.datagen.shard import (
     new_shard,
     release,
     shards,
+    write_atomic,
 )
 from eve.data.datagen.tools import Judge, ToolStats, invent_tools
 from eve.data.generate.build import Sources
@@ -84,16 +86,13 @@ def _speed(tokens: int, seconds: float) -> str:
     return f"{tokens / seconds:.0f} tok/s" if seconds else "- tok/s"
 
 
-def _stage_a(
-    shard: Shard, root: Path, models: Models, ctx: Context, seeds: Sequence[str], seed: int
-) -> None:
+def _stage_a(shard: Shard, root: Path, models: Models, ctx: Context) -> None:
     others = [s for s in shards(root) if s.number != shard.number]
     accepted = MeaningIndex(models.embed)
     earlier = [t for s in others for t in s.tools()]
     accepted.add_many([(t.names[0], list(t.descriptions)) for t in earlier])
     taken = ctx.reserved_names | {n for t in earlier for n in t.names}
     judge = Judge(ctx.blocked, accepted, ctx.library, ctx.capabilities, taken)
-    rng = np.random.default_rng([seed, shard.number])
     per_topic = TOOLS_PER_SHARD // TOPICS_PER_SHARD
     topics = []
     for topic in shard.topics():  # a topic that names an eval capability would invite it
@@ -105,12 +104,12 @@ def _stage_a(
         def topic_done(stats: ToolStats) -> None:
             progress.update()
             progress.set_stats(
-                f"{stats.proposed - sum(stats.rejected.values())} kept",
+                f"{stats.kept} kept",
                 f"{sum(stats.rejected.values())} rejected",
                 _speed(stats.tokens, stats.seconds),
             )
 
-        tools, stats = invent_tools(models.tools, topics, judge, rng, seeds, per_topic, topic_done)
+        tools, stats = invent_tools(models.tools, topics, judge, per_topic, topic_done)
     stats.blocked_topics = len(shard.topics()) - len(topics)
     shard.save_tools(tools)
     shard.write_json("stats.json", {"tools": stats.to_dict()})
@@ -156,6 +155,8 @@ def _stage_b(
             pool.shutdown(cancel_futures=True)  # a stop waits only for requests in flight
             raise
     shard.save_rows([row for i in sorted(results) for row in results[i]])
+    lines = "".join(json.dumps(r, ensure_ascii=False) + "\n" for r in stats.log)
+    write_atomic(shard.path / "rejects.jsonl", lines)
     shard.write_json(
         "stats.json", {**shard.read_json("stats.json", {}), "requests": stats.to_dict()}
     )
@@ -212,7 +213,7 @@ def run(
                 held.append(shard)
         for shard in held:
             if shard.status() == "new":
-                _stage_a(shard, root, models, context, constraints["seeds"], seed)
+                _stage_a(shard, root, models, context)
                 log(f"{shard.path.name}: {len(shard.tools())} tools")
         if any(s.status() == "tools" for s in held):
             models.between_stages()

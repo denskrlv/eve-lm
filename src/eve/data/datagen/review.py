@@ -28,19 +28,26 @@ request was written by another model for one tool, with a label: intent "call" (
 it, with these args), "ask" (the tool does it but a required value is missing, written "?"), or \
 "unsupported" (close to the tool, but the tool can't do it).
 
+The rules every request follows (code has checked them already; keep them in any fix):
+- Each text value is only the words for that argument, copied exactly from the request. A \
+number value may be written as a word in the request (7 or seven): that is fine, don't change it.
+- "?" marks a missing required value, never on an optional argument.
+- A call or ask request shares no word (in any form) with at least one of the tool's names and \
+one of its descriptions. An unsupported request may use the tool's words.
+
 Check every request:
 - The label is right: a call or ask request really asks for what the tool does; an unsupported \
 one really can't be done by the tool (if the tool could do it, it is wrong).
-- Values in args are the user's own words from the request, and none is missing or invented.
-- It sounds like something a real person would say.
+- Each value holds exactly the user's words for its argument: nothing missing, invented, or \
+extra (for "find the grip errors right now", "grip errors", not "grip errors right now").
+- It is a request a real person would say to an assistant, not a remark that asks for nothing.
 - It avoids the tool's words honestly: misspelling a tool word to dodge the rule is not allowed.
 
 Check every tool: it must make sense, and it must not do what any of the reserved tools do.
 
 Then answer:
 - "fixes": requests you can repair. Give the id and only what changes: "utterance", "intent", \
-"args" (the whole args object). Every text and number value must appear in the utterance as \
-written. Never rename a tool or change its arguments.
+"args" (the whole args object). Never rename a tool or change its arguments.
 - "drop_rows": requests that can't be repaired.
 - "drop_tools": tools that are broken or do what a reserved tool does; all their requests go.
 Give a few words of "why" for each. Leave good requests alone."""

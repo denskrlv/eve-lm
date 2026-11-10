@@ -32,6 +32,20 @@ SUM = GenTool.from_dict(
 )
 
 
+def test_a_request_is_only_shown_with_a_name_and_description_it_avoids():
+    row = Row("t01-r01", "t01", "what insect made these holes", "call", {"symptom": "holes"})
+    specs = load_specs(ROOT / "data/tools")
+    out = datagen_examples([PEST], [row] * 200, specs, np.random.default_rng(0))
+    shown = {
+        (t["name"], t["description"])
+        for ex in out
+        for t in ex["tools"]
+        if t["name"] in PEST.names and ex["intent"] == "call"
+    }
+    assert {d for _, d in shown} == {PEST.descriptions[1]}  # "insect" is in the first one
+    assert {n for n, _ in shown} == set(PEST.names)
+
+
 def pest_row(i, intent="call"):
     args = {"symptom": "?" if intent == "ask" else f"holes{i}", "kind": "outdoor"}
     utterance = (

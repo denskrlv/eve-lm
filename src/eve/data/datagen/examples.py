@@ -1,7 +1,8 @@
 """Approved shards as training rows: the prompt around each generated request is put together
 here, at build time, so changing the mix needs a rebuild, not new generation.
 
-Each row shows its tool under a random one of its names and descriptions, with distractors
+Each row shows its tool under a random one of the names and descriptions its request shares no
+word with, with distractors
 from the training library and the other generated tools (never one with the same capability).
 A share of call requests becomes UNSUPPORTED by leaving the right tool out. Those, and near
 misses (which keep their tool), get only distractors sharing no word or area with the tool, so
@@ -14,6 +15,7 @@ from typing import Any
 
 import numpy as np
 
+from eve.data.datagen.checks import clean_pairs
 from eve.data.datagen.shard import GenTool, Row, shards
 from eve.data.draw import shuffled
 from eve.data.generate.library import ToolSpec
@@ -62,9 +64,9 @@ def datagen_examples(
     out = []
     for row in rows:
         tool, gold = by_id[row.tool], index[row.tool]
-        shown = tool.tool(
-            int(rng.integers(len(tool.names))), int(rng.integers(len(tool.descriptions)))
-        )
+        every = [(i, j) for i in range(len(tool.names)) for j in range(len(tool.descriptions))]
+        pairs = (clean_pairs(row, tool) if row.intent != "unsupported" else []) or every
+        shown = tool.tool(*pairs[int(rng.integers(len(pairs)))])
         intent, calls = row.intent, row.call(shown)
         if intent == "call" and rng.random() < REMOVAL_UNSUPPORTED_SHARE:
             prompt = [bank.specs[i].tool for i in _far(bank, gold, prompt_size(rng), rng)]

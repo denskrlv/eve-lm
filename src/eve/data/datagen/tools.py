@@ -10,8 +10,6 @@ from collections.abc import Callable, Mapping, Sequence
 from dataclasses import dataclass, field, replace
 from typing import Any
 
-import numpy as np
-
 from eve.data.datagen.checks import tool_problems
 from eve.data.datagen.llm import Generate
 from eve.data.datagen.meaning import (
@@ -25,7 +23,6 @@ from eve.data.datagen.shard import GenTool
 from eve.data.schema import ARG_TYPES, MAX_ARGS, SchemaError
 
 ROUNDS = 3
-SEEDS_PER_TOOL = 2
 
 TOOLS_SYSTEM = f"""You invent tools for a voice assistant on a phone or in a home: small actions \
 or lookups it could really perform for an ordinary person. You get a topic and how many tools \
@@ -34,16 +31,15 @@ to write.
 For each tool give:
 - "names": 2 to 4 snake_case names (lowercase words joined by _), each saying what the tool \
 does in different words. The first is the main one.
-- "descriptions": 2 to 4 one-line descriptions of what it does, each in different words from \
-the others (not the same sentence with one word swapped).
+- "descriptions": 2 to 4 descriptions of what it does, each at most 10 words and in \
+different words from the others (not the same sentence with one word swapped).
 - "args": what it needs, up to {MAX_ARGS}. Each has "name" (snake_case), "type" (one of \
 {", ".join(ARG_TYPES)}), and optionally "required" (default true), "options" (enum only, 2 \
 or more), "min" and "max" (int and float only), "description".
 
 Rules:
-- One clear capability per tool, different from every tool listed as taken.
-- The seed words given for a tool are only a nudge toward variety: use one if it fits the \
-topic, ignore them otherwise, and never mix unrelated things into one tool.
+- One clear, everyday capability per tool, the kind of thing a person really asks a phone or \
+smart speaker for, different from every tool listed as taken. Keep it simple: no gimmicks.
 - Every name and description of a tool describes the same single action.
 - Nothing about flights, hotels, trains, travel bookings, or money currencies.
 - Plain everyday English."""
@@ -86,6 +82,7 @@ class ToolStats:
     """What stage A did for one shard."""
 
     proposed: int = 0
+    kept: int = 0
     rejected: Counter[str] = field(default_factory=Counter)  # by kind
     dropped: int = 0  # tools still missing after the last round
     twins: int = 0  # kept with a training tool's capability
@@ -180,12 +177,10 @@ def _parse(item: Any, topic: str) -> GenTool:
 def _prompt(
     topic: str,
     wanted: int,
-    seeds: Sequence[Sequence[str]],
     taken: Sequence[str],
     feedback: Sequence[dict[str, Any]],
 ) -> str:
     lines = [f"Topic: {topic}", f"Write {wanted} tool{'s' if wanted > 1 else ''}."]
-    lines += [f"Tool {i + 1} seed words: {', '.join(words)}" for i, words in enumerate(seeds)]
     if taken:
         lines.append("Taken (don't repeat these): " + ", ".join(taken))
     if feedback:
@@ -200,8 +195,6 @@ def invent_tools(
     generate: Generate,
     topics: Sequence[str],
     judge: Judge,
-    rng: np.random.Generator,
-    seeds: Sequence[str],
     per_topic: int,
     topic_done: Callable[[ToolStats], None] = lambda stats: None,
 ) -> tuple[list[GenTool], ToolStats]:
@@ -215,8 +208,7 @@ def invent_tools(
         for _ in range(ROUNDS):
             if wanted == 0:
                 break
-            words = [list(rng.choice(seeds, SEEDS_PER_TOOL, replace=False)) for _ in range(wanted)]
-            prompt = _prompt(topic, wanted, words, [t.names[0] for t in kept], feedback)
+            prompt = _prompt(topic, wanted, [t.names[0] for t in kept], feedback)
             reply = generate(TOOLS_SYSTEM, prompt, TOOLS_SCHEMA)
             stats.tokens += reply.tokens
             stats.seconds += reply.seconds
@@ -240,6 +232,7 @@ def invent_tools(
                     continue
                 stats.twins += kind == "twin"
                 kept.append(replace(accepted, id=f"t{len(kept) + 1:02d}"))
+                stats.kept += 1
                 wanted -= 1
         stats.dropped += wanted
         topic_done(stats)

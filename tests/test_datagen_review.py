@@ -55,7 +55,11 @@ def test_fix_is_rechecked_and_marked_fixed():
 
 
 def test_fix_failing_checks_is_dropped():
-    data = {"fixes": [{"id": "t01-r02", "utterance": "what insect left spots", "why": "x"}]}
+    data = {
+        "fixes": [
+            {"id": "t01-r02", "utterance": "which insect bites spots into the leaves", "why": "x"}
+        ]
+    }
     result = apply_review(data, [PEST, FAN], ROWS)
     assert "t01-r02" not in {r.id for r in result.rows}
     assert result.fixed == 0 and result.dropped == 1
@@ -115,3 +119,13 @@ def test_review_shard_sends_tools_rows_and_blocked_and_rejects_bad_replies():
     assert "identify_garden_pest" in review_message([PEST], ROWS[:1], blocked)
     with pytest.raises(LLMError):
         review_shard(lambda s, p, sc: Reply("nope", None), [PEST], ROWS[:1], blocked)
+
+
+def test_the_review_knows_the_rules_the_code_checks():
+    from eve.data.datagen.review import REVIEW_SYSTEM
+
+    text = " ".join(REVIEW_SYSTEM.split())
+    assert "may be written as a word" in text  # 7 or seven: don't "fix" number words
+    assert "at least one of the tool's names and one of its descriptions" in text
+    assert "only the words for that argument" in text  # value edges
+    assert "never on an optional argument" in text

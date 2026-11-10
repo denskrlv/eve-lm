@@ -28,19 +28,23 @@ REQUESTS_SYSTEM = """You write what real people say or type to a voice assistant
 tool the assistant has and a list of cards. Write one request per card.
 
 Each card says who is speaking, their situation, the form, the length and the tone: write it \
-the way that person would say it then. Requests must differ from each other in words and shape.
+the way that person would naturally say it then. Every request asks the assistant to do \
+something (call and ask) or for something (near). Requests must differ from each other in words \
+and shape. Don't pad them with filler like "now", "right now", "please" or "I require" unless \
+the card's tone calls for it.
 
 By the card's intent:
 - call: ask for exactly what the tool does. Give "args": a value for every required argument \
-and any optional ones you mention. Every text and number value must appear in the request \
-exactly as written in args (a number may be written as a word: 7 or seven).
+and any optional one the request mentions, and nothing the request doesn't say. Each text value \
+is only the words for that argument, copied exactly from the request ("kale", not "my kale \
+right now"). A number may be written as a word in the request (7 or seven).
 - ask: ask for what the tool does but leave out one required text or number value; put "?" as \
-that value in "args".
-- near: ask for something close to what the tool does, but that this tool can't do (a \
-different action on the same things). "args" is null.
+that value in "args". Never put "?" on an optional argument.
+- near: ask for a different action this tool cannot do at all, about the same kind of things \
+(for a tool that waters plants: "repot my fern"). "args" is null.
 
-Never use any of the words listed as forbidden, in any form (no "pests" when "pest" is \
-forbidden). Say it in other words. Answer with {"rows": [{"card": n, "utterance": "...", \
+A call or ask card lists words to "avoid": never use them, in any form ("pests" counts as \
+"pest"), and say it in other words. Answer with {"rows": [{"card": n, "utterance": "...", \
 "args": {...} or null}]}."""
 
 REQUESTS_SCHEMA: dict[str, Any] = {
@@ -73,9 +77,16 @@ class RowStats:
     dropped: int = 0  # cards still unwritten after the last round
     tokens: int = 0
     seconds: float = 0.0
+    log: list[dict[str, Any]] = field(default_factory=list)  # every reject; not in stats.json
+
+    def reject(self, kind: str, **details: Any) -> None:
+        """Count a reject of ``kind`` and log it with ``details``."""
+        self.rejected[kind] += 1
+        self.log.append({**details, "kind": kind})
 
     def add(self, other: "RowStats") -> None:
         """Add another tool's stats to these."""
+        self.log += other.log
         self.written += other.written
         self.rejected.update(other.rejected)
         self.rounds.update(other.rounds)
@@ -86,12 +97,14 @@ class RowStats:
     def to_dict(self) -> dict[str, Any]:
         """The JSON form, for stats.json."""
         rounds = {str(k): v for k, v in self.rounds.items()}
-        return {**self.__dict__, "rejected": dict(self.rejected), "rounds": rounds}
+        data = {k: v for k, v in self.__dict__.items() if k != "log"}
+        return {**data, "rejected": dict(self.rejected), "rounds": rounds}
 
     @classmethod
     def from_dict(cls, data: dict[str, Any]) -> "RowStats":
         """Back from stats.json."""
         rounds = Counter({int(k): v for k, v in data.get("rounds", {}).items()})
+        data = {k: v for k, v in data.items() if k != "log"}
         return cls(**{**data, "rejected": Counter(data.get("rejected", {})), "rounds": rounds})
 
 
@@ -112,8 +125,14 @@ def draw_cards(
     return cards
 
 
-def _avoid(tool: GenTool) -> list[str]:
-    words = {w for text in tool.texts for w in re.findall(r"[a-z0-9]+", text.lower())}
+def _avoid(tool: GenTool, n: int) -> list[str]:
+    """The words card ``n`` must avoid: those of one name and one description, a different
+    pair from card to card. Avoiding one pair is enough (see ``checks.clean_pairs``)."""
+    pair = (
+        tool.names[n % len(tool.names)].replace("_", " "),
+        tool.descriptions[n % len(tool.descriptions)],
+    )
+    words = {w for text in pair for w in re.findall(r"[a-z0-9]+", text.lower())}
     return sorted(words - STOPWORDS)
 
 
@@ -136,11 +155,12 @@ def _prompt(
         "Tool names: " + ", ".join(tool.names),
         "What it does: " + " / ".join(tool.descriptions),
         "Arguments: " + json.dumps([a.to_dict() for a in tool.args], ensure_ascii=False),
-        "Never use these words: " + ", ".join(_avoid(tool)),
         "Cards:",
     ]
     for n, card in cards.items():
         line: dict[str, Any] = {"card": n, **card}
+        if card["intent"] != "near":
+            line["avoid"] = _avoid(tool, n - 1)
         if n in feedback:
             line |= feedback[n]
         lines.append(json.dumps(line, ensure_ascii=False))
@@ -174,10 +194,11 @@ def write_requests(
         feedback = {}
         items = reply.data.get("rows") if isinstance(reply.data, dict) else None
         answered: set[int] = set()
+        where = {"tool": tool.id, "round": round_number}
         for item in items if isinstance(items, list) else []:
             n = item.get("card") if isinstance(item, dict) else None
             if not isinstance(n, int) or n not in pending or n in answered:
-                stats.rejected["extra"] += 1
+                stats.reject("extra", **where, card=n, utterance=None, because=[str(item)[:200]])
                 continue
             answered.add(n)
             stats.written += 1
@@ -188,12 +209,15 @@ def write_requests(
             if not isinstance(utterance, str) or (
                 intent != "unsupported" and not isinstance(args, dict)
             ):
-                stats.rejected["schema"] += 1
-                feedback[n] = {"rejected": utterance, "because": ["needs an utterance and args"]}
+                because = ["needs an utterance and args"]
+                stats.reject("schema", **where, card=n, utterance=utterance, because=because)
+                feedback[n] = {"rejected": utterance, "because": because}
                 continue
             row = Row(f"{tool.id}-r{n:02d}", tool.id, utterance.strip(), intent, args, card, writer)
             if problems := row_problems(row, tool, seen):
-                stats.rejected[_kind(problems)] += 1
+                stats.reject(
+                    _kind(problems), **where, card=n, utterance=row.utterance, because=problems
+                )
                 feedback[n] = {"rejected": row.utterance, "because": problems}
                 continue
             kept[n] = row
@@ -201,7 +225,7 @@ def write_requests(
             stats.rounds[round_number] += 1
             del pending[n]
         for n in pending.keys() - answered:
-            stats.rejected["missing"] += 1
+            stats.reject("missing", **where, card=n, utterance=None, because=["not written"])
             feedback[n] = {"rejected": None, "because": ["not written"]}
     stats.dropped = len(pending)
     return [kept[n] for n in sorted(kept)], stats

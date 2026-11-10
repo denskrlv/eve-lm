@@ -1,4 +1,4 @@
-from eve.data.datagen.checks import row_problems, shared_words, tool_problems
+from eve.data.datagen.checks import clean_pairs, row_problems, shared_words, tool_problems
 from eve.data.datagen.shard import GenTool, Row
 
 ADD = ["add", "Add two numbers"]
@@ -61,8 +61,8 @@ def test_row_problems():
     assert row_problems(row("something chews holes in my kale"), PEST, set()) == []
     missing = row_problems(row("something chews my kale", args={"symptom": "holes"}), PEST, set())
     assert any("not in the utterance" in p for p in missing)
-    shared = row_problems(row("what insect made these holes"), PEST, set())
-    assert any('"insect"' in p for p in shared)
+    shared = row_problems(row("which insect bites the leaves, holes everywhere"), PEST, set())
+    assert any('"insect"' in p and "every" in p for p in shared)
     ask = Row("t02-r01", "t02", "change how the room feels", "ask", {"speed": "?"})
     assert any("ask" in p for p in row_problems(ask, FAN, set()))
     seen = {"something chews holes in my kale"}
@@ -73,3 +73,30 @@ def test_row_problems():
     assert row_problems(near, PEST, set()) == []
     bad = row_problems(Row("t01-r09", "t01", "kale holes", "call", {"colour": "red"}), PEST, set())
     assert bad and "colour" in bad[0]
+
+
+def test_a_request_needs_only_one_clean_name_and_description():
+    one_word = row("what insect made these holes")  # "insect" is only in the first description
+    assert row_problems(one_word, PEST, set()) == []
+    assert clean_pairs(one_word, PEST) == [(0, 1), (1, 1)]
+    assert clean_pairs(row("something chews holes in my kale"), PEST) == [
+        (0, 0),
+        (0, 1),
+        (1, 0),
+        (1, 1),
+    ]
+    plant = row("my plant has holes")  # in name_plant_bug and the first description
+    assert clean_pairs(plant, PEST) == [(0, 1)]
+
+
+def test_ask_may_only_leave_out_a_required_value():
+    optional = Row("t01-r05", "t01", "my kale has holes", "ask", {"symptom": "holes", "crop": "?"})
+    assert any("required" in p for p in row_problems(optional, PEST, set()))
+    required = Row("t01-r06", "t01", "something is wrong with my kale", "ask", {"symptom": "?"})
+    assert row_problems(required, PEST, set()) == []
+
+
+def test_long_descriptions_are_a_tool_problem():
+    long = "Say which small insect or other creature is slowly damaging a plant in the garden"
+    wordy = GenTool("t", "a > b", PEST.names, (long, PEST.descriptions[1]))
+    assert any("words" in p for p in tool_problems(wordy, set()))

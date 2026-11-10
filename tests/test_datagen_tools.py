@@ -2,7 +2,7 @@ import numpy as np
 
 from eve.data.datagen.llm import Reply
 from eve.data.datagen.meaning import MeaningIndex
-from eve.data.datagen.tools import ROUNDS, Judge, invent_tools
+from eve.data.datagen.tools import ROUNDS, TOOLS_SYSTEM, Judge, invent_tools
 
 # A text's meaning in the fake: its first word, plus its theme when it has a theme word. Two
 # texts with the same first word and theme are the same; one shared part makes them related.
@@ -63,8 +63,14 @@ def judge():
 
 
 def run(script, per_topic=2, topics=("garden > plants",)):
-    rng = np.random.default_rng(0)
-    return invent_tools(script, list(topics), judge(), rng, ["lid", "sock", "frost"], per_topic)
+    return invent_tools(script, list(topics), judge(), per_topic)
+
+
+def test_the_prompt_asks_for_short_everyday_tools_without_seed_words():
+    script = Script({"tools": [GOOD]})
+    run(script, per_topic=1)
+    assert "seed" not in script.prompts[0].lower()
+    assert "10 words" in TOOLS_SYSTEM and "seed" not in TOOLS_SYSTEM.lower()
 
 
 def test_invent_tools_accepts_good_tools_and_sends_rejects_back():
@@ -72,7 +78,7 @@ def test_invent_tools_accepts_good_tools_and_sends_rejects_back():
     script = Script({"tools": [GOOD, SUNBURN]}, {"tools": [bad_schema]}, {"tools": [GOOD2]})
     tools, stats = run(script, per_topic=2)
     assert [t.names[0] for t in tools] == ["water_plant", "trim_hedge"]
-    assert [t.id for t in tools] == ["t01", "t02"]
+    assert [t.id for t in tools] == ["t01", "t02"] and stats.kept == 2
     assert all(t.topic == "garden > plants" for t in tools)
     assert stats.proposed == 4 and stats.rejected["blocked"] == 1 and stats.rejected["schema"] == 1
     assert "check_uv_index" in script.prompts[1] and "water_plant" in script.prompts[1]

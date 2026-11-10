@@ -10,7 +10,7 @@ from eve.data.generate.novel import stem
 from eve.data.generate.sampler import STOPWORDS as SAMPLER_STOPWORDS
 from eve.data.generate.templates import number_words
 from eve.data.generate.validate import check_example, normalize
-from eve.data.schema import SchemaError
+from eve.data.schema import ASK_VALUE, SchemaError
 
 STOPWORDS = frozenset(
     SAMPLER_STOPWORDS | {"i", "my", "me", "you", "your", "can", "please", "what", "how"}
@@ -18,6 +18,7 @@ STOPWORDS = frozenset(
 MIN_NAMES = MIN_DESCRIPTIONS = 2
 MAX_NAMES = MAX_DESCRIPTIONS = 4
 DESCRIPTION_OVERLAP = 0.5  # descriptions sharing more of their words than this count as one
+MAX_DESCRIPTION_WORDS = 12
 ASK_TYPES = ("str", "int", "float")  # a value an ASK request can leave out
 
 
@@ -64,25 +65,54 @@ def tool_problems(tool: GenTool, taken: Collection[str]) -> list[str]:
                 distinct.append(text)
         if len(distinct) < MIN_DESCRIPTIONS:
             problems.append("the descriptions must differ in wording, not just a word or two")
+    problems += [
+        f"the description {text!r} has over {MAX_DESCRIPTION_WORDS} words: say it shorter"
+        for text in tool.descriptions
+        if len(text.split()) > MAX_DESCRIPTION_WORDS
+    ]
     problems += [f"the name {name} is already taken" for name in tool.names if name in taken]
     return problems
 
 
+def _pairs(tool: GenTool) -> list[tuple[str, str]]:
+    return [(n.replace("_", " "), d) for n in tool.names for d in tool.descriptions]
+
+
+def clean_pairs(row: Row, tool: GenTool) -> list[tuple[int, int]]:
+    """The (name, description) variants of ``tool`` the request shares no word with: the
+    ones the build may show it with."""
+    values = (row.args or {}).values()
+    return [
+        (i, j)
+        for i, name in enumerate(tool.names)
+        for j, description in enumerate(tool.descriptions)
+        if not shared_words(row.utterance, [name.replace("_", " "), description], values)
+    ]
+
+
 def row_problems(row: Row, tool: GenTool, seen: Collection[str]) -> list[str]:
-    """What's wrong with a generated request: a bad label, a value not in the text, a word
-    shared with the tool (CALL and ASK only), an ASK the tool can't have, or a repeat."""
+    """What's wrong with a generated request: a bad label, a value not in the text, no name and
+    description it shares no word with (CALL and ASK only), an ASK the tool can't have or that
+    leaves out an optional value, or a repeat."""
     try:
         example = row.example(tool)
     except SchemaError as error:
         return [str(error)]
     problems = check_example(example)
-    if row.intent in ("call", "ask"):
+    if row.intent in ("call", "ask") and not clean_pairs(row, tool):
         values = (row.args or {}).values()
-        if shared := shared_words(row.utterance, tool.texts, values):
-            words = ", ".join(f'"{w}"' for w in sorted(shared))
-            problems.append(f"shares {words} with the tool's names or descriptions")
+        fewest = min((shared_words(row.utterance, pair, values) for pair in _pairs(tool)), key=len)
+        words = ", ".join(f'"{w}"' for w in sorted(fewest))
+        problems.append(
+            f"shares {words} with every name and description pair: avoid the words of at "
+            "least one name and one description"
+        )
     if row.intent == "ask" and not any(a.required and a.type in ASK_TYPES for a in tool.args):
         problems.append("an ask request needs a required text or number argument to leave out")
+    for name, value in (row.args or {}).items() if row.intent == "ask" else ():
+        known = {a.name: a for a in tool.args}
+        if value == ASK_VALUE and name in known and not known[name].required:
+            problems.append(f'only a required value can be left out ("?"), not {name}')
     if row.intent == "unsupported" and row.args is not None:
         problems.append("an unsupported request has no call")
     if normalize(row.utterance) in seen:

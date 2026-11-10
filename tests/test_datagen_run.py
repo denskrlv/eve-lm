@@ -12,7 +12,6 @@ from eve.data.datagen.shard import TOOLS_PER_SHARD, Shard, claim
 ROOT = Path(__file__).parents[1]
 TOPICS = [f"area{i} > sub{i}" for i in range(20)]
 CONSTRAINTS = {
-    "seeds": ["lid", "sock", "frost", "kettle"],
     "speaker": ["a nurse"],
     "situation": ["driving"],
     "form": ["question"],
@@ -116,6 +115,8 @@ def test_run_makes_and_approves_a_shard(tmp_path, context):
     assert report["rows"]["kept"] == len(rows)
     assert not (shard.path / ".lock").exists()
     assert report_rows(tmp_path)[0]["status"] == "approved"
+    assert (shard.path / "rejects.jsonl").exists()
+    assert "log" not in shard.read_json("stats.json")["requests"]
 
 
 def test_resume_skips_finished_stages(tmp_path, context):
@@ -193,6 +194,8 @@ def test_report_command_prints_every_shard(tmp_path, context, capsys, monkeypatc
     main(["datagen", "report", "--dir", str(tmp_path)])
     out = capsys.readouterr().out
     assert "0001" in out and "approved" in out and "tools dropped" in out, out
+    total = next(line for line in out.splitlines() if line.strip().startswith("total"))
+    assert "500" in total  # rows count over every shard
 
 
 class Recorder:

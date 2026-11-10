@@ -1,5 +1,4 @@
 import json
-import re
 
 import numpy as np
 
@@ -68,7 +67,11 @@ def test_write_requests_resends_only_rejected_cards_with_reasons():
                 "utterance": "something chews holes in my kale",
                 "args": {"symptom": "holes"},
             },
-            {"card": 2, "utterance": "what insect made these holes", "args": {"symptom": "holes"}},
+            {
+                "card": 2,
+                "utterance": "which insect bites holes in the leaves",
+                "args": {"symptom": "holes"},
+            },
         ]
     }
     second = {
@@ -84,7 +87,7 @@ def test_write_requests_resends_only_rejected_cards_with_reasons():
     lines = [json.loads(line) for line in script.prompts[1].splitlines() if line.startswith("{")]
     assert [line["card"] for line in lines] == [2]
     assert (
-        lines[0]["rejected"] == "what insect made these holes"
+        lines[0]["rejected"] == "which insect bites holes in the leaves"
         and "insect" in lines[0]["because"][0]
     )
     assert stats.written == 3 and stats.tokens == 14  # attempts, kept or not
@@ -126,8 +129,42 @@ def test_gives_up_after_rounds_and_repeats_count():
     assert len(script.prompts) == 3
 
 
-def test_prompt_lists_the_words_to_avoid():
+def test_each_card_lists_the_words_of_one_name_and_description_to_avoid():
     script = Script({"rows": []})
-    write_requests(script, PEST, cards("call"), set(), "m")
-    avoid = re.search(r"Never use these words: (.*)", script.prompts[0]).group(1)
-    assert "insect" in avoid and "bug" in avoid and "the" not in avoid.split(", ")
+    write_requests(script, PEST, cards("call", "call", "near"), set(), "m")
+    lines = [json.loads(line) for line in script.prompts[0].splitlines() if line.startswith("{")]
+    first, second, near = (line.get("avoid") for line in lines)
+    assert "identify" in first and "insect" in first and "the" not in first
+    assert "bug" in second and "bites" in second and "insect" not in second
+    assert near is None  # a near miss may use the tool's words
+
+
+def test_every_reject_is_logged_with_its_reasons():
+    first = {
+        "rows": [
+            {
+                "card": 1,
+                "utterance": "which insect bites holes in the leaves",
+                "args": {"symptom": "holes"},
+            },
+            {"card": 9, "utterance": "stray", "args": {}},
+        ]
+    }
+    script = Script(
+        first,
+        {
+            "rows": [
+                {"card": 1, "utterance": "holes all over my kale", "args": {"symptom": "holes"}}
+            ]
+        },
+    )
+    _, stats = write_requests(script, PEST, cards("call"), set(), "m")
+    shared, extra = stats.log
+    assert shared["tool"] == "t03" and shared["card"] == 1 and shared["round"] == 1
+    assert (
+        shared["utterance"] == "which insect bites holes in the leaves"
+        and shared["kind"] == "shared"
+    )
+    assert "every name" in shared["because"][0]
+    assert extra["kind"] == "extra"
+    assert "log" not in stats.to_dict()

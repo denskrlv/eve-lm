@@ -96,7 +96,7 @@ def _print_report(directory: str) -> None:
         f"{len(approved)} approved",
         str(sum(r["tools"] for r in rows)),
         str(sum(r["tools_dropped"] for r in rows)),
-        str(sum(r["rows"] for r in approved)),
+        str(sum(r["rows"] for r in rows)),
         str(sum(r["written"] for r in rows)),
         str(sum(r["rejected"] for r in rows)),
         "",
