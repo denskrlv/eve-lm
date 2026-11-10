@@ -9,7 +9,7 @@ from eve.data.datagen.shard import GenTool, Row
 from eve.data.generate.novel import stem
 from eve.data.generate.sampler import STOPWORDS as SAMPLER_STOPWORDS
 from eve.data.generate.templates import number_words
-from eve.data.generate.validate import check_example, normalize
+from eve.data.generate.validate import check_example, mentions, normalize
 from eve.data.schema import ASK_VALUE, SchemaError
 
 STOPWORDS = frozenset(
@@ -113,6 +113,12 @@ def row_problems(row: Row, tool: GenTool, seen: Collection[str]) -> list[str]:
         known = {a.name: a for a in tool.args}
         if value == ASK_VALUE and name in known and not known[name].required:
             problems.append(f'only a required value can be left out ("?"), not {name}')
+    known = {a.name: a for a in tool.args}
+    for name, value in (row.args or {}).items():  # the decoder copies: case must match too
+        if name in known and known[name].type == "str" and isinstance(value, str):
+            said = re.search(rf"(?<!\w){re.escape(value)}(?!\w)", row.utterance)
+            if value != ASK_VALUE and not said and mentions(row.utterance, value):
+                problems.append(f"{name}={value!r} must be written with the request's case")
     if row.intent == "unsupported" and row.args is not None:
         problems.append("an unsupported request has no call")
     if normalize(row.utterance) in seen:

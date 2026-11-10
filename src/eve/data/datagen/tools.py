@@ -40,6 +40,9 @@ or more), "min" and "max" (int and float only), "description".
 Rules:
 - One clear, everyday capability per tool, the kind of thing a person really asks a phone or \
 smart speaker for, different from every tool listed as taken. Keep it simple: no gimmicks.
+- Broad enough that people ask for it in many different ways: the topic is a theme, not the \
+exact job (for "tennis > backhand slice", a tool that suggests a drill for any stroke, not one \
+only for the backhand slice).
 - Every name and description of a tool describes the same single action.
 - Nothing about flights, hotels, trains, travel bookings, or money currencies.
 - Plain everyday English."""

@@ -17,7 +17,8 @@ import numpy as np
 from eve.data.datagen.checks import ASK_TYPES, STOPWORDS, row_problems
 from eve.data.datagen.llm import Generate
 from eve.data.datagen.shard import GenTool, Row
-from eve.data.generate.validate import normalize
+from eve.data.generate.validate import mentions, normalize, value_forms
+from eve.data.schema import ASK_VALUE
 
 ROUNDS = 3
 CARDS = {"call": 16, "ask": 2, "near": 2}  # requests per tool, by kind
@@ -28,24 +29,27 @@ REQUESTS_SYSTEM = """You write what real people say or type to a voice assistant
 tool the assistant has and a list of cards. Write one request per card.
 
 Each card says who is speaking, their situation, the form, the length and the tone: write it \
-the way that person would naturally say it then. Every request asks the assistant to do \
-something (call and ask) or for something (near). Requests must differ from each other in words \
-and shape. Don't pad them with filler like "now", "right now", "please" or "I require" unless \
-the card's tone calls for it.
+the way that person would naturally say it then. Every request makes clear what the user \
+wants the assistant to do (call and ask) or to give them (near): never a remark that asks for \
+nothing ("my kale looks sad" alone is not a request). Requests must differ from each \
+other in words and shape. Don't pad them with filler like "now", "right now", "please" or \
+"I require" unless the card's tone calls for it.
 
 By the card's intent:
 - call: ask for exactly what the tool does. Give "args": a value for every required argument \
 and any optional one the request mentions, and nothing the request doesn't say. Each text value \
 is only the words for that argument, copied exactly from the request ("kale", not "my kale \
-right now"). A number may be written as a word in the request (7 or seven).
-- ask: ask for what the tool does but leave out one required text or number value; put "?" as \
-that value in "args". Never put "?" on an optional argument.
+right now"). A number may be written as a word in the request (7 or seven), and is said \
+in the argument's own unit (minutes=60 is "60 minutes", not "an hour").
+- ask: ask for what the tool does but leave out one required text or number value. In "args" \
+give every value anyway, the left-out one included, and name the left-out argument in \
+"left_out". Its value must not appear in the request.
 - near: ask for a different action this tool cannot do at all, about the same kind of things \
 (for a tool that waters plants: "repot my fern"). "args" is null.
 
 A call or ask card lists words to "avoid": never use them, in any form ("pests" counts as \
 "pest"), and say it in other words. Answer with {"rows": [{"card": n, "utterance": "...", \
-"args": {...} or null}]}."""
+"args": {...} or null, "left_out": name or null}]}."""
 
 REQUESTS_SCHEMA: dict[str, Any] = {
     "type": "object",
@@ -58,6 +62,7 @@ REQUESTS_SCHEMA: dict[str, Any] = {
                     "card": {"type": "integer"},
                     "utterance": {"type": "string"},
                     "args": {"type": ["object", "null"]},
+                    "left_out": {"type": ["string", "null"]},
                 },
                 "required": ["card", "utterance", "args"],
             },
@@ -140,6 +145,7 @@ def _kind(problems: Sequence[str]) -> str:
     text = " ".join(problems)
     for needle, kind in (
         ("not in the utterance", "value"),
+        ("case", "value"),
         ("shares", "shared"),
         ("repeats", "repeat"),
     ):
@@ -170,6 +176,21 @@ def _prompt(
             "write them again."
         )
     return "\n".join(lines)
+
+
+def _leave_out(
+    tool: GenTool, utterance: str, args: dict[str, Any], left_out: Any
+) -> tuple[str, list[str], dict[str, Any]]:
+    """An ASK reply gives every value and names in ``left_out`` the one its request doesn't
+    say: check that it really doesn't, then mark it "?". Returns (reject kind, reasons, args)."""
+    known = {a.name: a for a in tool.args}
+    arg = known.get(left_out) if isinstance(left_out, str) else None
+    if arg is None or not arg.required or arg.type not in ASK_TYPES or left_out not in args:
+        reason = 'name in "left_out" the required text or number argument the request leaves '
+        return "schema", [reason + "out, and give its value in args"], args
+    if any(mentions(utterance, form) for form in value_forms(arg, args[arg.name])):
+        return "ask", [f"the request says {arg.name}={args[arg.name]!r}: leave it out"], args
+    return "", [], {**args, arg.name: ASK_VALUE}
 
 
 def write_requests(
@@ -206,6 +227,10 @@ def write_requests(
             intent = INTENT[card["intent"]]
             if intent == "unsupported":
                 args = None
+            else:  # null means no arguments, and a null value means that one isn't given
+                args = {} if args is None else args
+                if isinstance(args, dict):
+                    args = {k: v for k, v in args.items() if v is not None}
             if not isinstance(utterance, str) or (
                 intent != "unsupported" and not isinstance(args, dict)
             ):
@@ -213,6 +238,12 @@ def write_requests(
                 stats.reject("schema", **where, card=n, utterance=utterance, because=because)
                 feedback[n] = {"rejected": utterance, "because": because}
                 continue
+            if intent == "ask" and ASK_VALUE not in args.values():
+                kind, because, args = _leave_out(tool, utterance, args, item.get("left_out"))
+                if because:
+                    stats.reject(kind, **where, card=n, utterance=utterance, because=because)
+                    feedback[n] = {"rejected": utterance, "because": because}
+                    continue
             row = Row(f"{tool.id}-r{n:02d}", tool.id, utterance.strip(), intent, args, card, writer)
             if problems := row_problems(row, tool, seen):
                 stats.reject(

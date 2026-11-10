@@ -168,3 +168,56 @@ def test_every_reject_is_logged_with_its_reasons():
     assert "every name" in shared["because"][0]
     assert extra["kind"] == "extra"
     assert "log" not in stats.to_dict()
+
+
+def ask_reply(utterance, args, left_out=None):
+    row = {"card": 1, "utterance": utterance, "args": args}
+    return {"rows": [row | ({"left_out": left_out} if left_out else {})]}
+
+
+def test_an_ask_names_the_value_it_leaves_out_and_code_checks_it_is_absent():
+    says_it = ask_reply("what made holes in my kale", {"symptom": "holes"}, "symptom")
+    leaves_it = ask_reply("something is wrong with my kale", {"symptom": "spots"}, "symptom")
+    rows, stats = write_requests(Script(says_it, leaves_it), PEST, cards("ask"), set(), "m")
+    assert rows[0].intent == "ask" and rows[0].args == {"symptom": "?"}
+    assert stats.rejected["ask"] == 1 and "holes" in stats.log[0]["because"][0]
+
+
+def test_an_ask_without_a_valid_left_out_is_a_reject():
+    replies = [
+        ask_reply("my kale is sad", {"symptom": "spots"}),
+        ask_reply("my kale is sad", {"symptom": "spots"}, "colour"),
+        ask_reply("my kale is sad", {"symptom": "?"}, "symptom"),
+    ]
+    rows, stats = write_requests(Script(*replies), PEST, cards("ask"), set(), "m")
+    assert rows[0].args == {"symptom": "?"}  # a "?" given directly is still fine
+    assert stats.rejected["schema"] == 2
+
+
+def test_null_args_mean_none_given():
+    no_args = GenTool.from_dict({**FAN.to_dict(), "args": []})
+    reply = {"rows": [{"card": 1, "utterance": "make it breezy in here", "args": None}]}
+    rows, _ = write_requests(Script(reply), no_args, cards("call"), set(), "m")
+    assert rows[0].args == {}
+    optional = {"name": "crop", "type": "str", "required": False}
+    with_optional = GenTool.from_dict(
+        {**PEST.to_dict(), "args": [*PEST.to_dict()["args"], optional]}
+    )
+    args = {"symptom": "holes", "crop": None}
+    reply = {"rows": [{"card": 1, "utterance": "something chews holes in my kale", "args": args}]}
+    rows, stats = write_requests(Script(reply), with_optional, cards("call"), set(), "m")
+    assert rows[0].args == {"symptom": "holes"} and not stats.rejected
+
+
+def test_a_value_in_the_wrong_case_goes_back_as_a_value_reject():
+    reply = {
+        "rows": [
+            {
+                "card": 1,
+                "utterance": "something chews Holes in my kale",
+                "args": {"symptom": "holes"},
+            }
+        ]
+    }
+    _, stats = write_requests(Script(reply), PEST, cards("call"), set(), "m")
+    assert stats.rejected["value"] == 1

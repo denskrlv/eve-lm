@@ -100,3 +100,8 @@ def test_long_descriptions_are_a_tool_problem():
     long = "Say which small insect or other creature is slowly damaging a plant in the garden"
     wordy = GenTool("t", "a > b", PEST.names, (long, PEST.descriptions[1]))
     assert any("words" in p for p in tool_problems(wordy, set()))
+
+
+def test_text_values_keep_the_case_of_the_request():
+    lower = Row("t01-r07", "t01", "something chews Holes in my kale", "call", {"symptom": "holes"})
+    assert any("case" in p for p in row_problems(lower, PEST, set()))

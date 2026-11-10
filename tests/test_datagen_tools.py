@@ -71,6 +71,7 @@ def test_the_prompt_asks_for_short_everyday_tools_without_seed_words():
     run(script, per_topic=1)
     assert "seed" not in script.prompts[0].lower()
     assert "10 words" in TOOLS_SYSTEM and "seed" not in TOOLS_SYSTEM.lower()
+    assert "the topic is a theme" in " ".join(TOOLS_SYSTEM.split())
 
 
 def test_invent_tools_accepts_good_tools_and_sends_rejects_back():
