@@ -259,6 +259,28 @@ uv run eve compare artifacts/runs/ab-*            # val metrics of several runs 
 </details>
 
 <details>
+<summary><b>Generated data</b></summary>
+
+<br/>
+
+`eve datagen` writes extra fine-tuning data with local [Ollama](https://ollama.com) models, aimed at requests that share no word with the tool they need ("what's 4 plus 9" for `add`). It works in shards of 25 tools × 20 requests:
+
+1. A model invents tools for a few topics from [`data/datagen/topics.txt`](data/datagen/topics.txt), each with 2–4 names and descriptions in different words. Code rejects tools whose meaning is too close to a novel-tools or held-out tool, or to one already made (all-MiniLM-L6-v2 embeddings), and sends them back.
+2. A model writes the requests, each for its own speaker, situation and tone ([`data/datagen/constraints.json`](data/datagen/constraints.json)): calls, requests with a value missing, and near misses the tool can't serve. Code checks every one (values in the text, no word shared with any name or description) and sends rejects back.
+3. Claude (headless `claude -p`) reviews the finished shard: it may fix or drop a request or drop a broken tool, never edit one. A shard is approved when fixes and drops stay under 10%.
+
+```bash
+ollama pull qwen3.6:35b-a3b && ollama pull all-minilm:l6-v2
+uv run eve datagen run --shards 5           # -> data/datagen/shards/NNNN/
+uv run eve datagen report                   # rejects, fix rate, speed and cost per shard
+uv run eve data build --out data/task-datagen --datagen data/datagen/shards
+```
+
+A stopped run picks up where it was, and several runs can share the work. `eve data build` without `--datagen` is unchanged, and with it the eval sets stay the same.
+
+</details>
+
+<details>
 <summary><b>Fine-tuning, evaluation and calibration</b></summary>
 
 <br/>
