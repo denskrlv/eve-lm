@@ -193,3 +193,42 @@ def test_report_command_prints_every_shard(tmp_path, context, capsys, monkeypatc
     main(["datagen", "report", "--dir", str(tmp_path)])
     out = capsys.readouterr().out
     assert "0001" in out and "approved" in out and "tools dropped" in out, out
+
+
+class Recorder:
+    """Stands in for eve.progress.bar: records each bar's total and how far it got."""
+
+    bars: list["Recorder"] = []
+
+    def __init__(self, total, desc, unit, initial=0, leave=True):
+        self.total, self.desc, self.unit, self.done, self.stats = total, desc, unit, 0, ()
+        Recorder.bars.append(self)
+
+    def update(self, n=1):
+        self.done += n
+
+    def set_stats(self, *parts):
+        self.stats = parts
+
+    def close(self):
+        pass
+
+    def __enter__(self):
+        return self
+
+    def __exit__(self, *exc):
+        self.close()
+
+
+def test_run_shows_a_bar_per_stage(tmp_path, context, monkeypatch):
+    import eve.data.datagen.run as run_module
+
+    Recorder.bars = []
+    monkeypatch.setattr(run_module, "bar", Recorder)
+    run(tmp_path, 1, models(), TOPICS, CONSTRAINTS, context)
+    tools_bar, requests_bar = Recorder.bars
+    assert (tools_bar.unit, tools_bar.total, tools_bar.done) == ("topics", 5, 5)
+    assert (requests_bar.unit, requests_bar.total, requests_bar.done) == ("tools", 25, 25)
+    assert "0001" in tools_bar.desc and "0001" in requests_bar.desc
+    assert any("tok/s" in part for part in requests_bar.stats)
+    assert any("rejected" in part for part in requests_bar.stats)

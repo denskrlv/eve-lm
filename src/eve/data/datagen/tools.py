@@ -6,7 +6,7 @@ times per topic.
 
 import json
 from collections import Counter
-from collections.abc import Mapping, Sequence
+from collections.abc import Callable, Mapping, Sequence
 from dataclasses import dataclass, field, replace
 from typing import Any
 
@@ -203,8 +203,10 @@ def invent_tools(
     rng: np.random.Generator,
     seeds: Sequence[str],
     per_topic: int,
+    topic_done: Callable[[ToolStats], None] = lambda stats: None,
 ) -> tuple[list[GenTool], ToolStats]:
-    """``per_topic`` tools for each topic, ids ``t01``, ``t02``… in order of acceptance."""
+    """``per_topic`` tools for each topic, ids ``t01``, ``t02``… in order of acceptance.
+    ``topic_done`` is called with the stats so far after each topic."""
     stats = ToolStats()
     kept: list[GenTool] = []
     for topic in topics:
@@ -240,4 +242,5 @@ def invent_tools(
                 kept.append(replace(accepted, id=f"t{len(kept) + 1:02d}"))
                 wanted -= 1
         stats.dropped += wanted
+        topic_done(stats)
     return kept, stats

@@ -6,7 +6,7 @@ are done goes to Claude's review at once, in the background, while stage B goes 
 """
 
 from collections.abc import Callable, Mapping, Sequence
-from concurrent.futures import Future, ThreadPoolExecutor
+from concurrent.futures import Future, ThreadPoolExecutor, as_completed
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
@@ -22,6 +22,7 @@ from eve.data.datagen.shard import (
     DONE,
     TOOLS_PER_SHARD,
     TOPICS_PER_SHARD,
+    Row,
     Shard,
     claim,
     new_shard,
@@ -33,6 +34,7 @@ from eve.data.generate.build import Sources
 from eve.data.generate.novel import load_novel
 from eve.data.generate.validate import normalize
 from eve.data.schema import Tool, load_library
+from eve.progress import bar
 
 
 @dataclass
@@ -77,6 +79,11 @@ def load_context(
     )
 
 
+def _speed(tokens: int, seconds: float) -> str:
+    """Tokens per second of model time; with requests in parallel the wall-clock rate is higher."""
+    return f"{tokens / seconds:.0f} tok/s" if seconds else "- tok/s"
+
+
 def _stage_a(
     shard: Shard, root: Path, models: Models, ctx: Context, seeds: Sequence[str], seed: int
 ) -> None:
@@ -93,7 +100,17 @@ def _stage_a(
         near = ctx.blocked.nearest([topic])
         if near is None or near[1] < TOPIC_SIMILARITY:
             topics.append(topic)
-    tools, stats = invent_tools(models.tools, topics, judge, rng, seeds, per_topic)
+    with bar(len(topics), f"{shard.path.name} tools", "topics") as progress:
+
+        def topic_done(stats: ToolStats) -> None:
+            progress.update()
+            progress.set_stats(
+                f"{stats.proposed - sum(stats.rejected.values())} kept",
+                f"{sum(stats.rejected.values())} rejected",
+                _speed(stats.tokens, stats.seconds),
+            )
+
+        tools, stats = invent_tools(models.tools, topics, judge, rng, seeds, per_topic, topic_done)
     stats.blocked_topics = len(shard.topics()) - len(topics)
     shard.save_tools(tools)
     shard.write_json("stats.json", {"tools": stats.to_dict()})
@@ -114,26 +131,40 @@ def _stage_b(
     tools = shard.tools()
     rng = np.random.default_rng([seed, shard.number, 1])
     cards = [draw_cards(t, constraints, rng) for t in tools]
-    with ThreadPoolExecutor(max(1, parallel)) as pool:
-        done = list(
-            pool.map(
-                lambda tc: write_requests(
-                    models.requests, tc[0], tc[1], seen, models.requests_name
-                ),
-                zip(tools, cards, strict=True),
-            )
-        )
     stats = RowStats()
-    for _, tool_stats in done:
-        stats.add(tool_stats)
-    shard.save_rows([row for rows, _ in done for row in rows])
+    results: dict[int, list[Row]] = {}
+    with (
+        bar(len(tools), f"{shard.path.name} requests", "tools") as progress,
+        ThreadPoolExecutor(max(1, parallel)) as pool,
+    ):
+        futures = {
+            pool.submit(write_requests, models.requests, t, c, seen, models.requests_name): i
+            for i, (t, c) in enumerate(zip(tools, cards, strict=True))
+        }
+        try:
+            for future in as_completed(futures):
+                rows, tool_stats = future.result()
+                results[futures[future]] = rows
+                stats.add(tool_stats)
+                progress.update()
+                progress.set_stats(
+                    f"{sum(len(r) for r in results.values())} requests",
+                    f"{sum(stats.rejected.values())} rejected",
+                    _speed(stats.tokens, stats.seconds),
+                )
+        except BaseException:
+            pool.shutdown(cancel_futures=True)  # a stop waits only for requests in flight
+            raise
+    shard.save_rows([row for i in sorted(results) for row in results[i]])
     shard.write_json(
         "stats.json", {**shard.read_json("stats.json", {}), "requests": stats.to_dict()}
     )
     shard.set_status("requests")
 
 
-def _review(shard: Shard, models: Models, ctx: Context) -> None:
+def _review(
+    shard: Shard, models: Models, ctx: Context, log: Callable[[str], None] = lambda line: None
+) -> None:
     tools, rows = shard.tools(), shard.rows()
     result = review_shard(models.review, tools, rows, ctx.blocked_tools)
     names = {t.id: t.names[0] for t in tools}
@@ -152,6 +183,10 @@ def _review(shard: Shard, models: Models, ctx: Context) -> None:
     report["approved"] = report["approved"] and bool(result.rows)
     shard.write_json("report.json", report)
     shard.set_status("approved" if report["approved"] else "flagged")
+    log(
+        f"{shard.path.name}: {shard.status()} (fixed {result.fixed}, dropped {result.dropped}, "
+        f"fix rate {result.fix_rate:.1%}, ${result.cost:.2f})"
+    )
 
 
 def run(
@@ -188,11 +223,10 @@ def run(
                     _stage_b(shard, root, models, constraints, parallel, seed)
                     log(f"{shard.path.name}: {len(shard.rows())} requests")
                 if shard.status() == "requests":
-                    pending.append(reviews.submit(_review, shard, models, context))
+                    log(f"{shard.path.name}: review by Claude started")
+                    pending.append(reviews.submit(_review, shard, models, context, log))
             for future in pending:
                 future.result()
-        for shard in held:
-            log(f"{shard.path.name}: {shard.status()}")
     finally:
         for shard in held:
             release(shard)
