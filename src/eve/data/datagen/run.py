@@ -15,7 +15,7 @@ import numpy as np
 
 from eve import defaults
 from eve.data.datagen.llm import Embed, Generate
-from eve.data.datagen.meaning import MeaningIndex, blocked_index, library_index
+from eve.data.datagen.meaning import TOPIC_SIMILARITY, MeaningIndex, blocked_index, library_index
 from eve.data.datagen.requests import RowStats, draw_cards, write_requests
 from eve.data.datagen.review import review_shard, shard_report
 from eve.data.datagen.shard import (
@@ -88,7 +88,13 @@ def _stage_a(
     judge = Judge(ctx.blocked, accepted, ctx.library, ctx.capabilities, taken)
     rng = np.random.default_rng([seed, shard.number])
     per_topic = TOOLS_PER_SHARD // TOPICS_PER_SHARD
-    tools, stats = invent_tools(models.tools, shard.topics(), judge, rng, seeds, per_topic)
+    topics = []
+    for topic in shard.topics():  # a topic that names an eval capability would invite it
+        near = ctx.blocked.nearest([topic])
+        if near is None or near[1] < TOPIC_SIMILARITY:
+            topics.append(topic)
+    tools, stats = invent_tools(models.tools, topics, judge, rng, seeds, per_topic)
+    stats.blocked_topics = len(shard.topics()) - len(topics)
     shard.save_tools(tools)
     shard.write_json("stats.json", {"tools": stats.to_dict()})
     shard.set_status("tools")
@@ -206,6 +212,7 @@ def report_rows(root: str | Path) -> list[dict[str, Any]]:
                 "shard": shard.path.name,
                 "status": shard.status(),
                 "tools": len(shard.tools()),
+                "tools_dropped": len(review.get("tools_dropped", [])),
                 "rows": len(shard.rows()),
                 "written": rows.get("written", 0),
                 "rejected": sum(rows.get("rejected", {}).values()),

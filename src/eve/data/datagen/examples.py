@@ -3,8 +3,9 @@ here, at build time, so changing the mix needs a rebuild, not new generation.
 
 Each row shows its tool under a random one of its names and descriptions, with distractors
 from the training library and the other generated tools (never one with the same capability).
-A share of call requests becomes UNSUPPORTED by leaving the right tool out. A near miss keeps
-its tool, with distractors from other areas, so none of them can serve it either.
+A share of call requests becomes UNSUPPORTED by leaving the right tool out. Those, and near
+misses (which keep their tool), get only distractors sharing no word or area with the tool, so
+none of them can serve the request either.
 """
 
 from collections.abc import Sequence
@@ -40,6 +41,13 @@ def load_approved(root: str | Path) -> tuple[list[GenTool], list[Row]]:
     return tools, rows
 
 
+def _far(bank: ToolBank, gold: int, count: int, rng: np.random.Generator) -> list[int]:
+    """Up to ``count`` tools sharing no word or domain with the gold tool, for a request labelled
+    UNSUPPORTED: a near neighbour might serve it after all."""
+    picked = bank.distractors([gold], 3 * count, rng, unsupported=True, hard=False)
+    return [i for i in picked if bank.similarity[gold, i] == 0][:count]
+
+
 def datagen_examples(
     tools: Sequence[GenTool],
     rows: Sequence[Row],
@@ -59,16 +67,11 @@ def datagen_examples(
         )
         intent, calls = row.intent, row.call(shown)
         if intent == "call" and rng.random() < REMOVAL_UNSUPPORTED_SHARE:
-            picked = bank.distractors([gold], prompt_size(rng), rng, unsupported=True)
-            prompt = [bank.specs[i].tool for i in picked]
+            prompt = [bank.specs[i].tool for i in _far(bank, gold, prompt_size(rng), rng)]
             intent, calls = "unsupported", ()
         elif intent == "unsupported":
-            picked = bank.distractors(
-                [gold], prompt_size(rng) - 1, rng, unsupported=True, hard=False
-            )
-            prompt = [shown] + [
-                bank.specs[i].tool for i in picked if bank.specs[i].domain != tool.area
-            ]
+            far = _far(bank, gold, prompt_size(rng) - 1, rng)
+            prompt = [shown] + [bank.specs[i].tool for i in far]
         else:
             picked = bank.distractors([gold], prompt_size(rng) - 1, rng)
             prompt = [shown] + [bank.specs[i].tool for i in picked]

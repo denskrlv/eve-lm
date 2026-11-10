@@ -120,6 +120,51 @@ def test_build_without_datagen_is_unchanged(tmp_path):
     assert _build(tmp_path, "c", tmp_path / "empty") == plain
 
 
+def test_unsupported_rows_never_offer_a_tool_close_to_the_gold_one():
+    """Leaving the gold tool out must not leave a near neighbour that could serve the request:
+    same area, or sharing a word with the gold tool."""
+    cousin = GenTool.from_dict(
+        {
+            "id": "t03",
+            "topic": "garden > weeds",
+            "names": ["pull_weeds", "clear_weed_patch"],
+            "descriptions": ["Say how to clear weeds from a plant bed", "Plan weeding"],
+        }
+    )
+    specs = load_specs(ROOT / "data/tools")
+    rows = [pest_row(i) for i in range(400)] + [pest_row(i, "unsupported") for i in range(400, 600)]
+    out = datagen_examples([PEST, cousin], rows, specs, np.random.default_rng(1))
+    bank_words = {
+        "insect",
+        "damaging",
+        "plant",
+        "creature",
+        "bites",
+        "leaves",
+        "garden",
+        "pest",
+        "bug",
+    }
+    seen = 0
+    for ex in out:
+        if ex["intent"] != "unsupported":
+            continue
+        others = [t for t in ex["tools"] if t["name"] not in PEST.names]
+        seen += len(others)
+        assert all(t["name"] != "pull_weeds" for t in others)
+        for t in others:
+            words = set((t["name"].replace("_", " ") + " " + t["description"]).lower().split())
+            assert not words & bank_words, t
+    assert seen > 100
+
+
+def test_build_refuses_a_missing_datagen_directory(tmp_path):
+    import pytest
+
+    with pytest.raises(FileNotFoundError, match="no-such-dir"):
+        _build(tmp_path, "a", tmp_path / "no-such-dir")
+
+
 def test_build_with_datagen_keeps_evals_identical(tmp_path):
     shards = tmp_path / "shards"
     _shard(shards, "approved", [pest_row(i) for i in range(40)])

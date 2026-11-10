@@ -1,3 +1,4 @@
+import re
 from pathlib import Path
 
 import numpy as np
@@ -25,11 +26,14 @@ AXIS: dict[str, int] = {}
 
 
 def fake_embed(texts):
-    """Every distinct text gets its own direction: no two texts are alike."""
+    """Every distinct text gets its own direction, and texts with the same number in them share
+    one more: the descriptions of the made-up tool 7 are alike, different tools are not."""
     rows = np.zeros((len(texts), 4096), dtype=np.float32)
     for i, text in enumerate(texts):
         rows[i, AXIS.setdefault(text, len(AXIS))] = 1.0
-    return rows
+        if number := re.search(r"\d+", text):
+            rows[i, AXIS.setdefault("#" + number.group(), len(AXIS))] = 1.0
+    return rows / np.linalg.norm(rows, axis=1, keepdims=True)
 
 
 class ToolMaker:
@@ -162,6 +166,15 @@ def test_new_shard_tools_never_repeat_earlier_names(tmp_path, context):
     assert len(names) == len(set(names)) == 2 * TOOLS_PER_SHARD * 2
 
 
+def test_a_topic_too_close_to_an_eval_tool_is_skipped(tmp_path, context):
+    blocked = context.blocked_tools[0].description  # the fake embed: same text, same direction
+    topics = [blocked] + TOPICS[1:]
+    shard = run(tmp_path, 1, models(), topics, CONSTRAINTS, context)[0]
+    assert len(shard.tools()) == TOOLS_PER_SHARD - TOOLS_PER_SHARD // 5
+    assert shard.read_json("stats.json")["tools"]["blocked_topics"] == 1
+    assert report_rows(tmp_path)[0]["tools_dropped"] == 0
+
+
 def test_cli_parses_datagen_run():
     args = build_parser().parse_args(
         ["datagen", "run", "--shards", "3", "--requests-model", "qwen3.5:4b"]
@@ -169,3 +182,14 @@ def test_cli_parses_datagen_run():
     assert args.shards == 3 and args.requests_model == "qwen3.5:4b" and args.parallel == 2
     args = build_parser().parse_args(["datagen", "report"])
     assert args.dir.endswith("shards")
+
+
+def test_report_command_prints_every_shard(tmp_path, context, capsys, monkeypatch):
+    from eve.cli import main
+    from eve.progress import console
+
+    monkeypatch.setattr(console, "width", 200)
+    run(tmp_path, 1, models(), TOPICS, CONSTRAINTS, context)
+    main(["datagen", "report", "--dir", str(tmp_path)])
+    out = capsys.readouterr().out
+    assert "0001" in out and "approved" in out and "tools dropped" in out, out

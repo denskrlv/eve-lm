@@ -1,4 +1,5 @@
 import json
+import logging
 from collections import Counter
 from collections.abc import Sequence
 from dataclasses import dataclass
@@ -174,7 +175,11 @@ def _add_datagen(splits: Splits, sources: Sources, root: Path, rng: np.random.Ge
     split. Returns how many were left out."""
     from eve.data.datagen.examples import datagen_examples, load_approved
 
+    if not root.is_dir():
+        raise FileNotFoundError(f"--datagen: no shards directory at {root}")
     tools, rows = load_approved(root)
+    if not rows:
+        logging.getLogger(__name__).warning("--datagen: no approved shards in %s", root)
     generated = datagen_examples(tools, rows, sources.train, rng)
     taken = {normalize(r["utterance"]) for split in splits.values() for r in split}
     kept = [r for r in generated if normalize(r["utterance"]) not in taken]

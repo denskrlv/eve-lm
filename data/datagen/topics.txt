@@ -10,13 +10,11 @@ side projects > home energy monitoring
 pottery > kiln shelf spacing
 fuel > engine oil
 cooling > using ceiling fan
-sleep > bedtime reminders
 parties > hosting a dinner party
 journaling > habit reminder
 bike repair > items
 bills > cellular plan
 dental care > oral hygiene products
-pocket money > spending limits
 football > penalty shootouts
 fishing > water temperature
 family calendar > meal times
@@ -49,10 +47,8 @@ board games > board game mechanics
 first aid > burn treatment
 ironing > iron pillowcases
 houseplants > low-light houseplant tips
-car parking > garage elevator access
 car parking > loading zone restrictions
 radio > voice search commands
-painting walls > ventilation safety tips
 tea > brewing methods
 hair care > cutting frequency advice
 cat care > reducing cat anxiety
@@ -67,9 +63,7 @@ baby care > diaper changing
 doctor visits > find specialist
 fitness > morning running route
 job search > industry salary data sources
-pets > pet waste bag
 medication > blood pressure check
-pocket money > gift fund
 job search > freelance gig apps
 radio > news headlines retrieval
 neighbours > hanging line
@@ -91,7 +85,6 @@ returns > packing bags
 home repairs > replacing lightbulb
 heating > maintenance schedule
 maths practice > trigonometric identities
-returns > returning items
 backyard birds > seed mix ratios
 online shopping > product warranty info
 baking > preheating pans
@@ -115,8 +108,6 @@ ironing > fold shirts neatly
 birthdays > celebration gift list
 home repairs > hanging picture frame
 fishing > catch and release
-cycling > checking tire pressure
-music practice > keyboard tuning
 snow days > cooking warm meals
 receipts > car maintenance logs
 podcasts > history documentary clips
@@ -130,7 +121,6 @@ parties > party invitation templates
 journaling > anxiety tracker
 football > football stadiums
 football > corner kick routines
-stretching > finger stretch sequences
 weather > sunset duration
 online shopping > online fashion store
 puzzles > jigsaw pieces
@@ -143,7 +133,6 @@ chores for kids > pick mud off
 returns > locating lost things
 storage > labeling systems
 sleep > white noise settings
-painting walls > drywall repair patches
 charity > fundraising campaigns
 car parking > overflow lot directions
 weddings > wedding menu tasting
@@ -152,13 +141,10 @@ hair care > styria heat protection
 knitting > fiber dyeing methods
 meetings > mute participant audio
 weddings > reception seating plans
-meditation > breathwork techniques
-painting walls > roller pattern designs
 journaling > dream journaling
 languages > russian alphabet guide
 seasons > fall leaves
 cooling > items
-moving house > setting up utilities
 podcasts > true crime investigations
 baby care > tummy time reminders
 online shopping > verified seller list
@@ -168,23 +154,19 @@ houseplants > common plant pests
 doctor visits > get lab results
 knitting > cable stitch patterns
 lawn care > weed eaters
-painting walls > brush cleaning methods
 passwords > two factor code
 fishing > spool tensioning
 meditation > loving kindness
 team sports > football penalty kicks
 knitting > yarn color theory
-chores for kids > make beds
 car parking > electric charging stations
 backyard birds > bird watching schedules
 mental wellbeing > social withdrawal
 receipts > gift card balances
 chores for kids > set table
-household budget > utility bill tracking
 kitchen cleaning > degreasing stovetops
 meetings > record meeting notes
 meditation > body scan practice
-pets > treat recommendations
 seasons > spring blooms
 weddings > dinner speech writing
 languages > japanese kanji chart
@@ -216,7 +198,6 @@ sleep > snoring advice
 parties > entertainment ideas
 weather > air quality index
 music practice > flute embouchure adjustment
-stretching > foot sole stretches
 first aid > heart attack signs
 baby care > safety checks
 backyard birds > nest box sizing
@@ -227,17 +208,14 @@ doors and locks > deadbolt settings
 music practice > cello string replacement
 charity > nonprofit compliance
 meetings > join video call
-pocket money > budget planning
 volunteering > tutoring kids
 fuel > octane rating
-cat care > vaccination schedules for cats
 home repairs > installing air filter
 home repairs > fixing wobbly door
 tea > tea accessories
 woodworking > cutting plywood
 weather > sunrise time
 puzzles > anagram solver
-stretching > morning arm stretches
 plumbing > leaking faucets
 radio > lyric lookup assistance
 moving house > transporting pets
@@ -258,15 +236,12 @@ school homework > summarizing articles
 hydration > hydration before workout
 podcasts > mindfulness meditation guides
 camping gear > first aid kits
-fuel > gas price
 doctor visits > book telehealth call
 side projects > digital scrap collection
 hydration > hydration tracker app
 yoga > yoga for back pain relief
 leftovers > rice reheating tips
-stretching > items
 tennis > serve speed analysis
-doors and locks > garage door repair
 dental care > brushing technique
 receipts > utility bill payments
 family calendar > visiting hours
@@ -278,7 +253,6 @@ cycling > replacing chain links
 charity > donation processing
 weather > weather forecast
 clothes > drying clothes
-meetings > book conference room
 journaling > items
 dog training > scent work
 moving house > packing boxes
@@ -290,20 +264,16 @@ languages > basic spanish phrases
 hair care > items
 plumbing > sump pump fixes
 hydration > hot water vs cold water
-household budget > household expense log
 hydration > sugar-free hydration options
 baking > cooling breads
 puzzles > logic riddle
-doors and locks > smart door chimes
 returns > tracking mail
-toddlers > bedtime story
 music practice > harmonic progression analysis
 dog training > puppy introduction
 backyard birds > migration timing charts
 fitness > hydration tracker app
 printing > photo printing
 plumbing > drain cleaning
-toddlers > bedtime routine
 meditation > depression relief
 yoga > seated meditation techniques
 volunteering > youth sports coaching
@@ -314,7 +284,6 @@ baking > checking ovens
 passwords > browser lock
 fuel > tank capacity
 family calendar > gift exchanges
-pets > vet appointment
 yoga > yoga for sleep improvement
 meetings > send calendar invite
 music practice > saxophone reed selection
@@ -324,7 +293,6 @@ mental wellbeing > stress relief
 school homework > items
 yoga > beginner yoga poses
 mental wellbeing > mindfulness practice
-pocket money > extra money
 singing > scales and arpeggios practice
 dental care > cavity prevention
 storage > under bed space
@@ -338,12 +306,9 @@ gifts > birthday card ideas
 doctor visits > find nearby clinic
 weddings > gift registry list
 first aid > allergy symptoms
-puzzles > trivia quiz
 weddings > bridal party outfit
-pocket money > saving tips
 doors and locks > fingerprint entry
 heating > energy usage
-singing > breath control techniques
 nutrition > hydration tips
 toddlers > items
 heating > items
@@ -363,7 +328,6 @@ maths practice > prime factorization
 side projects > local food sourcing
 radio > weather forecast summaries
 charity > volunteer coordination
-painting walls > color matching apps
 chores for kids > clean shoes
 charity > community outreach
 woodworking > saw blades
@@ -389,28 +353,22 @@ nutrition > portion control
 ironing > fix wrinkled pants
 furniture > adjustable standing desks
 hydration > daily water intake goals
-pets > feeding schedule
 podcasts > science fiction novels
 online shopping > secure payment option
 fishing > reel adjustment
 guitar > open chord shapes
-stretching > hip opening drills
 clothes > washing hands
 passwords > items
 bike repair > pump leak
 clothes > ironing shirts
 car parking > security guard presence
-household budget > monthly spending limit
-stretching > knee bend mobility
 gifts > thoughtful gesture ideas
 podcasts > documentary series reviews
 lawn care > edging lawns
 baby care > temperature setting
-pocket money > weekly allowance
 nutrition > calorie counting
 leftovers > frozen veg scraps
 returns > gathering receipts
-pocket money > allowance schedule
 pottery > wheel centering techniques
 medication > diabetes management
 team sports > basketball free throws
@@ -421,7 +379,6 @@ singing > diction refinement tips
 charity > beneficiary support
 football > referee decisions
 singing > pitch range expansion
-pocket money > cash management
 football > injury reports
 video games > cooperative puzzle
 board games > resource trading
@@ -430,7 +387,6 @@ job search > job interview questions
 online shopping > viral product trend
 storage > bathroom storage
 woodworking > sandpaper selection
-yoga > yoga breathing methods
 kitchen cleaning > emptying trash bins
 cycling > lubricating chain gears
 radio > music playlist creation
@@ -443,9 +399,7 @@ kitchen cleaning > mopping kitchen floor
 parties > cooking for guests
 furniture > folding sofa beds
 job search > career transition advice
-pets > vaccination reminders
 board games > card deck shuffling
-painting walls > primer selection guide
 heating > fan speed
 journaling > thought stream
 singing > articulation speed drills
@@ -453,12 +407,10 @@ ironing > items
 household budget > items
 medication > overdose prevention
 nutrition > fitness tracking
-music practice > sheet music transcription
 podcasts > podcast episode recommendations
 chores for kids > brush teeth
 baking > reading recipes
 hair care > dry shampoo application
-stretching > shoulder roll routine
 cycling > repairing flat tires
 storage > cabinet shelving
 backyard birds > native species lists
@@ -477,7 +429,6 @@ dental care > dentist appointment
 video games > competitive fighting
 volunteering > community garden work
 knitting > knot tying basics
-sleep > sleep tracking
 singing > vocal warm-up exercises
 football > goalkeeping saves
 science projects > leaf chlorophyll count
@@ -553,12 +504,10 @@ doors and locks > lockout alerts
 cooling > adjusting room temperature
 houseplants > plant fertilization guide
 power cuts > emergency lights on
-nutrition > recipe ideas
 maths practice > square root estimation
 school homework > organizing notes
 doctor visits > book appointment
 nutrition > meal planning
-stretching > ankle flexibility exercises
 tennis > forehand loop shot
 household budget > grocery savings
 mental wellbeing > burnout signs
@@ -583,14 +532,12 @@ bike repair > pedal squeak
 home repairs > cleaning clogged drain
 sleep > dream journaling
 weather > wind speed
-painting walls > trim edge coverage
 school homework > fact checking answers
 drawing > watercolor blending
 woodworking > nail placement
 languages > french vocabulary list
 lighting > bulb colors
 moving house > unpacking rooms
-painting walls > painting ceiling corners
 medication > dosage adjustment
 houseplants > repotting plants
 office work > spreadsheet analysis
@@ -644,7 +591,6 @@ printing > staple removal
 heating > filter cleaning
 bills > home energy
 family calendar > wedding dates
-pocket money > expense tracking
 snow days > items
 gifts > unwrapped surprise box
 leftovers > leftover pasta
@@ -681,7 +627,6 @@ baby care > milestone tracking
 baby care > sleep training
 backyard birds > feeder cleaning protocols
 snow days > adjusting thermostat settings
-toddlers > screen time limit
 journaling > idea generator
 camping gear > camp stoves and fuel
 leftovers > dried fruit preservation
@@ -695,7 +640,6 @@ football > yellow card penalties
 hair care > color fading prevention
 receipts > office expense reports
 school homework > writing essays
-stretching > neck relaxation techniques
 baking > storing cookies
 power cuts > fridge running low
 volunteering > elderly care visits
@@ -715,7 +659,6 @@ fishing > bait selection
 lighting > flicker issues
 school homework > formatting documents
 reading > children's book comprehension
-pets > grooming tips
 saving up > expense reduction
 dog training > agility basics
 car parking > reserved parking status
@@ -761,7 +704,6 @@ furniture > floating wall cabinets
 weather > precipitation type
 puzzles > sudoku grid
 home repairs > wiring smart bulb
-leftovers > milk spoilage signs
 receipts > medical co-payments
 neighbours > tree roots
 charity > charity event planning
@@ -779,9 +721,7 @@ drawing > perspective guides
 first aid > sprain repair
 passwords > forgot login
 sleep > items
-bills > utility payments
 snow days > buying winter supplies
-receipts > pet grooming fees
 office work > data entry help
 dog training > socialization tips
 doors and locks > key duplication
@@ -811,7 +751,6 @@ family calendar > family meetings
 snow days > preparing children's lessons
 birthdays > special occasion reminders
 languages > hindi regional dialects
-doctor visits > order medication
 video games > indie platformer
 mental wellbeing > items
 lighting > energy saving
@@ -844,7 +783,6 @@ skin care > exfoliation schedule
 gifts > subscription service sign up
 houseplants > indoor plant care
 weddings > venue ceremony ideas
-pocket money > savings goals
 seasons > migratory birds
 storage > seasonal rotation
 saving up > high yield savings
@@ -854,7 +792,6 @@ plumbing > sewage backups
 lawn care > fertilizing lawns
 mental wellbeing > morning anxiety
 power cuts > washing machine empty
-ironing > remove iron stains
 podcasts > comedy sketch shows
 first aid > fever management
 team sports > baseball strike counts
@@ -864,9 +801,7 @@ languages > portuguese verb tenses
 neighbours > painted fence
 gifts > handmade craft materials
 board games > token management
-stretching > spinal twist poses
 leftovers > bread crumbs storage
-painting walls > stain removal techniques
 meditation > sleep relaxation
 camping gear > lighting sources
 puzzles > escape room
@@ -874,13 +809,11 @@ bills > electric bill
 printing > printer maintenance
 kitchen cleaning > washing dish racks
 clothes > folding towels
-painting walls > rolling texture finish
 pottery > bisque ware cooling curves
 doors and locks > items
 birthdays > bday party planning
 moving house > unloading truck
 saving up > debt payoff
-medication > medication interaction
 singing > resonance placement adjustments
 power cuts > heater turned off
 parties > gift idea generation
@@ -902,7 +835,6 @@ fishing > fishing location
 dental care > flossing routine
 podcasts > biography narratives
 cat care > cat litter box cleaning
-yoga > morning stretching routine
 fuel > emissions
 hydration > dehydrated recovery drinks
 meetings > set up follow-up task

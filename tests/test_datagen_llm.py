@@ -20,6 +20,11 @@ from eve.data.datagen.llm import (
 SCHEMA = {"type": "object", "properties": {"a": {"type": "string"}}}
 
 
+@pytest.fixture(autouse=True)
+def no_waiting(monkeypatch):
+    monkeypatch.setattr(llm, "RETRY_WAIT", 0)
+
+
 class FakeHTTP:
     """Stands in for urlopen: records each request body, answers from ``replies`` in turn."""
 
@@ -110,6 +115,41 @@ def test_parse_json():
     assert parse_json('Sure! Here it is: {"a": {"b": 2}} hope that helps') == {"a": {"b": 2}}
     assert parse_json("no json here") is None
     assert parse_json('{"a": ') is None
+
+
+def test_transient_errors_are_retried(monkeypatch):
+    import http.client
+
+    busy = urllib.error.HTTPError("u", 500, "busy", {}, io.BytesIO(b'{"error":"busy"}'))
+    ok = {"response": '{"a": "x"}', "eval_count": 1, "eval_duration": 1}
+    http_fake = FakeHTTP(busy, http.client.IncompleteRead(b""), ok)
+    monkeypatch.setattr(llm.urllib.request, "urlopen", http_fake)
+    assert ollama_generate("m")("s", "p", SCHEMA).data == {"a": "x"}
+    assert len(http_fake.sent) == 3
+
+
+def test_errors_that_persist_or_mean_no_server_are_not_retried_forever(monkeypatch):
+    import http.client
+
+    http_fake = FakeHTTP(*[http.client.IncompleteRead(b"")] * 10)
+    monkeypatch.setattr(llm.urllib.request, "urlopen", http_fake)
+    with pytest.raises(LLMError):
+        ollama_generate("m")("s", "p", SCHEMA)
+    assert len(http_fake.sent) == llm.TRIES
+    refused = FakeHTTP(urllib.error.URLError(ConnectionRefusedError(61, "refused")))
+    monkeypatch.setattr(llm.urllib.request, "urlopen", refused)
+    with pytest.raises(LLMError, match="ollama serve"):
+        ollama_generate("m")("s", "p", SCHEMA)
+    assert len(refused.sent) == 1
+
+
+def test_claude_is_retried_once_on_failure(monkeypatch):
+    answers = [
+        subprocess.CompletedProcess([], 1, "", "overloaded"),
+        subprocess.CompletedProcess([], 0, json.dumps({"structured_output": {"a": 1}}), ""),
+    ]
+    monkeypatch.setattr(llm.subprocess, "run", lambda args, **kw: answers.pop(0))
+    assert claude_generate()("s", "m", SCHEMA).data == {"a": 1}
 
 
 def test_ollama_generate_falls_back_when_structured_output_is_unavailable(monkeypatch):

@@ -20,6 +20,8 @@ from eve.data.schema import load_library
 BLOCK_SIMILARITY = 0.55  # this close to a novel-tools or held-out tool: rejected
 REPEAT_SIMILARITY = 0.8  # this close to an accepted generated tool: rejected as a repeat
 TWIN_SIMILARITY = 0.75  # this close to a training-library tool: kept, with its capability
+COHERENCE_FLOOR = 0.3  # a tool's own descriptions less alike than this describe two things
+TOPIC_SIMILARITY = 0.5  # a topic line this close to a blocked tool is skipped
 
 
 class MeaningIndex:
@@ -47,6 +49,13 @@ class MeaningIndex:
         for key, texts in items:
             self.keys.append(key)
             self._owner += [len(self.keys) - 1] * len(texts)
+
+    def spread(self, texts: Sequence[str]) -> float:
+        """The lowest cosine between any two of ``texts`` (1 for fewer than two)."""
+        if len(texts) < 2:
+            return 1.0
+        vectors = self.embed(texts)
+        return float((vectors @ vectors.T)[np.triu_indices(len(texts), 1)].min())
 
     def nearest(self, texts: Sequence[str]) -> tuple[str, float] | None:
         """The key with the highest cosine between any of its texts and any of ``texts``, and

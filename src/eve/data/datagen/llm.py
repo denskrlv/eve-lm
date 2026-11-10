@@ -4,10 +4,12 @@ Each is wrapped as a plain callable (``Generate``, ``Embed``), so the stages can
 fakes and never need a model running.
 """
 
+import http.client
 import json
 import re
 import subprocess
 import tempfile
+import time
 import urllib.error
 import urllib.request
 from collections.abc import Callable, Sequence
@@ -19,6 +21,9 @@ import numpy as np
 from eve import defaults
 
 EMBED_BATCH = 64  # Ollama 0.40 fails some batches of 256 real descriptions ("tokenize: EOF")
+TRIES = 3  # per Ollama request, on failures that may pass
+CLAUDE_TRIES = 2
+RETRY_WAIT = 5.0  # seconds before the second try; doubled for each one after
 
 
 class LLMError(RuntimeError):
@@ -53,7 +58,11 @@ def parse_json(text: str) -> Any:
         return None
 
 
-def _post(url: str, body: dict[str, Any], timeout: float) -> dict[str, Any]:
+class _Transient(LLMError):
+    """A failure worth another try: a busy server, a timeout, a dropped connection."""
+
+
+def _post_once(url: str, body: dict[str, Any], timeout: float) -> dict[str, Any]:
     request = urllib.request.Request(
         url, json.dumps(body).encode(), {"Content-Type": "application/json"}
     )
@@ -63,11 +72,29 @@ def _post(url: str, body: dict[str, Any], timeout: float) -> dict[str, Any]:
             return data
     except urllib.error.HTTPError as error:
         detail = error.read().decode(errors="replace")[:300]
-        raise LLMError(f"{url} answered {error.code}: {detail}") from None
-    except (urllib.error.URLError, TimeoutError, OSError) as error:
-        raise LLMError(
-            f"can't reach Ollama at {url} ({error}): is `ollama serve` running?"
-        ) from None
+        kind = _Transient if error.code >= 500 and error.code != 501 else LLMError
+        raise kind(f"{url} answered {error.code}: {detail}") from None
+    except urllib.error.URLError as error:
+        if isinstance(error.reason, ConnectionRefusedError) or "refused" in str(error.reason):
+            raise LLMError(
+                f"can't reach Ollama at {url} ({error.reason}): is `ollama serve` running?"
+            ) from None
+        raise _Transient(f"Ollama at {url} failed: {error.reason}") from None
+    except (TimeoutError, OSError, http.client.HTTPException, json.JSONDecodeError) as error:
+        raise _Transient(f"Ollama at {url} failed: {error!r}") from None
+
+
+def _post(url: str, body: dict[str, Any], timeout: float) -> dict[str, Any]:
+    """POST ``body`` as JSON and read the JSON answer, trying ``TRIES`` times on failures that
+    may pass (an unattended run shouldn't stop at one dropped connection)."""
+    for attempt in range(TRIES):
+        try:
+            return _post_once(url, body, timeout)
+        except _Transient:
+            if attempt == TRIES - 1:
+                raise
+            time.sleep(RETRY_WAIT * 2**attempt)
+    raise AssertionError("unreachable")
 
 
 def ollama_generate(
@@ -144,7 +171,7 @@ def claude_generate(
     session, run in an empty directory so no CLAUDE.md or project memory reaches it. ``budget``
     caps one call's cost in US dollars."""
 
-    def generate(system: str, prompt: str, schema: dict[str, Any]) -> Reply:
+    def once(system: str, prompt: str, schema: dict[str, Any]) -> Reply:
         args = [command, "-p", "--output-format", "json", "--tools", "", "--strict-mcp-config"]
         args += ["--no-session-persistence", "--system-prompt", system]
         args += ["--json-schema", json.dumps(schema), "--max-budget-usd", str(budget)]
@@ -156,16 +183,16 @@ def claude_generate(
                     args, input=prompt, capture_output=True, text=True, timeout=timeout, cwd=cwd
                 )
             except subprocess.TimeoutExpired:
-                raise LLMError(f"{command} took over {timeout:.0f}s") from None
+                raise _Transient(f"{command} took over {timeout:.0f}s") from None
             except FileNotFoundError:
                 raise LLMError(f"{command} is not installed or not on PATH") from None
         try:
             out = json.loads(done.stdout)
         except json.JSONDecodeError:
             detail = (done.stderr or done.stdout).strip()[:300]
-            raise LLMError(f"{command} exited {done.returncode}: {detail}") from None
+            raise _Transient(f"{command} exited {done.returncode}: {detail}") from None
         if done.returncode or out.get("is_error"):
-            raise LLMError(f"{command} failed: {str(out.get('result'))[:300]}")
+            raise _Transient(f"{command} failed: {str(out.get('result'))[:300]}")
         text = str(out.get("result") or "")
         data = out.get("structured_output")
         return Reply(
@@ -173,5 +200,15 @@ def claude_generate(
             data if data is not None else parse_json(text),
             cost=float(out.get("total_cost_usd") or 0.0),
         )
+
+    def generate(system: str, prompt: str, schema: dict[str, Any]) -> Reply:
+        for attempt in range(CLAUDE_TRIES):
+            try:
+                return once(system, prompt, schema)
+            except _Transient:
+                if attempt == CLAUDE_TRIES - 1:
+                    raise
+                time.sleep(RETRY_WAIT)
+        raise AssertionError("unreachable")
 
     return generate

@@ -16,6 +16,7 @@ from eve.data.datagen.checks import tool_problems
 from eve.data.datagen.llm import Generate
 from eve.data.datagen.meaning import (
     BLOCK_SIMILARITY,
+    COHERENCE_FLOOR,
     REPEAT_SIMILARITY,
     TWIN_SIMILARITY,
     MeaningIndex,
@@ -41,7 +42,9 @@ or more), "min" and "max" (int and float only), "description".
 
 Rules:
 - One clear capability per tool, different from every tool listed as taken.
-- Use the seed words given for a tool as inspiration for what it does.
+- The seed words given for a tool are only a nudge toward variety: use one if it fits the \
+topic, ignore them otherwise, and never mix unrelated things into one tool.
+- Every name and description of a tool describes the same single action.
 - Nothing about flights, hotels, trains, travel bookings, or money currencies.
 - Plain everyday English."""
 
@@ -86,6 +89,7 @@ class ToolStats:
     rejected: Counter[str] = field(default_factory=Counter)  # by kind
     dropped: int = 0  # tools still missing after the last round
     twins: int = 0  # kept with a training tool's capability
+    blocked_topics: int = 0  # topics skipped for being too close to an eval tool
     tokens: int = 0
     seconds: float = 0.0
 
@@ -120,6 +124,12 @@ class Judge:
             kind = "name" if all("taken" in p for p in problems) else "wording"
             return None, kind, problems
         texts = list(tool.descriptions)
+        if self.blocked.spread(texts) < COHERENCE_FLOOR:
+            return (
+                None,
+                "incoherent",
+                ["the descriptions say different things: describe one action"],
+            )
         near = self.blocked.nearest(texts)
         if near and near[1] > BLOCK_SIMILARITY:
             return None, "blocked", [f"too close to the reserved tool {near[0]}: invent another"]
@@ -143,6 +153,13 @@ def _clean_arg(arg: Any) -> Any:
     return {k: v for k, v in arg.items() if v is not None and v != [] and v != ""}
 
 
+def _strings(item: dict[str, Any], key: str) -> list[str]:
+    value = item.get(key) or []
+    if not isinstance(value, list) or not all(isinstance(v, str) for v in value):
+        raise SchemaError(f"{key} must be a list of strings, got {value!r}")
+    return value
+
+
 def _parse(item: Any, topic: str) -> GenTool:
     if not isinstance(item, dict):
         raise SchemaError(f"a tool must be an object, got {item!r}")
@@ -153,8 +170,8 @@ def _parse(item: Any, topic: str) -> GenTool:
         {
             "id": "new",
             "topic": topic,
-            "names": item.get("names") or [],
-            "descriptions": item.get("descriptions") or [],
+            "names": _strings(item, "names"),
+            "descriptions": _strings(item, "descriptions"),
             "args": [_clean_arg(a) for a in args],
         }
     )

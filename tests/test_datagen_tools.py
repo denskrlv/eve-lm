@@ -1,20 +1,28 @@
-import zlib
-
 import numpy as np
 
 from eve.data.datagen.llm import Reply
 from eve.data.datagen.meaning import MeaningIndex
 from eve.data.datagen.tools import ROUNDS, Judge, invent_tools
 
-DIM = 64
+# A text's meaning in the fake: its first word, plus its theme when it has a theme word. Two
+# texts with the same first word and theme are the same; one shared part makes them related.
+THEMES = {
+    "garden": {"plant", "greenery", "hedge", "shrubs", "water", "soil"},
+    "sun": {"sun", "skin"},
+    "math": {"numbers", "values"},
+}
+AXIS: dict[str, int] = {}
 
 
 def fake_embed(texts):
-    """Texts that start with the same word point the same way; nothing else is similar."""
-    rows = np.zeros((len(texts), DIM), dtype=np.float32)
+    rows = np.zeros((len(texts), 256), dtype=np.float32)
     for i, text in enumerate(texts):
-        rows[i, zlib.crc32(text.split()[0].lower().encode()) % DIM] = 1.0
-    return rows
+        words = text.lower().split()
+        rows[i, AXIS.setdefault("first:" + words[0], len(AXIS))] = 1.0
+        for theme, keys in THEMES.items():
+            if keys & set(words):
+                rows[i, AXIS.setdefault("theme:" + theme, len(AXIS))] = 1.0
+    return rows / np.linalg.norm(rows, axis=1, keepdims=True)
 
 
 def tool(names, descriptions, args=None):
@@ -100,6 +108,20 @@ def test_taken_names_are_rejected():
     clash = tool(["add", "plus_them"], ["Put numbers together", "Sum numbers up"], [])
     tools, stats = run(Script({"tools": [clash]}, {"tools": [GOOD]}), per_topic=1)
     assert stats.rejected["name"] == 1 and tools[0].names[0] == "water_plant"
+
+
+def test_descriptions_of_two_different_things_are_rejected():
+    mixed = tool(
+        ["plan_bake_cost", "check_room_light"], ["Plan what baking costs", "Check the room light"]
+    )
+    tools, stats = run(Script({"tools": [mixed]}, {"tools": [GOOD]}), per_topic=1)
+    assert stats.rejected["incoherent"] == 1 and tools[0].names[0] == "water_plant"
+
+
+def test_text_where_a_list_belongs_is_a_schema_reject():
+    letters = {**GOOD, "names": "abc"}
+    tools, stats = run(Script({"tools": [letters]}, {"tools": [GOOD]}), per_topic=1)
+    assert stats.rejected["schema"] == 1 and tools[0].names[0] == "water_plant"
 
 
 def test_extra_tools_beyond_the_ask_are_ignored():
