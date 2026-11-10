@@ -50,10 +50,10 @@ def test_ollama_embed_normalizes_and_batches(monkeypatch):
     def answer(n):
         return {"embeddings": [[3.0, 4.0]] * n}
 
-    http = FakeHTTP(answer(256), answer(44))
+    http = FakeHTTP(*[answer(llm.EMBED_BATCH)] * 4, answer(300 - 4 * llm.EMBED_BATCH))
     monkeypatch.setattr(llm.urllib.request, "urlopen", http)
     vectors = ollama_embed("e")([f"t{i}" for i in range(300)])
-    assert len(http.sent) == 2 and http.sent[0][0].endswith("/api/embed")
+    assert len(http.sent) == 5 and http.sent[0][0].endswith("/api/embed")
     assert vectors.shape == (300, 2)
     assert np.allclose(np.linalg.norm(vectors, axis=1), 1.0)
     assert ollama_embed("e")([]).shape[0] == 0

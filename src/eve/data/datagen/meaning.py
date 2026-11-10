@@ -17,9 +17,9 @@ from eve.data.generate.novel import load_novel
 from eve.data.schema import load_library
 
 # Cosine similarities, set from real distributions (md/2026-11-10-datagen-bakeoff.md).
-BLOCK_SIMILARITY = 0.6  # this close to a novel-tools or held-out tool: rejected
+BLOCK_SIMILARITY = 0.55  # this close to a novel-tools or held-out tool: rejected
 REPEAT_SIMILARITY = 0.8  # this close to an accepted generated tool: rejected as a repeat
-TWIN_SIMILARITY = 0.8  # this close to a training-library tool: kept, with its capability
+TWIN_SIMILARITY = 0.75  # this close to a training-library tool: kept, with its capability
 
 
 class MeaningIndex:

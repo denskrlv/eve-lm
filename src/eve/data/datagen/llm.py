@@ -18,7 +18,7 @@ import numpy as np
 
 from eve import defaults
 
-EMBED_BATCH = 256
+EMBED_BATCH = 64  # Ollama 0.40 fails some batches of 256 real descriptions ("tokenize: EOF")
 
 
 class LLMError(RuntimeError):
