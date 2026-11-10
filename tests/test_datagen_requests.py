@@ -55,6 +55,8 @@ def test_cards_follow_the_counts_and_skip_ask_without_required_text_or_number():
     assert [c["intent"] for c in drawn].count("ask") == CARDS["ask"]
     assert [c["intent"] for c in drawn].count("near") == CARDS["near"]
     assert set(drawn[0]) == {"intent", *CONSTRAINTS}
+    assert {c.get("leave_out") for c in drawn if c["intent"] == "ask"} == {"symptom"}
+    assert all("leave_out" not in c for c in drawn if c["intent"] != "ask")
     fan = [c["intent"] for c in draw_cards(FAN, CONSTRAINTS, rng)]
     assert "ask" not in fan and fan.count("call") == CARDS["call"] + CARDS["ask"]
 
@@ -170,28 +172,36 @@ def test_every_reject_is_logged_with_its_reasons():
     assert "log" not in stats.to_dict()
 
 
-def ask_reply(utterance, args, left_out=None):
-    row = {"card": 1, "utterance": utterance, "args": args}
-    return {"rows": [row | ({"left_out": left_out} if left_out else {})]}
+ASK_CARD = [{"intent": "ask", "speaker": "a nurse", "form": "question", "leave_out": "symptom"}]
 
 
-def test_an_ask_names_the_value_it_leaves_out_and_code_checks_it_is_absent():
-    says_it = ask_reply("what made holes in my kale", {"symptom": "holes"}, "symptom")
-    leaves_it = ask_reply("something is wrong with my kale", {"symptom": "spots"}, "symptom")
-    rows, stats = write_requests(Script(says_it, leaves_it), PEST, cards("ask"), set(), "m")
+def ask_reply(utterance, args):
+    return {"rows": [{"card": 1, "utterance": utterance, "args": args}]}
+
+
+def test_an_ask_leaves_out_the_value_its_card_names_and_code_checks_it_is_absent():
+    says_it = ask_reply("what made holes in my kale", {"symptom": "holes"})
+    leaves_it = ask_reply("something is wrong with my kale", {"symptom": "spots"})
+    rows, stats = write_requests(Script(says_it, leaves_it), PEST, ASK_CARD, set(), "m")
     assert rows[0].intent == "ask" and rows[0].args == {"symptom": "?"}
     assert stats.rejected["ask"] == 1 and "holes" in stats.log[0]["because"][0]
 
 
-def test_an_ask_without_a_valid_left_out_is_a_reject():
+def test_an_ask_without_a_value_for_the_left_out_argument_is_a_reject():
     replies = [
-        ask_reply("my kale is sad", {"symptom": "spots"}),
-        ask_reply("my kale is sad", {"symptom": "spots"}, "colour"),
-        ask_reply("my kale is sad", {"symptom": "?"}, "symptom"),
+        ask_reply("my kale is sad, do something", {}),
+        ask_reply("my kale is sad, do something", {"symptom": "?"}),
     ]
-    rows, stats = write_requests(Script(*replies), PEST, cards("ask"), set(), "m")
+    rows, stats = write_requests(Script(*replies), PEST, ASK_CARD, set(), "m")
     assert rows[0].args == {"symptom": "?"}  # a "?" given directly is still fine
-    assert stats.rejected["schema"] == 2
+    assert stats.rejected["schema"] == 1 and "symptom" in stats.log[0]["because"][0]
+
+
+def test_the_prompt_tells_an_ask_card_which_value_to_leave_out():
+    script = Script({"rows": []})
+    write_requests(script, PEST, ASK_CARD, set(), "m")
+    line = next(json.loads(x) for x in script.prompts[0].splitlines() if x.startswith("{"))
+    assert line["leave_out"] == "symptom"
 
 
 def test_null_args_mean_none_given():
@@ -221,3 +231,10 @@ def test_a_value_in_the_wrong_case_goes_back_as_a_value_reject():
     }
     _, stats = write_requests(Script(reply), PEST, cards("call"), set(), "m")
     assert stats.rejected["value"] == 1
+
+
+def test_a_tool_named_with_case_does_not_turn_schema_rejects_into_value_rejects():
+    from eve.data.datagen.requests import _kind
+
+    assert _kind(["call to check_case_status: speed: None is not a valid str"]) == "schema"
+    assert _kind(["symptom='holes' must be written with the request's case"]) == "value"

@@ -41,15 +41,17 @@ and any optional one the request mentions, and nothing the request doesn't say. 
 is only the words for that argument, copied exactly from the request ("kale", not "my kale \
 right now"). A number may be written as a word in the request (7 or seven), and is said \
 in the argument's own unit (minutes=60 is "60 minutes", not "an hour").
-- ask: ask for what the tool does but leave out one required text or number value. In "args" \
-give every value anyway, the left-out one included, and name the left-out argument in \
-"left_out". Its value must not appear in the request.
+- ask: the card names in "leave_out" one argument the request must not say. Request the \
+tool's action itself, as in call, just without that value (for a fan timer with leave_out \
+"minutes": "turn the fan off later", which wants the action but doesn't say how long; not a \
+question like "how long until it stops?"). In "args" still give a value for it, as if the user \
+had said it, and every other value as in call.
 - near: ask for a different action this tool cannot do at all, about the same kind of things \
 (for a tool that waters plants: "repot my fern"). "args" is null.
 
 A call or ask card lists words to "avoid": never use them, in any form ("pests" counts as \
 "pest"), and say it in other words. Answer with {"rows": [{"card": n, "utterance": "...", \
-"args": {...} or null, "left_out": name or null}]}."""
+"args": {...} or null}]}."""
 
 REQUESTS_SCHEMA: dict[str, Any] = {
     "type": "object",
@@ -62,7 +64,6 @@ REQUESTS_SCHEMA: dict[str, Any] = {
                     "card": {"type": "integer"},
                     "utterance": {"type": "string"},
                     "args": {"type": ["object", "null"]},
-                    "left_out": {"type": ["string", "null"]},
                 },
                 "required": ["card", "utterance", "args"],
             },
@@ -119,13 +120,16 @@ def draw_cards(
     """One card per request to write: ``CARDS`` of each kind, ask cards turned into call cards
     when the tool has no required text or number to leave out."""
     counts = dict(CARDS)
-    if not any(a.required and a.type in ASK_TYPES for a in tool.args):
+    askable = [a.name for a in tool.args if a.required and a.type in ASK_TYPES]
+    if not askable:
         counts["call"] += counts.pop("ask")
     cards = []
     for kind, count in counts.items():
         for _ in range(count):
             card = {"intent": kind}
             card |= {key: str(rng.choice(constraints[key])) for key in CARD_KEYS}
+            if kind == "ask":
+                card["leave_out"] = str(rng.choice(askable))
             cards.append(card)
     return cards
 
@@ -145,7 +149,7 @@ def _kind(problems: Sequence[str]) -> str:
     text = " ".join(problems)
     for needle, kind in (
         ("not in the utterance", "value"),
-        ("case", "value"),
+        ("the request's case", "value"),
         ("shares", "shared"),
         ("repeats", "repeat"),
     ):
@@ -179,17 +183,21 @@ def _prompt(
 
 
 def _leave_out(
-    tool: GenTool, utterance: str, args: dict[str, Any], left_out: Any
+    tool: GenTool, utterance: str, args: dict[str, Any], name: str | None
 ) -> tuple[str, list[str], dict[str, Any]]:
-    """An ASK reply gives every value and names in ``left_out`` the one its request doesn't
-    say: check that it really doesn't, then mark it "?". Returns (reject kind, reasons, args)."""
-    known = {a.name: a for a in tool.args}
-    arg = known.get(left_out) if isinstance(left_out, str) else None
-    if arg is None or not arg.required or arg.type not in ASK_TYPES or left_out not in args:
-        reason = 'name in "left_out" the required text or number argument the request leaves '
-        return "schema", [reason + "out, and give its value in args"], args
+    """An ASK card names the argument its request leaves out (``draw_cards``), and the reply
+    still gives a value for it: check that the request really doesn't say it, then mark it
+    "?". Returns (reject kind, reasons, args)."""
+    askable = [a for a in tool.args if a.required and a.type in ASK_TYPES]
+    arg = next((a for a in askable if a.name == name), askable[0] if askable else None)
+    if arg is None:
+        return "schema", ["this tool has no required text or number to leave out"], args
+    if arg.name not in args:
+        reason = f"give a value for {arg.name} in args, though the request leaves it out"
+        return "schema", [reason], args
     if any(mentions(utterance, form) for form in value_forms(arg, args[arg.name])):
-        return "ask", [f"the request says {arg.name}={args[arg.name]!r}: leave it out"], args
+        reason = f"the request says {arg.name}={args[arg.name]!r}: this card leaves it out"
+        return "ask", [reason], args
     return "", [], {**args, arg.name: ASK_VALUE}
 
 
@@ -239,7 +247,7 @@ def write_requests(
                 feedback[n] = {"rejected": utterance, "because": because}
                 continue
             if intent == "ask" and ASK_VALUE not in args.values():
-                kind, because, args = _leave_out(tool, utterance, args, item.get("left_out"))
+                kind, because, args = _leave_out(tool, utterance, args, card.get("leave_out"))
                 if because:
                     stats.reject(kind, **where, card=n, utterance=utterance, because=because)
                     feedback[n] = {"rejected": utterance, "because": because}

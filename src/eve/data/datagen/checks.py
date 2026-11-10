@@ -109,11 +109,10 @@ def row_problems(row: Row, tool: GenTool, seen: Collection[str]) -> list[str]:
         )
     if row.intent == "ask" and not any(a.required and a.type in ASK_TYPES for a in tool.args):
         problems.append("an ask request needs a required text or number argument to leave out")
+    known = {a.name: a for a in tool.args}
     for name, value in (row.args or {}).items() if row.intent == "ask" else ():
-        known = {a.name: a for a in tool.args}
         if value == ASK_VALUE and name in known and not known[name].required:
             problems.append(f'only a required value can be left out ("?"), not {name}')
-    known = {a.name: a for a in tool.args}
     for name, value in (row.args or {}).items():  # the decoder copies: case must match too
         if name in known and known[name].type == "str" and isinstance(value, str):
             said = re.search(rf"(?<!\w){re.escape(value)}(?!\w)", row.utterance)
