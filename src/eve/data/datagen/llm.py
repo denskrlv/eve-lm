@@ -24,6 +24,7 @@ EMBED_BATCH = 64  # Ollama 0.40 fails some batches of 256 real descriptions ("to
 TRIES = 3  # per Ollama request, on failures that may pass
 CLAUDE_TRIES = 2
 RETRY_WAIT = 5.0  # seconds before the second try; doubled for each one after
+MAX_TOKENS = 6000  # per reply: 20 requests or 5 tools fit in ~2k; a model stuck in a loop stops
 
 
 class LLMError(RuntimeError):
@@ -115,7 +116,7 @@ def ollama_generate(
             "prompt": prompt,
             "stream": False,
             "think": False,
-            "options": {"temperature": temperature},
+            "options": {"temperature": temperature, "num_predict": MAX_TOKENS},
         }
         if constrained:
             try:

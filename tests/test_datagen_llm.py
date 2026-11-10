@@ -48,6 +48,7 @@ def test_ollama_generate_sends_the_schema_and_reads_speed(monkeypatch):
     assert url.endswith("/api/generate")
     assert body["format"] == SCHEMA and body["think"] is False and body["stream"] is False
     assert body["system"] == "sys" and body["prompt"] == "hi" and body["model"] == "m"
+    assert body["options"]["num_predict"] == llm.MAX_TOKENS  # a looping model can't run forever
     assert reply.data == {"a": "x"} and reply.tokens == 50 and reply.seconds == 2.0
 
 
