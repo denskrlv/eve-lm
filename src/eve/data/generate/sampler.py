@@ -25,7 +25,7 @@ PICK_TRIES, FILL_TRIES, ASK_TRIES = 20, 10, 50  # attempts before a sampler give
 _QUESTION = re.compile(
     r"^(what|how|when|where|who|which|is|are|was|do|does|did|can|will|any|if)\b", re.I
 )
-_STOPWORDS = set(
+STOPWORDS = frozenset(
     "the a an of or to in on and for with set get is it from by as at that this another be "
     "current new".split()
 )
@@ -33,7 +33,7 @@ _STOPWORDS = set(
 
 def _words(spec: ToolSpec) -> set[str]:
     text = spec.name.replace("_", " ") + " " + spec.tool.description
-    return {w for w in re.findall(r"[a-z]+", text.lower()) if w not in _STOPWORDS}
+    return {w for w in re.findall(r"[a-z]+", text.lower()) if w not in STOPWORDS}
 
 
 class ToolBank:
