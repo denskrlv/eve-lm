@@ -169,6 +169,19 @@ def _remove_duplicates(splits: Splits) -> Counter[str]:
     return removed
 
 
+def _add_datagen(splits: Splits, sources: Sources, root: Path, rng: np.random.Generator) -> int:
+    """Append the approved generated rows to train, except those whose request is already in a
+    split. Returns how many were left out."""
+    from eve.data.datagen.examples import datagen_examples, load_approved
+
+    tools, rows = load_approved(root)
+    generated = datagen_examples(tools, rows, sources.train, rng)
+    taken = {normalize(r["utterance"]) for split in splits.values() for r in split}
+    kept = [r for r in generated if normalize(r["utterance"]) not in taken]
+    splits["train"] += kept
+    return len(generated) - len(kept)
+
+
 def _drop_too_long(
     splits: Splits, library: dict[str, Tool], tokenizer: BPETokenizer, cfg: ModelConfig
 ) -> Counter[str]:
@@ -199,6 +212,7 @@ def build(
     generation_dir: str | Path = defaults.GENERATION_DIR,
     external_dir: str | Path = defaults.EXTERNAL_DIR,
     novel_dir: str | Path = defaults.NOVEL_TOOLS_DIR,
+    datagen_dir: str | Path | None = None,
 ) -> dict[str, Any]:
     """Write the splits as .jsonl files, train to ``out_dir`` and the sets models are scored on
     to ``evals_dir``, and return a report (also ``out_dir/report.json``).
@@ -215,12 +229,19 @@ def build(
     An utterance in a test or val split is removed from the splits below it.
     heldout-templates takes its NONE and UNSUPPORTED requests from ``generation_dir/heldout``,
     lines train never has.
+    With ``datagen_dir``, the approved generated shards there are added to train (see
+    ``eve.data.datagen.examples``), after the duplicates are removed: a generated request that is
+    in any other split is dropped instead, so the evals don't change.
     With a tokenizer, examples too long for the model are dropped.
     """
     sources = Sources.load(tools_dir, generation_dir)
     rng = np.random.default_rng(seed)
     splits = _assemble(sources, rng, n_templates, n_heldout, Path(external_dir), Path(novel_dir))
     removed = _remove_duplicates(splits)
+    if datagen_dir is not None:
+        removed["train (datagen, already in a split)"] = _add_datagen(
+            splits, sources, Path(datagen_dir), np.random.default_rng([seed, 1])
+        )
     too_long: Counter[str] = Counter()
     if tokenizer is not None and cfg is not None:
         too_long = _drop_too_long(splits, sources.library, tokenizer, cfg)

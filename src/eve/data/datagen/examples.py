@@ -1,0 +1,80 @@
+"""Approved shards as training rows: the prompt around each generated request is put together
+here, at build time, so changing the mix needs a rebuild, not new generation.
+
+Each row shows its tool under a random one of its names and descriptions, with distractors
+from the training library and the other generated tools (never one with the same capability).
+A share of call requests becomes UNSUPPORTED by leaving the right tool out. A near miss keeps
+its tool, with distractors from other areas, so none of them can serve it either.
+"""
+
+from collections.abc import Sequence
+from pathlib import Path
+from typing import Any
+
+import numpy as np
+
+from eve.data.datagen.shard import GenTool, Row, shards
+from eve.data.draw import shuffled
+from eve.data.generate.library import ToolSpec
+from eve.data.generate.sampler import ToolBank, prompt_size
+from eve.data.render import TaskExample
+
+REMOVAL_UNSUPPORTED_SHARE = 0.10  # of call requests, shown without their tool
+
+
+def load_approved(root: str | Path) -> tuple[list[GenTool], list[Row]]:
+    """The tools and requests of every approved shard under ``root``."""
+    tools: list[GenTool] = []
+    rows: list[Row] = []
+    for shard in shards(Path(root)):
+        if shard.status() == "approved":
+            # tool ids repeat across shards: make them unique, rows follow
+            prefix = f"{shard.path.name}-"
+            tools += [
+                GenTool.from_dict({**t.to_dict(), "id": prefix + t.id}) for t in shard.tools()
+            ]
+            rows += [
+                Row(r.id, prefix + r.tool, r.utterance, r.intent, r.args, r.card, r.writer)
+                for r in shard.rows()
+            ]
+    return tools, rows
+
+
+def datagen_examples(
+    tools: Sequence[GenTool],
+    rows: Sequence[Row],
+    train_specs: Sequence[ToolSpec],
+    rng: np.random.Generator,
+) -> list[dict[str, Any]]:
+    """One training row per request (see the module), tools inline."""
+    generated = [ToolSpec(t.tool(), (), capability=t.capability) for t in tools]
+    bank = ToolBank(list(train_specs) + generated)
+    index = {t.id: len(train_specs) + i for i, t in enumerate(tools)}
+    by_id = {t.id: t for t in tools}
+    out = []
+    for row in rows:
+        tool, gold = by_id[row.tool], index[row.tool]
+        shown = tool.tool(
+            int(rng.integers(len(tool.names))), int(rng.integers(len(tool.descriptions)))
+        )
+        intent, calls = row.intent, row.call(shown)
+        if intent == "call" and rng.random() < REMOVAL_UNSUPPORTED_SHARE:
+            picked = bank.distractors([gold], prompt_size(rng), rng, unsupported=True)
+            prompt = [bank.specs[i].tool for i in picked]
+            intent, calls = "unsupported", ()
+        elif intent == "unsupported":
+            picked = bank.distractors(
+                [gold], prompt_size(rng) - 1, rng, unsupported=True, hard=False
+            )
+            prompt = [shown] + [
+                bank.specs[i].tool for i in picked if bank.specs[i].domain != tool.area
+            ]
+        else:
+            picked = bank.distractors([gold], prompt_size(rng) - 1, rng)
+            prompt = [shown] + [bank.specs[i].tool for i in picked]
+        if not prompt:
+            prompt = [shown]  # nothing else to offer: keep the request as written
+            intent, calls = row.intent, row.call(shown)
+        example = TaskExample(row.utterance, tuple(shuffled(rng, prompt)), intent, calls)
+        out.append({**example.to_json(inline=True), "source": "datagen"})
+    return out

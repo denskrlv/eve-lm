@@ -136,6 +136,7 @@ def data_build(args: argparse.Namespace) -> None:
         args.seed,
         tokenizer,
         preset("eve-32m"),
+        datagen_dir=args.datagen,
     )
     console.print(_splits_table(report["splits"]))
     success("built", Path(args.out) / "report.json")
@@ -232,6 +233,9 @@ def _add_data_build_command(data_commands: Subcommands) -> None:
     )
     parser.add_argument("--seed", type=int, default=0)
     parser.add_argument("--tokenizer", default=defaults.TOKENIZER_FILE)
+    parser.add_argument(
+        "--datagen", default=None, help="add the approved generated shards in this directory"
+    )
 
 
 def add_data(commands: Subcommands) -> None:
