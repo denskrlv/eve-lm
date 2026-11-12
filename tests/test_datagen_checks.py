@@ -119,3 +119,51 @@ def test_ask_leaves_out_only_text_or_number_values():
     )
     left_out = Row("t03-r01", "t03", "Stop the breeze in 20 min", "ask", {"minutes": 20, "on": "?"})
     assert any("text or number" in p for p in row_problems(left_out, timer, set()))
+
+
+def test_an_optional_enum_needs_the_request_to_say_it():
+    hair = GenTool.from_dict(
+        {
+            "id": "t04",
+            "topic": "hair > styles",
+            "names": ["find_hair_tutorial", "show_style_steps"],
+            "descriptions": ["Show videos on styling hair", "Teach the steps for a look"],
+            "args": [
+                {"name": "style_name", "type": "str"},
+                {
+                    "name": "difficulty",
+                    "type": "enum",
+                    "options": ["easy", "hard"],
+                    "required": False,
+                },
+            ],
+        }
+    )
+    invented = Row(
+        "t04-r01",
+        "t04",
+        "walk me through a messy bun",
+        "call",
+        {"style_name": "messy bun", "difficulty": "easy"},
+    )
+    assert any("difficulty" in p for p in row_problems(invented, hair, set()))
+    said = Row(
+        "t04-r02",
+        "t04",
+        "an easy messy bun, walk me through it",
+        "call",
+        {"style_name": "messy bun", "difficulty": "easy"},
+    )
+    assert row_problems(said, hair, set()) == []
+    required = Row("t02-r01", "t02", "make the room feel colder", "call", {"speed": "high"})
+    assert row_problems(required, FAN, set()) == []  # a required one may be implied
+
+
+def test_a_text_value_names_the_thing_not_a_pointer_or_the_argument():
+    for value, utterance in [
+        ("this crop", "something chews holes in this crop"),
+        ("listed here", "fix the holes listed here"),
+        ("the symptom", "check the symptom on my kale"),
+    ]:
+        filler = Row("t01-r08", "t01", utterance, "call", {"symptom": value})
+        assert any(repr(value) in p for p in row_problems(filler, PEST, set())), value

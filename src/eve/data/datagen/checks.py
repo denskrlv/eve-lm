@@ -20,6 +20,8 @@ MAX_NAMES = MAX_DESCRIPTIONS = 4
 DESCRIPTION_OVERLAP = 0.5  # descriptions sharing more of their words than this count as one
 MAX_DESCRIPTION_WORDS = 12
 ASK_TYPES = ("str", "int", "float")  # a value an ASK request can leave out
+# a text value with one of these points at the thing ("this role", "near me") instead of naming it
+POINTER = re.compile(r"\b(this|that|these|those|here|there|it|them|me)\b", re.IGNORECASE)
 
 
 def content_stems(text: str) -> set[str]:
@@ -121,6 +123,20 @@ def row_problems(row: Row, tool: GenTool, seen: Collection[str]) -> list[str]:
             said = re.search(rf"(?<!\w){re.escape(value)}(?!\w)", row.utterance)
             if value != ASK_VALUE and not said and mentions(row.utterance, value):
                 problems.append(f"{name}={value!r} must be written with the request's case")
+            stems = content_stems(value)
+            if POINTER.search(value) or (stems and stems <= content_stems(name.replace("_", " "))):
+                problems.append(
+                    f"{name}={value!r} is not a real {name}: give the actual value the user "
+                    "says, or write a request that says one"
+                )
+        # check_example lets enums through (templates imply them); a generated optional one
+        # the request doesn't say is invented
+        if name in known and known[name].type == "enum" and not known[name].required:
+            stems = content_stems(str(value).replace("_", " "))
+            if stems and not stems <= content_stems(row.utterance):
+                problems.append(
+                    f"{name}={value!r} is optional and the request doesn't say it: leave it out"
+                )
     if row.intent == "unsupported" and row.args is not None:
         problems.append("an unsupported request has no call")
     if normalize(row.utterance) in seen:

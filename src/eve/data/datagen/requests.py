@@ -39,7 +39,10 @@ By the card's intent:
 - call: ask for exactly what the tool does. Give "args": a value for every required argument \
 and any optional one the request mentions, and nothing the request doesn't say. Each text value \
 is only the words for that argument, copied exactly from the request ("kale", not "my kale \
-right now"). A number may be written as a word in the request (7 or seven), and is said \
+right now"). A text value names the actual thing the user wants (a city, a job title, the \
+words to write), never a word for the argument itself, a pointer ("this role", "listed here", \
+"near me") or a word from the card's situation: if the request has no such words, write it so \
+it does. A number may be written as a word in the request (7 or seven), and is said \
 in the argument's own unit (minutes=60 is "60 minutes", not "an hour"). Give an enum or \
 true/false value only when the request says or clearly implies that option ("turn it off" \
 means false); leave an optional one out otherwise, and for a required one, write the request so \
@@ -153,6 +156,8 @@ def _kind(problems: Sequence[str]) -> str:
     for needle, kind in (
         ("not in the utterance", "value"),
         ("the request's case", "value"),
+        ("is not a real", "value"),
+        ("doesn't say it", "value"),
         ("shares", "shared"),
         ("repeats", "repeat"),
     ):
