@@ -33,7 +33,12 @@ The rules every request follows (code has checked them already; keep them in any
 number value may be written as a word in the request (7 or seven): that is fine, don't change it.
 - "?" marks a missing required value, never on an optional argument.
 - A call or ask request shares no word (in any form) with at least one of the tool's names and \
-one of its descriptions. An unsupported request may use the tool's words.
+one of its descriptions. One such pair is enough, so words of the other names and descriptions \
+are allowed: never fix a request only for using a tool word. An unsupported request may use \
+the tool's words.
+- "?" only ever replaces a text or number value. An enum or true/false value the request \
+neither says nor implies is never an ask: rewrite the request so it says the option, or leave \
+an optional one out of args.
 
 Check every request:
 - The label is right: a call or ask request really asks for what the tool does; an unsupported \

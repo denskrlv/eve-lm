@@ -44,9 +44,11 @@ words to write), never a word for the argument itself, a pointer ("this role", "
 "near me") or a word from the card's situation: if the request has no such words, write it so \
 it does. A number may be written as a word in the request (7 or seven), and is said \
 in the argument's own unit (minutes=60 is "60 minutes", not "an hour"). Give an enum or \
-true/false value only when the request says or clearly implies that option ("turn it off" \
-means false); leave an optional one out otherwise, and for a required one, write the request so \
-it implies the option.
+true/false value only when the request says or clearly implies that option ("make it warm" \
+means mode=heat, "turn it off" means on=false, "no symbols" means include_symbols=false); \
+leave an optional one out otherwise. A required one must be said or implied too: write the \
+request so it is, and never fill in a likely default ("for forty minutes" says nothing about \
+intensity, so it isn't "medium").
 - ask: the card names in "leave_out" one argument the request must not say. Request the \
 tool's action itself, as in call, just without that value (for a fan timer with leave_out \
 "minutes": "turn the fan off later", which wants the action but doesn't say how long; not a \

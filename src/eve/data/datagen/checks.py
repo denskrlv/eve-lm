@@ -129,8 +129,9 @@ def row_problems(row: Row, tool: GenTool, seen: Collection[str]) -> list[str]:
                     f"{name}={value!r} is not a real {name}: give the actual value the user "
                     "says, or write a request that says one"
                 )
-        # check_example lets enums through (templates imply them); a generated optional one
-        # the request doesn't say is invented
+        # check_example lets enums through (templates imply them); a generated optional one the
+        # request doesn't say is invented. Required enums and bools stay unchecked: on 17 shards
+        # a word check rejected as many good implied ones ("make it warm" = heat) as bad ones.
         if name in known and known[name].type == "enum" and not known[name].required:
             stems = content_stems(str(value).replace("_", " "))
             if stems and not stems <= content_stems(row.utterance):
